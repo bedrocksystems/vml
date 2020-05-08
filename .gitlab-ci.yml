@@ -1,0 +1,37 @@
+stages:
+  - coding-style
+  - build
+  - doc
+
+pages:
+  stage: doc
+  image: registry.gitlab.com/bedrocksystems/docker-image:doc
+  script:
+    - make doc
+    - mv doc/html public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+
+clang-format-check:
+  stage: coding-style
+  image: registry.gitlab.com/bedrocksystems/docker-image:coding-style
+  script:
+    - bash support/scripts/check_coding_style.sh
+  only:
+    - merge_requests
+  allow_failure: true # For now, we don't strictly enforce the coding style
+
+build-llvm-platform_posix:
+  image: registry.gitlab.com/bedrocksystems/docker-image:vmm-platform-posix
+  stage: build
+  variables:
+    CXX: 'clang++'
+    ERR_ON_WARN: '1'
+  script:
+    - make
+  only:
+    - merge_requests
+    - pipelines
