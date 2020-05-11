@@ -1,0 +1,64 @@
+/**
+ * Copyright (C) 2019 BedRock Systems, Inc.
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#pragma once
+
+#include <model/gic.hpp>
+#include <model/virtio.hpp>
+#include <platform/semaphore.hpp>
+#include <platform/types.hpp>
+#include <vbus/vbus.hpp>
+
+namespace Model {
+    class Virtio_console;
+    struct Virtio_console_config;
+}
+
+struct Model::Virtio_console_config {
+    uint16 cols;
+    uint16 rows;
+    uint32 num_ports;
+    uint32 emerg_wr;
+};
+
+class Model::Virtio_console : public Vbus::Device, private Virtio::Device {
+private:
+    Virtio::Ram const _ram;
+    Model::Virtio_console_config config __attribute__((aligned(8)));
+
+    Semaphore *_sem;
+    Virtio::Callback *_callback{nullptr};
+    Virtio::Descriptor *_tx_desc{nullptr};
+    bool _driver_initialized{false};
+
+    bool mmio_write(Vcpu_id const, uint64 const, uint8 const, uint64 const);
+    bool mmio_read(Vcpu_id const, uint64 const, uint8 const, uint64 &) const;
+
+    void _notify(uint32) override;
+    void _driver_ok() override;
+
+public:
+    Virtio_console(Gic_d &gic, uint64 const guest_base, uint64 const host_base, uint64 const size,
+                   uint16 const irq, uint16 const queue_entries, Semaphore *sem)
+        : Vbus::Device("virtio console"), Virtio::Device(3, _ram, gic, &config, sizeof(config), irq,
+                                                         queue_entries),
+          _ram(guest_base, size, host_base), _sem(sem) {}
+
+    void register_callback(Virtio::Callback &callback) { _callback = &callback; }
+
+    void release_buffer();
+
+    bool to_guest(char *buff, uint32 size);
+    char *from_guest(uint32 &size);
+
+    virtual void reset() override { _reset(); }
+
+    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, mword, uint8, uint64 &) override;
+
+    Virtio::Queue_data const &queue_data_rx() const { return _data[RX]; }
+    Virtio::Queue_data const &queue_data_tx() const { return _data[TX]; }
+};

@@ -1,0 +1,32 @@
+#
+# Makefile
+#
+# Copyright (C) 2020 BedRock Systems, Inc.
+# All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+ZT_ROOT ?= ../../../../zeta/
+LIBNAME = $(shell basename `pwd`)
+LIBDIR  = $(ZT_ROOT)lib/  ../ ../../devices/ ../../interfaces/ ../../config/ ../../platform/
+LIBDIR += ../../arch/
+ENABLE_VMI ?= 0
+
+# XXX: this will go away in profit of a lib in interfaces for PM (similar to VMI)
+LIB_PM  ?= ../../../../../lib/pm/
+LIBDIR += $(LIB_PM)
+
+ifneq ($(ENABLE_VMI), 0)
+LIBDIR += ../../../../../lib/ 
+endif
+
+include deps.mk
+
+CC_SRCS = vcpu.cpp
+OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
+
+SPECS =
+PROOFS =
+
+include $(ZT_ROOT)support/build/rules.mk

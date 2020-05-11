@@ -1,0 +1,421 @@
+EL0: Nothing to do:
+-------------------
+
+CNTFRQ_EL0: Counter-timer Frequency register
+CNTVCT_EL0: Counter-timer Virtual Count register
+CNTV_TVAL_EL0: Counter-timer Virtual Timer TimerValue register
+CurrentEL: Current Exception Level
+DAIF: Interrupt Mask Bits
+DCZID_EL0: Data Cache Zero ID register
+DSPSR_EL0: Debug Saved Program Status Register
+NZCV: Condition Flags
+PAN: Privileged Access Never
+RNDR: Random Number
+RNDRRS: Reseeded Random Number
+SCXTNUM_EL0: EL0 Read/Write Software Context Number
+SPSR_abt: Saved Program Status Register (Abort mode)
+SPSR_fiq: Saved Program Status Register (FIQ mode)
+SPSR_irq: Saved Program Status Register (IRQ mode)
+SPSR_und: Saved Program Status Register (Undefined mode)
+SPSel: Stack Pointer Select
+X31: Zero register
+
+EL0: Context switched by NOVA:
+------------------------------
+
+CNTV_CTL_EL0: Counter-timer Virtual Timer Control register
+CNTV_CVAL_EL0: Counter-timer Virtual Timer CompareValue register
+FPCR: Floating-point Control Register
+FPSR: Floating-point Status Register
+SP_EL0: Stack Pointer (EL0)
+TPIDRRO_EL0: EL0 Read-Only Software Thread ID Register
+TPIDR_EL0: EL0 Read/Write Software Thread ID Register
+X0-X30: General purpose registers
+
+EL0: Trap/Emulate:
+------------------
+
+CNTP_CTL_EL0: Counter-timer Physical Timer Control register
+CNTP_CVAL_EL0: Counter-timer Physical Timer CompareValue register
+CNTP_TVAL_EL0: Counter-timer Physical Timer TimerValue register
+CNTPCT_EL0: Counter-timer Physical Count register
+CTR_EL0: Cache Type Register
+PMUSERENR_EL0: Performance Monitors User Enable Register
+
+EL0: To be implemented Trap/Emulate:
+------------------------------------
+
+DBGDTRRX_EL0: Debug Data Transfer Register, Receive
+DBGDTRTX_EL0: Debug Data Transfer Register, Transmit
+DBGDTR_EL0: Debug Data Transfer Register, half-duplex
+DLR_EL0: Debug Link Register
+MDCCSR_EL0: Monitor DCC Status Register
+
+EL1: Not supported, access undefined when feature is not implemented:
+---------------------------------------------------------------------
+
+AMCFGR_EL0: Activity Monitors Configuration Register
+AMCG1IDR_EL0: Activity Monitors Counter Group 1 Identification Register
+AMCGCR_EL0: Activity Monitors Counter Group Configuration Register
+AMCNTENCLR0_EL0: Activity Monitors Count Enable Clear Register 0
+AMCNTENCLR1_EL0: Activity Monitors Count Enable Clear Register 1
+AMCNTENSET0_EL0: Activity Monitors Count Enable Set Register 0
+AMCNTENSET1_EL0: Activity Monitors Count Enable Set Register 1
+AMCR_EL0: Activity Monitors Control Register
+AMEVCNTR0<n>_EL0: Activity Monitors Event Counter Registers 0
+AMEVCNTR1<n>_EL0: Activity Monitors Event Counter Registers 1
+AMEVTYPER0<n>_EL0: Activity Monitors Event Type Registers 0
+AMEVTYPER1<n>_EL0: Activity Monitors Event Type Registers 1
+AMUSERENR_EL0: Activity Monitors User Enable Register
+CNTPCTSS_EL0: Counter-timer Self-Synchronized Physical Count register
+CNTVCTSS_EL0: Counter-timer Self-Synchronized Virtual Count register
+DIT: Data Independent Timing
+PMCCFILTR_EL0: Performance Monitors Cycle Count Filter Register
+PMCCNTR_EL0: Performance Monitors Cycle Count Register
+PMCEID0_EL0: Performance Monitors Common Event Identification register 0
+PMCEID1_EL0: Performance Monitors Common Event Identification register 1
+PMCNTENCLR_EL0: Performance Monitors Count Enable Clear register
+PMCNTENSET_EL0: Performance Monitors Count Enable Set register
+PMCR_EL0: Performance Monitors Control Register
+PMEVCNTR<n>_EL0: Performance Monitors Event Count Registers
+PMEVTYPER<n>_EL0: Performance Monitors Event Type Registers
+PMOVSCLR_EL0: Performance Monitors Overflow Flag Status Clear Register
+PMOVSSET_EL0: Performance Monitors Overflow Flag Status Set register
+PMSELR_EL0: Performance Monitors Event Counter Selection Register
+PMSWINC_EL0: Performance Monitors Software Increment register
+PMXEVCNTR_EL0: Performance Monitors Selected Event Count Register
+PMXEVTYPER_EL0: Performance Monitors Selected Event Type Register
+S3_<op1>_<Cn>_<Cm>_<op2>: IMPLEMENTATION DEFINED registers
+SSBS: Speculative Store Bypass Safe
+TCO: Tag Check Override
+UAO: User Access Override
+
+EL1: Context switched by NOVA:
+------------------------------
+
+AFSR0_EL1: Auxiliary Fault Status Register 0 (EL1)
+AFSR1_EL1: Auxiliary Fault Status Register 1 (EL1)
+AMAIR_EL1: Auxiliary Memory Attribute Indirection Register (EL1)
+CNTKCTL_EL1: Counter-timer Kernel Control register
+ELR_EL1: Exception Link Register (EL1)
+ESR_EL1: Exception Syndrome Register (EL1)
+FAR_EL1: Fault Address Register (EL1)
+MAIR_EL1: Memory Attribute Indirection Register (EL1)
+PAR_EL1: Physical Address Register
+SCTLR_EL1: System Control Register (EL1)
+SPSR_EL1: Saved Program Status Register (EL1)
+SP_EL1: Stack Pointer (EL1)
+TCR_EL1: Translation Control Register (EL1)
+TPIDR_EL1: EL1 Software Thread ID Register
+TTBR0_EL1: Translation Table Base Register 0 (EL1)
+TTBR1_EL1: Translation Table Base Register 1 (EL1)
+VBAR_EL1: Vector Base Address Register (EL1)
+
+EL1: TBD NOVA and/or VMM:
+-------------------------
+
+ZCR_EL1: SVE Control Register for EL1
+
+EL1: HW virtualized (when supported):
+-------------------------------------
+
+ICC_AP0R<n>_EL1: Interrupt Controller Active Priorities Group 0 Registers
+ICC_AP1R<n>_EL1: Interrupt Controller Active Priorities Group 1 Registers
+ICC_ASGI1R_EL1: Interrupt Controller Alias Software Generated Interrupt Group 1 Register
+ICC_BPR0_EL1: Interrupt Controller Binary Point Register 0
+ICC_BPR1_EL1: Interrupt Controller Binary Point Register 1
+ICC_CTLR_EL1: Interrupt Controller Control Register (EL1)
+ICC_DIR_EL1: Interrupt Controller Deactivate Interrupt Register
+ICC_EOIR0_EL1: Interrupt Controller End Of Interrupt Register 0
+ICC_EOIR1_EL1: Interrupt Controller End Of Interrupt Register 1
+ICC_HPPIR0_EL1: Interrupt Controller Highest Priority Pending Interrupt Register 0
+ICC_HPPIR1_EL1: Interrupt Controller Highest Priority Pending Interrupt Register 1
+ICC_IAR0_EL1: Interrupt Controller Interrupt Acknowledge Register 0
+ICC_IAR1_EL1: Interrupt Controller Interrupt Acknowledge Register 1
+ICC_IGRPEN0_EL1: Interrupt Controller Interrupt Group 0 Enable register
+ICC_IGRPEN1_EL1: Interrupt Controller Interrupt Group 1 Enable register
+ICC_PMR_EL1: Interrupt Controller Interrupt Priority Mask Register
+ICC_RPR_EL1: Interrupt Controller Running Priority Register
+ICC_SGI0R_EL1: Interrupt Controller Software Generated Interrupt Group 0 Register
+ICC_SGI1R_EL1: Interrupt Controller Software Generated Interrupt Group 1 Register
+ICC_SRE_EL1: Interrupt Controller System Register Enable register (EL1)
+ICV_AP0R<n>_EL1: Interrupt Controller Virtual Active Priorities Group 0 Registers
+ICV_AP1R<n>_EL1: Interrupt Controller Virtual Active Priorities Group 1 Registers
+ICV_BPR0_EL1: Interrupt Controller Virtual Binary Point Register 0
+ICV_BPR1_EL1: Interrupt Controller Virtual Binary Point Register 1
+ICV_CTLR_EL1: Interrupt Controller Virtual Control Register
+ICV_DIR_EL1: Interrupt Controller Deactivate Virtual Interrupt Register
+ICV_EOIR0_EL1: Interrupt Controller Virtual End Of Interrupt Register 0
+ICV_EOIR1_EL1: Interrupt Controller Virtual End Of Interrupt Register 1
+ICV_HPPIR0_EL1: Interrupt Controller Virtual Highest Priority Pending Interrupt Register 0
+ICV_HPPIR1_EL1: Interrupt Controller Virtual Highest Priority Pending Interrupt Register 1
+ICV_IAR0_EL1: Interrupt Controller Virtual Interrupt Acknowledge Register 0
+ICV_IAR1_EL1: Interrupt Controller Virtual Interrupt Acknowledge Register 1
+ICV_IGRPEN0_EL1: Interrupt Controller Virtual Interrupt Group 0 Enable register
+ICV_IGRPEN1_EL1: Interrupt Controller Virtual Interrupt Group 1 Enable register
+ICV_PMR_EL1: Interrupt Controller Virtual Interrupt Priority Mask Register
+ICV_RPR_EL1: Interrupt Controller Virtual Running Priority Register
+ISR_EL1: Interrupt Status Register
+MIDR_EL1: Main ID Register
+MPIDR_EL1: Multiprocessor Affinity Register
+
+EL1: Trap/Emulate:
+------------------
+
+AIDR_EL1: Auxiliary ID Register
+CCSIDR_EL1: Current Cache Size ID Register
+CLIDR_EL1: Cache Level ID Register
+CONTEXTIDR_EL1: Context ID Register (EL1)
+CPACR_EL1: Architectural Feature Access Control Register
+CSSELR_EL1: Cache Size Selection Register
+DBGAUTHSTATUS_EL1: Debug Authentication Status register
+ID_AA64AFR0_EL1: AArch64 Auxiliary Feature Register 0
+ID_AA64AFR1_EL1: AArch64 Auxiliary Feature Register 1
+ID_AA64ISAR0_EL1: AArch64 Instruction Set Attribute Register 0
+ID_AA64ISAR1_EL1: AArch64 Instruction Set Attribute Register 1
+ID_AA64MMFR0_EL1: AArch64 Memory Model Feature Register 0
+ID_AA64MMFR1_EL1: AArch64 Memory Model Feature Register 1
+ID_AA64MMFR2_EL1: AArch64 Memory Model Feature Register 2
+ID_AA64PFR0_EL1: AArch64 Processor Feature Register 0
+ID_AA64PFR1_EL1: AArch64 Processor Feature Register 1
+ID_AA64ZFR0_EL1: SVE Feature ID register 0
+ID_AFR0_EL1: AArch32 Auxiliary Feature Register 0
+ID_DFR1_EL1: Debug Feature Register 1
+ID_ISAR0_EL1: AArch32 Instruction Set Attribute Register 0
+ID_ISAR1_EL1: AArch32 Instruction Set Attribute Register 1
+ID_ISAR2_EL1: AArch32 Instruction Set Attribute Register 2
+ID_ISAR3_EL1: AArch32 Instruction Set Attribute Register 3
+ID_ISAR4_EL1: AArch32 Instruction Set Attribute Register 4
+ID_ISAR5_EL1: AArch32 Instruction Set Attribute Register 5
+ID_ISAR6_EL1: AArch32 Instruction Set Attribute Register 6
+ID_MMFR0_EL1: AArch32 Memory Model Feature Register 0
+ID_MMFR1_EL1: AArch32 Memory Model Feature Register 1
+ID_MMFR2_EL1: AArch32 Memory Model Feature Register 2
+ID_MMFR3_EL1: AArch32 Memory Model Feature Register 3
+ID_MMFR4_EL1: AArch32 Memory Model Feature Register 4
+ID_MMFR5_EL1: AArch32 Memory Model Feature Register 5
+ID_PFR0_EL1: AArch32 Processor Feature Register 0
+ID_PFR1_EL1: AArch32 Processor Feature Register 1
+ID_PFR2_EL1: AArch32 Processor Feature Register 2
+MDRAR_EL1: Monitor Debug ROM Address Register
+MVFR0_EL1: AArch32 Media and VFP Feature Register 0
+MVFR1_EL1: AArch32 Media and VFP Feature Register 1
+MVFR2_EL1: AArch32 Media and VFP Feature Register 2
+OSDLR_EL1: OS Double Lock Register
+OSLSR_EL1: OS Lock Status Register
+REVIDR_EL1: Revision ID Register
+
+EL1: Trap/Emulate but not feature complete:
+-------------------------------------------
+
+DBGBCR<n>_EL1: Debug Breakpoint Control Registers
+DBGBVR<n>_EL1: Debug Breakpoint Value Registers
+DBGWCR<n>_EL1: Debug Watchpoint Control Registers
+DBGWVR<n>_EL1: Debug Watchpoint Value Registers
+ID_AA64DFR0_EL1: AArch64 Debug Feature Register 0
+ID_AA64DFR1_EL1: AArch64 Debug Feature Register 1
+ID_DFR0_EL1: AArch32 Debug Feature Register 0
+
+EL1: To be implemented:
+-----------------------
+
+DBGCLAIMCLR_EL1: Debug CLAIM Tag Clear register
+DBGCLAIMSET_EL1: Debug CLAIM Tag Set register
+DBGPRCR_EL1: Debug Power Control Register
+MDCCINT_EL1: Monitor DCC Interrupt Enable Register
+MDSCR_EL1: Monitor Debug System Control Register
+OSDTRRX_EL1: OS Lock Data Transfer Register, Receive
+OSDTRTX_EL1: OS Lock Data Transfer Register, Transmit
+OSECCR_EL1: OS Lock Exception Catch Control Register
+OSLAR_EL1: OS Lock Access Register
+
+EL1: Not supported, access undefined when feature is not implemented:
+---------------------------------------------------------------------
+
+APDAKeyHi_EL1: Pointer Authentication Key A for Data (bits[127:64])
+APDAKeyLo_EL1: Pointer Authentication Key A for Data (bits[63:0])
+APDBKeyHi_EL1: Pointer Authentication Key B for Data (bits[127:64])
+APDBKeyLo_EL1: Pointer Authentication Key B for Data (bits[63:0])
+APGAKeyHi_EL1: Pointer Authentication Key A for Code (bits[127:64])
+APGAKeyLo_EL1: Pointer Authentication Key A for Code (bits[63:0])
+APIAKeyHi_EL1: Pointer Authentication Key A for Instruction (bits[127:64])
+APIAKeyLo_EL1: Pointer Authentication Key A for Instruction (bits[63:0])
+APIBKeyHi_EL1: Pointer Authentication Key B for Instruction (bits[127:64])
+APIBKeyLo_EL1: Pointer Authentication Key B for Instruction (bits[63:0])
+CCSIDR2_EL1: Current Cache Size ID Register 2
+DISR_EL1: Deferred Interrupt Status Register
+ERRIDR_EL1: Error Record ID Register
+ERRSELR_EL1: Error Record Select Register
+ERXADDR_EL1: Selected Error Record Address Register
+ERXCTLR_EL1: Selected Error Record Control Register
+ERXFR_EL1: Selected Error Record Feature Register
+ERXMISC0_EL1: Selected Error Record Miscellaneous Register 0
+ERXMISC1_EL1: Selected Error Record Miscellaneous Register 1
+ERXMISC2_EL1: Selected Error Record Miscellaneous Register 2
+ERXMISC3_EL1: Selected Error Record Miscellaneous Register 3
+ERXPFGCDN_EL1: Selected Pseudo-fault Generation Countdown Register
+ERXPFGCTL_EL1: Selected Pseudo-fault Generation Control Register
+ERXPFGF_EL1: Selected Pseudo-fault Generation Feature Register
+ERXSTATUS_EL1: Selected Error Record Primary Status Register
+GCR_EL1: Tag Control Register.
+GMID_EL1: Multiple tag transfer ID register
+LORC_EL1: LORegion Control (EL1)
+LOREA_EL1: LORegion End Address (EL1)
+LORID_EL1: LORegionID (EL1)
+LORN_EL1: LORegion Number (EL1)
+LORSA_EL1: LORegion Start Address (EL1)
+MPAM0_EL1: MPAM0 Register (EL1)
+MPAM1_EL1: MPAM1 Register (EL1)
+MPAMIDR_EL1: MPAM ID Register (EL1)
+PMBIDR_EL1: Profiling Buffer ID Register
+PMBLIMITR_EL1: Profiling Buffer Limit Address Register
+PMBPTR_EL1: Profiling Buffer Write Pointer Register
+PMBSR_EL1: Profiling Buffer Status/syndrome Register
+PMINTENCLR_EL1: Performance Monitors Interrupt Enable Clear register
+PMINTENSET_EL1: Performance Monitors Interrupt Enable Set register
+PMMIR_EL1: Performance Monitors Machine Identification Register
+PMSCR_EL1: Statistical Profiling Control Register (EL1)
+PMSEVFR_EL1: Sampling Event Filter Register
+PMSFCR_EL1: Sampling Filter Control Register
+PMSICR_EL1: Sampling Interval Counter Register
+PMSIDR_EL1: Sampling Profiling ID Register
+PMSIRR_EL1: Sampling Interval Reload Register
+PMSLATFR_EL1: Sampling Latency Filter Register
+RGSR_EL1: Random Allocation Tag Seed Register.
+RMR_EL1: Reset Management Register (EL1) - (valid if EL2 and EL3 are not implemented)
+RVBAR_EL1: Reset Vector Base Address Register - (valid if EL2 and EL3 are not implemented)
+SCXTNUM_EL1: EL1 Read/Write Software Context Number
+TFSRE0_EL1: Tag Fail Status Register (EL0).
+TFSR_EL1: Tag Fail Status Register (EL1)
+TRFCR_EL1: Trace Filter Control Register (EL1)
+CNTPS_CTL_EL1: Counter-timer Physical Secure Timer Control register
+CNTPS_CVAL_EL1: Counter-timer Physical Secure Timer CompareValue register
+CNTPS_TVAL_EL1: Counter-timer Physical Secure Timer TimerValue register
+
+EL2: Registers provided by NOVA to control the VM (context switched):
+---------------------------------------------------------------------
+
+CNTVOFF_EL2: Counter-timer Virtual Offset register
+ELR_EL2: Exception Link Register (EL2)
+ESR_EL2: Exception Syndrome Register (EL2)
+FAR_EL2: Fault Address Register (EL2)
+HCR_EL2: Hypervisor Configuration Register
+HPFAR_EL2: Hypervisor IPA Fault Address Register
+SPSR_EL2: Saved Program Status Register (EL2)
+VMPIDR_EL2: Virtualization Multiprocessor ID Register
+VPIDR_EL2: Virtualization Processor ID Register
+
+EL2: Registers not supported (no EL2 support in guest):
+-------------------------------------------------------
+
+ACTLR_EL2: Auxiliary Control Register (EL2)
+AFSR0_EL2: Auxiliary Fault Status Register 0 (EL2)
+AFSR1_EL2: Auxiliary Fault Status Register 1 (EL2)
+AMAIR_EL2: Auxiliary Memory Attribute Indirection Register (EL2)
+AMEVCNTVOFF0<n>_EL2: Activity Monitors Event Counter Virtual Offset Registers 0
+AMEVCNTVOFF1<n>_EL2: Activity Monitors Event Counter Virtual Offset Registers 1
+CNTHCTL_EL2: Counter-timer Hypervisor Control register
+CNTHPS_CTL_EL2: Counter-timer Secure Physical Timer Control register (EL2)
+CNTHPS_CVAL_EL2: Counter-timer Secure Physical Timer CompareValue register (EL2)
+CNTHPS_TVAL_EL2: Counter-timer Secure Physical Timer TimerValue register (EL2)
+CNTHP_CTL_EL2: Counter-timer Hypervisor Physical Timer Control register
+CNTHP_CVAL_EL2: Counter-timer Physical Timer CompareValue register (EL2)
+CNTHP_TVAL_EL2: Counter-timer Physical Timer TimerValue register (EL2)
+CNTHVS_CTL_EL2: Counter-timer Secure Virtual Timer Control register (EL2)
+CNTHVS_CVAL_EL2: Counter-timer Secure Virtual Timer CompareValue register (EL2)
+CNTHVS_TVAL_EL2: Counter-timer Secure Virtual Timer TimerValue register (EL2)
+CNTHV_CTL_EL2: Counter-timer Virtual Timer Control register (EL2)
+CNTHV_CVAL_EL2: Counter-timer Virtual Timer CompareValue register (EL2)
+CNTHV_TVAL_EL2: Counter-timer Virtual Timer TimerValue Register (EL2)
+CNTPOFF_EL2: Counter-timer Physical Offset register
+CONTEXTIDR_EL2: Context ID Register (EL2)
+CPTR_EL2: Architectural Feature Trap Register (EL2)
+DACR32_EL2: Domain Access Control Register
+DBGVCR32_EL2: Debug Vector Catch Register
+FPEXC32_EL2: Floating-Point Exception Control register
+HACR_EL2: Hypervisor Auxiliary Control Register
+HAFGRTR_EL2: Hypervisor Activity Monitors Fine-Grained Read Trap Register
+HDFGRTR_EL2: Hypervisor Debug Fine-Grained Read Trap Register
+HDFGWTR_EL2: Hypervisor Debug Fine-Grained Write Trap Register
+HFGITR_EL2: Hypervisor Fine-Grained Instruction Trap Register
+HFGRTR_EL2: Hypervisor Fine-Grained Read Trap Register
+HFGWTR_EL2: Hypervisor Fine-Grained Write Trap Register
+HSTR_EL2: Hypervisor System Trap Register
+ICC_SRE_EL2: Interrupt Controller System Register Enable register (EL2)
+ICH_AP0R<n>_EL2: Interrupt Controller Hyp Active Priorities Group 0 Registers
+ICH_AP1R<n>_EL2: Interrupt Controller Hyp Active Priorities Group 1 Registers
+ICH_EISR_EL2: Interrupt Controller End of Interrupt Status Register
+ICH_ELRSR_EL2: Interrupt Controller Empty List Register Status Register
+ICH_HCR_EL2: Interrupt Controller Hyp Control Register
+ICH_LR<n>_EL2: Interrupt Controller List Registers
+ICH_MISR_EL2: Interrupt Controller Maintenance Interrupt State Register
+ICH_VMCR_EL2: Interrupt Controller Virtual Machine Control Register
+ICH_VTR_EL2: Interrupt Controller VGIC Type Register
+IFSR32_EL2: Instruction Fault Status Register (EL2)
+MAIR_EL2: Memory Attribute Indirection Register (EL2)
+MDCR_EL2: Monitor Debug Configuration Register (EL2)
+MPAM2_EL2: MPAM2 Register (EL2)
+MPAMHCR_EL2: MPAM Hypervisor Control Register (EL2)
+MPAMVPM0_EL2: MPAM Virtual PARTID Mapping Register 0
+MPAMVPM1_EL2: MPAM Virtual PARTID Mapping Register 1
+MPAMVPM2_EL2: MPAM Virtual PARTID Mapping Register 2
+MPAMVPM3_EL2: MPAM Virtual PARTID Mapping Register 3
+MPAMVPM4_EL2: MPAM Virtual PARTID Mapping Register 4
+MPAMVPM5_EL2: MPAM Virtual PARTID Mapping Register 5
+MPAMVPM6_EL2: MPAM Virtual PARTID Mapping Register 6
+MPAMVPM7_EL2: MPAM Virtual PARTID Mapping Register 7
+MPAMVPMV_EL2: MPAM Virtual Partition Mapping Valid Register
+PMSCR_EL2: Statistical Profiling Control Register (EL2)
+RMR_EL2: Reset Management Register (EL2)
+RVBAR_EL2: Reset Vector Base Address Register (if EL3 not implemented)
+SCTLR_EL2: System Control Register (EL2)
+SCXTNUM_EL2: EL2 Read/Write Software Context Number
+SDER32_EL2: AArch32 Secure Debug Enable Register
+SP_EL2: Stack Pointer (EL2)
+TCR_EL2: Translation Control Register (EL2)
+TFSR_EL2: Tag Fail Status Register (EL2)
+TPIDR_EL2: EL2 Software Thread ID Register
+TRFCR_EL2: Trace Filter Control Register (EL2)
+TTBR0_EL2: Translation Table Base Register 0 (EL2)
+TTBR1_EL2: Translation Table Base Register 1 (EL2)
+VBAR_EL2: Vector Base Address Register (EL2)
+VDISR_EL2: Virtual Deferred Interrupt Status Register
+VNCR_EL2: Virtual Nested Control Register
+VSESR_EL2: Virtual SError Exception Syndrome Register
+VSTCR_EL2: Virtualization Secure Translation Control Register
+VSTTBR_EL2: Virtualization Secure Translation Table Base Register
+VTCR_EL2: Virtualization Translation Control Register
+VTTBR_EL2: Virtualization Translation Table Base Register
+ZCR_EL2: SVE Control Register for EL2
+
+EL3: Registers not supported (no EL3 support in guest):
+-------------------------------------------------------
+
+ACTLR_EL3: Auxiliary Control Register (EL3)
+AFSR0_EL3: Auxiliary Fault Status Register 0 (EL3)
+AFSR1_EL3: Auxiliary Fault Status Register 1 (EL3)
+AMAIR_EL3: Auxiliary Memory Attribute Indirection Register (EL3)
+CPTR_EL3: Architectural Feature Trap Register (EL3)
+ELR_EL3: Exception Link Register (EL3)
+ESR_EL3: Exception Syndrome Register (EL3)
+FAR_EL3: Fault Address Register (EL3)
+ICC_CTLR_EL3: Interrupt Controller Control Register (EL3)
+ICC_IGRPEN1_EL3: Interrupt Controller Interrupt Group 1 Enable register (EL3)
+ICC_SRE_EL3: Interrupt Controller System Register Enable register (EL3)
+MAIR_EL3: Memory Attribute Indirection Register (EL3)
+MDCR_EL3: Monitor Debug Configuration Register (EL3)
+MPAM3_EL3: MPAM3 Register (EL3)
+RMR_EL3: Reset Management Register (EL3)
+RVBAR_EL3: Reset Vector Base Address Register (if EL3 implemented)
+SCR_EL3: Secure Configuration Register
+SCTLR_EL3: System Control Register (EL3)
+SCXTNUM_EL3: EL3 Read/Write Software Context Number
+SDER32_EL3: AArch32 Secure Debug Enable Register
+SPSR_EL3: Saved Program Status Register (EL3)
+SP_EL3: Stack Pointer (EL3)
+TCR_EL3: Translation Control Register (EL3)
+TFSR_EL3: Tag Fail Status Register (EL3)
+TPIDR_EL3: EL3 Software Thread ID Register
+TTBR0_EL3: Translation Table Base Register 0 (EL3)
+VBAR_EL3: Vector Base Address Register (EL3)
+ZCR_EL3: SVE Control Register for EL3

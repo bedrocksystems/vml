@@ -1,0 +1,32 @@
+#
+# Makefile
+#
+# Copyright (C) 2020 BedRock Systems, Inc.
+# All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+PLATFORM ?= bedrock
+ZT_ROOT ?= ../../../../zeta/
+LIBNAME = $(shell basename `pwd`)
+LIBDIR  = $(ZT_ROOT)lib/  ../ ../../vcpu/ ../../config/ ../../platform/
+
+ifeq ($(PLATFORM), bedrock)
+LIB_PM  ?= ../../../pm/
+LIBDIR += $(LIB_PM)
+endif
+
+include deps.mk
+
+CC_SRCS = psci.cpp
+OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
+
+ifeq ($(PLATFORM), bedrock)
+CC_SRCS += platform_device.cpp platform_firmware.cpp
+endif
+
+SPECS =
+PROOFS =
+
+include $(ZT_ROOT)support/build/rules.mk
