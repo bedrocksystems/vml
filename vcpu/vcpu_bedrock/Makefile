@@ -18,7 +18,7 @@ LIB_PM  ?= ../../../../../lib/pm/
 LIBDIR += $(LIB_PM)
 
 ifneq ($(ENABLE_VMI), 0)
-LIBDIR += ../../../../../lib/ 
+LIBDIR += ../../../../lib/
 endif
 
 include deps.mk

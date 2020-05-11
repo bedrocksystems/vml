@@ -14,7 +14,7 @@ LIBDIR  = $(ZT_ROOT)lib/ ../ ../../vcpu/ ../../config/ ../../interfaces/ ../../p
 
 ENABLE_VMI ?= 0
 ifneq ($(ENABLE_VMI), 0)
-LIBDIR += ../../../../../lib/
+LIBDIR += ../../../../lib/
 endif
 
 include deps.mk
