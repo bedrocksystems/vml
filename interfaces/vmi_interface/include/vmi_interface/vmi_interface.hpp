@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <model/simple_as.hpp>
 #include <platform/bitset.hpp>
 #include <platform/types.hpp>
 
@@ -61,19 +62,13 @@ namespace Vmm::Msr {
 }
 
 namespace Vmm::Pf {
-    enum Type {
-        READ,
-        WRITE,
-        EXEC,
-    };
-
     /* XXX: eventually, this will go away. But, since we don't decode
      * and emulate instructions, we have to work with partial info.
      */
     static constexpr uint64 SIZE_INFO_INVALID = ~0x0ull;
 
     struct Access_info {
-        Type type;
+        Page_permission type;
         uint64 gpa;
         uint64 size;
     };

@@ -10,7 +10,7 @@
 PLATFORM ?= bedrock
 ZT_ROOT ?= ../../../../zeta/
 LIBNAME = $(shell basename `pwd`)
-LIBDIR  = $(ZT_ROOT)lib/  ../ ../../vcpu/ ../../platform/
+LIBDIR  = $(ZT_ROOT)lib/  ../ ../../vcpu/ ../../platform/ ../../devices/
 
 include deps.mk
 

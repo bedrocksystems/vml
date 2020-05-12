@@ -19,6 +19,111 @@ namespace Model {
     class Simple_as;
 };
 
+/*! \brief Page permission data type
+ *
+ * This enum represents page permissions as bitflags.
+ */
+enum class Page_permission : uint8 {
+    NONE = 0,
+    READ = (1 << 0),
+    WRITE = (1 << 1),
+    EXEC = (1 << 2),
+    READ_WRITE = READ | WRITE,
+    READ_EXEC = READ | EXEC,
+    WRITE_EXEC = WRITE | EXEC,
+    READ_WRITE_EXEC = READ | WRITE | EXEC,
+};
+
+/*! \brief binary or operator on Page_permission
+ *  \pre None
+ *  \post returns binary or of input permissions
+ */
+inline Page_permission
+operator|(Page_permission a, Page_permission b) {
+    return static_cast<Page_permission>(static_cast<uint8>(a) | static_cast<uint8>(b));
+}
+
+/*! \brief binary and operator on Page_permission
+ *  \pre None
+ *  \post returns binary and of input permissions
+ */
+inline Page_permission
+operator&(Page_permission a, Page_permission b) {
+    return static_cast<Page_permission>(static_cast<uint8>(a) & static_cast<uint8>(b));
+}
+
+/*! \brief binary xor operator on Page_permission
+ *  \pre None
+ *  \post returns binary xor of input permissions
+ */
+inline Page_permission
+operator^(Page_permission a, Page_permission b) {
+    return static_cast<Page_permission>(static_cast<uint8>(a) ^ static_cast<uint8>(b));
+}
+
+/*! \brief binary or assignment operator on Page_permission
+ *  \pre None
+ *  \post returns binary or of input permissions and sets this value in the first parameter
+ */
+inline Page_permission &
+operator|=(Page_permission &a, Page_permission b) {
+    return (a = a | b);
+}
+
+/*! \brief binary and assignment operator on Page_permission
+ *  \pre None
+ *  \post returns binary and of input permissions and sets this value in the first parameter
+ */
+inline Page_permission &
+operator&=(Page_permission &a, Page_permission b) {
+    return (a = a & b);
+}
+
+/*! \brief binary xor assignment operator on Page_permission
+ *  \pre None
+ *  \post returns binary xor of input permissions and sets this value in the first parameter
+ */
+inline Page_permission &
+operator^=(Page_permission &a, Page_permission b) {
+    return (a = a ^ b);
+}
+
+/*! \brief binary not operator on Page_permission
+ *  \pre None
+ *  \post returns binary not of input permission
+ */
+inline Page_permission
+operator~(Page_permission a) {
+    return static_cast<Page_permission>((~static_cast<uint8>(a)) & 0x7);
+}
+
+/*! \brief function to determine whether read is set in an instance of Page_permission
+ *  \pre None
+ *  \post returns true if read is set, otherwise false
+ */
+inline bool
+pp_is_read_set(Page_permission a) {
+    return static_cast<bool>(a & Page_permission::READ);
+}
+
+/*! \brief function to determine whether write is set in an instance of Page_permission
+ *  \pre None
+ *  \post returns true if write is set, otherwise false
+ */
+inline bool
+pp_is_write_set(Page_permission a) {
+    return static_cast<bool>(a & Page_permission::WRITE);
+}
+
+/*! \brief function to determine whether exec is set in an instance of Page_permission
+ *  \pre None
+ *  \post returns true if exec is set, otherwise false
+ */
+inline bool
+pp_is_exec_set(Page_permission a) {
+    return static_cast<bool>(a & Page_permission::EXEC);
+}
+
 /*! \brief Guest Physical Address
  */
 class GPA {

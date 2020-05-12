@@ -237,11 +237,12 @@ Model::Guest_as::get_perm_for_page(GPA gpa) {
     Page_permission ret;
 
     if (!is_gpa_valid(gpa))
-        return ret;
+        return Page_permission::NONE;
 
     ret = _perms[gpa_to_page_idx(gpa)];
     if (Debug::TRACE_PAGE_PERMISSIONS)
-        INFO("Permissions at addr 0x%llx are R:%u W:%u X:%u", gpa.get_value(), ret.r, ret.w, ret.x);
+        INFO("Permissions at addr 0x%llx are R:%u W:%u X:%u", gpa.get_value(), pp_is_read_set(ret),
+             pp_is_write_set(ret), pp_is_exec_set(ret));
 
     return ret;
 }
@@ -262,8 +263,10 @@ Model::Guest_as::set_perm_for_range(const Zeta::Zeta_ctx* ctx, GPA start, uint64
 
     char* first_vmm_page = gpa_to_vmm_view(GPA(perm_range.begin()));
     ASSERT(first_vmm_page != nullptr);
-    Errno err = Zeta::mmap_update(ctx, first_vmm_page, perm_range.size(),
-                                  Nova::Mem_cred(perm.r, perm.w, perm.x), Nova::MEM_GST);
+    Errno err = Zeta::mmap_update(
+        ctx, first_vmm_page, perm_range.size(),
+        Nova::Mem_cred(pp_is_read_set(perm), pp_is_write_set(perm), pp_is_exec_set(perm)),
+        Nova::MEM_GST);
     if (err != ENONE) {
         DEBUG("mmap update failure with %u @ [0x%llx:0x%llx] - cannot update permissions", err,
               perm_range.begin(), perm_range.last());
@@ -277,13 +280,14 @@ Model::Guest_as::set_perm_for_range(const Zeta::Zeta_ctx* ctx, GPA start, uint64
 
     if (Debug::TRACE_PAGE_PERMISSIONS)
         INFO("Permissions at [0x%llx:0x%llx] updated to R:%u W:%u X:%u", perm_range.begin(),
-             perm_range.last(), perm.r, perm.w, perm.x);
+             perm_range.last(), pp_is_read_set(perm), pp_is_write_set(perm), pp_is_exec_set(perm));
     return ENONE;
 }
 
-static inline Vmm::Pf::Type
+static inline Page_permission
 convert_to_vmi_type(Vbus::Access acc) {
-    return acc == Vbus::EXEC ? Vmm::Pf::EXEC : (Vbus::WRITE ? Vmm::Pf::WRITE : Vmm::Pf::READ);
+    return acc == Vbus::EXEC ? Page_permission::EXEC :
+                               (Vbus::WRITE ? Page_permission::WRITE : Page_permission::READ);
 }
 
 Vbus::Err
@@ -298,10 +302,10 @@ Model::Guest_as::access(Vbus::Access access, const Vcpu_ctx* vctx, mword off, ui
         return Vbus::ACCESS_ERR;
 
     if (Debug::GUEST_MAP_ON_DEMAND) {
-        Page_permission rwx{true, true, true}, cur;
+        Page_permission cur;
 
         cur = get_perm_for_page(GPA(acc.gpa));
-        if (cur == rwx)
+        if (cur == Page_permission::READ_WRITE_EXEC)
             ABORT_WITH("Page fault on 0x%llx but the page was already faulted in", acc.gpa);
 
         /*
@@ -312,7 +316,8 @@ Model::Guest_as::access(Vbus::Access access, const Vcpu_ctx* vctx, mword off, ui
          * and replay the instruction. Ideally, we should also single step and restore the previous
          * permission of the page. This will be done later on.
          */
-        Errno err = set_perm_for_range(vctx->ctx, GPA(acc.gpa), bytes, {true, true, true});
+        Errno err
+            = set_perm_for_range(vctx->ctx, GPA(acc.gpa), bytes, Page_permission::READ_WRITE_EXEC);
         if (err != ENONE) {
             return Vbus::ACCESS_ERR;
         }
