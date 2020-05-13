@@ -120,11 +120,11 @@ Model::Guest_as::get_data_off_end(As_data_id id) const {
 
 void
 Model::Guest_as::patch_guest_fdt() const {
-    Fdt::Tree tree(get_vmm_view_of_data(Model::Guest_as::AS_DATA_FDT));
-    ASSERT(tree.validate() == Fdt::Tree::Format_err::OK);
+    Fdt::Tree* tree = new (get_vmm_view_of_data(Model::Guest_as::AS_DATA_FDT)) Fdt::Tree();
+    ASSERT(tree->validate() == Fdt::Tree::Format_err::OK);
 
     Fdt::Prop::Reg_list_iterator mem_entries;
-    bool ret = fdt_find_memory(tree, mem_entries);
+    bool ret = fdt_find_memory(*tree, mem_entries);
     ASSERT(ret);
     ASSERT(mem_entries.num_elements_left() == 1);
 
@@ -132,11 +132,11 @@ Model::Guest_as::patch_guest_fdt() const {
     mem_entries.set_size(get_size());
 
     if (is_data_valid(Model::Guest_as::AS_DATA_PAYLOAD)) {
-        Fdt::Node chosen(tree.lookup_from_path("/chosen"));
+        Fdt::Node chosen(tree->lookup_from_path("/chosen"));
         ASSERT(chosen.is_valid());
-        Fdt::Property initrd_start(tree.lookup_property(chosen, "linux,initrd-start"));
+        Fdt::Property initrd_start(tree->lookup_property(chosen, "linux,initrd-start"));
         ASSERT(initrd_start.is_valid());
-        Fdt::Property initrd_end(tree.lookup_property(chosen, "linux,initrd-end"));
+        Fdt::Property initrd_end(tree->lookup_property(chosen, "linux,initrd-end"));
         ASSERT(initrd_end.is_valid());
 
         GPA start = get_guest_data_start(Model::Guest_as::AS_DATA_PAYLOAD),

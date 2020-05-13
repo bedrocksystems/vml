@@ -99,8 +99,8 @@ Model::Board_impl::init(const Zeta::Zeta_ctx *ctx, const Fdt::Tree &tree, Model:
         ABORT_WITH("No VM config provided. We cannot continue");
     }
 
-    const Fdt::Tree config_tree(reinterpret_cast<char const *>(guest_config_addr));
-    if (config_tree.validate() != Fdt::Tree::Format_err::OK) {
+    const Fdt::Tree *config_tree = new (reinterpret_cast<char *>(guest_config_addr)) Fdt::Tree();
+    if (config_tree->validate() != Fdt::Tree::Format_err::OK) {
         ABORT_WITH("Invalid VM config provided. We cannot continue");
     }
 
@@ -113,7 +113,7 @@ Model::Board_impl::init(const Zeta::Zeta_ctx *ctx, const Fdt::Tree &tree, Model:
     _all_devices = new (nothrow) Devices;
     ASSERT(_all_devices != nullptr);
 
-    err = setup_gic(ctx, config_tree, tree);
+    err = setup_gic(ctx, *config_tree, tree);
     if (err != ENONE)
         return err;
 
@@ -123,15 +123,15 @@ Model::Board_impl::init(const Zeta::Zeta_ctx *ctx, const Fdt::Tree &tree, Model:
 
     err = setup_virtio_devices(ctx, tree, ram_as.get_guest_view().get_value(),
                                reinterpret_cast<mword>(ram_as.get_vmm_view()), ram_as.get_size(),
-                               umx_uuid, vswitch_uuid, config_tree);
+                               umx_uuid, vswitch_uuid, *config_tree);
     if (err != ENONE)
         return err;
 
-    err = setup_passthru_devices(ctx, tree, config_tree);
+    err = setup_passthru_devices(ctx, tree, *config_tree);
     if (err != ENONE)
         return err;
 
-    err = setup_platform_devices(ctx, tree, config_tree, plat_mgr_uuid);
+    err = setup_platform_devices(ctx, tree, *config_tree, plat_mgr_uuid);
     if (err != ENONE)
         return err;
     return ENONE;
