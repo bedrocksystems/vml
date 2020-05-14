@@ -119,25 +119,6 @@ public:
     }
 };
 
-template<typename T>
-bool
-Model::Gic_d::write_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
-                             uint8 const bytes, uint64 const value, T &result, T fixed_clear,
-                             T fixed_set) {
-    unsigned constexpr tsize = sizeof(T);
-    if (!bytes || (bytes > tsize) || (offset + bytes > base_max + 1))
-        return false;
-
-    uint64 const base = offset - base_reg;
-    uint64 const mask = (bytes >= tsize) ? (T(0) - 1) : ((T(1) << (bytes * 8)) - 1);
-
-    result &= (bytes >= tsize) ? T(0) : ~(T(mask) << (base * 8));
-    result |= T(value & mask) << (base * 8);
-    result &= ~fixed_clear;
-    result |= fixed_set;
-    return true;
-}
-
 bool
 Model::Gic_d::read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
                             uint8 const bytes, uint64 const value, uint64 &result) const {
@@ -375,9 +356,9 @@ Model::Gic_d::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const b
     case GICD_CTLR ... GICD_CTLR_END:
         return read_register(offset, GICD_CTLR, GICD_CTLR_END, bytes, _ctlr.value, value);
     case GICD_TYPER ... GICD_TYPER_END: {
-        // XXX: we would want to indicate that 1ofN is supported
-        uint64 typer = 31ULL /* ITLinesNumber */ + (uint64(_num_vcpus - 1) << 5) /* CPU count */
-                       + (9ULL << 19) /* id bits */;
+        uint64 typer = 31ULL /* ITLinesNumber */ | (uint64(_num_vcpus - 1) << 5) /* CPU count */
+                       | (9ULL << 19)                                            /* id bits */
+                       | (1ULL << 24); /* Aff3 supported */
         return read_register(offset, GICD_TYPER, GICD_TYPER_END, bytes, typer, value);
     }
     case GICD_IIDR ... GICD_IIDR_END:
@@ -554,6 +535,7 @@ Model::Gic_d::highest_irq(Vcpu_id const cpu_id) {
     Model::Gic_d::Irq *r = nullptr;
     size_t irq_id = 0;
     Banked &cpu = _local[cpu_id];
+    const Gic_r *gic_r = _local[cpu_id]._notify->gic_r();
 
     do {
         irq_id = cpu._pending_irqs.first_set(irq_id, MAX_IRQ - 1);
@@ -561,6 +543,16 @@ Model::Gic_d::highest_irq(Vcpu_id const cpu_id) {
             break;
 
         Irq &irq = _irq_object(cpu, irq_id);
+
+        if ((irq_id >= MAX_PPI + MAX_SGI) && _ctlr.affinity_routing()
+            && !gic_r->can_receive_irq(irq)) {
+            /*
+             * If this interface is not capable of receiving the IRQ anymore,
+             * in the GICv3 world (affinity_routing enabled), we have to release
+             * it so that another interface can handle it.
+             */
+            redirect_spi(irq);
+        }
 
         if (((irq.group0() && _ctlr.group0_enabled()) || (irq.group1() && _ctlr.group1_enabled()))
             && irq.enabled() && !cpu._in_injection_irqs.is_set(irq_id)) {
@@ -730,7 +722,7 @@ Model::Gic_d::notify_target(Irq &irq, const Irq_target &target) {
 
 bool
 Model::Gic_d::redirect_spi(Irq &irq) {
-    ASSERT(irq.id() > MAX_PPI + MAX_SGI);
+    ASSERT(irq.id() >= MAX_PPI + MAX_SGI);
 
     Irq_target target = route_spi(irq);
 
@@ -862,12 +854,10 @@ Model::Gic_d::route_spi(Model::Gic_d::Irq &irq) {
             if (irq.group1() && !_ctlr.group1_enabled())
                 continue;
 
-            /*
-             * XXX: this is not correct: the spec says we have to pick one participating node
-             * However, GICD_TYPER indicates that this mode is not supported so we shouldn't go
-             * in this path unless the GOS is buggy. Let's fix it in a later change.
-             */
-            ASSERT(false);
+            const Gic_r *gicr = cpu->gic_r();
+
+            if (gicr->can_receive_irq(irq))
+                return Irq_target(Irq_target::CPU_ID, i);
         }
     } else {
         uint32 const cpu_id = static_cast<uint32>(irq._routing.aff3() << 24)

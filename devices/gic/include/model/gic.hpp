@@ -495,7 +495,21 @@ private:
     template<typename T>
     bool write_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
                         uint8 const bytes, uint64 const value, T &result, T fixed_clear = 0,
-                        T fixed_set = 0);
+                        T fixed_set = 0) {
+        unsigned constexpr tsize = sizeof(T);
+        if (!bytes || (bytes > tsize) || (offset + bytes > base_max + 1))
+            return false;
+
+        uint64 const base = offset - base_reg;
+        uint64 const mask = (bytes >= tsize) ? (T(0) - 1) : ((T(1) << (bytes * 8)) - 1);
+
+        result &= (bytes >= tsize) ? T(0) : ~(T(mask) << (base * 8));
+        result |= T(value & mask) << (base * 8);
+        result &= ~fixed_clear;
+        result |= fixed_set;
+        return true;
+    }
+
     bool read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
                        uint8 const bytes, uint64 const value, uint64 &result) const;
 
@@ -561,6 +575,15 @@ private:
     Vcpu_id const _vcpu_id;
     bool const _last;
 
+    struct Waker {
+        static constexpr uint32 SLEEP_BIT = 1u << 1;
+        static constexpr uint32 CHILDREN_ASLEEP_BIT = 1u << 2;
+        static constexpr uint32 RESV_ZERO = ~(SLEEP_BIT | CHILDREN_ASLEEP_BIT);
+
+        uint32 value{SLEEP_BIT | CHILDREN_ASLEEP_BIT};
+        constexpr bool sleeping() const { return value & SLEEP_BIT; }
+    } _waker;
+
     bool mmio_write(uint64 const, uint8 const, uint64 const);
     bool mmio_read(uint64 const, uint8 const, uint64 &) const;
 
@@ -576,4 +599,6 @@ public:
     uint8 aff3() const { return uint8(_vcpu_id >> 24); };
 
     virtual void reset() override {}
+
+    bool can_receive_irq(const Model::Gic_d::Irq &irq) const;
 };

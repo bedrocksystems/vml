@@ -61,6 +61,11 @@ constexpr uint16 GICR_IIDR_IMPLEMENTER = 0x43b;
 
 enum { GICR_SIZE = 0x20000 };
 
+bool
+Model::Gic_r::can_receive_irq(const Model::Gic_d::Irq &) const {
+    return !_waker.sleeping();
+}
+
 Vbus::Err
 Model::Gic_r::access(Vbus::Access const access, const Vcpu_ctx *, mword const offset,
                      uint8 const size, uint64 &value) {
@@ -95,13 +100,21 @@ Model::Gic_r::mmio_write(uint64 const offset, uint8 const bytes, uint64 const va
 
     switch (offset) {
     case GICR_CTLR ... GICR_CTLR_END:
-    case GICR_WAKER ... GICR_WAKER_END:
     case GICR_PROPBASER ... GICR_PROPBASER_END:
     case GICR_PENDBASER ... GICR_PENDBASER_END:
     case GICR_IGRPMODR0 ... GICR_IGRPMODR0_END:
     case GICR_NSACR ... GICR_NSACR_END:
         /* RAZ/WI */
         return true;
+    case GICR_WAKER ... GICR_WAKER_END: {
+        Waker w;
+        uint32 new_w = 0;
+
+        w.value = static_cast<uint32>(value);
+        new_w = (w.sleeping() << Waker::CHILDREN_ASLEEP_BIT) | (w.sleeping() << Waker::SLEEP_BIT);
+        return gic.write_register<uint32>(offset, GICR_WAKER, GICR_WAKER_END, bytes, new_w,
+                                          _waker.value, Waker::RESV_ZERO);
+    }
     case GICR_IGROUP0 ... GICR_IGROUP0_END:
         acc.base_abs = GICR_IGROUP0;
         return gic.write<bool, &Gic_d::Irq::set_group1>(cpu, acc, value);
@@ -164,6 +177,9 @@ Model::Gic_r::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) c
         ret |= (_last ? 1ull : 0ull) << 4; /* last re-distributor */
         return gic.read_register(offset, GICR_TYPER, GICR_TYPER_END, bytes, ret, value);
     }
+    case GICR_WAKER ... GICR_WAKER_END: {
+        return gic.read_register(offset, GICR_WAKER, GICR_WAKER_END, bytes, _waker.value, value);
+    }
     }
 
     if (bytes > ACCESS_SIZE_32)
@@ -184,7 +200,6 @@ Model::Gic_r::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) c
                                  value);
     case GICR_PIDR2 ... GICR_PIDR2_END:
         return gic.read_register(offset, GICR_PIDR2, GICR_PIDR2_END, bytes, 3ull << 4, value);
-    case GICR_WAKER ... GICR_WAKER_END:
     case GICR_PROPBASER ... GICR_PROPBASER_END:
     case GICR_PENDBASER ... GICR_PENDBASER_END:
     case GICR_IGRPMODR0 ... GICR_IGRPMODR0_END:

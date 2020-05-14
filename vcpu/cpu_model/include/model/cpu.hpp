@@ -29,6 +29,7 @@ namespace Vbus {
 class Model::Cpu_irq_interface {
 public:
     virtual void interrupt_pending() = 0;
+    virtual Model::Gic_r *gic_r() = 0;
 
     virtual uint8 aff0() const = 0;
     virtual uint8 aff1() const = 0;
@@ -188,5 +189,5 @@ public:
     void interrupt_pending() override;
     bool pending_irq(uint64 &lr);
 
-    Model::Gic_r *gic_r() { return _gic_r; }
+    virtual Model::Gic_r *gic_r() override { return _gic_r; }
 };
