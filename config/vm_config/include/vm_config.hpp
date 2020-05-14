@@ -143,6 +143,18 @@ namespace Vmconfig {
     // Interrupt controller configuration
     static constexpr char const* INTR_CTRL = "/interrupt-controller";
 
+    // It idenitifes the node containing SCMI firmware.
+    static constexpr char const* SCMI_FIRMWARE = "/firmware/scmi";
+
+    // The compatibility string for ARM SCMI over SMC transport.
+    static constexpr char const* SCMI_ARM_SMCC = "arm,scmi-smc";
+
+    // SMC ID used by the guest for SCMI notifications.
+    static constexpr char const* SCMI_ARM_SMCID = "arm,smc-id";
+
+    // This entry is used to identify the SCMI shared memory config.
+    static constexpr char const* SCMI_SHMEM = "shmem";
+
     static constexpr char const* GUEST_AS_NODE_PATH = "/guest";
 
     // Guest address space configuration

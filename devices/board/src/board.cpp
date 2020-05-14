@@ -548,19 +548,14 @@ Model::Board_impl::setup_platform_devices(const Zeta::Zeta_ctx *, const Fdt::Tre
         return ENONE;
     }
 
-    /* initialize client of platform manager */
-    Errno err = _all_devices->plat_mgr.init(plat_mgr_uuid);
-    if (err != ENONE) {
-        ABORT_WITH("Cannot initialized Platform Manager client");
-    }
-
+    char *shmem_addr = nullptr;
     Fdt::Node firmware_node;
     Fdt::Node first_node(plat_root.get_first_child());
     Fdt::Node n = first_node;
 
     /* Get platform devices */
     for (; n.is_valid(); n = n.get_sibling()) {
-        Fdt::Property comp_prpt = config_tree.lookup_property(n, "compatible");
+        Fdt::Property comp_prpt = config_tree.lookup_property(n, Fdt::Prop::Compatible::name);
         Fdt::Prop::Compatible compat(comp_prpt);
 
         if (!compat.is_valid()) {
@@ -616,10 +611,67 @@ Model::Board_impl::setup_platform_devices(const Zeta::Zeta_ctx *, const Fdt::Tre
     /* Initialize firmware */
     if (firmware_node.is_valid()) {
         INFO("Adding platform firmware to the board");
+        Fdt::Node fw_root(tree.lookup_from_path(Vmconfig::SCMI_FIRMWARE));
+
+        if (fw_root.is_valid()) {
+            Fdt::Property fw_comp = tree.lookup_property(fw_root, Fdt::Prop::Compatible::name);
+            Fdt::Prop::Compatible fw_compat(fw_comp);
+            if (!fw_compat.is_valid()) {
+                ABORT_WITH("SCMI Firmware doesn't have compatible property");
+            }
+
+            Fdt::Prop::Property_str_list_iterator fw_it(fw_compat.get_first_addr(),
+                                                        fw_compat.get_end_addr());
+            if (!strncmp(fw_it.get<const char *>(), Vmconfig::SCMI_ARM_SMCC,
+                         strlen(Vmconfig::SCMI_ARM_SMCC))) {
+                /* read SMC ID */
+                Fdt::Property smc_prop(tree.lookup_property(fw_root, Vmconfig::SCMI_ARM_SMCID));
+                if (!smc_prop.is_valid()) {
+                    ABORT_WITH("SCMI firmware missing smc-id property");
+                }
+                uint32 smc_id = smc_prop.get_data<uint32>();
+                _all_devices->plat_mgr.set_smc_id(smc_id);
+
+                /* Find the shared memory */
+                Fdt::Property shmem_prop(tree.lookup_property(fw_root, Vmconfig::SCMI_SHMEM));
+                if (!shmem_prop.is_valid()) {
+                    ABORT_WITH("SCMI firmware missing shmem property");
+                }
+                Fdt::Node mem_node(tree.lookup_phandle(shmem_prop.get_data<uint32>()));
+                if (!mem_node.is_valid()) {
+                    ABORT_WITH("SCMI shmem phandle reference invalid");
+                }
+                Fdt::Prop::Reg_list_iterator regs;
+                if (!Fdt::fdt_read_regs(tree, mem_node, regs)) {
+                    ABORT_WITH("SCMI shmem address not found");
+                }
+                uint64 shmem_gpa = regs.get_address();
+                if (regs.get_size() > PAGE_SIZE) {
+                    ABORT_WITH("SCMI shmem config size 0x%x larger than 1 page", regs.get_size());
+                }
+                Vbus::Device *target_ram = device_bus.get_device_at(shmem_gpa, regs.get_size());
+                if (target_ram == nullptr
+                    || (target_ram->type() != Vbus::Device::GUEST_PHYSICAL_STATIC_MEMORY
+                        && target_ram->type() != Vbus::Device::GUEST_PHYSICAL_DYNAMIC_MEMORY)) {
+                    ABORT_WITH("SCMI shmem address %llx invalid", shmem_gpa)
+                }
+                Model::Guest_as *guest_as(reinterpret_cast<Model::Guest_as *>(target_ram));
+                GPA gpa(shmem_gpa);
+                shmem_addr = guest_as->gpa_to_vmm_view(gpa);
+                INFO("SCMI shared mem mapped to 0x%llx", shmem_addr);
+            }
+        }
+
         firmware = new Model::Firmware(&_all_devices->plat_mgr);
         if (firmware == nullptr) {
             ABORT_WITH("Cannot allocate memory for firmware");
         }
+    }
+
+    /* initialize client of platform manager */
+    Errno err = _all_devices->plat_mgr.init(plat_mgr_uuid, shmem_addr);
+    if (err != ENONE) {
+        ABORT_WITH("Cannot initialize Platform Manager client");
     }
 
     return ENONE;
