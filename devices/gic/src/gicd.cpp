@@ -252,7 +252,7 @@ Model::Gic_d::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const 
         acc.irq_base = MAX_SGI + MAX_PPI;
         acc.irq_max = MAX_SPI;
         acc.base_abs = GICD_ITARGETSR8;
-        return write<uint8, &Irq::target>(cpu, acc, value);
+        return change_target(cpu, acc, value);
     case GICD_ICFGR ... GICD_ICFGR_END:
         acc.base_abs = GICD_ICFGR;
         acc.irq_per_bytes = 4;
@@ -706,36 +706,73 @@ Model::Gic_d::update_inj_status(Vcpu_id const cpu_id, Lr const lr) {
 }
 
 bool
+Model::Gic_d::notify_target(Irq &irq, const Irq_target &target) {
+    if (__UNLIKELY__(!target.is_valid())) {
+        return false;
+    }
+
+    if (target.is_target_set()) {
+        for (uint16 i = 0; i < min<uint16>(_num_vcpus, Model::GICV2_MAX_CPUS); i++) {
+            Banked *target_cpu = &_local[i];
+
+            target_cpu->_pending_irqs.atomic_set(irq.id());
+            target_cpu->_notify->interrupt_pending();
+        }
+    } else {
+        Banked *target_cpu = &_local[target.target()];
+
+        target_cpu->_pending_irqs.atomic_set(irq.id());
+        target_cpu->_notify->interrupt_pending();
+    }
+
+    return true;
+}
+
+bool
+Model::Gic_d::redirect_spi(Irq &irq) {
+    ASSERT(irq.id() > MAX_PPI + MAX_SGI);
+
+    Irq_target target = route_spi(irq);
+
+    if (Debug::TRACE_INTR_ROUTING)
+        INFO("SPI %u re-routed to VCPU" FMTx32, irq.id(), target.raw());
+
+    Irq_injection_info_update desired(0), cur;
+
+    do {
+        cur = irq.injection_info.read();
+        if (!cur.pending() || cur.is_injected())
+            return false; // Prevent injecting the IRQ twice, we just want to reroute here
+
+        desired.set_target_cpu(target);
+        desired.set_pending();
+    } while (!irq.injection_info.cas(cur, desired));
+
+    return notify_target(irq, target);
+}
+
+bool
 Model::Gic_d::assert_pi(Vcpu_id cpu_id, Irq &irq) {
-    Vcpu_id target_cpu_id;
+    Irq_target target;
 
     ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
 
     if (irq.id() > MAX_PPI + MAX_SGI) {
-        target_cpu_id = route_spi(irq);
+        target = route_spi(irq);
 
         if (Debug::TRACE_INTR_ROUTING)
-            INFO("SPI %u routed to VCPU" FMTu64, irq.id(), target_cpu_id);
+            INFO("SPI %u routed to VCPU" FMTx32, irq.id(), target.raw());
     } else {
-        target_cpu_id = cpu_id;
+        target = Irq_target(Irq_target::CPU_ID, cpu_id);
     }
 
     Irq_injection_info_update update(0);
 
-    update.set_target_cpu(target_cpu_id);
+    update.set_target_cpu(target);
     update.set_pending();
     irq.injection_info.set(update);
 
-    if (__UNLIKELY__(target_cpu_id == INVALID_VCPU_ID)) {
-        return false;
-    }
-
-    Banked *target_cpu = &_local[target_cpu_id];
-
-    target_cpu->_pending_irqs.atomic_set(irq.id());
-    target_cpu->_notify->interrupt_pending();
-
-    return true;
+    return notify_target(irq, target);
 }
 
 bool
@@ -753,7 +790,7 @@ Model::Gic_d::assert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
     do {
         cur = irq.injection_info.read();
         desired = cur;
-        desired.set_target_cpu(target);
+        desired.set_target_cpu(Irq_target(Irq_target::CPU_ID, target));
         desired.unset_injected(static_cast<uint8>(sender));
         desired.set_pending(static_cast<uint8>(sender));
     } while (!irq.injection_info.cas(cur, desired));
@@ -761,16 +798,7 @@ Model::Gic_d::assert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
     if (Debug::TRACE_INTR_SGI)
         INFO("SGI %u sent from " FMTx64 " to " FMTx64, irq.id(), sender, target);
 
-    if (__UNLIKELY__(target == INVALID_VCPU_ID)) {
-        return false;
-    }
-
-    Banked *target_cpu = &_local[target];
-
-    target_cpu->_pending_irqs.atomic_set(irq.id());
-    target_cpu->_notify->interrupt_pending();
-
-    return true;
+    return notify_target(irq, Irq_target(Irq_target::CPU_ID, target));
 }
 
 bool
@@ -803,10 +831,12 @@ Model::Gic_d::deassert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
     return true;
 }
 
-Vcpu_id
+Model::Gic_d::Irq_target
 Model::Gic_d::route_spi(Model::Gic_d::Irq &irq) {
     if (!_ctlr.affinity_routing()) {
         constexpr uint16 target_mode_max_cpus = 8U;
+        Irq_target res(Irq_target::CPU_SET, 0);
+
         for (Vcpu_id i = 0; i < min<uint16>(_num_vcpus, target_mode_max_cpus); i++) {
             if (!_local[i]._notify)
                 continue;
@@ -815,19 +845,11 @@ Model::Gic_d::route_spi(Model::Gic_d::Irq &irq) {
             if (irq.group1() && !_ctlr.group1_enabled())
                 continue;
 
-            /*
-             * XXX: This is not strictly correct according to the spec. All CPUs in the mask
-             * should get notified of the interrupt. And, if one is in a state where he can
-             * handle the SPI, it should to do so. It is not clear if injecting the SPI concurrently
-             * on all VCPUs would be correct. It is not clear if the virtual cpu interface would
-             * take care of the concurrency for us. If not, we may need some smarter logic here to
-             * try different CPUs.
-             */
             if ((irq.target() & (1u << i)))
-                return i;
+                res.add_target_to_set(i);
         }
 
-        return INVALID_VCPU_ID;
+        return res;
     }
 
     if (irq._routing.any()) {
@@ -842,8 +864,8 @@ Model::Gic_d::route_spi(Model::Gic_d::Irq &irq) {
 
             /*
              * XXX: this is not correct: the spec says we have to pick one participating node
-             * However, GICD_TYPER indicates that this mode is not supported so we shouldn't go in
-             * this path unless the GOS is buggy. Let's fix it in a later change.
+             * However, GICD_TYPER indicates that this mode is not supported so we shouldn't go
+             * in this path unless the GOS is buggy. Let's fix it in a later change.
              */
             ASSERT(false);
         }
@@ -853,12 +875,12 @@ Model::Gic_d::route_spi(Model::Gic_d::Irq &irq) {
                               | static_cast<uint32>(irq._routing.aff1() << 8)
                               | static_cast<uint32>(irq._routing.aff0());
         if (cpu_id >= _num_vcpus)
-            return INVALID_VCPU_ID;
+            return Irq_target(); // Empty target
         if (_local[cpu_id]._notify)
-            return cpu_id;
+            return Irq_target(Irq_target::CPU_ID, cpu_id);
     }
 
-    return INVALID_VCPU_ID;
+    return Irq_target(); // Empty target
 }
 
 bool

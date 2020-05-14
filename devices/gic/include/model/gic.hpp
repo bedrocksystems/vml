@@ -45,6 +45,46 @@ private:
 
     class Irq_injection_info;
 
+    class Irq_target {
+    public:
+        /* The CPU set format is only supported in GICv2 mode. A consequence of that
+         * is that the mask will never have more than 8 bits sets because GICv2 will
+         * no handle more CPUs than that.
+         */
+        enum Format { CPU_ID = 0u << 31, CPU_SET = 1u << 31 };
+
+        static constexpr uint32 FORMAT_MASK = 1u << 31;
+        static constexpr uint32 TARGET_DATA_MASK = ~FORMAT_MASK;
+        static constexpr uint32 INVALID_TARGET = ~0x0u;
+
+        Irq_target() : _tgt(INVALID_TARGET) {}
+        Irq_target(Format f, uint64 target)
+            : _tgt((f & FORMAT_MASK) | (static_cast<uint32>(target) & TARGET_DATA_MASK)) {}
+        Irq_target(uint32 raw) : _tgt(raw) {}
+
+        bool is_valid() const { return _tgt != INVALID_TARGET; }
+        uint32 raw() const { return _tgt; }
+        uint32 target() const { return _tgt & TARGET_DATA_MASK; }
+        bool is_target_set() const { return _tgt & CPU_SET; }
+        bool is_cpu_targeted(Vcpu_id id) const {
+            if (!is_target_set())
+                return target() == id;
+            else {
+                ASSERT(id < 8);
+                return target() & (1u << id);
+            }
+        }
+
+        void add_target_to_set(Vcpu_id id) {
+            ASSERT(is_target_set());
+            ASSERT(id < 8);
+            _tgt |= 1u << id;
+        }
+
+    private:
+        uint32 _tgt;
+    };
+
     class Irq_injection_info_update {
     public:
         friend class Irq_injection_info;
@@ -58,10 +98,13 @@ private:
         static constexpr uint64 INJECTED_BIT = 1ull << INJECTED_SHIFT;
 
         bool pending() const { return (_info & PENDING_FIELD) != 0; }
-        bool is_targeting_cpu(Vcpu_id id) const { return static_cast<uint32>(_info) == id; }
+        bool is_targeting_cpu(Vcpu_id id) const {
+            Irq_target tgt(static_cast<uint32>(_info));
+            return tgt.is_cpu_targeted(id);
+        }
 
-        void set_target_cpu(Vcpu_id id) {
-            _info = (_info & 0xffffffff00000000ull) | static_cast<uint32>(id);
+        void set_target_cpu(const Irq_target &tgt) {
+            _info = (_info & 0xffffffff00000000ull) | tgt.raw();
         }
 
         /*
@@ -375,6 +418,25 @@ private:
         return true;
     }
 
+    bool change_target(Banked &cpu, const Irq_mmio_access &acc, uint64 const value) {
+        if (!acc.is_valid())
+            return false;
+
+        for (unsigned i = 0; i < acc.num_irqs(); i++) {
+            uint64 const pos = acc.first_irq_accessed() + i;
+            Irq &irq = _irq_object(cpu, pos);
+            uint8 const val
+                = static_cast<uint8>((value >> (i * irq_per_bytes_to_bits(acc.irq_per_bytes)))
+                                     & irq_per_bytes_to_mask(acc.irq_per_bytes));
+
+            irq.target(val);
+
+            if (irq.pending())
+                redirect_spi(irq);
+        }
+        return true;
+    }
+
     template<bool (Gic_d::*GIC_FUN)(Vcpu_id, Vcpu_id, Irq &)>
     bool mmio_assert_sgi(Vcpu_id vcpu_id, const Irq_mmio_access &acc, uint64 const value) {
         if (!acc.is_valid())
@@ -450,7 +512,9 @@ private:
     bool deassert_sgi(Vcpu_id, Vcpu_id, Irq &irq);
     void deassert_line(Vcpu_id const cpu_id, uint32 const irq_id);
 
-    Vcpu_id route_spi(Model::Gic_d::Irq &irq);
+    bool notify_target(Irq &irq, const Irq_target &target);
+    Irq_target route_spi(Model::Gic_d::Irq &irq);
+    bool redirect_spi(Irq &irq);
     Irq *highest_irq(Vcpu_id const cpu_id);
 
 public:
