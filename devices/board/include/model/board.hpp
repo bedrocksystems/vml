@@ -41,7 +41,6 @@ public:
     bool setup_gicr(Model::Cpu &, const Fdt::Tree &);
 
     Model::Gic_d *get_gic() const;
-    Model::Guest_as *get_ram() const;
     Model::Firmware *get_firmware() const;
     Vbus::Bus *get_bus() const;
 

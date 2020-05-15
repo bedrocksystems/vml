@@ -658,11 +658,6 @@ Model::Board::get_gic() const {
     return impl->gic_d;
 }
 
-Model::Guest_as *
-Model::Board::get_ram() const {
-    return impl->guest_as;
-}
-
 Model::Firmware *
 Model::Board::get_firmware() const {
     return impl->firmware;
