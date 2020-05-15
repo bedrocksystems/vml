@@ -4,4 +4,4 @@ ifeq ($(PLATFORM), bedrock)
 LIBS += lang
 endif
 
-$(eval $(call dep_hook,arch_aarch64,$(LIBS)))
+$(eval $(call dep_hook,aarch64,$(LIBS)))

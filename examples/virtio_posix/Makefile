@@ -13,7 +13,7 @@ APPNAME  = virtio_example
 
 include deps.mk
 
-LINKLIBS = vbus timer cpu_model vcpu_roundup gic virtio_console virtio_net arch_$(TARGET)
+LINKLIBS = vbus timer cpu_model vcpu_roundup gic virtio_console virtio_net $(TARGET)
 
 LIBDIR  = ../../devices/  ../../vcpu/ ../../config/ ../../platform/ ../../arch/
 

@@ -27,7 +27,7 @@ else
 ifeq ($(PLATFORM), posix)
 
 TARGET ?= x86_64
-SUBDIRS = devices/vbus devices/pl011 devices/gic arch/arch_$(TARGET)
+SUBDIRS = devices/vbus devices/pl011 devices/gic arch/$(TARGET)
 SUBDIRS += devices/timer devices/virtio_console devices/virtio_net devices/msr
 SUBDIRS += devices/simple_as devices/firmware vcpu/vcpu_roundup vcpu/cpu_model
 
