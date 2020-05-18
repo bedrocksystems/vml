@@ -26,4 +26,6 @@ namespace Vmexit {
     Nova::Mtd mrc_coproc1111(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd);
     Nova::Mtd mrc_coproc1110(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd);
     Nova::Mtd vmrs(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd);
+    Nova::Mtd brk(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd);
+    Nova::Mtd bkpt(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd);
 };

@@ -338,9 +338,8 @@ ZETA_PORTAL(watchpoint_same_el_handler, Vcpu::Vcpu&, Nova::Mtd, const Zeta::Zeta
 }
 EXPORT_PORTAL(watchpoint_same_el_handler, mword);
 
-ZETA_PORTAL(bkpt_handler, Vcpu::Vcpu&, Nova::Mtd, const Zeta::Zeta_ctx* ctx) {
-    ABORT_WITH("Unsupported VM Exit: BKPT. ESR_EL2: 0x%llx", ctx->utcb()->arch.el2_esr);
-    return 0;
+ZETA_PORTAL(bkpt_handler, Vcpu::Vcpu& vcpu, Nova::Mtd mtd_in, const Zeta::Zeta_ctx* ctx) {
+    return call_portal_handler<Vmexit::bkpt>(0x38, ctx, vcpu, mtd_in);
 }
 EXPORT_PORTAL(bkpt_handler, mword);
 
@@ -350,9 +349,8 @@ ZETA_PORTAL(vector_catch_handler, Vcpu::Vcpu&, Nova::Mtd, const Zeta::Zeta_ctx* 
 }
 EXPORT_PORTAL(vector_catch_handler, mword);
 
-ZETA_PORTAL(brk_handler, Vcpu::Vcpu&, Nova::Mtd, const Zeta::Zeta_ctx* ctx) {
-    ABORT_WITH("Unsupported VM Exit: BRK. ESR_EL2: 0x%llx", ctx->utcb()->arch.el2_esr);
-    return 0;
+ZETA_PORTAL(brk_handler, Vcpu::Vcpu& vcpu, Nova::Mtd mtd_in, const Zeta::Zeta_ctx* ctx) {
+    return call_portal_handler<Vmexit::brk>(Nova::Exc::BRK, ctx, vcpu, mtd_in);
 }
 EXPORT_PORTAL(brk_handler, mword);
 
@@ -430,14 +428,18 @@ Portal_entry_config portals_config[] = {
     {Nova::MTD::EL2_ESR_FAR, _nova_pt_watchpoint_same_el_handler, 0}, // 0x35 - Watchpoint (same EL)
     {0, nullptr, 0},                                                  // 0x36 - reserved
     {0, nullptr, 0},                                                  // 0x37 - reserved
-    {Nova::MTD::EL2_ESR_FAR, _nova_pt_bkpt_handler, 0},               // 0x38 - BKPT
-    {0, nullptr, 0},                                                  // 0x39 - reserved
-    {Nova::MTD::EL2_ESR_FAR, _nova_pt_vector_catch_handler, 0},       // 0x3a - Vector catch
-    {0, nullptr, 0},                                                  // 0x3b - reserved
-    {Nova::MTD::EL2_ESR_FAR, _nova_pt_brk_handler, 0},                // 0x3c - BRK
-    {0, nullptr, 0},                                                  // 0x3d - reserved
-    {0, nullptr, 0},                                                  // 0x33 - reserved
-    {0, nullptr, 0},                                                  // 0x3f - reserved
+    {Nova::MTD::EL2_ESR_FAR | Nova::MTD::EL1_VBAR | Nova::MTD::EL1_ESR_FAR | Nova::MTD::EL2_ELR_SPSR
+         | Nova::MTD::GIC,
+     _nova_pt_bkpt_handler, 0},                                 // 0x38 - BKPT
+    {0, nullptr, 0},                                            // 0x39 - reserved
+    {Nova::MTD::EL2_ESR_FAR, _nova_pt_vector_catch_handler, 0}, // 0x3a - Vector catch
+    {0, nullptr, 0},                                            // 0x3b - reserved
+    {Nova::MTD::EL2_ESR_FAR | Nova::MTD::EL1_VBAR | Nova::MTD::EL1_ESR_FAR | Nova::MTD::EL2_ELR_SPSR
+         | Nova::MTD::GIC,
+     _nova_pt_brk_handler, 0}, // 0x3c - BRK
+    {0, nullptr, 0},           // 0x3d - reserved
+    {0, nullptr, 0},           // 0x33 - reserved
+    {0, nullptr, 0},           // 0x3f - reserved
     {Portal::MTD_CPU_STARTUP_INFO | Nova::MTD::EL2_IDR | Nova::MTD::TMR, _nova_pt_startup_handler,
      0},                                                           // 0x40 - Startup (NOVA)
     {Nova::MTD::GIC, _nova_pt_recall_handler, 0},                  // 0x41 - Recall (NOVA)

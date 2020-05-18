@@ -75,7 +75,7 @@ Vcpu::Vcpu::reset(Reg_accessor& arch) {
 
     if (aarch64()) {
         el2_spsr = Msr::Info::D_MASKED | Msr::Info::AIF_MASKED | Msr::Info::AARCH64
-                   | Msr::Info::AA64_EL1;
+                   | Msr::Info::AA64_EL1 | Msr::Info::AA64_SPX;
         el2_hcr |= Msr::Info::HCR_EL2_RW;
         arch.gpr(0, boot_arg(), true);
     } else {
@@ -293,6 +293,25 @@ Vcpu::Vcpu::update_inj_status(const Platform_ctx& ctx, const Nova::Mtd mtd_in) {
         _elrsr_used &= ~(1u << i);
         arch.gic_lr(i, 0); /* invalidate lr */
     }
+
+    return arch.get_reg_selection_out();
+}
+
+Nova::Mtd
+Vcpu::Vcpu::forward_exception(const Platform_ctx& ctx, const Nova::Mtd mtd_in, Exception_class c,
+                              Exception_type t, bool update_far) {
+    Reg_accessor arch(ctx, mtd_in);
+    Nova::Mtd mtd_out = Nova::MTD::EL1_ELR_SPSR | Nova::MTD::EL1_ESR_FAR | Nova::MTD::EL2_ELR_SPSR;
+
+    arch.set_reg_selection_out(mtd_out);
+
+    arch.el1_elr(arch.el2_elr(), true);
+    arch.el2_elr(arch.el1_vbar() + c + t);
+    arch.el1_spsr(arch.el2_spsr(), true);
+    arch.el1_esr(arch.el2_esr());
+
+    if (update_far)
+        arch.el1_far(arch.el2_far());
 
     return arch.get_reg_selection_out();
 }

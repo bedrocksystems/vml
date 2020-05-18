@@ -35,9 +35,17 @@ private:
         _sc_sel{Sels::INVALID}, _sm_sel{Sels::INVALID};
 
     Nova::Mtd reset(Reg_accessor &utcb);
-    bool aarch64() const { return _aarch64; }
 
 public:
+    enum Exception_class : uint64 {
+        SAME_EL_SP0 = 0x0,
+        SAME_EL_SPX = 0x200,
+        LOWER_EL_AA64 = 0x400,
+        LOWER_EL_AA32 = 0x600
+    };
+
+    enum Exception_type : uint64 { SYNC = 0x0, IRQ = 0x80, FIQ = 0x100, SERR = 0x180 };
+
     static constexpr unsigned MAX_IRQ_RT
         = sizeof(Nova::Utcb_arch::gic_lr) / sizeof(Nova::Utcb_arch::gic_lr[0]);
 
@@ -59,6 +67,9 @@ public:
                               uint64 &reg_value);
     Nova::Mtd update_inj_status(const Platform_ctx &, const Nova::Mtd mtd_in);
     Nova::Mtd inject_irqs(const Platform_ctx &, const Nova::Mtd mtd_in);
+
+    Nova::Mtd forward_exception(const Platform_ctx &, const Nova::Mtd mtd_in, Exception_class c,
+                                Exception_type t, bool update_far);
 
     virtual Errno run(const Zeta::Zeta_ctx *ctx) override;
     virtual void ctrl_tvm(bool enable,
@@ -82,4 +93,6 @@ public:
         Errno err = Zeta::recall(_vcpu_sel, false);
         return (err == ENONE);
     }
+
+    bool aarch64() const { return _aarch64; }
 };

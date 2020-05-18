@@ -48,7 +48,9 @@ namespace Msr::Info {
         AARCH32 = 1ull << 4,
         AARCH64 = 0ull << 4,
         AA32_SVC = 0b0011ull,
-        AA64_EL1 = 0b0101ull,
+        AA64_EL1 = 0b0100ull,
+        AA64_SPX = 0b1ull,
+        AA64_EL0 = 0b0000ull,
         AIF_MASKED = 0b111ull << 6,
         D_MASKED = 0b1ull << 9,
     };
@@ -95,12 +97,16 @@ public:
     static constexpr uint64 C_MASK = 1ull << 29;
     static constexpr uint64 V_MASK = 1ull << 28;
     static constexpr uint64 M_MASK = 1ull << 4;
+    static constexpr uint64 EL_MASK = 0xeull;
+    static constexpr uint64 SP_MASK = 0x1ull;
 
     constexpr bool is_aa32() const { return _val & M_MASK; }
     constexpr bool is_N() const { return _val & N_MASK; }
     constexpr bool is_Z() const { return _val & Z_MASK; }
     constexpr bool is_C() const { return _val & C_MASK; }
     constexpr bool is_V() const { return _val & V_MASK; }
+    constexpr uint8 el() const { return _val & EL_MASK; }
+    constexpr bool spx() const { return _val & SP_MASK; }
 
 private:
     const uint64 _val;

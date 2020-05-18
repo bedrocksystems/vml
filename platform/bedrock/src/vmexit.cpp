@@ -607,3 +607,40 @@ Vmexit::smc(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd_in)
     arch.advance_pc();
     return arch.get_reg_selection_out();
 }
+
+Nova::Mtd
+Vmexit::brk(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd) {
+    /*
+     * If the 'brk' is in the guest code and was added there by the guest, we can be in:
+     * 1 - EL0 executed brk -> inject an exception from a lower EL with AA64
+     * 2 - EL1 executed brk -> inject an exception from the same EL and check SPsel
+     */
+    Reg_accessor arch(*ctx, mtd);
+    Msr::Info::Spsr spsr(arch.el2_spsr());
+    Vcpu::Vcpu::Exception_class c;
+
+    if (spsr.el() == Msr::Info::AA64_EL1)
+        if (spsr.spx())
+            c = Vcpu::Vcpu::SAME_EL_SPX;
+        else
+            c = Vcpu::Vcpu::SAME_EL_SP0;
+    else
+        c = Vcpu::Vcpu::LOWER_EL_AA64;
+
+    return vcpu.forward_exception(*ctx, mtd, c, Vcpu::Vcpu::SYNC, false);
+}
+
+Nova::Mtd
+Vmexit::bkpt(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd) {
+    /*
+     * If the 'bkpt' is in the guest code and was added there by the guest, we can be in:
+     * 1 - EL0 executed bkpt, EL1 runs AA64 -> inject an exception from a lower EL with AA32
+     * 2 - EL0 executed bkpt, EL1 runs AA32 -> inject a prefetch abort (AA32 style)
+     * 3 - EL1 executed bkpt (so EL1 has to run AA32) -> inject a prefetch abort (AA32 style)
+     */
+    if (vcpu.aarch64()) {
+        return vcpu.forward_exception(*ctx, mtd, Vcpu::Vcpu::LOWER_EL_AA32, Vcpu::Vcpu::SYNC,
+                                      false);
+    } else
+        ABORT_WITH("BKPT unsupported with AA32 guests for now");
+}
