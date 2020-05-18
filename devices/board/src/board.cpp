@@ -42,8 +42,6 @@ public:
 
     Model::Firmware *firmware{nullptr};
 
-    Model::Guest_as *guest_as;
-
 public:
     Errno init(const Zeta::Zeta_ctx *ctx, const Fdt::Tree &tree, Model::Guest_as &ram_as,
                Model::Guest_as &rom_as, const mword guest_config_addr, const Uuid &umx_uuid,
@@ -104,7 +102,6 @@ Model::Board_impl::init(const Zeta::Zeta_ctx *ctx, const Fdt::Tree &tree, Model:
         ABORT_WITH("Invalid VM config provided. We cannot continue");
     }
 
-    guest_as = &ram_as;
     device_bus.register_device(&ram_as, ram_as.get_guest_view().get_value(), ram_as.get_size());
 
     if (rom_as.get_size() != 0)
