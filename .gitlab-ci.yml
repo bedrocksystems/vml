@@ -1,6 +1,6 @@
 image: registry.gitlab.com/bedrocksystems/docker-image:latest
 variables:
-  ZT_ROOT: '$CI_PROJECT_DIR/zeta/'
+  BRS_ROOT: '$CI_PROJECT_DIR/zeta/'
   PM_ROOT: '$CI_PROJECT_DIR/lib/pm/'
   LIB_PM: '$CI_PROJECT_DIR/lib/pm/'
   VML_PATH: '$CI_PROJECT_DIR/'
@@ -31,7 +31,7 @@ build-unit-tests-gcc:
   variables:
     CROSS_COMPILE: '/opt/aarch64-linux/bin/aarch64-linux-'
   script:
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/zeta.git $ZT_ROOT
+    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/zeta.git $BRS_ROOT
     - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/host-components/vmm-unit-tests.git
     - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/vmm.git
     - cd vmm-unit-tests
@@ -39,7 +39,7 @@ build-unit-tests-gcc:
     - 'curl --location --output artifacts.zip --header "JOB-TOKEN: ${CI_JOB_TOKEN}" "https://gitlab.com/api/v4/projects/16203504/jobs/artifacts/master/download?job=build-gcc-aarch64-qemu"'
     - unzip artifacts.zip
     - cp ../bin/vmm bin-qemu/apps
-    - make -j $NJOBS ZT_ROOT=$ZT_ROOT BIN_PATH=./bin-qemu ZTIMAGE_PATH=./bin-qemu
+    - make -j $NJOBS BRS_ROOT=$BRS_ROOT BIN_PATH=./bin-qemu ZTIMAGE_PATH=./bin-qemu
     - mkdir ztimages && mv *.img ztimages
   only:
     - merge_requests
@@ -76,7 +76,7 @@ build-llvm-aarch64:
     LLVM: '1'
     LLVM_BASE_DIR: '/usr/lib/llvm/bin/'
   before_script:
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/zeta.git $ZT_ROOT
+    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/zeta.git $BRS_ROOT
     - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/bsp/pm.git $PM_ROOT
     - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/vmm.git
   script:
@@ -104,7 +104,7 @@ build-gcc-aarch64:
     VERBOSE: '1'
     CROSS_COMPILE: '/opt/aarch64-linux/bin/aarch64-linux-'
   before_script:
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/zeta.git $ZT_ROOT
+    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/zeta.git $BRS_ROOT
     - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/bsp/pm.git $PM_ROOT
     - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/vmm.git
   script:

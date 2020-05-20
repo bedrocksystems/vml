@@ -7,7 +7,7 @@
 
 TARGET ?= x86_64
 PLATFORM = posix
-ZT_ROOT ?= ../../../../zeta/
+BRS_ROOT ?= ../../../../zeta/
 
 APPNAME  = virtio_example
 
@@ -20,4 +20,4 @@ LIBDIR  = ../../devices/  ../../vcpu/ ../../config/ ../../platform/ ../../arch/
 CC_SRCS = virtio_example.cpp
 OBJS = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
-include $(ZT_ROOT)support/build/rules.mk
+include $(BRS_ROOT)support/build/rules.mk

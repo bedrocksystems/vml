@@ -8,9 +8,9 @@
 #
 
 PLATFORM ?= bedrock
-ZT_ROOT ?= ../../../../zeta/
+BRS_ROOT ?= ../../../../zeta/
 LIBNAME = $(shell basename `pwd`)
-LIBDIR  = $(ZT_ROOT)lib/ ../ ../../vcpu/ ../../config/ ../../interfaces/ ../../platform/
+LIBDIR  = $(BRS_ROOT)lib/ ../ ../../vcpu/ ../../config/ ../../interfaces/ ../../platform/
 
 ENABLE_VMI ?= 0
 ifneq ($(ENABLE_VMI), 0)
@@ -26,4 +26,4 @@ OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 SPECS =
 PROOFS =
 
-include $(ZT_ROOT)support/build/rules.mk
+include $(BRS_ROOT)support/build/rules.mk

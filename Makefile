@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-ZT_ROOT ?= ../../zeta/
+BRS_ROOT ?= ../../zeta/
 DOXYGEN ?= doxygen
 PLATFORM ?= posix
 CMDGOAL = $(if $(strip $(MAKECMDGOALS)),$(MAKECMDGOALS),all)
@@ -37,7 +37,7 @@ $(CMDGOAL): $(EXAMPLES)
 .PHONY: $(CMDGOAL) $(EXAMPLES) $(SUBDIRS)
 
 $(EXAMPLES) $(SUBDIRS):
-		+$(MAKE) -C $@ ZT_ROOT=$(realpath .)/ VMM_ROOT=$(realpath .)/ TARGET=$(TARGET) PLATFORM=posix $(CMDGOAL)
+		+$(MAKE) -C $@ BRS_ROOT=$(realpath .)/ VMM_ROOT=$(realpath .)/ TARGET=$(TARGET) PLATFORM=posix $(CMDGOAL)
 
 $(EXAMPLES): $(SUBDIRS)
 

@@ -8,9 +8,9 @@
 #
 
 PLATFORM ?= bedrock
-ZT_ROOT ?= ../../../../zeta/
+BRS_ROOT ?= ../../../../zeta/
 LIBNAME = $(shell basename `pwd`)
-LIBDIR  = $(ZT_ROOT)lib/  ../ ../../vcpu/ ../../config/ ../../platform/
+LIBDIR  = $(BRS_ROOT)lib/  ../ ../../vcpu/ ../../config/ ../../platform/
 
 ifeq ($(PLATFORM), bedrock)
 LIB_PM  ?= ../../../pm/
@@ -29,4 +29,4 @@ endif
 SPECS =
 PROOFS =
 
-include $(ZT_ROOT)support/build/rules.mk
+include $(BRS_ROOT)support/build/rules.mk

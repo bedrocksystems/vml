@@ -7,9 +7,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-ZT_ROOT ?= ../../../../zeta/
+BRS_ROOT ?= ../../../../zeta/
 LIBNAME = $(shell basename `pwd`)
-LIBDIR  = $(ZT_ROOT)lib/  ../ ../../vcpu/ ../../config/ ../../platform/
+LIBDIR  = $(BRS_ROOT)lib/  ../ ../../vcpu/ ../../config/ ../../platform/
 
 LIB_PM  ?= ../../../../../lib/pm/
 LIBDIR += $(LIB_PM)
@@ -22,4 +22,4 @@ OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 SPECS =
 PROOFS =
 
-include $(ZT_ROOT)support/build/rules.mk
+include $(BRS_ROOT)support/build/rules.mk

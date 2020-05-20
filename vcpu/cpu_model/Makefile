@@ -8,9 +8,9 @@
 #
 
 PLATFORM ?= bedrock
-ZT_ROOT ?= ../../../../zeta/
+BRS_ROOT ?= ../../../../zeta/
 LIBNAME = $(shell basename `pwd`)
-LIBDIR  = $(ZT_ROOT)lib/  ../../devices/ ../../config/ ../../platform/ ../../arch/ ../
+LIBDIR  = $(BRS_ROOT)lib/  ../../devices/ ../../config/ ../../platform/ ../../arch/ ../
 
 include deps.mk
 
@@ -20,4 +20,4 @@ OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 SPECS =
 PROOFS =
 
-include $(ZT_ROOT)support/build/rules.mk
+include $(BRS_ROOT)support/build/rules.mk
