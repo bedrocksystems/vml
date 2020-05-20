@@ -23,7 +23,7 @@ namespace Portal {
 
     static constexpr Nova::Mtd MTD_MSR_COMMON = Nova::MTD::EL2_ESR_FAR | Nova::MTD::GPR
                                                 | Nova::MTD::EL2_ELR_SPSR | Nova::MTD::GIC
-                                                | Nova::MTD::TMR;
+                                                | Nova::MTD::TMR | Nova::MTD::EL2_HCR;
     static constexpr Nova::Mtd MTD_MSR_TRAP_VM
         = Nova::MTD::EL1_TTBR | Nova::MTD::EL1_AFSR | Nova::MTD::EL1_MAIR | Nova::MTD::EL1_IDR
           | Nova::MTD::A32_DACR_IFSR | Nova::MTD::EL1_SCTLR | Nova::MTD::EL1_TCR;

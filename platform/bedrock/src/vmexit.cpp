@@ -174,9 +174,8 @@ Vmexit::wfie(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd_in
 }
 
 static void
-system_register_update_reg(Vcpu::Vcpu& vcpu, Reg_accessor& arch, Msr::Access const& msr_info,
-                           uint64 reg_value) {
-    if (Model::Cpu::is_tvm_enabled(vcpu.id()) && msr_info.write()) {
+system_register_update_reg(Reg_accessor& arch, Msr::Access const& msr_info, uint64 reg_value) {
+    if (((arch.el2_hcr() & Msr::Info::HCR_EL2_TVM) != 0) && msr_info.write()) {
         switch (msr_info.id()) {
         case (vmi::SCTLR_EL1): {
             arch.set_reg_selection_out(Nova::MTD::EL2_ELR_SPSR | Nova::MTD::EL1_SCTLR);
@@ -277,7 +276,7 @@ system_register(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd
     err = vcpu.handle_msr_exit(&vcpu_ctx, msr_info, reg_value);
     switch (err) {
     case (Vbus::Err::UPDATE_REGISTER): {
-        system_register_update_reg(vcpu, arch, msr_info, reg_value);
+        system_register_update_reg(arch, msr_info, reg_value);
         arch.advance_pc();
         break;
     }
