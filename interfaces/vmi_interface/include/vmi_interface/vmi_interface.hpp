@@ -17,6 +17,7 @@ namespace Vmm::Vcpu {
     typedef mword Cpu_id;
 
     void ctrl_tvm(Vcpu_id id, bool enable, uint64 regs);
+    void ctrl_single_step(Vcpu_id id, bool enable);
 
     uint16 get_num_vcpus();
     Cpu_id get_pcpu(Vcpu_id);

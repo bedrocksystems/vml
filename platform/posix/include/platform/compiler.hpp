@@ -12,9 +12,11 @@
  *
  *  We expect the following definitions:
  *  - __UNLIKELY__
+ *  - __LIKELY__
  *  - ffs
  */
 
+#define __LIKELY__(x) __builtin_expect(!!(x), 1)
 #define __UNLIKELY__(x) __builtin_expect(!!(x), 0)
 
 static inline int

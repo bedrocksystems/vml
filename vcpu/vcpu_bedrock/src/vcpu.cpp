@@ -94,6 +94,19 @@ Vcpu::Vcpu::reset(Reg_accessor& arch) {
     return arch.get_reg_selection_out();
 }
 
+Nova::Mtd
+Vcpu::Vcpu::check_reset(const Platform_ctx& ctx, Nova::Mtd mtd_in) {
+    Nova::Mtd mtd_out = 0;
+    Reg_accessor arch(ctx, mtd_in);
+
+    if (is_reconfig_needed(VCPU_RECONFIG_RESET)) {
+        mtd_out = reset(arch);
+        unset_reconfig(VCPU_RECONFIG_RESET);
+    }
+
+    return mtd_out;
+}
+
 /*! \brief VCPU internal reconfiguration
  *
  * This code is called has the last step of every VM exit. The VCPU is not considered
@@ -104,17 +117,6 @@ Vcpu::Vcpu::reconfigure(const Platform_ctx& ctx, const Nova::Mtd mtd_in) {
     Nova::Mtd mtd_out = 0;
     Reg_accessor arch(ctx, mtd_in);
 
-    if (is_reconfig_needed(VCPU_RECONFIG_SWITCH_OFF)) {
-        switch_state_to_off();
-        wait_for_switch_on();
-        switch_state_to_on();
-        INFO("VCPU %u was switched on", this->id());
-        unset_reconfig(VCPU_RECONFIG_SWITCH_OFF);
-    }
-    if (is_reconfig_needed(VCPU_RECONFIG_RESET)) {
-        mtd_out |= reset(arch);
-        unset_reconfig(VCPU_RECONFIG_RESET);
-    }
     if (is_reconfig_needed(VCPU_RECONFIG_TVM)) {
         uint64 el2_hcr = Msr::Info::HCR_EL2_DEFAULT_VALUE;
 
@@ -393,4 +395,12 @@ Vcpu::Vcpu::handle_msr_exit(const Vcpu_ctx* vcpu_ctx, Msr::Access const& msr_inf
     }
 
     return err;
+}
+
+void
+Vcpu::Vcpu::advance_pc(const Vcpu_ctx& ctx, Reg_accessor& arch) {
+    arch.advance_pc();
+
+    if (single_step_enabled())
+        outpost::vmi_handle_singlestep(ctx);
 }

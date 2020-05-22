@@ -62,6 +62,7 @@ public:
     Errno setup(const Zeta::Zeta_ctx *);
 
     Nova::Mtd reconfigure(const Platform_ctx &, const Nova::Mtd mtd_in);
+    Nova::Mtd check_reset(const Platform_ctx &ctx, const Nova::Mtd mtd_in);
 
     Vbus::Err handle_instruction_abort(const Vcpu_ctx *vcpu_ctx, uint64 const fault_paddr,
                                        Esr::Instruction_abort const &esr);
@@ -76,6 +77,8 @@ public:
                                 Exception_type t, bool update_far);
 
     virtual Errno run() override;
+    void advance_pc(const Vcpu_ctx &ctx, Reg_accessor &reg);
+
     virtual void ctrl_tvm(bool enable,
                           Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM,
                           const Nova::Mtd regs = 0) override;

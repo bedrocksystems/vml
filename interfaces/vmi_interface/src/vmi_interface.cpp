@@ -16,6 +16,11 @@ Vmm::Vcpu::ctrl_tvm(Vmm::Vcpu::Vcpu_id id, bool enable, uint64 regs) {
     Model::Cpu::ctrl_tvm(id, enable, Request::Requestor::REQUESTOR_VMI, regs);
 }
 
+void
+Vmm::Vcpu::ctrl_single_step(Vmm::Vcpu::Vcpu_id id, bool enable) {
+    Model::Cpu::single_step_only(id, enable, Request::Requestor::REQUESTOR_VMI);
+}
+
 uint16
 Vmm::Vcpu::get_num_vcpus() {
     return Model::Cpu::get_num_vcpus();

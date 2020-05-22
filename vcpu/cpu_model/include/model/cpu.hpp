@@ -90,10 +90,10 @@ private:
 
     atomic<State> _state{OFF};
 
-    bool is_on() {
-        State s = _state;
-        return s != OFF && s != OFF_ROUNDEDUP;
+    bool is_on() const {
+        return !Request::is_requested_by(Request::Requestor::REQUESTOR_VMM, _off_requests);
     }
+
     void resume_vcpu() { _resume_sm.release(); }
     void switch_on() { _off_sm.release(); }
     void resume();
@@ -110,6 +110,7 @@ protected:
     atomic<uint32> _ss_requests{0};
     atomic<bool> _tvm_enabled{false};
     atomic<uint32> _tvm_requests{0};
+    atomic<uint32> _off_requests{0};
 
     void wait_for_switch_on() { _off_sm.acquire(); }
     uint64 boot_addr() const { return _boot_addr; }
@@ -117,6 +118,7 @@ protected:
     void set_reconfig(Vcpu_reconfiguration r) { _reconfig |= r; }
     bool tvm_enabled() { return static_cast<bool>(_tvm_requests.load()); }
     bool single_step_enabled() { return static_cast<bool>(_ss_requests.load()); }
+    bool is_paused() { return static_cast<bool>(_off_requests.load()); }
     void switch_state_to_off();
     bool is_reconfig_needed(Vcpu_reconfiguration r) { return (_reconfig & r) != 0; }
     void unset_reconfig(Vcpu_reconfiguration r) { _reconfig &= ~r; }
@@ -143,9 +145,13 @@ public:
     static void reconfigure_all(Vcpu_reconfiguration r);
     static void reconfigure_all_but(Vcpu_id, Vcpu_reconfiguration r);
 
+    static void single_step_only(Vcpu_id, bool,
+                                 Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM);
     static bool is_single_step_enabled_for_vcpu(Vcpu_id);
     static void ctrl_single_step(Vcpu_id cpu_id, bool enable,
                                  Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM);
+    static void ctrl_state_off(Vcpu_id cpu_id, bool enable,
+                               Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM);
     static void ctrl_tvm(Vcpu_id cpu_id, bool enable,
                          Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM,
                          const Reg_selection extra_regs = 0);
@@ -178,6 +184,8 @@ public:
     virtual void ctrl_single_step(bool enable,
                                   Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM)
         = 0;
+    virtual void ctrl_state_off(bool enable,
+                                Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM);
 
     // Functions that are implemented
     Cpu(Gic_d &gic, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq);

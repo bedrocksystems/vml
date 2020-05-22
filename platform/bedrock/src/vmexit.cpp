@@ -148,7 +148,15 @@ Vmexit::startup(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd
     if (Debug::TRACE_VBUS)
         vcpu.board->get_bus()->set_trace(true, true);
 
-    Model::Cpu::reconfigure(vcpu.id(), Model::Cpu::VCPU_RECONFIG_SWITCH_OFF);
+    /*
+     * Queue a recall for ourself. It will be executed right after the startup callback (and thus
+     * before any guest code is ran). This is useful because we start with all VCPUs turned off and
+     * we turn off VCPUs at the beginning of a VMExit (before emulation). Rather than special
+     * casing this for the startup handler, we can make this case non-special by handling the
+     * initial off/reset in a recall handler.
+     */
+    vcpu.recall();
+    Model::Cpu::ctrl_state_off(vcpu.id(), true);
     Model::Cpu::reconfigure(vcpu.id(), Model::Cpu::VCPU_RECONFIG_RESET);
 
     ok = vmi::setup_trapped_msr(vcpu.msr_bus, *(vcpu.board->get_bus()));
@@ -170,7 +178,8 @@ Vmexit::wfie(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd_in
     if (!(arch.el2_esr() & 1))
         vcpu.wait_for_interrupt(arch.tmr_cntv_ctl(), arch.tmr_cntv_cval() + arch.tmr_cntvoff());
 
-    arch.advance_pc();
+    Vcpu_ctx vctx{ctx, mtd_in, 0, vcpu.id()};
+    vcpu.advance_pc(vctx, arch);
     return arch.get_reg_selection_out();
 }
 
@@ -278,12 +287,12 @@ system_register(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd
     switch (err) {
     case (Vbus::Err::UPDATE_REGISTER): {
         system_register_update_reg(arch, msr_info, reg_value);
-        arch.advance_pc();
+        vcpu.advance_pc(vcpu_ctx, arch);
         break;
     }
     case (Vbus::Err::OK): {
         arch.set_reg_selection_out(Nova::MTD::EL2_ELR_SPSR);
-        arch.advance_pc();
+        vcpu.advance_pc(vcpu_ctx, arch);
         break;
     }
     default:
@@ -401,7 +410,8 @@ Vmexit::vmrs(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd_in
 
     if (esr.cv() && !verify_aarch32_condition(esr.cond(), arch.el2_spsr())) {
         DEBUG("VMRS @ 0x%llx didn't meet its condition - skipping", ctx->utcb()->arch.el2_elr);
-        arch.advance_pc();
+        Vcpu_ctx vcpu_ctx{ctx, mtd_in, 0, vcpu.id()};
+        vcpu.advance_pc(vcpu_ctx, arch);
         return arch.get_reg_selection_out();
     }
 
@@ -415,7 +425,8 @@ mrc(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd_in, uint8 c
 
     if (esr.cv() && !verify_aarch32_condition(esr.cond(), arch.el2_spsr())) {
         DEBUG("MCR/MRC @ 0x%llx didn't meet its condition - skipping", arch.el2_elr());
-        arch.advance_pc();
+        Vcpu_ctx vcpu_ctx{ctx, mtd_in, 0, vcpu.id()};
+        vcpu.advance_pc(vcpu_ctx, arch);
         return arch.get_reg_selection_out();
     }
 
@@ -456,11 +467,11 @@ Vmexit::data_abort(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd 
     case Vbus::Err::UPDATE_REGISTER:
         arch.set_reg_selection_out(Nova::MTD::EL2_ELR_SPSR | Nova::MTD::GPR);
         arch.gpr(esr.reg(), reg_value);
-        arch.advance_pc();
+        vcpu.advance_pc(vcpu_ctx, arch);
         break;
     case Vbus::Err::OK:
         arch.set_reg_selection_out(Nova::MTD::EL2_ELR_SPSR);
-        arch.advance_pc();
+        vcpu.advance_pc(vcpu_ctx, arch);
         break;
     case Vbus::Err::REPLAY_INST:
         break;
@@ -545,6 +556,7 @@ Vmexit::recall(const Zeta::Zeta_ctx*, Vcpu::Vcpu&, const Nova::Mtd) {
 Nova::Mtd
 Vmexit::smc(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd_in) {
     Reg_accessor arch(*ctx, mtd_in);
+    Vcpu_ctx vcpu_ctx{ctx, mtd_in, 0, vcpu.id()};
     uint64 x0 = arch.gpr(0);
     uint64 x1 = arch.gpr(1);
     uint64 x2 = arch.gpr(2);
@@ -559,7 +571,6 @@ Vmexit::smc(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd_in)
 
     switch (x0 & 0x3fffffffu) {
     case 0x4000000 ... 0x400ffff: { // Service calls
-        Vcpu_ctx vcpu_ctx{ctx, mtd_in, 0, vcpu.id()};
         Vbus::Bus* vbus = vcpu.board->get_bus();
 
         if (!Firmware::Psci::smc_call_service(vcpu_ctx, *vbus, x0, res)) {
@@ -580,7 +591,6 @@ Vmexit::smc(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd_in)
             break;
         }
 
-        Vcpu_ctx vcpu_ctx{ctx, mtd_in, 0, vcpu.id()};
         mword ret[4];
         bool handled = fw->handle_smc(&vcpu_ctx, arch.gpr(0), arch.gpr(1), arch.gpr(2), arch.gpr(3),
                                       arch.gpr(4), arch.gpr(5), arch.gpr(6), ret);
@@ -604,7 +614,7 @@ Vmexit::smc(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd_in)
         break;
     }
 
-    arch.advance_pc();
+    vcpu.advance_pc(vcpu_ctx, arch);
     return arch.get_reg_selection_out();
 }
 
@@ -650,6 +660,10 @@ Vmexit::single_step(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd
     Reg_accessor arch(*ctx, mtd_in);
     uint64 el2_spsr = arch.el2_spsr();
     Esr::Soft_step esr(arch.el2_esr());
+    Vcpu_ctx vcpu_ctx{ctx, mtd_in, 0, vcpu.id()};
+
+    // Future: we will need to check if this SS is triggered by the guest
+    outpost::vmi_handle_singlestep(vcpu_ctx);
 
     if (esr.is_exclusive_load()) {
         // XXX: for now, we cannot single step through a LDXR/STXR block of code
@@ -657,6 +671,13 @@ Vmexit::single_step(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd
              "0x%llx",
              arch.el2_elr());
         Model::Cpu::ctrl_single_step(vcpu.id(), false);
+
+        /*
+         * It is not very clear if VMI can do something very meaningful in that callback.
+         * But, we can still let it know and give it the opportunity to clean up its own
+         * state. The idea is to avoid begin in that case altogether in the first place.
+         */
+        outpost::vmi_handle_singlestep_failure(vcpu_ctx);
     }
 
     arch.set_reg_selection_out(Nova::MTD::EL2_ELR_SPSR);

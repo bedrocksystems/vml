@@ -64,18 +64,26 @@ call_portal_handler(const Sel vmexit_id, const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& 
     } while (true);
     // Emulation mode starts here
 
-    if (vmexit_id != Nova::Exc::VCPU_STARTUP) // No interrupt handling at startup
-        mtd_out |= vcpu.update_inj_status(*ctx, mtd_in);
+    mtd_out = vcpu.check_reset(*ctx, mtd_in);
 
-    mtd_out |= H(ctx, vcpu, mtd_in);
+    /*
+     * If we are asked to reset, mtd_out will be non-zero. In that case, there is not point
+     * in emulating the current VM exit. It will be irrelevant (or even wrong to emulate).
+     */
+    if (mtd_out == 0) {
+        if (vmexit_id != Nova::Exc::VCPU_STARTUP) // No interrupt handling at startup
+            mtd_out |= vcpu.update_inj_status(*ctx, mtd_in);
 
-    if (vmexit_id != Nova::Exc::VCPU_STARTUP) // No interrupt handling at startup
-        mtd_out |= vcpu.inject_irqs(*ctx, mtd_in);
+        mtd_out |= H(ctx, vcpu, mtd_in);
+
+        if (vmexit_id != Nova::Exc::VCPU_STARTUP) // No interrupt handling at startup
+            mtd_out |= vcpu.inject_irqs(*ctx, mtd_in);
+    }
+
+    mtd_out |= vcpu.reconfigure(*ctx, mtd_in);
 
     // Emulation mode stops here
     vcpu.switch_state_to_on();
-
-    mtd_out |= vcpu.reconfigure(*ctx, mtd_in);
 
     if (Debug::SANITY_CHECK_VM_EXIT_RESUME)
         sanity_check_before_vmresume(vmexit_id, ctx, vcpu, mtd_out);

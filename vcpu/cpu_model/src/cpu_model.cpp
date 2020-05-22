@@ -63,7 +63,7 @@ void
 Model::Cpu::recall_all_but(Vcpu_id cpu_id) {
     ASSERT(cpu_id < num_vcpus || cpu_id == INVALID_VCPU_ID);
 
-    for (uint32 i = 0; i < num_vcpus; ++i)
+    for (Vcpu_id i = 0; i < num_vcpus; ++i)
         if (i != cpu_id)
             recall(i);
 }
@@ -75,7 +75,7 @@ Model::Cpu::recall_all() {
 
 void
 Model::Cpu::resume_all() {
-    for (uint32 i = 0; i < num_vcpus; ++i)
+    for (Vcpu_id i = 0; i < num_vcpus; ++i)
         vcpus[i]->resume();
 }
 
@@ -106,6 +106,24 @@ Model::Cpu::ctrl_single_step(Vcpu_id id, bool enable, Request::Requestor request
     ASSERT(id < num_vcpus);
 
     vcpus[id]->ctrl_single_step(enable, requestor);
+}
+
+void
+Model::Cpu::ctrl_state_off(Vcpu_id id, bool enable, Request::Requestor requestor) {
+    ASSERT(id < num_vcpus);
+
+    vcpus[id]->ctrl_state_off(enable, requestor);
+}
+
+void
+Model::Cpu::single_step_only(Vcpu_id id, bool enable, Request::Requestor requestor) {
+    ASSERT(id < num_vcpus);
+    for (uint32 i = 0; i < num_vcpus; ++i) {
+        if (i == id)
+            vcpus[i]->ctrl_single_step(enable, requestor);
+        else
+            vcpus[i]->ctrl_state_off(enable, requestor);
+    }
 }
 
 bool
@@ -162,7 +180,7 @@ Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr, uint64
     Model::Cpu* const vcpu = vcpus[vcpu_id];
 
     vcpu->set_reset_parameters(boot_addr, boot_arg, timer_off);
-    vcpu->switch_on();
+    vcpu->ctrl_state_off(false);
     return SUCCESS;
 }
 
@@ -351,6 +369,12 @@ bool
 Model::Cpu::switch_state_to_emulating() {
     enum State new_state, cur_state;
 
+    while (is_paused()) {
+        switch_state_to_off();
+        wait_for_switch_on();
+        switch_state_to_on();
+    }
+
     do {
         cur_state = new_state = _state;
         switch (cur_state) {
@@ -439,4 +463,15 @@ Model::Cpu::set_reset_parameters(uint64 const boot_addr, uint64 const boot_arg,
     _boot_arg = boot_arg;
     _tmr_off = tmr_off;
     Barrier::rw_before_rw();
+}
+
+void
+Model::Cpu::ctrl_state_off(bool enable, Request::Requestor requestor) {
+    bool needs_update = Request::needs_update(requestor, enable, _off_requests);
+    if (needs_update) {
+        if (enable)
+            set_reconfig(VCPU_RECONFIG_SWITCH_OFF);
+        else
+            switch_on();
+    }
 }
