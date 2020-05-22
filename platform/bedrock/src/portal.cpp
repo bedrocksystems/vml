@@ -310,10 +310,9 @@ ZETA_PORTAL(brkpt_same_el_handler, Vcpu::Vcpu&, Nova::Mtd, const Zeta::Zeta_ctx*
 }
 EXPORT_PORTAL(brkpt_same_el_handler, mword);
 
-ZETA_PORTAL(soft_step_lower_el_handler, Vcpu::Vcpu&, Nova::Mtd, const Zeta::Zeta_ctx* ctx) {
-    ABORT_WITH("Unsupported VM Exit: Software step (lower EL). ESR_EL2: 0x%llx",
-               ctx->utcb()->arch.el2_esr);
-    return 0;
+ZETA_PORTAL(soft_step_lower_el_handler, Vcpu::Vcpu& vcpu, Nova::Mtd mtd,
+            const Zeta::Zeta_ctx* ctx) {
+    return call_portal_handler<Vmexit::single_step>(0x32, ctx, vcpu, mtd);
 }
 EXPORT_PORTAL(soft_step_lower_el_handler, mword);
 
@@ -419,8 +418,8 @@ Portal_entry_config portals_config[] = {
     {Nova::MTD::EL2_ESR_FAR, _nova_pt_serror_handler, 0},         // 0x2f - Serror
     {Nova::MTD::EL2_ESR_FAR, _nova_pt_brkpt_lower_el_handler, 0}, // 0x30 - Breakpoint (lower EL)
     {Nova::MTD::EL2_ESR_FAR, _nova_pt_brkpt_same_el_handler, 0},  // 0x31 - Breakpoint (same EL)
-    {Nova::MTD::EL2_ESR_FAR, _nova_pt_soft_step_lower_el_handler,
-     0}, // 0x32 - Software Step (lower EL)
+    {Nova::MTD::EL2_ESR_FAR | Nova::MTD::EL2_ELR_SPSR | Nova::MTD::GIC,
+     _nova_pt_soft_step_lower_el_handler, 0}, // 0x32 - Software Step (lower EL)
     {Nova::MTD::EL2_ESR_FAR, _nova_pt_soft_step_same_el_handler,
      0}, // 0x33 - Software Step (same EL)
     {Nova::MTD::EL2_ESR_FAR, _nova_pt_watchpoint_lower_el_handler,
@@ -440,10 +439,11 @@ Portal_entry_config portals_config[] = {
     {0, nullptr, 0},           // 0x3d - reserved
     {0, nullptr, 0},           // 0x33 - reserved
     {0, nullptr, 0},           // 0x3f - reserved
-    {Portal::MTD_CPU_STARTUP_INFO | Nova::MTD::EL2_IDR | Nova::MTD::TMR, _nova_pt_startup_handler,
-     0},                                                           // 0x40 - Startup (NOVA)
-    {Nova::MTD::GIC, _nova_pt_recall_handler, 0},                  // 0x41 - Recall (NOVA)
-    {Nova::MTD::GIC | Nova::MTD::TMR, _nova_pt_vtimer_handler, 0}, // 0x42 - VTimer (NOVA)
+    {Portal::MTD_CPU_STARTUP_INFO | Nova::MTD::EL2_IDR | Nova::MTD::TMR | Nova::MTD::EL2_ELR_SPSR,
+     _nova_pt_startup_handler, 0},                                          // 0x40 - Startup (NOVA)
+    {Nova::MTD::GIC | Nova::MTD::EL2_ELR_SPSR, _nova_pt_recall_handler, 0}, // 0x41 - Recall (NOVA)
+    {Nova::MTD::GIC | Nova::MTD::TMR | Nova::MTD::EL2_ELR_SPSR, _nova_pt_vtimer_handler,
+     0}, // 0x42 - VTimer (NOVA)
 };
 
 Errno

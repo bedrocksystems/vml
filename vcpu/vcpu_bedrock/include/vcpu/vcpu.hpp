@@ -75,6 +75,8 @@ public:
     virtual void ctrl_tvm(bool enable,
                           Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM,
                           const Nova::Mtd regs = 0) override;
+    virtual void ctrl_single_step(bool enable, Request::Requestor requestor
+                                               = Request::Requestor::REQUESTOR_VMM) override;
     virtual bool block() override {
         Errno err = Zeta::sm_down(_sm_sel, 0, true);
         return err == ENONE;

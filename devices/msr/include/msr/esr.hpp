@@ -15,6 +15,7 @@ namespace Esr {
     class Mcr_mrc;
     class Data_abort;
     class Instruction_abort;
+    class Soft_step;
 
     constexpr uint8 ZERO_REG = 31;
 }
@@ -161,4 +162,20 @@ public:
     bool stage1_page_table_walk() const { return (_esr >> S1PTW_SHIFT) & S1PTW_MASK; }
     bool far_not_valid() const { return (_esr >> FNV_SHIFT) & FNV_MASK; }
     Sync_err_type sync_err_type() const { return Sync_err_type((_esr >> SET_SHIFT) & SET_MASK); }
+};
+
+class Esr::Soft_step {
+private:
+    uint64 const _esr;
+
+    static constexpr uint64 ISV_MASK = 0x1ull << 24;
+    static constexpr uint64 EX_MASK = 0x1ull << 6;
+
+    bool isv() const { return _esr & ISV_MASK; }
+    bool ex() const { return _esr & EX_MASK; }
+
+public:
+    Soft_step(uint64 const esr) : _esr(esr) {}
+
+    bool is_exclusive_load() const { return isv() && ex(); }
 };

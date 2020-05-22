@@ -44,7 +44,7 @@ namespace Msr::Info {
 
     constexpr uint64 SPSR_MODE_MASK = 0x1full;
 
-    enum {
+    enum Spsr_flags {
         AARCH32 = 1ull << 4,
         AARCH64 = 0ull << 4,
         AA32_SVC = 0b0011ull,
@@ -53,6 +53,11 @@ namespace Msr::Info {
         AA64_EL0 = 0b0000ull,
         AIF_MASKED = 0b111ull << 6,
         D_MASKED = 0b1ull << 9,
+        SPSR_SINGLE_STEP = 1ull << 21,
+    };
+
+    enum Mdscr_flags {
+        MDSCR_SINGLE_STEP = 0x1ull << 0,
     };
 
     enum {

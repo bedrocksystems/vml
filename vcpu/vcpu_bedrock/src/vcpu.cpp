@@ -133,6 +133,25 @@ Vcpu::Vcpu::reconfigure(const Platform_ctx& ctx, const Nova::Mtd mtd_in) {
         unset_reconfig(VCPU_RECONFIG_TVM);
     }
 
+    if (is_reconfig_needed(VCPU_RECONFIG_SINGLE_STEP)) {
+        uint64 el1_mdscr = 0, el2_spsr = arch.el2_spsr();
+        arch.set_reg_selection_out(Nova::MTD::EL1_MDSCR | Nova::MTD::EL2_ELR_SPSR);
+
+        if (!_ss_enabled) {
+            el1_mdscr |= Msr::Info::MDSCR_SINGLE_STEP;
+            el2_spsr |= Msr::Info::SPSR_SINGLE_STEP;
+        } else {
+            el2_spsr &= ~Msr::Info::SPSR_SINGLE_STEP;
+        }
+
+        arch.el1_mdscr(el1_mdscr, true);
+        arch.el2_spsr(el2_spsr);
+        mtd_out |= arch.get_reg_selection_out();
+        _ss_enabled = !_ss_enabled;
+        Barrier::w_before_w();
+        unset_reconfig(VCPU_RECONFIG_SINGLE_STEP);
+    }
+
     return mtd_out;
 }
 
@@ -188,6 +207,14 @@ Vcpu::Vcpu::ctrl_tvm(bool enable, Request::Requestor requestor, const Nova::Mtd 
 
     if (needs_update) {
         set_reconfig(VCPU_RECONFIG_TVM);
+    }
+}
+
+void
+Vcpu::Vcpu::ctrl_single_step(bool enable, Request::Requestor requestor) {
+    bool needs_update = Request::needs_update(requestor, enable, _ss_requests);
+    if (needs_update) {
+        set_reconfig(VCPU_RECONFIG_SINGLE_STEP);
     }
 }
 

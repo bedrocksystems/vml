@@ -44,6 +44,7 @@ public:
         VCPU_RECONFIG_TVM = 1ull << 1,
         VCPU_RECONFIG_RESET = 1ull << 2,
         VCPU_RECONFIG_SWITCH_OFF = 1ull << 3,
+        VCPU_RECONFIG_SINGLE_STEP = 1ull << 4,
     };
 
 private:
@@ -104,6 +105,8 @@ protected:
     Model::Gic_d *const _gic;
     Model::Gic_r *_gic_r{nullptr};
 
+    atomic<bool> _ss_enabled{false};
+    atomic<uint32> _ss_requests{0};
     atomic<bool> _tvm_enabled{false};
     atomic<uint32> _tvm_requests{0};
 
@@ -112,6 +115,7 @@ protected:
     uint64 boot_arg() const { return _boot_arg; }
     void set_reconfig(Vcpu_reconfiguration r) { _reconfig |= r; }
     bool tvm_enabled() { return static_cast<bool>(_tvm_requests.load()); }
+    bool single_step_enabled() { return static_cast<bool>(_ss_requests.load()); }
     void switch_state_to_off();
     bool is_reconfig_needed(Vcpu_reconfiguration r) { return (_reconfig & r) != 0; }
     void unset_reconfig(Vcpu_reconfiguration r) { _reconfig &= ~r; }
@@ -138,6 +142,9 @@ public:
     static void reconfigure_all(Vcpu_reconfiguration r);
     static void reconfigure_all_but(Vcpu_id, Vcpu_reconfiguration r);
 
+    static bool is_single_step_enabled_for_vcpu(Vcpu_id);
+    static void ctrl_single_step(Vcpu_id cpu_id, bool enable,
+                                 Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM);
     static void ctrl_tvm(Vcpu_id cpu_id, bool enable,
                          Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM,
                          const Reg_selection extra_regs = 0);
@@ -166,6 +173,9 @@ public:
     virtual void ctrl_tvm(bool enable,
                           Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM,
                           const Reg_selection regs = 0)
+        = 0;
+    virtual void ctrl_single_step(bool enable,
+                                  Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM)
         = 0;
 
     // Functions that are implemented

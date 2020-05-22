@@ -643,3 +643,29 @@ Vmexit::bkpt(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd) {
     } else
         ABORT_WITH("BKPT unsupported with AA32 guests for now");
 }
+
+Nova::Mtd
+Vmexit::single_step(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd_in) {
+    Reg_accessor arch(*ctx, mtd_in);
+    uint64 el2_spsr = arch.el2_spsr();
+    Esr::Soft_step esr(arch.el2_esr());
+
+    if (esr.is_exclusive_load()) {
+        // XXX: for now, we cannot single step through a LDXR/STXR block of code
+        WARN("The VMM doesn't know how to handle that quite yet. Single step interrupted. PC = "
+             "0x%llx",
+             arch.el2_elr());
+        Model::Cpu::ctrl_single_step(vcpu.id(), false);
+    }
+
+    arch.set_reg_selection_out(Nova::MTD::EL2_ELR_SPSR);
+
+    /*
+     * Note: we reset SPSR.SS to 1 here regardless of the wether Single step will be
+     * triggered again. The reconfigure code will run after us and unset that bit if needed.
+     */
+    el2_spsr |= Msr::Info::SPSR_SINGLE_STEP;
+    arch.el2_spsr(el2_spsr);
+
+    return arch.get_reg_selection_out();
+}

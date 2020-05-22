@@ -100,6 +100,20 @@ Model::Cpu::reconfigure_all(Vcpu_reconfiguration r) {
     reconfigure_all_but(INVALID_VCPU_ID, r);
 }
 
+void
+Model::Cpu::ctrl_single_step(Vcpu_id id, bool enable, Request::Requestor requestor) {
+    ASSERT(id < num_vcpus);
+
+    vcpus[id]->ctrl_single_step(enable, requestor);
+}
+
+bool
+Model::Cpu::is_single_step_enabled_for_vcpu(Vcpu_id id) {
+    ASSERT(id < num_vcpus);
+
+    return vcpus[id]->single_step_enabled();
+}
+
 bool
 Model::Cpu::is_tvm_enabled(Vcpu_id cpu_id) {
     ASSERT(cpu_id < num_vcpus);

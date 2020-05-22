@@ -409,6 +409,18 @@ public:
         _arch->tmr_cntv_cval = 0;
     }
 
+    inline void el1_mdscr(const uint64 val, bool overwrite = false) {
+        ASSERT(_mtd_out & Nova::MTD::EL1_MDSCR);
+        if (!overwrite)
+            ASSERT(_mtd_in & Nova::MTD::EL1_MDSCR);
+        _arch->el1_mdscr = val;
+    }
+
+    inline uint64 el1_mdscr() const {
+        ASSERT(_mtd_in & Nova::MTD::EL1_MDSCR);
+        return _arch->el1_mdscr;
+    }
+
 private:
     Nova::Utcb_arch* _arch;
     const Reg_selection _mtd_in;
