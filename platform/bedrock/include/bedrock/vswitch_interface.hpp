@@ -6,13 +6,12 @@
  */
 #pragma once
 
-#include <zeta/types.hpp>
-#include <zeta/zeta.hpp>
-
 #include <errno.hpp>
-
 #include <model/virtio_net.hpp>
 #include <vm_config.hpp>
+#include <zeta/ec.hpp>
+#include <zeta/types.hpp>
+#include <zeta/zeta.hpp>
 
 namespace VSwitch {
     struct Queue_info;
@@ -51,6 +50,8 @@ protected:
     bool rx_constructed{false};
 
     uint64 features;
+
+    Zeta::Global_ec gec;
 
 private:
     const Uuid client_uuid; // The VMM hyper process UUID
@@ -92,7 +93,7 @@ private:
     [[noreturn]] static void wait_for_vswitch_signal(const Zeta::Zeta_ctx *ctx,
                                                      VSwitch::Virtio_backend *arg);
 
-    Errno setup_listener(const Zeta::Zeta_ctx *ctx, Vswitch_listener listener, Cpu cpu);
+    Errno setup_listener(Vswitch_listener listener, Cpu cpu);
 
     Sel connection_sm;
     Sel vswitch_sel;

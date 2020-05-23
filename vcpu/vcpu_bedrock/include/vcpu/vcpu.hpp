@@ -14,6 +14,7 @@
 #include <platform/errno.hpp>
 #include <platform/reg_accessor.hpp>
 #include <platform/types.hpp>
+#include <zeta/ec.hpp>
 
 namespace Vcpu {
     class Vcpu;
@@ -31,8 +32,9 @@ private:
 
     uint32 _elrsr_used{0};
 
-    Sel _vcpu_sel{Sels::INVALID}, _lec_sel{Sels::INVALID}, _exc_base_sel{Sels::INVALID},
-        _sc_sel{Sels::INVALID}, _sm_sel{Sels::INVALID};
+    Zeta::Local_ec _lec;
+    Zeta::Vcpu _vcpu_ec;
+    Sel _exc_base_sel{Sels::INVALID}, _sm_sel{Sels::INVALID};
 
     Nova::Mtd reset(Reg_accessor &utcb);
 
@@ -50,6 +52,7 @@ public:
         = sizeof(Nova::Utcb_arch::gic_lr) / sizeof(Nova::Utcb_arch::gic_lr[0]);
 
     Model::Physical_timer ptimer;
+    Zeta::Global_ec timer_gec;
     Model::Board *const board;
     Msr::Bus msr_bus;
 
@@ -71,7 +74,7 @@ public:
     Nova::Mtd forward_exception(const Platform_ctx &, const Nova::Mtd mtd_in, Exception_class c,
                                 Exception_type t, bool update_far);
 
-    virtual Errno run(const Zeta::Zeta_ctx *ctx) override;
+    virtual Errno run() override;
     virtual void ctrl_tvm(bool enable,
                           Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM,
                           const Nova::Mtd regs = 0) override;
@@ -91,10 +94,7 @@ public:
         return (err == ENONE);
     }
 
-    virtual bool recall() override {
-        Errno err = Zeta::recall(_vcpu_sel, false);
-        return (err == ENONE);
-    }
+    virtual bool recall() override { return _vcpu_ec.recall(false); }
 
     bool aarch64() const { return _aarch64; }
 };

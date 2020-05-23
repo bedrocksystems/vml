@@ -219,7 +219,7 @@ Model::Board_impl::setup_virtio_console(const Zeta::Zeta_ctx *ctx, uint64 const 
     ASSERT(umx_backend != nullptr);
 
     console->register_callback(*umx_backend);
-    err = umx_backend->setup_umx_virtio_bridge(ctx, umx_uuid, Vmconfig::name);
+    err = umx_backend->setup_umx_virtio_bridge(ctx->cpu(), umx_uuid, Vmconfig::name);
     if (err != ENONE) {
         WARN("Unable to connect to UMX. Virtio console will be disabled");
         delete console;
@@ -287,7 +287,7 @@ Model::Board_impl::setup_pl011_console(const Zeta::Zeta_ctx *ctx, const Fdt::Tre
     ASSERT(backend != nullptr);
 
     pl011->register_callback(backend);
-    err = backend->setup_umx_pl011_bridge(ctx, umx_uuid, Vmconfig::name);
+    err = backend->setup_umx_pl011_bridge(ctx->cpu(), umx_uuid, Vmconfig::name);
     if (err != ENONE) {
         WARN("Unable to connect to UMX. PL011 console will be disabled");
         delete pl011;

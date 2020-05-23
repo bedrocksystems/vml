@@ -8,7 +8,6 @@
 #include <alloc/heap.hpp>
 #include <alloc/sels.hpp>
 #include <alloc/vmap.hpp>
-#include <bedrock/ec.hpp>
 #include <bedrock/umx_interface.hpp>
 #include <io/console_zeta.hpp>
 #include <log/log.hpp>
@@ -97,21 +96,18 @@ Umx::Connection_helper::connect(const Zeta::Zeta_ctx *ctx, Connect_info *info) {
 }
 
 Errno
-Umx::Connection_helper::setup_umx_bridge(const Zeta::Zeta_ctx *ctx, const Uuid &umx_uuid,
-                                         const char *name) {
+Umx::Connection_helper::setup_umx_bridge(const Uuid &umx_uuid, const char *name) {
     constexpr ::Cpu cpu = 0; /* For now, UMX only is on CPU0 */
     Connect_info info{umx_uuid, name, this};
-    Errno err
-        = create_gec(ctx, cpu, reinterpret_cast<Zeta::global_ec_entry>(Connection_helper::connect),
-                     reinterpret_cast<mword>(&info));
-    if (err != ENONE) {
+    Errno err = connection_gec.start(
+        cpu, Nova::Qpd(), reinterpret_cast<Zeta::global_ec_entry>(Connection_helper::connect),
+        &info);
+    if (err != ENONE)
         return err;
-    }
 
     err = Zeta::sm_down(_wait_connection);
-    if (err != ENONE) {
+    if (err != ENONE)
         return err;
-    }
 
     return connection_status;
 }
@@ -168,29 +164,27 @@ Umx::Virtio_backend::wait_for_output(const Zeta::Zeta_ctx *, Virtio_backend *vir
 }
 
 Errno
-Umx::Virtio_backend::setup_umx_virtio_bridge(const Zeta::Zeta_ctx *ctx, const Uuid &umx_uuid,
-                                             const char *name) {
+Umx::Virtio_backend::setup_umx_virtio_bridge(Cpu cpu, const Uuid &umx_uuid, const char *name) {
     char dst[Umx::TOTAL_NAME_LEN];
 
     device_format_name(dst, "virtio console", name);
 
-    Errno err = _backend->setup_umx_bridge(ctx, umx_uuid, dst);
+    Errno err = _backend->setup_umx_bridge(umx_uuid, dst);
     if (err != ENONE)
         return err;
 
     // Disable the console from the list of Zeta consoles - we are driving it manually
     _backend->console->disable();
 
-    err = create_gec(ctx, ctx->cpu(),
-                     reinterpret_cast<Zeta::global_ec_entry>(Virtio_backend::wait_for_input),
-                     reinterpret_cast<mword>(this));
-
+    err = _input_ec.start(cpu, Nova::Qpd(),
+                          reinterpret_cast<Zeta::global_ec_entry>(Virtio_backend::wait_for_input),
+                          this);
     if (err != ENONE)
         return err;
 
-    return create_gec(ctx, ctx->cpu(),
-                      reinterpret_cast<Zeta::global_ec_entry>(Virtio_backend::wait_for_output),
-                      reinterpret_cast<mword>(this));
+    return _output_ec.start(
+        cpu, Nova::Qpd(), reinterpret_cast<Zeta::global_ec_entry>(Virtio_backend::wait_for_output),
+        this);
 }
 
 uint32
@@ -212,18 +206,17 @@ Umx::Pl011_backend::wait_for_input(const Zeta::Zeta_ctx *, Pl011_backend *pl011)
 }
 
 Errno
-Umx::Pl011_backend::setup_umx_pl011_bridge(const Zeta::Zeta_ctx *ctx, const Uuid &umx_uuid,
-                                           const char *name) {
+Umx::Pl011_backend::setup_umx_pl011_bridge(Cpu cpu, const Uuid &umx_uuid, const char *name) {
     char dst[Umx::TOTAL_NAME_LEN];
 
     device_format_name(dst, "pl011 console", name);
-    Errno err = _backend->setup_umx_bridge(ctx, umx_uuid, dst);
+    Errno err = _backend->setup_umx_bridge(umx_uuid, dst);
     if (err != ENONE)
         return err;
     // Disable the console from the list of Zeta console - we are driving it manually
     _backend->console->disable();
 
-    return create_gec(ctx, ctx->cpu(),
-                      reinterpret_cast<Zeta::global_ec_entry>(Pl011_backend::wait_for_input),
-                      reinterpret_cast<mword>(this));
+    return _input_ec.start(cpu, Nova::Qpd(),
+                           reinterpret_cast<Zeta::global_ec_entry>(Pl011_backend::wait_for_input),
+                           this);
 }

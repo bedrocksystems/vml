@@ -34,7 +34,7 @@ public:
         wait_sm.release();
         return true;
     }
-    virtual Errno run(const Platform_ctx *) override { return ENONE; }
+    virtual Errno run() override { return ENONE; }
     virtual void ctrl_tvm(bool, Request::Requestor, const Reg_selection) override {}
     virtual void ctrl_single_step(bool, Request::Requestor) override {}
 };

@@ -7,7 +7,6 @@
 
 #include <alloc/sels.hpp>
 #include <alloc/vmap.hpp>
-#include <bedrock/ec.hpp>
 #include <bedrock/fdt.hpp>
 #include <bitset.hpp>
 #include <compiler.hpp>
@@ -50,10 +49,11 @@ Passthru::Device::~Device() {
 }
 
 Errno
-Passthru::Device::setup_interrupt_listener(const Zeta::Zeta_ctx *ctx, Irq_Entry &ent) {
+Passthru::Device::setup_interrupt_listener(Cpu cpu, Irq_Entry &ent) {
     ent.device = this;
-    return create_gec(ctx, ctx->cpu(), reinterpret_cast<Zeta::global_ec_entry>(wait_for_interrupt),
-                      reinterpret_cast<mword>(&ent));
+
+    return _interrupt_listener.start(
+        cpu, Nova::Qpd(), reinterpret_cast<Zeta::global_ec_entry>(wait_for_interrupt), &ent);
 }
 
 Errno
@@ -207,7 +207,7 @@ Passthru::Device::attach_irqs(const Zeta::Zeta_ctx *ctx) {
         _gic->config_spi(_irqs[i].irq.virt_intr, true /* hw */, uint16(_irqs[i].irq.phys_intr),
                          true);
 
-        err = setup_interrupt_listener(ctx, _irqs[i]);
+        err = setup_interrupt_listener(ctx->cpu(), _irqs[i]);
         if (err != Errno::ENONE) {
             WARN("Unabled to configure IRQ entry %llu", i);
             return err;

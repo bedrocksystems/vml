@@ -130,10 +130,10 @@ Model::Cpu::ctrl_tvm(Vcpu_id cpu_id, bool enable, Request::Requestor requestor,
 }
 
 Errno
-Model::Cpu::run(Vcpu_id cpu_id, const Platform_ctx* ctx) {
+Model::Cpu::run(Vcpu_id cpu_id) {
     ASSERT(cpu_id < num_vcpus);
 
-    return vcpus[cpu_id]->run(ctx);
+    return vcpus[cpu_id]->run();
 }
 
 Model::Cpu::Start_err

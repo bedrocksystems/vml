@@ -130,7 +130,7 @@ public:
     static bool is_cpu_on(Vcpu_id);
     static void recall_all();
     static void resume_all();
-    static Errno run(Vcpu_id, const Platform_ctx *);
+    static Errno run(Vcpu_id);
 
     /*
      * Recall all vcpus except the one passed as an argument. This is useful
@@ -169,7 +169,7 @@ public:
     virtual void block_timeout(uint64) = 0;
     virtual bool unblock() = 0;
     virtual bool recall() = 0;
-    virtual Errno run(const Platform_ctx *ctx) = 0;
+    virtual Errno run() = 0;
     virtual void ctrl_tvm(bool enable,
                           Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM,
                           const Reg_selection regs = 0)

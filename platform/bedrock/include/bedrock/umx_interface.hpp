@@ -10,6 +10,7 @@
 #include <io/console_zeta.hpp>
 #include <model/virtio_console.hpp>
 #include <pl011/pl011.hpp>
+#include <zeta/ec.hpp>
 #include <zeta/types.hpp>
 #include <zeta/zeta.hpp>
 
@@ -44,11 +45,12 @@ public:
                size_t rx_size = Umx::Connection::DEFAULT_RX_SIZE);
     void deinit();
 
-    Errno setup_umx_bridge(const Zeta::Zeta_ctx *ctx, const Uuid &umx_uuid, const char *name);
+    Errno setup_umx_bridge(const Uuid &umx_uuid, const char *name);
     void update_connection_status(Errno err);
 
     Errno connection_status;
     Console_zeta *console;
+    Zeta::Global_ec connection_gec;
 
 private:
     struct Connect_info {
@@ -72,8 +74,7 @@ public:
 
     void driver_ok() override {}
 
-    Errno setup_umx_virtio_bridge(const Zeta::Zeta_ctx *ctx, const Uuid &umx_uuid,
-                                  const char *name);
+    Errno setup_umx_virtio_bridge(Cpu cpu, const Uuid &umx_uuid, const char *name);
 
 private:
     [[noreturn]] static void wait_for_input(const Zeta::Zeta_ctx *ctx, Umx::Virtio_backend *arg);
@@ -82,6 +83,7 @@ private:
     Umx::Connection_helper *_backend;
     Model::Virtio_console *_console;
     Semaphore *_sem;
+    Zeta::Global_ec _input_ec, _output_ec;
 };
 
 class Umx::Pl011_backend : public Model::Pl011_callback {
@@ -92,11 +94,12 @@ public:
 
     virtual uint32 from_guest_sent(const char &) override;
 
-    Errno setup_umx_pl011_bridge(const Zeta::Zeta_ctx *ctx, const Uuid &umx_uuid, const char *name);
+    Errno setup_umx_pl011_bridge(Cpu cpu, const Uuid &umx_uuid, const char *name);
 
 private:
     [[noreturn]] static void wait_for_input(const Zeta::Zeta_ctx *ctx, Umx::Pl011_backend *arg);
 
     Umx::Connection_helper *_backend;
     Model::Pl011 *_console;
+    Zeta::Global_ec _input_ec;
 };

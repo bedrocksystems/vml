@@ -5,14 +5,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <bedrock/ec.hpp>
 #include <bedrock/portal.hpp>
 #include <bedrock/vmexit.hpp>
 #include <debug_switches.hpp>
 #include <log/log.hpp>
-#include <nova/errno.hpp>
 #include <outpost/outpost.hpp>
 #include <vcpu/vcpu.hpp>
+#include <zeta/ec.hpp>
 #include <zeta/types.hpp>
 #include <zeta/zeta.hpp>
 
@@ -448,13 +447,10 @@ Portal_entry_config portals_config[] = {
 
 Errno
 Portal::ctrl_portal(Sel base_sel, Sel id, Vcpu::Vcpu& vcpu) {
-    Nova::Nova_err ret;
-
     ASSERT(id < Nova::Exc::VCPU_COUNT);
 
-    ret = Nova::ctrl_pt(base_sel + id, reinterpret_cast<mword>(&vcpu),
-                        portals_config[id].mtd | portals_config[id].extra_regs);
-    return to_errno(ret);
+    return Zeta::ctrl_pt(base_sel + id, reinterpret_cast<mword>(&vcpu),
+                         portals_config[id].mtd | portals_config[id].extra_regs);
 }
 
 void
@@ -476,15 +472,14 @@ Portal::clear_regs(Sel id) {
 }
 
 Errno
-Portal::init_portals(const Zeta::Zeta_ctx* ctx, Sel exc_base_sel, Sel lec, Vcpu::Vcpu& vcpu) {
-    Errno err;
-
+Portal::init_portals(Zeta::Local_ec& lec, Sel exc_base_sel, Vcpu::Vcpu& vcpu) {
     for (size_t i = 0; i < sizeof(portals_config) / sizeof(portals_config[0]); ++i) {
         if (portals_config[i].entry == nullptr)
             continue;
 
-        err = Zeta::create_pt(ctx, exc_base_sel + i, lec, portals_config[i].mtd,
-                              portals_config[i].entry, reinterpret_cast<mword>(&vcpu));
+        Errno err;
+        err = lec.bind(exc_base_sel + i, portals_config[i].entry, reinterpret_cast<mword>(&vcpu),
+                       portals_config[i].mtd);
         if (err != Errno::ENONE)
             return err;
     }

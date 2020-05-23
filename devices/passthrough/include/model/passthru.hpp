@@ -12,6 +12,7 @@
 #include <nova/types.hpp>
 #include <range.hpp>
 #include <types.hpp>
+#include <zeta/ec.hpp>
 
 namespace Fdt {
     class Tree;
@@ -61,7 +62,7 @@ private:
     Errno attach_irqs(const Zeta::Zeta_ctx *ctx);
     Errno assign_dev(const Zeta::Zeta_ctx *);
 
-    Errno setup_interrupt_listener(const Zeta::Zeta_ctx *ctx, Irq_Entry &ent);
+    Errno setup_interrupt_listener(Cpu cpu, Irq_Entry &ent);
     static void wait_for_interrupt(const Zeta::Zeta_ctx *ctx, Irq_Entry *arg);
 
     const char *_guest_dev;
@@ -72,6 +73,7 @@ private:
     Range<uint64> *_io_ranges;
     size_t _num_ranges{0};
     Model::Gic_d *const _gic;
+    Zeta::Global_ec _interrupt_listener;
 
     static cxx::Bitset<Model::MAX_IRQ> _irq_configured;
 };

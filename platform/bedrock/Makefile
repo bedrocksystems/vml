@@ -18,7 +18,7 @@ endif
 
 include deps.mk
 
-CC_SRCS = vswitch_interface.cpp ec.cpp umx_interface.cpp portal.cpp vmexit.cpp fdt.cpp
+CC_SRCS = vswitch_interface.cpp umx_interface.cpp portal.cpp vmexit.cpp fdt.cpp
 OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
 SPECS =

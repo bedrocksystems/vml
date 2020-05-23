@@ -7,7 +7,6 @@
 
 #include <alloc/sels.hpp>
 #include <alloc/vmap.hpp>
-#include <bedrock/ec.hpp>
 #include <bedrock/vswitch_interface.hpp>
 #include <log/log.hpp>
 #include <zeta/zeta.hpp>
@@ -153,10 +152,8 @@ namespace VSwitch {
         }
     }
 
-    Errno Virtio_backend::setup_listener(const Zeta::Zeta_ctx *ctx, Vswitch_listener listener,
-                                         Cpu cpu) {
-        return create_gec(ctx, cpu, reinterpret_cast<Zeta::global_ec_entry>(listener),
-                          reinterpret_cast<mword>(this));
+    Errno Virtio_backend::setup_listener(Vswitch_listener listener, Cpu cpu) {
+        return gec.start(cpu, Nova::Qpd(), reinterpret_cast<Zeta::global_ec_entry>(listener), this);
     }
 
     Errno Virtio_backend::setup_listeners(const Zeta::Zeta_ctx *ctx) {
@@ -173,25 +170,25 @@ namespace VSwitch {
             return err;
         }
 
-        err = setup_listener(ctx, wait_for_connection, 0);
+        err = setup_listener(wait_for_connection, 0);
         if (err != Errno::ENONE) {
             WARN("connection listener creation failed");
             return err;
         }
 
-        err = setup_listener(ctx, wait_for_tx_int, ctx->cpu());
+        err = setup_listener(wait_for_tx_int, ctx->cpu());
         if (err != Errno::ENONE) {
             WARN("tx int listener creation failed");
             return err;
         }
 
-        err = setup_listener(ctx, wait_for_rx_int, ctx->cpu());
+        err = setup_listener(wait_for_rx_int, ctx->cpu());
         if (err != Errno::ENONE) {
             WARN("rx int listener creation failed");
             return err;
         }
 
-        err = setup_listener(ctx, wait_for_vswitch_signal, ctx->cpu());
+        err = setup_listener(wait_for_vswitch_signal, ctx->cpu());
         if (err != Errno::ENONE) {
             WARN("rx int listener creation failed");
             return err;

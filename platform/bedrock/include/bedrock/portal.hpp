@@ -9,6 +9,7 @@
 
 #include <errno.hpp>
 #include <nova/types.hpp>
+#include <zeta/ec.hpp>
 #include <zeta/types.hpp>
 
 namespace Vcpu {
@@ -28,7 +29,7 @@ namespace Portal {
         = Nova::MTD::EL1_TTBR | Nova::MTD::EL1_AFSR | Nova::MTD::EL1_MAIR | Nova::MTD::EL1_IDR
           | Nova::MTD::A32_DACR_IFSR | Nova::MTD::EL1_SCTLR | Nova::MTD::EL1_TCR;
 
-    Errno init_portals(const Zeta::Zeta_ctx* ctx, Sel exc_base_sel, Sel lec, Vcpu::Vcpu& vcpu);
+    Errno init_portals(Zeta::Local_ec& lec, Sel exc_base_sel, Vcpu::Vcpu& vcpu);
     Errno ctrl_portal(Sel base, Sel id, Vcpu::Vcpu& vcpu);
     void add_regs(Sel id, Nova::Mtd mtd);
     void remove_regs(Sel id, Nova::Mtd mtd);

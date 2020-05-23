@@ -8,7 +8,6 @@
 #include <alloc/sels.hpp>
 #include <alloc/vmap.hpp>
 #include <arch/barrier.hpp>
-#include <bedrock/ec.hpp>
 #include <bedrock/portal.hpp>
 #include <guest_config/guest.hpp>
 #include <log/log.hpp>
@@ -228,36 +227,24 @@ Vcpu::Vcpu::setup(const Zeta::Zeta_ctx* ctx) {
         return ENOMEM;
 
     _exc_base_sel = Sels::alloc(Nova::Exc::EC_COUNT);
-    _vcpu_sel = Sels::alloc();
-    _lec_sel = Sels::alloc();
-    _sc_sel = Sels::alloc();
     _sm_sel = Sels::alloc();
 
-    if (_sm_sel == Sels::INVALID || _sc_sel == Sels::INVALID || _lec_sel == Sels::INVALID
-        || _vcpu_sel == Sels::INVALID || _exc_base_sel == Sels::INVALID) {
+    if (_sm_sel == Sels::INVALID || _exc_base_sel == Sels::INVALID) {
         WARN("Unable to allocate selectors for vCPU %u", id());
         return ENOMEM;
     }
 
-    uint8* stack;
-    Nova::Utcb* utcb;
-
-    err = create_ec_resources(stack, utcb);
-    if (err != ENONE)
-        return err;
-
     INFO("Setting up vCPU %u -> %u pCPU", id(), pcpu);
 
-    err = Zeta::create_local_ec(ctx, Nova::USE_NONE, _lec_sel, pcpu, reinterpret_cast<mword>(stack),
-                                utcb);
+    err = _lec.create(ctx->cpu());
     if (err != Errno::ENONE)
         return err;
 
-    err = Portal::init_portals(ctx, _exc_base_sel, _lec_sel, *this);
+    err = Portal::init_portals(_lec, _exc_base_sel, *this);
     if (err != Errno::ENONE)
         return err;
 
-    err = Zeta::create_vcpu_ec(ctx, Nova::USE_FPU, _vcpu_sel, pcpu, _exc_base_sel);
+    err = _vcpu_ec.create(ctx->cpu(), _exc_base_sel);
     if (err != Errno::ENONE)
         return err;
 
@@ -269,9 +256,9 @@ Vcpu::Vcpu::setup(const Zeta::Zeta_ctx* ctx) {
     if (!ok)
         return Errno::EINVAL;
 
-    err = create_gec(ctx, ctx->cpu(),
-                     reinterpret_cast<Zeta::global_ec_entry>(Model::Physical_timer::timer_loop),
-                     reinterpret_cast<mword>(&ptimer));
+    err = timer_gec.start(
+        ctx->cpu(), Nova::Qpd(),
+        reinterpret_cast<Zeta::global_ec_entry>(Model::Physical_timer::timer_loop), &ptimer);
     if (err != Errno::ENONE)
         return err;
 
@@ -283,9 +270,9 @@ Vcpu::Vcpu::setup(const Zeta::Zeta_ctx* ctx) {
 }
 
 Errno
-Vcpu::Vcpu::run(const Platform_ctx* ctx) {
+Vcpu::Vcpu::run() {
     switch_state_to_on();
-    return Zeta::create_sc(ctx, _sc_sel, _vcpu_sel, Nova::Qpd());
+    return _vcpu_ec.run(Nova::Qpd());
 }
 
 Nova::Mtd
