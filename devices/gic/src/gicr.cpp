@@ -2,7 +2,8 @@
  * Copyright (C) 2019 BedRock Systems, Inc.
  * All rights reserved.
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: LGPL-2.1 WITH BedRock Exception for use over network,
+ * see repository root for details.
  */
 
 #include <model/gic.hpp>
