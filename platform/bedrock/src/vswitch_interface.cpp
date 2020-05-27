@@ -60,14 +60,14 @@ namespace VSwitch {
         }
 
         // Share interrupt semaphores.
-        ret = Zeta::Service::share(ctx, pt_sel, 0, Nova::Obj_crd(interrupts, 1));
+        ret = Zeta::Service::share(ctx, pt_sel, 0, interrupts, 2,
+                                   Nova::Obj_cred::sm_cred(true, true));
         if (ret != Errno::ENONE)
             return ret;
 
         size_t num_pages = numpages(guest_size);
-        ret = Zeta::Service::share(
-            ctx, pt_sel, 1,
-            Nova::Mem_crd(vmm_base, uint8(order_up(num_pages)), Nova::Mem_cred(true, true, false)));
+        ret = Zeta::Service::share(ctx, pt_sel, 1, vmm_base, PAGE_SIZE * num_pages,
+                                   Nova::Mem_cred(true, true, false));
         if (ret != Errno::ENONE)
             return ret;
 
@@ -97,7 +97,7 @@ namespace VSwitch {
         if (ret != Errno::ENONE)
             return ret;
 
-        return Zeta::Service::import(ctx, pt_sel, 2, Nova::Obj_crd(_sel, 0));
+        return Zeta::Service::import(ctx, pt_sel, 2, _sel, 1, Nova::Obj_cred::sm_cred(true, true));
     }
 
     void Virtio_backend::driver_ok() {
