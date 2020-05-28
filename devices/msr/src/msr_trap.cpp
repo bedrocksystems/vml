@@ -36,13 +36,16 @@ vmi::Wtrapped_msr::access(Vbus::Access access, const Vcpu_ctx* vcpu, mword, uint
 
     ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
 
-    info.id = convert_id_for_vmi(id());
-    if (info.id != Vmm::Msr::UNKNOWN) {
-        info.read = false; // Only writes are trapped at the moment
-        info.cur_value = current;
-        info.new_value = res;
-        info.name = name();
-        outpost::vmi_handle_msr_update(*vcpu, info);
+    if (Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vcpu->vcpu_id,
+                                               Request::Requestor::VMI)) {
+        info.id = convert_id_for_vmi(id());
+        if (info.id != Vmm::Msr::UNKNOWN) {
+            info.read = false; // Only writes are trapped at the moment
+            info.cur_value = current;
+            info.new_value = res;
+            info.name = name();
+            outpost::vmi_handle_msr_update(*vcpu, info);
+        }
     }
 
     current = res;
