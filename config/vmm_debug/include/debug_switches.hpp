@@ -9,7 +9,6 @@
 #pragma once
 
 namespace Debug {
-    static constexpr bool SANITY_CHECK_VM_EXIT_RESUME = false;
     static constexpr bool TRACE_SYSTEM_REGS = false;
     static constexpr bool TRACE_VBUS = false;
     static constexpr bool TRACE_SMC = false;

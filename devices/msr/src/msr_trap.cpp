@@ -86,7 +86,7 @@ vmi::Sctlr_el1::access(Vbus::Access access, const Vcpu_ctx* vcpu, mword, uint8, 
 
     if (after.cache_enabled()) {
         DEBUG("Cache enabled - stop TVM trapping");
-        Model::Cpu::ctrl_tvm(vcpu->vcpu_id, false); // Turn off TVM
+        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vcpu->vcpu_id, false);
     }
 
     return Vbus::Err::UPDATE_REGISTER; // Tell the VCPU to update the relevant physical

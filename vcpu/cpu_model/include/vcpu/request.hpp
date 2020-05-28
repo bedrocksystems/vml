@@ -12,8 +12,8 @@
 
 namespace Request {
     enum Requestor : uint32 {
-        REQUESTOR_VMM = (1 << 0),
-        REQUESTOR_VMI = (1 << 1),
+        VMM = (1 << 0),
+        VMI = (1 << 1),
     };
 
     inline bool is_requested_by(Requestor requestor, const atomic<uint32> &requests) {

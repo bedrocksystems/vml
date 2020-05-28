@@ -18,6 +18,7 @@
 namespace Model {
     class Cpu_irq_interface;
     class Cpu;
+    class Cpu_feature;
     class Timer;
     class Gic_d;
     class Gic_r;
@@ -38,16 +39,26 @@ public:
     virtual uint8 aff3() const = 0;
 };
 
-class Model::Cpu : private Model::Cpu_irq_interface {
+class Model::Cpu_feature {
 public:
-    enum Vcpu_reconfiguration : uint64 {
-        VCPU_RECONFIG_NONE = 0ull,
-        VCPU_RECONFIG_TVM = 1ull << 1,
-        VCPU_RECONFIG_RESET = 1ull << 2,
-        VCPU_RECONFIG_SWITCH_OFF = 1ull << 3,
-        VCPU_RECONFIG_SINGLE_STEP = 1ull << 4,
-    };
+    bool is_requested_by(Request::Requestor requestor) const {
+        return Request::is_requested_by(requestor, _requests);
+    }
+    bool is_requested() const { return static_cast<bool>(_requests.load()); }
+    bool is_enabled() const { return _enabled; }
+    void set_enabled(bool e);
+    bool needs_reconfiguration() const { return is_enabled() != is_requested(); }
+    bool needs_update(bool enable, Request::Requestor requestor) {
+        return Request::needs_update(requestor, enable, _requests);
+    }
+    void unset_requests() { _requests = 0; }
 
+private:
+    atomic<uint32> _requests{0};
+    bool _enabled;
+};
+
+class Model::Cpu : private Model::Cpu_irq_interface {
 private:
     Semaphore _resume_sm;
     Semaphore _off_sm;
@@ -57,8 +68,6 @@ private:
     Vcpu_id const _vcpu_id;
     uint16 _timer_irq;
     Model::Timer *_timer{nullptr};
-
-    atomic<uint64> _reconfig{VCPU_RECONFIG_NONE};
 
     enum Interrupt_state { NONE, SLEEPING, PENDING };
     atomic<Interrupt_state> _interrupt_state{NONE};
@@ -90,14 +99,23 @@ private:
 
     atomic<State> _state{OFF};
 
-    bool is_on() const {
-        return !Request::is_requested_by(Request::Requestor::REQUESTOR_VMM, _off_requests);
+    bool is_turned_on_by_guest() const {
+        return !_execution_paused.is_requested_by(Request::Requestor::VMM);
     }
 
     void resume_vcpu() { _resume_sm.release(); }
     void switch_on() { _off_sm.release(); }
     void resume();
     void set_reset_parameters(uint64 const boot_addr, uint64 const boot_arg, uint64 const tmr_off);
+
+    virtual void ctrl_tvm(bool enable, Request::Requestor requestor = Request::Requestor::VMM,
+                          const Reg_selection regs = 0)
+        = 0;
+    virtual void ctrl_single_step(bool enable,
+                                  Request::Requestor requestor = Request::Requestor::VMM)
+        = 0;
+
+    static void roundup(Vcpu_id);
 
 protected:
     uint64 _tmr_off{0};
@@ -106,58 +124,53 @@ protected:
     Model::Gic_d *const _gic;
     Model::Gic_r *_gic_r{nullptr};
 
-    atomic<bool> _ss_enabled{false};
-    atomic<uint32> _ss_requests{0};
-    atomic<bool> _tvm_enabled{false};
-    atomic<uint32> _tvm_requests{0};
-    atomic<uint32> _off_requests{0};
-
     void wait_for_switch_on() { _off_sm.acquire(); }
     uint64 boot_addr() const { return _boot_addr; }
     uint64 boot_arg() const { return _boot_arg; }
-    void set_reconfig(Vcpu_reconfiguration r) { _reconfig |= r; }
-    bool tvm_enabled() { return static_cast<bool>(_tvm_requests.load()); }
-    bool single_step_enabled() { return static_cast<bool>(_ss_requests.load()); }
-    bool is_paused() { return static_cast<bool>(_off_requests.load()); }
     void switch_state_to_off();
-    bool is_reconfig_needed(Vcpu_reconfiguration r) { return (_reconfig & r) != 0; }
-    void unset_reconfig(Vcpu_reconfiguration r) { _reconfig &= ~r; }
     uint64 timer_offset() const { return _tmr_off; }
     void reset_interrupt_state() { _interrupt_state = NONE; }
+
+    Cpu_feature _reset;
+    Cpu_feature _tvm;
+    Cpu_feature _singe_step;
+    Cpu_feature _execution_paused;
 
 public:
     // VCPU api start
 
     static bool init(uint16 vcpus);
-    static void recall(Vcpu_id);
-    static bool is_cpu_on(Vcpu_id);
-    static void recall_all();
+    static bool is_cpu_turned_on_by_guest(Vcpu_id);
+    static void roundup_all();
     static void resume_all();
     static Errno run(Vcpu_id);
 
-    /*
-     * Recall all vcpus except the one passed as an argument. This is useful
-     * because this function is usually called in the context of a VM exit so
-     * the current CPU is already stopped.
-     */
-    static void recall_all_but(Vcpu_id);
-    static void reconfigure(Vcpu_id, Vcpu_reconfiguration r);
-    static void reconfigure_all(Vcpu_reconfiguration r);
-    static void reconfigure_all_but(Vcpu_id, Vcpu_reconfiguration r);
+    typedef void (*ctrl_feature_cb)(Model::Cpu *, bool, Request::Requestor, Reg_selection);
+    typedef bool (*requested_feature_cb)(Model::Cpu *, Request::Requestor);
 
-    static void single_step_only(Vcpu_id, bool,
-                                 Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM);
-    static bool is_single_step_enabled_for_vcpu(Vcpu_id);
-    static void ctrl_single_step(Vcpu_id cpu_id, bool enable,
-                                 Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM);
-    static void ctrl_state_off(Vcpu_id cpu_id, bool enable,
-                               Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM);
-    static void ctrl_tvm(Vcpu_id cpu_id, bool enable,
-                         Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM,
-                         const Reg_selection extra_regs = 0);
-    static bool is_tvm_enabled(Vcpu_id);
+    static void ctrl_feature_on_vcpu(ctrl_feature_cb cb, Vcpu_id, bool,
+                                     Request::Requestor requestor = Request::Requestor::VMM,
+                                     Reg_selection regs = 0);
+    static void ctrl_feature_on_all_but_vcpu(ctrl_feature_cb cb, Vcpu_id, bool,
+                                             Request::Requestor requestor = Request::Requestor::VMM,
+                                             Reg_selection regs = 0);
+    static void ctrl_feature_on_all_vcpus(ctrl_feature_cb cb, bool,
+                                          Request::Requestor requestor = Request::Requestor::VMM,
+                                          Reg_selection regs = 0);
+    static bool is_feature_enabled_on_vcpu(requested_feature_cb cb, Vcpu_id,
+                                           Request::Requestor requestor = Request::Requestor::VMM);
+
+    static void ctrl_feature_off(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
+                                 Reg_selection regs);
+    static void ctrl_feature_reset(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
+                                   Reg_selection regs);
+    static void ctrl_feature_tvm(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
+                                 Reg_selection regs);
+    static void ctrl_feature_single_step(Model::Cpu *vcpu, bool enable,
+                                         Request::Requestor requestor, Reg_selection regs);
+    static bool requested_feature_tvm(Model::Cpu *vcpu, Request::Requestor requestor);
+
     static uint16 get_num_vcpus();
-
     static Pcpu_id get_pcpu(Vcpu_id);
 
     /*
@@ -177,15 +190,6 @@ public:
     virtual bool unblock() = 0;
     virtual bool recall() = 0;
     virtual Errno run() = 0;
-    virtual void ctrl_tvm(bool enable,
-                          Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM,
-                          const Reg_selection regs = 0)
-        = 0;
-    virtual void ctrl_single_step(bool enable,
-                                  Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM)
-        = 0;
-    virtual void ctrl_state_off(bool enable,
-                                Request::Requestor requestor = Request::Requestor::REQUESTOR_VMM);
 
     // Functions that are implemented
     Cpu(Gic_d &gic, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq);

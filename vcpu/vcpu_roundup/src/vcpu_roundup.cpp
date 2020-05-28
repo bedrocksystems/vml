@@ -120,7 +120,7 @@ Vcpu::Roundup::init(const Platform_ctx* ctx, uint16 num_vcpus) {
 static inline void
 do_roundup(bool from_vcpu) {
     roundup_info.begin_roundup(from_vcpu);
-    Model::Cpu::recall_all();
+    Model::Cpu::roundup_all();
 
     if (from_vcpu)
         Vcpu::Roundup::vcpu_notify_done_progessing();

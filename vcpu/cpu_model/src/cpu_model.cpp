@@ -51,7 +51,7 @@ Model::Cpu::get_pcpu(Vcpu_id id) {
 }
 
 void
-Model::Cpu::recall(Vcpu_id cpu_id) {
+Model::Cpu::roundup(Vcpu_id cpu_id) {
     ASSERT(cpu_id < num_vcpus);
 
     vcpus[cpu_id]->switch_state_to_roundedup();
@@ -60,17 +60,9 @@ Model::Cpu::recall(Vcpu_id cpu_id) {
 }
 
 void
-Model::Cpu::recall_all_but(Vcpu_id cpu_id) {
-    ASSERT(cpu_id < num_vcpus || cpu_id == INVALID_VCPU_ID);
-
+Model::Cpu::roundup_all() {
     for (Vcpu_id i = 0; i < num_vcpus; ++i)
-        if (i != cpu_id)
-            recall(i);
-}
-
-void
-Model::Cpu::recall_all() {
-    recall_all_but(INVALID_VCPU_ID);
+        roundup(i);
 }
 
 void
@@ -80,72 +72,85 @@ Model::Cpu::resume_all() {
 }
 
 void
-Model::Cpu::reconfigure(Vcpu_id cpu_id, Vcpu_reconfiguration r) {
-    ASSERT(cpu_id < num_vcpus);
+Model::Cpu::ctrl_feature_on_vcpu(ctrl_feature_cb cb, Vcpu_id vcpu_id, bool enabled,
+                                 Request::Requestor requestor, Reg_selection regs) {
+    ASSERT(vcpu_id < num_vcpus);
 
-    vcpus[cpu_id]->set_reconfig(r);
+    Model::Cpu* vcpu = vcpus[vcpu_id];
+    cb(vcpu, enabled, requestor, regs);
 }
 
 void
-Model::Cpu::reconfigure_all_but(Vcpu_id cpu_id, Vcpu_reconfiguration r) {
-    ASSERT(cpu_id < num_vcpus || cpu_id == INVALID_VCPU_ID);
+Model::Cpu::ctrl_feature_on_all_but_vcpu(ctrl_feature_cb cb, Vcpu_id id, bool enabled,
+                                         Request::Requestor requestor, Reg_selection regs) {
+    ASSERT(id < num_vcpus);
+    for (Vcpu_id i = 0; i < num_vcpus; ++i) {
+        Model::Cpu* vcpu = vcpus[i];
 
-    for (uint32 i = 0; i < num_vcpus; ++i) {
-        if (i != cpu_id)
-            reconfigure(i, r);
+        if (i != id)
+            cb(vcpu, enabled, requestor, regs);
     }
 }
 
 void
-Model::Cpu::reconfigure_all(Vcpu_reconfiguration r) {
-    reconfigure_all_but(INVALID_VCPU_ID, r);
-}
+Model::Cpu::ctrl_feature_on_all_vcpus(ctrl_feature_cb cb, bool enabled,
+                                      Request::Requestor requestor, Reg_selection regs) {
+    for (Vcpu_id i = 0; i < num_vcpus; ++i) {
+        Model::Cpu* vcpu = vcpus[i];
 
-void
-Model::Cpu::ctrl_single_step(Vcpu_id id, bool enable, Request::Requestor requestor) {
-    ASSERT(id < num_vcpus);
-
-    vcpus[id]->ctrl_single_step(enable, requestor);
-}
-
-void
-Model::Cpu::ctrl_state_off(Vcpu_id id, bool enable, Request::Requestor requestor) {
-    ASSERT(id < num_vcpus);
-
-    vcpus[id]->ctrl_state_off(enable, requestor);
-}
-
-void
-Model::Cpu::single_step_only(Vcpu_id id, bool enable, Request::Requestor requestor) {
-    ASSERT(id < num_vcpus);
-    for (uint32 i = 0; i < num_vcpus; ++i) {
-        if (i == id)
-            vcpus[i]->ctrl_single_step(enable, requestor);
-        else
-            vcpus[i]->ctrl_state_off(enable, requestor);
+        cb(vcpu, enabled, requestor, regs);
     }
 }
 
 bool
-Model::Cpu::is_single_step_enabled_for_vcpu(Vcpu_id id) {
-    ASSERT(id < num_vcpus);
+Model::Cpu::is_feature_enabled_on_vcpu(requested_feature_cb cb, Vcpu_id vcpu_id,
+                                       Request::Requestor requestor) {
+    ASSERT(vcpu_id < num_vcpus);
 
-    return vcpus[id]->single_step_enabled();
-}
-
-bool
-Model::Cpu::is_tvm_enabled(Vcpu_id cpu_id) {
-    ASSERT(cpu_id < num_vcpus);
-
-    return vcpus[cpu_id]->tvm_enabled();
+    Model::Cpu* vcpu = vcpus[vcpu_id];
+    return cb(vcpu, requestor);
 }
 
 void
-Model::Cpu::ctrl_tvm(Vcpu_id cpu_id, bool enable, Request::Requestor requestor,
-                     const Reg_selection regs) {
-    ASSERT(cpu_id < num_vcpus);
+Model::Cpu::ctrl_feature_tvm(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
+                             Reg_selection regs) {
+    vcpu->ctrl_tvm(enable, requestor, regs);
+}
 
-    vcpus[cpu_id]->ctrl_tvm(enable, requestor, regs);
+void
+Model::Cpu::ctrl_feature_single_step(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
+                                     Reg_selection) {
+    vcpu->ctrl_single_step(enable, requestor);
+}
+
+bool
+Model::Cpu::requested_feature_tvm(Model::Cpu* vcpu, Request::Requestor requestor) {
+    return vcpu->_tvm.is_requested_by(requestor);
+}
+
+void
+Model::Cpu::ctrl_feature_off(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
+                             Reg_selection) {
+    bool needs_update = vcpu->_execution_paused.needs_update(enable, requestor);
+    if (needs_update) {
+        if (!enable) {
+            vcpu->switch_on();
+            vcpu->_execution_paused.set_enabled(false);
+        } else {
+            /* A VCPU is switched off at the beginning of the VMExit handler so issuing a
+             * recall is a more robust approach as it will guarantee that the VCPU will not
+             * progress any more after that call.
+             */
+            vcpu->recall();
+            vcpu->_execution_paused.set_enabled(true);
+        }
+    }
+}
+
+void
+Model::Cpu::ctrl_feature_reset(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
+                               Reg_selection) {
+    vcpu->_reset.needs_update(enable, requestor);
 }
 
 Errno
@@ -163,7 +168,7 @@ Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr, uint64
         return INVALID_PARAMETERS;
     }
 
-    if (is_cpu_on(vcpu_id)) {
+    if (is_cpu_turned_on_by_guest(vcpu_id)) {
         WARN("Trying to power on VCPU " FMTu64 " but it is already on", vcpu_id);
         return ALREADY_ON;
     }
@@ -180,16 +185,22 @@ Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr, uint64
     Model::Cpu* const vcpu = vcpus[vcpu_id];
 
     vcpu->set_reset_parameters(boot_addr, boot_arg, timer_off);
-    vcpu->ctrl_state_off(false);
+    Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, vcpu_id, false);
     return SUCCESS;
 }
 
 bool
-Model::Cpu::is_cpu_on(Vcpu_id cpu_id) {
+Model::Cpu::is_cpu_turned_on_by_guest(Vcpu_id cpu_id) {
     if (cpu_id >= num_vcpus)
         return false;
 
-    return vcpus[cpu_id]->is_on();
+    return vcpus[cpu_id]->is_turned_on_by_guest();
+}
+
+void
+Model::Cpu_feature::set_enabled(bool e) {
+    _enabled = e;
+    Barrier::w_before_w();
 }
 
 Model::Cpu::Cpu(Gic_d& gic, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq)
@@ -369,7 +380,7 @@ bool
 Model::Cpu::switch_state_to_emulating() {
     enum State new_state, cur_state;
 
-    while (is_paused()) {
+    while (_execution_paused.is_requested()) {
         switch_state_to_off();
         wait_for_switch_on();
         switch_state_to_on();
@@ -463,15 +474,4 @@ Model::Cpu::set_reset_parameters(uint64 const boot_addr, uint64 const boot_arg,
     _boot_arg = boot_arg;
     _tmr_off = tmr_off;
     Barrier::rw_before_rw();
-}
-
-void
-Model::Cpu::ctrl_state_off(bool enable, Request::Requestor requestor) {
-    bool needs_update = Request::needs_update(requestor, enable, _off_requests);
-    if (needs_update) {
-        if (enable)
-            set_reconfig(VCPU_RECONFIG_SWITCH_OFF);
-        else
-            switch_on();
-    }
 }

@@ -18,40 +18,11 @@
 
 typedef Nova::Mtd (*vcpu_portal_handler)(const Zeta::Zeta_ctx*, Vcpu::Vcpu&, const Nova::Mtd);
 
-static void
-sanity_check_on_vmexit(const Sel vmexit_id, const Zeta::Zeta_ctx*, const Vcpu::Vcpu& vcpu,
-                       const Nova::Mtd& mtd_in) {
-    if ((mtd_in & Nova::MTD::GIC) == 0) {
-        WARN("VCPU %u: VMExit: 0x%llx: GIC state was not requested from NOVA", vcpu.id(),
-             vmexit_id);
-    }
-}
-
-static void
-sanity_check_before_vmresume(const Sel vmexit_id, const Zeta::Zeta_ctx* ctx, const Vcpu::Vcpu& vcpu,
-                             const Nova::Mtd& mtd_out) {
-    Nova::Utcb_arch& arch = ctx->utcb()->arch;
-
-    if (arch.el2_elr == 0) {
-        WARN("VCPU %u: VMExit: 0x%llx: EL2_ELR is set to zero.", vcpu.id(), vmexit_id);
-    }
-
-    if (vmexit_id != Nova::Exc::VCPU_RECALL && vmexit_id != Nova::Exc::VCPU_VTIMER) {
-        if ((mtd_out & Nova::MTD::EL2_ELR_SPSR) == 0) {
-            WARN("VCPU %u: VMExit: 0x%llx: EL2_ELR_SPSR was not set in the MTD", vcpu.id(),
-                 vmexit_id);
-        }
-    }
-}
-
 template<vcpu_portal_handler H>
 inline Nova::Mtd
 call_portal_handler(const Sel vmexit_id, const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu,
                     const Nova::Mtd& mtd_in) {
     Nova::Mtd mtd_out = 0;
-
-    if (Debug::SANITY_CHECK_VM_EXIT_RESUME)
-        sanity_check_on_vmexit(vmexit_id, ctx, vcpu, mtd_in);
 
     do {
         if (vcpu.switch_state_to_emulating())
@@ -84,9 +55,6 @@ call_portal_handler(const Sel vmexit_id, const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& 
 
     // Emulation mode stops here
     vcpu.switch_state_to_on();
-
-    if (Debug::SANITY_CHECK_VM_EXIT_RESUME)
-        sanity_check_before_vmresume(vmexit_id, ctx, vcpu, mtd_out);
 
     return mtd_out;
 }

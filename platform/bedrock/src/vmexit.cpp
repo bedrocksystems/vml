@@ -148,16 +148,8 @@ Vmexit::startup(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd mtd
     if (Debug::TRACE_VBUS)
         vcpu.board->get_bus()->set_trace(true, true);
 
-    /*
-     * Queue a recall for ourself. It will be executed right after the startup callback (and thus
-     * before any guest code is ran). This is useful because we start with all VCPUs turned off and
-     * we turn off VCPUs at the beginning of a VMExit (before emulation). Rather than special
-     * casing this for the startup handler, we can make this case non-special by handling the
-     * initial off/reset in a recall handler.
-     */
-    vcpu.recall();
-    Model::Cpu::ctrl_state_off(vcpu.id(), true);
-    Model::Cpu::reconfigure(vcpu.id(), Model::Cpu::VCPU_RECONFIG_RESET);
+    Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, vcpu.id(), true);
+    Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, vcpu.id(), true);
 
     ok = vmi::setup_trapped_msr(vcpu.msr_bus, *(vcpu.board->get_bus()));
     if (!ok)
@@ -670,7 +662,7 @@ Vmexit::single_step(const Zeta::Zeta_ctx* ctx, Vcpu::Vcpu& vcpu, const Nova::Mtd
         WARN("The VMM doesn't know how to handle that quite yet. Single step interrupted. PC = "
              "0x%llx",
              arch.el2_elr());
-        Model::Cpu::ctrl_single_step(vcpu.id(), false);
+        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vcpu.id(), false);
 
         /*
          * It is not very clear if VMI can do something very meaningful in that callback.

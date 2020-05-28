@@ -89,6 +89,13 @@ Vcpu::Vcpu::reset(Reg_accessor& arch) {
     arch.el2_spsr(el2_spsr, true);
     arch.el1_spsr(el2_spsr, true);
 
+    /*
+     * Mark the features that are disabled on reset - if they are still requested, the
+     * reconfigure code will detect that they need to be re-enabled.
+     */
+    _singe_step.set_enabled(false);
+    _tvm.set_enabled(false);
+
     INFO("VCPU %u jumping to guest code @ 0x%llx in mode 0x%x", id(), boot_addr(),
          el2_spsr & Msr::Info::SPSR_MODE_MASK);
     return arch.get_reg_selection_out();
@@ -99,9 +106,9 @@ Vcpu::Vcpu::check_reset(const Platform_ctx& ctx, Nova::Mtd mtd_in) {
     Nova::Mtd mtd_out = 0;
     Reg_accessor arch(ctx, mtd_in);
 
-    if (is_reconfig_needed(VCPU_RECONFIG_RESET)) {
+    if (_reset.is_requested()) {
         mtd_out = reset(arch);
-        unset_reconfig(VCPU_RECONFIG_RESET);
+        _reset.unset_requests();
     }
 
     return mtd_out;
@@ -117,29 +124,27 @@ Vcpu::Vcpu::reconfigure(const Platform_ctx& ctx, const Nova::Mtd mtd_in) {
     Nova::Mtd mtd_out = 0;
     Reg_accessor arch(ctx, mtd_in);
 
-    if (is_reconfig_needed(VCPU_RECONFIG_TVM)) {
+    if (_tvm.needs_reconfiguration()) {
         uint64 el2_hcr = Msr::Info::HCR_EL2_DEFAULT_VALUE;
 
         arch.set_reg_selection_out(Nova::MTD::EL2_HCR);
 
         if (aarch64())
             el2_hcr |= Msr::Info::HCR_EL2_RW;
-        if (!_tvm_enabled) {
+        if (!_tvm.is_enabled()) {
             el2_hcr |= Msr::Info::HCR_EL2_TVM;
         }
         arch.el2_hcr(el2_hcr, true);
 
         mtd_out |= arch.get_reg_selection_out();
-        _tvm_enabled = !_tvm_enabled;
-        Barrier::w_before_w();
-        unset_reconfig(VCPU_RECONFIG_TVM);
+        _tvm.set_enabled(!_tvm.is_enabled());
     }
 
-    if (is_reconfig_needed(VCPU_RECONFIG_SINGLE_STEP)) {
+    if (_singe_step.needs_reconfiguration()) {
         uint64 el1_mdscr = 0, el2_spsr = arch.el2_spsr();
         arch.set_reg_selection_out(Nova::MTD::EL1_MDSCR | Nova::MTD::EL2_ELR_SPSR);
 
-        if (!_ss_enabled) {
+        if (!_singe_step.is_enabled()) {
             el1_mdscr |= Msr::Info::MDSCR_SINGLE_STEP;
             el2_spsr |= Msr::Info::SPSR_SINGLE_STEP;
         } else {
@@ -149,9 +154,7 @@ Vcpu::Vcpu::reconfigure(const Platform_ctx& ctx, const Nova::Mtd mtd_in) {
         arch.el1_mdscr(el1_mdscr, true);
         arch.el2_spsr(el2_spsr);
         mtd_out |= arch.get_reg_selection_out();
-        _ss_enabled = !_ss_enabled;
-        Barrier::w_before_w();
-        unset_reconfig(VCPU_RECONFIG_SINGLE_STEP);
+        _singe_step.set_enabled(!_singe_step.is_enabled());
     }
 
     return mtd_out;
@@ -175,7 +178,7 @@ Vcpu::Vcpu::reconfigure(const Platform_ctx& ctx, const Nova::Mtd mtd_in) {
  */
 void
 Vcpu::Vcpu::ctrl_tvm(bool enable, Request::Requestor requestor, const Nova::Mtd regs) {
-    bool needs_update = Request::needs_update(requestor, enable, _tvm_requests);
+    bool needs_update = _tvm.needs_update(enable, requestor);
 
     if (enable) {
         Portal::add_regs(Nova::Exc::MSR_MRS, regs | Portal::MTD_MSR_TRAP_VM);
@@ -206,18 +209,11 @@ Vcpu::Vcpu::ctrl_tvm(bool enable, Request::Requestor requestor, const Nova::Mtd 
     if (__UNLIKELY__(err != ENONE)) {
         ABORT_WITH("Unable to reconfigure TVM for VCPU %lu", this->id());
     }
-
-    if (needs_update) {
-        set_reconfig(VCPU_RECONFIG_TVM);
-    }
 }
 
 void
 Vcpu::Vcpu::ctrl_single_step(bool enable, Request::Requestor requestor) {
-    bool needs_update = Request::needs_update(requestor, enable, _ss_requests);
-    if (needs_update) {
-        set_reconfig(VCPU_RECONFIG_SINGLE_STEP);
-    }
+    _singe_step.needs_update(enable, requestor);
 }
 
 Errno
@@ -401,6 +397,6 @@ void
 Vcpu::Vcpu::advance_pc(const Vcpu_ctx& ctx, Reg_accessor& arch) {
     arch.advance_pc();
 
-    if (single_step_enabled())
+    if (_singe_step.is_requested_by(Request::Requestor::VMI))
         outpost::vmi_handle_singlestep(ctx);
 }

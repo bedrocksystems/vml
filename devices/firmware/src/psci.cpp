@@ -99,7 +99,7 @@ Firmware::Psci::smc_call_service(Vcpu_ctx &vctx, Vbus::Bus &vbus, uint64 const f
         if (vcpu_id > Model::Cpu::get_num_vcpus())
             res = static_cast<uint64>(INVALID_PARAMETERS);
 
-        if (Model::Cpu::is_cpu_on(vcpu_id))
+        if (Model::Cpu::is_cpu_turned_on_by_guest(vcpu_id))
             res = 0; // ON
         else
             res = 1; // OFF
@@ -107,8 +107,8 @@ Firmware::Psci::smc_call_service(Vcpu_ctx &vctx, Vbus::Bus &vbus, uint64 const f
         return true;
     }
     case CPU_OFF: {
-        Model::Cpu::reconfigure(vctx.vcpu_id, Model::Cpu::VCPU_RECONFIG_RESET);
-        Model::Cpu::reconfigure(vctx.vcpu_id, Model::Cpu::VCPU_RECONFIG_SWITCH_OFF);
+        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, vctx.vcpu_id, true);
+        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, vctx.vcpu_id, true);
 
         vbus.iter_devices(Model::Simple_as::flush_callback, nullptr);
         DEBUG("VCPU " FMTu64 " will be switched off", vctx.vcpu_id);
@@ -117,8 +117,8 @@ Firmware::Psci::smc_call_service(Vcpu_ctx &vctx, Vbus::Bus &vbus, uint64 const f
     }
     case SYSTEM_OFF:
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
-        Model::Cpu::reconfigure_all(Model::Cpu::VCPU_RECONFIG_RESET);
-        Model::Cpu::reconfigure_all(Model::Cpu::VCPU_RECONFIG_SWITCH_OFF);
+        Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_reset, true);
+        Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_off, true);
         Vcpu::Roundup::resume();
 
         INFO("System was halted by the guest.");
@@ -127,10 +127,10 @@ Firmware::Psci::smc_call_service(Vcpu_ctx &vctx, Vbus::Bus &vbus, uint64 const f
         INFO("System reset requested by the guest.");
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
         // All VCPUs are now stopped
-        Model::Cpu::reconfigure_all(Model::Cpu::VCPU_RECONFIG_RESET);
+        Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_reset, true);
 
         // We always restart from VCPU 0 so, this is the only one that won't be off
-        Model::Cpu::reconfigure_all_but(0, Model::Cpu::VCPU_RECONFIG_SWITCH_OFF);
+        Model::Cpu::ctrl_feature_on_all_but_vcpu(Model::Cpu::ctrl_feature_off, 0, true);
         Vcpu::Roundup::resume();
 
         vbus.reset();

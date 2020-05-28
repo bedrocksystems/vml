@@ -13,12 +13,16 @@
 
 void
 Vmm::Vcpu::ctrl_tvm(Vmm::Vcpu::Vcpu_id id, bool enable, uint64 regs) {
-    Model::Cpu::ctrl_tvm(id, enable, Request::Requestor::REQUESTOR_VMI, regs);
+    Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, id, enable,
+                                     Request::Requestor::VMI, regs);
 }
 
 void
 Vmm::Vcpu::ctrl_single_step(Vmm::Vcpu::Vcpu_id id, bool enable) {
-    Model::Cpu::single_step_only(id, enable, Request::Requestor::REQUESTOR_VMI);
+    Model::Cpu::ctrl_feature_on_all_but_vcpu(Model::Cpu::ctrl_feature_off, id, enable,
+                                             Request::Requestor::VMI);
+    Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_single_step, id, enable,
+                                     Request::Requestor::VMI);
 }
 
 uint16
