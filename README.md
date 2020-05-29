@@ -38,7 +38,7 @@ This will compile a default set of libraries along with examples.
 VML supports various combinations of platforms and architecture. At the moment, we can pick from:
 
 - x86_64 and aarch64 as the architecture (controlled by the TARGET environment variable)
-- POSIX or bedrock as the platform (controlled by the PLATFORM environment variable)
+- POSIX
 
 For example:
 ```sh
@@ -47,8 +47,6 @@ make PLATFORM=posix TARGET=aarch64
 
 will build for a POSIX system running under an aarch64 architecture. Of course, when cross-compiling, a
 cross-compilation toolchain (and the appropriate libc,STL) should be provided.
-
-Note that bedrock cannot be built in isolation (i.e. with this repo alone).
 
 ## Libraries
 
@@ -73,15 +71,7 @@ Cross-platform:
 - interfaces/vmi_interface: Interface provided by VML to allow introspection of a virtual machine
 - interfaces/outpost_dummy: Empty implementation of an introspection library
 
-bedrock only:
-- devices/passthrough: allow passthrough of host devices to a virtual machine
-- devices/board: setup devices based on the bedrock specific configuration
-- devices/dynamic_as: dynamic representation of the memory for a virtual machine
-- config/vm_config: vm configuration as defined by the bedrock platform
-- vcpu/vcpu_bedrock: concrete implementaion of a VCPU
-
 Platform libraries (provides the functions that the libs are expecting from the platform):
-- bedrock
 - posix
 
 Note that some libraries are self-contained (if we omit the usage of the platform lib) and some other
@@ -91,5 +81,5 @@ When building for POSIX, no external dependencies are required at the moment.
 
 ## Porting libraries to a new architecture or platform
 
-Most libraries are platform and architecture agnostic. To port them to a new architecture or platform,
+Libraries are platform and architecture agnostic. To port them to a new architecture or platform,
 a new library in arch/ or platform/ should be added.

@@ -11,7 +11,14 @@
 PLATFORM ?= bedrock
 BRS_ROOT ?= ../../../../zeta/
 LIBNAME = $(shell basename `pwd`)
-LIBDIR  = $(BRS_ROOT)lib/ ../ ../../vcpu/ ../../config/ ../../interfaces/ ../../platform/
+
+ifeq ($(PLATFORM), bedrock)
+PLATFORM_PATH ?= ../../../../apps/vmm/lib/
+else
+PLATFORM_PATH ?= ../../platform/
+endif
+
+LIBDIR  = $(BRS_ROOT)lib/ ../ ../../vcpu/ ../../config/ ../../interfaces/ $(PLATFORM_PATH)
 
 ENABLE_VMI ?= 0
 ifneq ($(ENABLE_VMI), 0)

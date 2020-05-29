@@ -11,7 +11,14 @@
 PLATFORM ?= bedrock
 BRS_ROOT ?= ../../../../zeta/
 LIBNAME = $(shell basename `pwd`)
-LIBDIR = $(BRS_ROOT)lib/ ../../platform/
+
+ifeq ($(PLATFORM), bedrock)
+PLATFORM_PATH ?= ../../../../apps/vmm/lib/
+else
+PLATFORM_PATH ?= ../../platform/
+endif
+
+LIBDIR = $(BRS_ROOT)lib/ $(PLATFORM_PATH)
 
 include deps.mk
 

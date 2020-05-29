@@ -1,17 +1,6 @@
-image: registry.gitlab.com/bedrocksystems/docker-image:latest
-variables:
-  BRS_ROOT: '$CI_PROJECT_DIR/zeta/'
-  PM_ROOT: '$CI_PROJECT_DIR/lib/pm/'
-  LIB_PM: '$CI_PROJECT_DIR/lib/pm/'
-  VML_PATH: '$CI_PROJECT_DIR/'
-  VMM_BIN: '$CI_PROJECT_DIR/vmm/build/aarch64/vmm'
-
 stages:
   - coding-style
   - build
-  - build-unit-tests
-  - run-unit-tests
-  - spec
   - doc
 
 pages:
@@ -26,39 +15,6 @@ pages:
   only:
     - master
 
-build-unit-tests-gcc:
-  stage: build-unit-tests
-  variables:
-    CROSS_COMPILE: '/opt/aarch64-linux/bin/aarch64-linux-'
-  script:
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/zeta.git $BRS_ROOT
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/host-components/vmm-unit-tests.git
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/vmm.git
-    - cd vmm-unit-tests
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/nonos.git
-    - 'curl --location --output artifacts.zip --header "JOB-TOKEN: ${CI_JOB_TOKEN}" "https://gitlab.com/api/v4/projects/16203504/jobs/artifacts/master/download?job=build-gcc-aarch64-qemu"'
-    - unzip artifacts.zip
-    - cp ../bin/vmm bin-qemu/apps
-    - make -j $NJOBS BRS_ROOT=$BRS_ROOT BIN_PATH=./bin-qemu ZTIMAGE_PATH=./bin-qemu
-    - mkdir ztimages && mv *.img ztimages
-  only:
-    - merge_requests
-    - pipelines
-  artifacts:
-    paths:
-      - vmm-unit-tests/bin-qemu
-      - vmm-unit-tests/ztimages
-
-run-unit-tests-gcc:
-  stage: run-unit-tests
-  image: registry.gitlab.com/bedrocksystems/docker-image:vmm-unit-test
-  script:
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/momos.git && cd momos
-    - pytest-3 --brs-bin-path=../vmm-unit-tests/bin-qemu --ztimages=../vmm-unit-tests/ztimages -k generic -s
-  only:
-    - merge_requests
-    - pipelines
-
 clang-format-check:
   stage: coding-style
   image: registry.gitlab.com/bedrocksystems/docker-image:coding-style
@@ -68,52 +24,14 @@ clang-format-check:
     - merge_requests
   allow_failure: true # For now, we don't strictly enforce the coding style
 
-build-llvm-aarch64:
-  stage: build
-  variables:
-    # ERR_ON_WARN: '1' - disabled until LLVM is the default
-    VERBOSE: '1'
-    LLVM: '1'
-    LLVM_BASE_DIR: '/usr/lib/llvm/bin/'
-  before_script:
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/zeta.git $BRS_ROOT
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/bsp/pm.git $PM_ROOT
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/vmm.git
-  script:
-    - make -C vmm -j $NJOBS
-  only:
-    - merge_requests
-    - pipelines
-
 build-llvm-platform_posix:
-  stage: build
   image: registry.gitlab.com/bedrocksystems/docker-image:vmm-platform-posix
+  stage: build
   variables:
     CXX: 'clang++'
     ERR_ON_WARN: '1'
   script:
-    - make PLATFORM=posix
+    - make
   only:
     - merge_requests
     - pipelines
-
-build-gcc-aarch64:
-  stage: build
-  variables:
-    ERR_ON_WARN: '1'
-    VERBOSE: '1'
-    CROSS_COMPILE: '/opt/aarch64-linux/bin/aarch64-linux-'
-  before_script:
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/zeta.git $BRS_ROOT
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/bsp/pm.git $PM_ROOT
-    - git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/vmm.git
-  script:
-    - make -C vmm -j $NJOBS
-    - mkdir bin
-    - cp $VMM_BIN bin
-  only:
-    - merge_requests
-    - pipelines
-  artifacts:
-    paths:
-      - bin
