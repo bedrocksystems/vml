@@ -21,6 +21,7 @@
 #include <vcpu/vcpu_roundup.hpp>
 
 namespace Model {
+    static bool vm_64_bit;
     static uint16 configured_vcpus;
     static atomic<uint64> num_vcpus;
     static Cpu** vcpus;
@@ -30,13 +31,19 @@ const char* state_printable_name[]
     = {"OFF", "OFF_ROUNDEDUP", "ON", "ON_ROUNDEDUP", "EMULATE", "EMULATE_ROUNDEDUP"};
 
 bool
-Model::Cpu::init(uint16 config_vcpus) {
+Model::Cpu::init(uint16 config_vcpus, bool m64bit) {
+    vm_64_bit = m64bit;
     configured_vcpus = config_vcpus;
     vcpus = new (nothrow) Model::Cpu*[configured_vcpus];
     if (vcpus == nullptr)
         return false;
 
     return true;
+}
+
+bool
+Model::Cpu::is_64bit() {
+    return vm_64_bit;
 }
 
 uint16

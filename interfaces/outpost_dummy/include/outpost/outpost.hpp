@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <arch/breakpoint.hpp>
 #include <platform/errno.hpp>
 #include <vmi_interface/vmi_interface.hpp>
 
@@ -36,5 +37,6 @@ namespace outpost {
     inline void vmi_vcpu_startup(const Vcpu_ctx &) {}
     inline void vmi_handle_singlestep(const Vcpu_ctx &) {}
     inline void vmi_handle_singlestep_failure(const Vcpu_ctx &) {}
+    inline bool vmi_handle_breakpoint(const Vcpu_ctx &, Breakpoint::Type, uint16) { return false; }
     inline Errno init(const Zeta::Zeta_ctx *, Uuid &, bool, Model::Board &) { return ENONE; }
 }

@@ -17,6 +17,7 @@ namespace Esr {
     class Data_abort;
     class Instruction_abort;
     class Soft_step;
+    class Breakpoint;
 
     constexpr uint8 ZERO_REG = 31;
 }
@@ -179,4 +180,20 @@ public:
     Soft_step(uint64 const esr) : _esr(esr) {}
 
     bool is_exclusive_load() const { return isv() && ex(); }
+};
+
+class Esr::Breakpoint {
+private:
+    uint64 const _esr;
+
+    static constexpr uint64 IL_MASK = 0x1ull;
+    static constexpr uint8 IL_SHIFT = 25;
+
+    bool il() const { return (_esr >> IL_SHIFT) & IL_MASK; }
+
+public:
+    Breakpoint(uint64 const esr) : _esr(esr) {}
+
+    bool is_thumb() const { return !il(); }
+    uint16 id() const { return static_cast<uint16>(_esr); }
 };

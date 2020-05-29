@@ -197,7 +197,7 @@ public:
      *  \param addr Guest physical address to test
      *  \return true if the address belongs to this AS, false otherwise.
      */
-    bool is_gpa_valid(GPA addr) { return _as.contains(addr.get_value()); }
+    bool is_gpa_valid(GPA addr) const { return _as.contains(addr.get_value()); }
 
     /*! \brief Query the base of the address space from the guest point of view
      *  \pre Partial ownership of the object.
@@ -233,7 +233,7 @@ public:
      *  \param src buffer that contains the data to write
      *  \return ENONE if the operation was a success, error code otherwise
      */
-    Errno write(GPA &addr, size_t size, char *src);
+    Errno write(GPA &addr, size_t size, const char *src);
 
     /*! \brief Callback that can be used to iterate over flushable AS in a virtual Bus
      *  \pre Nothing
@@ -265,6 +265,15 @@ public:
      *  \post Ownership unchanged
      */
     virtual void reset() override {}
+
+    /*! \brief Converts a GPA to an address valid for the VMM
+     *  \pre Partial ownership of this device
+     *  \post Ownership unchanged. It the GPA is within this AS, a valid pointer to memory. nullptr
+     *        otherwise.
+     *  \param addr the Guest Physical address to convert
+     *  \return A valid pointer to memory if GPA is valid within this AS. nullptr otherwise.
+     */
+    char *gpa_to_vmm_view(GPA addr) const;
 
 protected:
     /*! \brief Iterate over this AS and make sure that all data made it to physical RAM

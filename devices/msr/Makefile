@@ -18,7 +18,7 @@ else
 PLATFORM_PATH ?= ../../platform/
 endif
 
-LIBDIR  = $(BRS_ROOT)lib/ ../ ../../vcpu/ ../../config/ ../../interfaces/ $(PLATFORM_PATH)
+LIBDIR  = $(BRS_ROOT)lib/ ../ ../../vcpu/ ../../config/ ../../interfaces/ ../../arch/ $(PLATFORM_PATH)
 
 ENABLE_VMI ?= 0
 ifneq ($(ENABLE_VMI), 0)

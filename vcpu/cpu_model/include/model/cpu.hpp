@@ -139,10 +139,11 @@ protected:
 public:
     // VCPU api start
 
-    static bool init(uint16 vcpus);
+    static bool init(uint16 vcpus, bool m64bit = true);
     static bool is_cpu_turned_on_by_guest(Vcpu_id);
     static void roundup_all();
     static void resume_all();
+    static bool is_64bit();
     static Errno run(Vcpu_id);
 
     typedef void (*ctrl_feature_cb)(Model::Cpu *, bool, Request::Requestor, Reg_selection);
