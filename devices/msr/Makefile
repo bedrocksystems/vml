@@ -18,17 +18,11 @@ else
 PLATFORM_PATH ?= ../../platform/
 endif
 
-LIBDIR  = $(BRS_ROOT)lib/ ../ ../../vcpu/ ../../config/ ../../interfaces/ ../../arch/ $(PLATFORM_PATH)
-
-ENABLE_VMI ?= 0
-ifneq ($(ENABLE_VMI), 0)
-LIBDIR += ../../../../lib/
-endif
+LIBDIR  = $(BRS_ROOT)lib/ ../ ../../vcpu/ ../../config/ ../../arch/ $(PLATFORM_PATH)
 
 include deps.mk
 
-
-CC_SRCS = msr.cpp msr_trap.cpp
+CC_SRCS = msr.cpp
 OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
 SPECS =

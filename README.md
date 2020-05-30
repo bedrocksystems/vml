@@ -68,8 +68,6 @@ Cross-platform:
 - config/vmm_debug: Debugging facilities
 - vcpu/cpu_model: Abstract CPU representation
 - vcpu/vcpu_roundup: API used to stop, resume VCPUs
-- interfaces/vmi_interface: Interface provided by VML to allow introspection of a virtual machine
-- interfaces/outpost_dummy: Empty implementation of an introspection library
 
 Platform libraries (provides the functions that the libs are expecting from the platform):
 - posix

@@ -416,6 +416,68 @@ Msr::Bus::setup_aarch64_physical_timer(Model::Physical_timer &ptimer) {
 }
 
 bool
+Msr::Bus::setup_page_table_regs() {
+    bool ok = false;
+
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("TCR_EL1", Msr::Id(TCR_EL1)));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("TTBR0_EL1", Msr::Id(TTBR0_EL1)));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("TTBR1_EL1", Msr::Id(TTBR1_EL1)));
+    if (!ok)
+        return false;
+
+    return true;
+}
+
+bool
+Msr::Bus::setup_tvm(Vbus::Bus &vbus) {
+    bool ok = false;
+
+    ok = register_system_reg(new (nothrow) Sctlr_el1("SCTLR_EL1", Msr::Id(SCTLR_EL1), vbus));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("AFSR0_EL1", Msr::Id(AFSR0_EL1)));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("AFSR1_EL1", Msr::Id(AFSR1_EL1)));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("ESR_EL1", Msr::Id(ESR_EL1)));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("FAR_EL1", Msr::Id(FAR_EL1)));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("MAIR_EL1", Msr::Id(MAIR_EL1)));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("MAIR1_A32", Msr::Id(Msr::MAIR1_A32)));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("AMAIR_EL1", Msr::Id(AMAIR_EL1)));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("DACR", Msr::Id(Msr::DACR)));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("IFSR", Msr::Id(Msr::IFSR)));
+    if (!ok)
+        return false;
+    ok = register_system_reg(new (nothrow) Wtrapped_msr("CONTEXTDIR_EL1", Msr::Id(CONTEXTIDR_EL1)));
+    if (!ok)
+        return false;
+
+    ok = setup_page_table_regs();
+    if (!ok)
+        return false;
+
+    return true;
+}
+
+bool
 Msr::Bus::setup_arch_msr(Msr::Bus::Platform_info &info, Vbus::Bus &vbus, Model::Gic_d &gicd) {
     bool ok;
     Msr::Register *reg;
@@ -435,6 +497,10 @@ Msr::Bus::setup_arch_msr(Msr::Bus::Platform_info &info, Vbus::Bus &vbus, Model::
         return false;
 
     ok = setup_aarch64_debug(info.id_aa64dfr0_el1, info.id_aa64dfr1_el1);
+    if (!ok)
+        return false;
+
+    ok = setup_tvm(vbus);
     if (!ok)
         return false;
 
@@ -539,4 +605,34 @@ Msr::Set_way_flush_reg::flush(const Vcpu_ctx *vctx, const uint8, const uint32) c
         DEBUG("Use of Set/way flush detected - flushing guest AS and enable TVM");
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vctx->vcpu_id, true);
     }
+}
+
+Vbus::Err
+Msr::Sctlr_el1::access(Vbus::Access access, const Vcpu_ctx *vcpu, mword, uint8, uint64 &res) {
+    ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
+    Reg_accessor regs(*vcpu->ctx, vcpu->mtd_in);
+    Msr::Info::Sctlr_el1 before(regs.el1_sctlr()), after(res);
+
+    /*
+     * This is the counter-part of the Set/Way flushing logic emulation. Every time the
+     * cache is toggled, we flush the guest AS. Moreover, if the cache is enabled we stop
+     * trapping the virtual memory registers and wait for an eventual new (nothrow) call to Set/way
+     * instructions before flushing again.
+     *
+     * Note that for now, VMI is not interested in that event so we simply don't forward it.
+     */
+
+    if (before.cache_enabled() != after.cache_enabled()) {
+        DEBUG("Cache setting toggled - flushing the guest AS");
+
+        _vbus->iter_devices(Model::Simple_as::flush_callback, nullptr);
+    }
+
+    if (after.cache_enabled()) {
+        DEBUG("Cache enabled - stop TVM trapping");
+        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vcpu->vcpu_id, false);
+    }
+
+    return Vbus::Err::UPDATE_REGISTER; // Tell the VCPU to update the relevant physical
+                                       // register
 }

@@ -32,6 +32,8 @@ namespace Msr {
     class Cntp_tval_el0;
     class Cntpct_el0;
     class Set_way_flush_reg;
+    class Wtrapped_msr;
+    class Sctlr_el1;
 
     constexpr uint8 CCSIDR_NUM{7};
 
@@ -62,6 +64,16 @@ namespace Msr {
         MVFR2 = build_msr_id(3, 0, 0, 3, 2),
         CONTEXTIDR_A32 = build_msr_id(0b1111, 0xd, 0, 0, 1),
         CONTEXTIDR_EL1 = build_msr_id(3, 0xd, 0, 3, 1),
+        SCTLR_EL1 = Msr::build_msr_id(3, 1, 0, 0, 0),
+        TTBR0_EL1 = Msr::build_msr_id(3, 2, 0, 0, 0),
+        TTBR1_EL1 = Msr::build_msr_id(3, 2, 0, 0, 1),
+        TCR_EL1 = Msr::build_msr_id(3, 2, 0, 0, 2),
+        AFSR0_EL1 = Msr::build_msr_id(3, 5, 0, 1, 0),
+        AFSR1_EL1 = Msr::build_msr_id(3, 5, 0, 1, 1),
+        ESR_EL1 = Msr::build_msr_id(3, 5, 0, 2, 0),
+        FAR_EL1 = Msr::build_msr_id(3, 6, 0, 0, 0),
+        MAIR_EL1 = Msr::build_msr_id(3, 0xa, 0, 2, 0),
+        AMAIR_EL1 = Msr::build_msr_id(3, 0xa, 0, 3, 0),
 
         /*
          * Below, we define a namespace for registers that do no exist in AA64.
@@ -389,6 +401,31 @@ public:
     }
 };
 
+class Msr::Wtrapped_msr : public Msr::Register_base {
+public:
+    using Msr::Register_base::Register_base;
+
+    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx*, mword, uint8, uint64&) override {
+        ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
+        return Vbus::Err::UPDATE_REGISTER;     // Tell the VCPU to update the relevant physical
+                                               // register
+    }
+    virtual void reset() override {}
+};
+
+class Msr::Sctlr_el1 : public Msr::Register_base {
+public:
+    Sctlr_el1(const char* name, Msr::Id reg_id, Vbus::Bus& vbus)
+        : Msr::Register_base(name, reg_id), _vbus(&vbus) {}
+
+    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vcpu, mword, uint8,
+                             uint64& res) override;
+    virtual void reset() override {}
+
+private:
+    Vbus::Bus* _vbus;
+};
+
 /*
  * This is the bus that will handle all reads and writes
  * to system registers.
@@ -417,13 +454,17 @@ private:
                                  uint64 midr_el1);
     bool setup_aarch32_debug(uint64 id_aa64dfr0_el1, uint32 id_dfr0_el1);
 
-public:
-    bool setup_aarch64_physical_timer(Model::Physical_timer& ptimer);
+    virtual bool setup_page_table_regs();
+    bool setup_tvm(Vbus::Bus&);
 
+protected:
     bool register_system_reg(Register_base* reg) {
         ASSERT(reg != nullptr);
         return register_device(reg, reg->id(), sizeof(uint64));
     }
+
+public:
+    bool setup_aarch64_physical_timer(Model::Physical_timer& ptimer);
 
     struct Platform_info {
         // AArch64 registers
