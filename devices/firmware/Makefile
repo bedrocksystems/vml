@@ -20,19 +20,10 @@ endif
 
 LIBDIR  = $(BRS_ROOT)lib/  ../ ../../vcpu/ ../../config/ $(PLATFORM_PATH)
 
-ifeq ($(PLATFORM), bedrock)
-LIB_PM  ?= ../../../pm/
-LIBDIR += $(LIB_PM)
-endif
-
 include deps.mk
 
 CC_SRCS = psci.cpp
 OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
-
-ifeq ($(PLATFORM), bedrock)
-CC_SRCS += platform_device.cpp platform_firmware.cpp
-endif
 
 SPECS =
 PROOFS =
