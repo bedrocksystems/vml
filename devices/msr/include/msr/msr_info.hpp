@@ -49,10 +49,12 @@ namespace Msr::Info {
         AARCH32 = 1ull << 4,
         AARCH64 = 0ull << 4,
         AA32_SVC = 0b0011ull,
+        AA32_ABT = 0b0111ull,
         AA64_EL1 = 0b0100ull,
         AA64_SPX = 0b1ull,
         AA64_EL0 = 0b0000ull,
-        AIF_MASKED = 0b111ull << 6,
+        AI_MASKED = 0b11ull << 7,
+        F_MASKED = 0b1ull << 6,
         D_MASKED = 0b1ull << 9,
         SPSR_SINGLE_STEP = 1ull << 21,
     };
