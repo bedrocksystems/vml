@@ -192,6 +192,7 @@ Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr, uint64
     Model::Cpu* const vcpu = vcpus[vcpu_id];
 
     vcpu->set_reset_parameters(boot_addr, boot_arg, timer_off);
+    Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, vcpu_id, true);
     Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, vcpu_id, false);
     return SUCCESS;
 }

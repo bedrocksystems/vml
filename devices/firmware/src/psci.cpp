@@ -108,7 +108,6 @@ Firmware::Psci::smc_call_service(Vcpu_ctx &vctx, Vbus::Bus &vbus, uint64 const f
     }
     case CPU_OFF: {
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, vctx.vcpu_id, true);
-        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, vctx.vcpu_id, true);
 
         vbus.iter_devices(Model::Simple_as::flush_callback, nullptr);
         DEBUG("VCPU " FMTu64 " will be switched off", vctx.vcpu_id);
@@ -117,7 +116,6 @@ Firmware::Psci::smc_call_service(Vcpu_ctx &vctx, Vbus::Bus &vbus, uint64 const f
     }
     case SYSTEM_OFF:
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
-        Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_reset, true);
         Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_off, true);
         Vcpu::Roundup::resume();
 
@@ -126,9 +124,11 @@ Firmware::Psci::smc_call_service(Vcpu_ctx &vctx, Vbus::Bus &vbus, uint64 const f
     case SYSTEM_RESET: {
         INFO("System reset requested by the guest.");
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
-        // All VCPUs are now stopped
-        Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_reset, true);
-
+        /*
+         * Reset myself since CPU 0 will not be turned off. Others will be
+         * reset when turned on the next time.
+         */
+        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, vctx.vcpu_id, true);
         // We always restart from VCPU 0 so, this is the only one that won't be off
         Model::Cpu::ctrl_feature_on_all_but_vcpu(Model::Cpu::ctrl_feature_off, 0, true);
         Vcpu::Roundup::resume();
