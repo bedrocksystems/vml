@@ -454,7 +454,7 @@ private:
                                  uint64 midr_el1);
     bool setup_aarch32_debug(uint64 id_aa64dfr0_el1, uint32 id_dfr0_el1);
 
-    virtual bool setup_page_table_regs();
+    virtual bool setup_page_table_regs(Vbus::Bus&);
     bool setup_tvm(Vbus::Bus&);
 
 protected:

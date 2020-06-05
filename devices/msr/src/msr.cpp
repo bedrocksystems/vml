@@ -416,7 +416,7 @@ Msr::Bus::setup_aarch64_physical_timer(Model::Physical_timer &ptimer) {
 }
 
 bool
-Msr::Bus::setup_page_table_regs() {
+Msr::Bus::setup_page_table_regs(Vbus::Bus &vbus) {
     bool ok = false;
 
     ok = register_system_reg(new (nothrow) Wtrapped_msr("TCR_EL1", Msr::Id(TCR_EL1)));
@@ -428,6 +428,9 @@ Msr::Bus::setup_page_table_regs() {
     ok = register_system_reg(new (nothrow) Wtrapped_msr("TTBR1_EL1", Msr::Id(TTBR1_EL1)));
     if (!ok)
         return false;
+    ok = register_system_reg(new (nothrow) Sctlr_el1("SCTLR_EL1", Msr::Id(SCTLR_EL1), vbus));
+    if (!ok)
+        return false;
 
     return true;
 }
@@ -436,9 +439,6 @@ bool
 Msr::Bus::setup_tvm(Vbus::Bus &vbus) {
     bool ok = false;
 
-    ok = register_system_reg(new (nothrow) Sctlr_el1("SCTLR_EL1", Msr::Id(SCTLR_EL1), vbus));
-    if (!ok)
-        return false;
     ok = register_system_reg(new (nothrow) Wtrapped_msr("AFSR0_EL1", Msr::Id(AFSR0_EL1)));
     if (!ok)
         return false;
@@ -470,7 +470,7 @@ Msr::Bus::setup_tvm(Vbus::Bus &vbus) {
     if (!ok)
         return false;
 
-    ok = setup_page_table_regs();
+    ok = setup_page_table_regs(vbus);
     if (!ok)
         return false;
 
@@ -610,6 +610,12 @@ Msr::Set_way_flush_reg::flush(const Vcpu_ctx *vctx, const uint8, const uint32) c
 Vbus::Err
 Msr::Sctlr_el1::access(Vbus::Access access, const Vcpu_ctx *vcpu, mword, uint8, uint64 &res) {
     ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
+
+    if (!Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vcpu->vcpu_id)) {
+        // Another requestor needed TVM - no action to take on our side
+        return Vbus::Err::UPDATE_REGISTER;
+    }
+
     Reg_accessor regs(*vcpu->ctx, vcpu->mtd_in);
     Msr::Info::Sctlr_el1 before(regs.el1_sctlr()), after(res);
 
