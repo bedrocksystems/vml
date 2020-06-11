@@ -160,6 +160,14 @@ public:
      */
     Simple_as(bool read_only) : Vbus::Device("SimpleAS"), _read_only(read_only) {}
 
+    /*! \brief Construct a Simple AS
+     *  \pre Gives up ownership of the name string
+     *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
+     *  \param name name of the virtual device
+     *  \param read_only is the AS read-only from the guest point of view?
+     */
+    Simple_as(const char *name, bool read_only) : Vbus::Device(name), _read_only(read_only) {}
+
     /*! \brief Get the size of this AS
      *  \pre Partial ownership of this object
      *  \post Ownership unchanged. The stored size is returned.
