@@ -1,4 +1,4 @@
-LIBS = vbus cpu_model timer gic vmm_debug vmi_interface simple_as dynamic_as $(PLATFORM) arch_api
+LIBS = vbus cpu_model timer gic irq_controller vmm_debug vmi_interface simple_as dynamic_as $(PLATFORM) arch_api
 
 ifeq ($(PLATFORM), bedrock)
 

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <debug_switches.hpp>
+#include <model/irq_controller.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/atomic.hpp>
 #include <platform/bitset.hpp>
@@ -38,7 +39,7 @@ namespace Model {
     static constexpr uint8 GICV2_MAX_CPUS = 8;
 }
 
-class Model::Gic_d : public Vbus::Device {
+class Model::Gic_d : public Model::Irq_controller {
     friend Gic_r;
 
 private:
@@ -534,7 +535,7 @@ private:
 
 public:
     Gic_d(Gic_version const version, uint16 num_vcpus)
-        : Device("GICD"), _version(version), _num_vcpus(num_vcpus) {}
+        : Irq_controller("GICD"), _version(version), _num_vcpus(num_vcpus) {}
 
     bool init() {
         if (_version == GIC_V2 && _num_vcpus > GICV2_MAX_CPUS)
@@ -554,19 +555,18 @@ public:
     virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, mword, uint8, uint64 &) override;
     virtual void reset() override;
 
-    bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge);
-    bool config_spi(uint32 irq_id, bool hw, uint16 pintid, bool edge);
-    bool assert_ppi(Vcpu_id, uint32);
-    bool assert_spi(uint32);
-    void deassert_line_ppi(Vcpu_id, uint32);
-    void deassert_line_spi(uint32);
+    virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
+    virtual bool config_spi(uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
+    virtual bool assert_ppi(Vcpu_id, uint32) override;
+    virtual bool assert_spi(uint32) override;
+    virtual void deassert_line_ppi(Vcpu_id, uint32) override;
+    virtual void deassert_line_spi(uint32) override;
+    virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id const) override;
+
     bool pending_irq(Vcpu_id, Lr &);
     void update_inj_status(Vcpu_id, Lr const);
-    void enable_cpu(Cpu_irq_interface *, Vcpu_id const);
     void icc_sgi1r_el1(uint64 const, Vcpu_id const);
-
     bool is_affinity_routing_enabled() const { return _ctlr.affinity_routing(); }
-
     Gic_version version() const { return _version; }
 };
 

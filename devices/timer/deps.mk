@@ -1,4 +1,4 @@
-LIBS = lang cxx vbus gic cpu_model vmm_debug $(PLATFORM)
+LIBS = lang cxx vbus irq_controller cpu_model $(PLATFORM)
 
 ifeq ($(PLATFORM), bedrock)
 LIBS += lang cxx log zeta nova pt alloc msc uuid

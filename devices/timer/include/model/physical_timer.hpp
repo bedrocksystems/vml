@@ -10,7 +10,7 @@
 /*! \file Emulation logic for a Physical Timer on ARM
  */
 
-#include <model/gic.hpp>
+#include <model/irq_controller.hpp>
 #include <model/timer.hpp>
 #include <platform/log.hpp>
 #include <platform/semaphore.hpp>
@@ -33,8 +33,8 @@ public:
      *  \param irq The IRQ number associated with the timer (should be a PPI)
      *  \param edge Is the IRQ edge triggered? If not, it will be level-triggered
      */
-    Physical_timer(Gic_d &gic, Vcpu_id const cpu, uint16 const irq, bool edge)
-        : Timer(gic, cpu, irq, irq, false, edge), _cntv_ctl(0), _cval(0), _wait_timer(),
+    Physical_timer(Irq_controller &irq_ctlr, Vcpu_id const cpu, uint16 const irq, bool edge)
+        : Timer(irq_ctlr, cpu, irq, irq, false, edge), _cntv_ctl(0), _cval(0), _wait_timer(),
           _ready_sm() {}
 
     /*! \brief Set the compare value of the timer
@@ -118,7 +118,7 @@ private:
     void set_istatus() { _cntv_ctl.set_status(); }
     void clear_istatus() {
         _cntv_ctl.clear_status();
-        _gic->deassert_line_ppi(_vcpu, _irq);
+        _irq_ctlr->deassert_line_ppi(_vcpu, _irq);
     }
 
     Cntv_ctl _cntv_ctl;

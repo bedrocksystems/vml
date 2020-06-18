@@ -7,7 +7,7 @@
  */
 #pragma once
 
-#include <model/gic.hpp>
+#include <model/irq_controller.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/errno.hpp>
 
@@ -17,7 +17,7 @@ namespace Model {
 
 class Model::Timer {
 protected:
-    Gic_d *const _gic;
+    Irq_controller *const _irq_ctlr;
     Vcpu_id const _vcpu;
     uint16 const _irq;
 
@@ -42,17 +42,17 @@ protected:
     };
 
 public:
-    Timer(Gic_d &gic, Vcpu_id const vcpu_id, uint16 const irq, uint16 const pirq, bool hw,
-          bool edge = true)
-        : _gic(&gic), _vcpu(vcpu_id), _irq(irq) {
-        _gic->config_irq(vcpu_id, _irq, hw, pirq, edge);
+    Timer(Irq_controller &irq_ctlr, Vcpu_id const vcpu_id, uint16 const irq, uint16 const pirq,
+          bool hw, bool edge = true)
+        : _irq_ctlr(&irq_ctlr), _vcpu(vcpu_id), _irq(irq) {
+        _irq_ctlr->config_irq(vcpu_id, _irq, hw, pirq, edge);
     }
 
     bool assert_irq(uint64 const control) {
         Cntv_ctl ctl = Cntv_ctl(uint8(control));
 
         if (ctl.can_fire()) {
-            return _gic->assert_ppi(_vcpu, _irq);
+            return _irq_ctlr->assert_ppi(_vcpu, _irq);
         } else {
             return false;
         }

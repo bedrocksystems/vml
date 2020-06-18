@@ -17,7 +17,7 @@
 namespace Model {
     class Pl011;
     class Pl011_callback;
-    class Gic_d;
+    class Irq_controller;
 }
 
 /*! \brief Callback interface to send chars to the backend
@@ -177,7 +177,7 @@ private:
     bool is_rx_irq_active() const { return _imsc & RXIM; }
 
     Pl011_callback *_callback{nullptr}; /*!< Callback interface used to send chars (TX) */
-    Gic_d *_gic;                        /*!< Interrupt controller that will receive interrupts */
+    Irq_controller *_irq_ctlr;          /*!< Interrupt controller that will receive interrupts */
     uint16 _irq_id;                     /*!< IRQ id when sending an interrupt to the controller */
 
 public:
@@ -185,7 +185,10 @@ public:
      *  \param gic interrupt object that will receive interrupts from the PL011
      *  \param irq IRQ id to use when sending interrupt to the interrupt controller
      */
-    Pl011(Gic_d &gic, uint16 const irq) : Device("pl011"), _gic(&gic), _irq_id(irq) { reset(); }
+    Pl011(Irq_controller &irq_ctlr, uint16 const irq)
+        : Device("pl011"), _irq_ctlr(&irq_ctlr), _irq_id(irq) {
+        reset();
+    }
 
     /*! \brief Register the callback handler to send data outside
      *  \param callback The callback object

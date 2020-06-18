@@ -7,6 +7,7 @@
  */
 
 #include <model/cpu.hpp>
+#include <model/gic.hpp>
 #include <model/physical_timer.hpp>
 #include <model/simple_as.hpp>
 #include <msr/msr.hpp>

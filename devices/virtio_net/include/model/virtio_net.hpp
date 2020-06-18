@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <model/gic.hpp>
 #include <model/virtio.hpp>
 #include <platform/semaphore.hpp>
 #include <platform/string.hpp>
@@ -18,6 +17,7 @@
 namespace Model {
     class Virtio_net;
     struct Virtio_net_config;
+    class Irq_contoller;
 }
 
 enum : uint64 {
@@ -71,11 +71,11 @@ private:
     void _driver_ok() override;
 
 public:
-    Virtio_net(Gic_d &gic, uint64 const guest_base, uint64 const host_base, uint64 const size,
-               uint16 const irq, uint16 const queue_entries, uint32 const device_feature,
-               uint64 mac, uint16 mtu, Semaphore *sem)
-        : Vbus::Device("virtio network"), Virtio::Device(1, _ram, gic, &config, sizeof(config), irq,
-                                                         queue_entries, device_feature),
+    Virtio_net(Irq_controller &irq_ctlr, uint64 const guest_base, uint64 const host_base,
+               uint64 const size, uint16 const irq, uint16 const queue_entries,
+               uint32 const device_feature, uint64 mac, uint16 mtu, Semaphore *sem)
+        : Vbus::Device("virtio network"), Virtio::Device(1, _ram, irq_ctlr, &config, sizeof(config),
+                                                         irq, queue_entries, device_feature),
           _ram(guest_base, size, host_base), _sem(sem) {
         config.mtu = mtu;
         memcpy(&config.mac, &mac, 6);

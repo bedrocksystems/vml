@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <model/gic.hpp>
+#include <model/irq_controller.hpp>
 #include <platform/new.hpp>
 #include <platform/types.hpp>
 #include <platform/virtqueue.hpp>
@@ -117,7 +117,7 @@ class Virtio::Device {
 protected:
     enum { RX = 0, TX = 1, QUEUES = 2 };
 
-    Model::Gic_d *const _gic;
+    Model::Irq_controller *const _irq_ctlr;
     Ram const *const _ram;
     uint64 *_config_space{nullptr};
     uint32 _config_size;
@@ -239,7 +239,7 @@ protected:
 
     void _assert_irq() {
         _irq_status = 0x1;
-        _gic->assert_spi(_irq);
+        _irq_ctlr->assert_spi(_irq);
     }
 
     void _deassert_irq() { _irq_status = 0; }
@@ -399,10 +399,10 @@ protected:
     virtual void _driver_ok() = 0;
 
 public:
-    Device(uint8 const device_id, Ram const &ram, Model::Gic_d &gic, void *config_space,
-           uint32 config_size, uint16 const irq, uint16 const queue_num,
+    Device(uint8 const device_id, Ram const &ram, Model::Irq_controller &irq_ctlr,
+           void *config_space, uint32 config_size, uint16 const irq, uint16 const queue_num,
            uint32 const device_feature_lower = 0)
-        : _gic(&gic), _ram(&ram), _config_space(reinterpret_cast<uint64 *>(config_space)),
+        : _irq_ctlr(&irq_ctlr), _ram(&ram), _config_space(reinterpret_cast<uint64 *>(config_space)),
           _config_size(config_size), _irq(irq), _queue_num_max(queue_num), _device_id(device_id),
           _device_feature_lower(device_feature_lower) {}
 

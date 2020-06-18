@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <model/gic.hpp>
 #include <model/virtio.hpp>
 #include <platform/semaphore.hpp>
 #include <platform/types.hpp>
@@ -17,6 +16,7 @@
 namespace Model {
     class Virtio_console;
     struct Virtio_console_config;
+    class Irq_controller;
 }
 
 struct Model::Virtio_console_config {
@@ -43,10 +43,10 @@ private:
     void _driver_ok() override;
 
 public:
-    Virtio_console(Gic_d &gic, uint64 const guest_base, uint64 const host_base, uint64 const size,
-                   uint16 const irq, uint16 const queue_entries, Semaphore *sem)
-        : Vbus::Device("virtio console"), Virtio::Device(3, _ram, gic, &config, sizeof(config), irq,
-                                                         queue_entries),
+    Virtio_console(Irq_controller &irq_ctlr, uint64 const guest_base, uint64 const host_base,
+                   uint64 const size, uint16 const irq, uint16 const queue_entries, Semaphore *sem)
+        : Vbus::Device("virtio console"), Virtio::Device(3, _ram, irq_ctlr, &config, sizeof(config),
+                                                         irq, queue_entries),
           _ram(guest_base, size, host_base), _sem(sem) {}
 
     void register_callback(Virtio::Callback &callback) { _callback = &callback; }
