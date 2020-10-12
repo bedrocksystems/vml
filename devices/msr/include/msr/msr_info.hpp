@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <platform/bits.hpp>
+#include <platform/compiler.hpp>
 #include <platform/types.hpp>
 
 namespace Msr::Info {
@@ -87,6 +89,7 @@ namespace Msr::Info {
     class Spsr;
     class Ctr;
     class Sctlr_el1;
+    class Tcr_el1;
 };
 
 class Msr::Info::Id_aa64pfr0 {
@@ -164,8 +167,56 @@ public:
     static constexpr uint64 CACHE_MASK = 1ull << 2;
     static constexpr uint64 MMU_MASK = 1ull << 0;
 
-    bool cache_enabled() const {
-        return ((_value & CACHE_MASK) != 0) && ((_value & MMU_MASK) != 0);
+    bool mmu_enabled() const { return (_value & MMU_MASK) != 0; }
+    bool cache_enabled() const { return ((_value & CACHE_MASK) != 0) && mmu_enabled(); }
+
+private:
+    uint64 _value;
+};
+
+class Msr::Info::Tcr_el1 {
+public:
+    Tcr_el1(uint64 val) : _value(val) {}
+
+    enum Granule_size {
+        GRANULE_16KB = 0b01,
+        GRANULE_4KB = 0b10,
+        GRANULE_64KB = 0b11,
+    };
+
+    Granule_size tg1() const { return Granule_size(bits_in_range(_value, 30, 31)); }
+    Granule_size tg0() const { return Granule_size(bits_in_range(_value, 14, 15)); }
+
+    bool tbi0() const { return bits_in_range(_value, 38, 38); }
+    bool tbi1() const { return bits_in_range(_value, 37, 37); }
+
+    uint8 t0sz() const { return uint8(bits_in_range(_value, 0, 5)); }
+    uint8 t1sz() const { return uint8(bits_in_range(_value, 16, 21)); }
+
+    bool eae() const { return bits_in_range(_value, 31, 31); }
+
+    static constexpr uint8 INVALID_IPS = 0xff;
+
+    uint8 ips() const {
+        uint8 ips_bits = uint8(bits_in_range(_value, 32, 34));
+        switch (ips_bits) {
+        case 0b000:
+            return 32;
+        case 0b001:
+            return 36;
+        case 0b010:
+            return 40;
+        case 0b011:
+            return 42;
+        case 0b100:
+            return 44;
+        case 0b101:
+            return 48;
+        case 0b110:
+            return 52;
+        default:
+            return INVALID_IPS;
+        }
     }
 
 private:
