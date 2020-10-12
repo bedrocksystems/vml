@@ -18,6 +18,7 @@
 
 #define __LIKELY__(x) __builtin_expect(!!(x), 1)
 #define __UNLIKELY__(x) __builtin_expect(!!(x), 0)
+#define __UNREACHED__ __builtin_unreachable()
 
 static inline int
 ffs(unsigned int val) {
