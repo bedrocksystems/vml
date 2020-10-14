@@ -77,8 +77,9 @@ public:
 
         vcpus_progressing = num_vcpus - _vcpu_waiters;
         Barrier::rw_before_rw();
-        _sm_waiter.release();
     }
+
+    void signal_next_waiter() { _sm_waiter.release(); }
 
     /*! \brief Resource acquisition for this class
      */
@@ -160,16 +161,18 @@ Vcpu::Roundup::roundup_from_vcpu(Vcpu_id) {
  */
 void
 Vcpu::Roundup::resume() {
-    Model::Cpu::resume_all();
     roundup_info.end_roundup();
+    Model::Cpu::resume_all();
+    roundup_info.signal_next_waiter();
 }
 
 /*! \brief Allow the VM to make progress again. This signals the end of the roundup from a VCPU.
  */
 void
 Vcpu::Roundup::resume_from_vcpu(Vcpu_id) {
-    Model::Cpu::resume_all();
     roundup_info.end_roundup(true);
+    Model::Cpu::resume_all();
+    roundup_info.signal_next_waiter();
 }
 
 /*! \brief Signal that a VCPU has stopped progressing.
