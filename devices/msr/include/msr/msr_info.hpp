@@ -179,16 +179,45 @@ public:
     Tcr_el1(uint64 val) : _value(val) {}
 
     enum Granule_size {
-        GRANULE_16KB = 0b01,
-        GRANULE_4KB = 0b10,
-        GRANULE_64KB = 0b11,
+        GRANULE_16KB,
+        GRANULE_4KB,
+        GRANULE_64KB,
+        GRANULE_INVALID,
     };
 
-    Granule_size tg1() const { return Granule_size(bits_in_range(_value, 30, 31)); }
-    Granule_size tg0() const { return Granule_size(bits_in_range(_value, 14, 15)); }
+    Granule_size tg1() const {
+        uint8 bits = uint8(bits_in_range(_value, 30, 31));
+        switch (bits) {
+        case 0b01:
+            return GRANULE_16KB;
+        case 0b10:
+            return GRANULE_4KB;
+        case 0b11:
+            return GRANULE_64KB;
+        default:
+            return GRANULE_INVALID;
+        }
+    }
+
+    Granule_size tg0() const {
+        uint8 bits = uint8(bits_in_range(_value, 14, 15));
+        switch (bits) {
+        case 0b10:
+            return GRANULE_16KB;
+        case 0b00:
+            return GRANULE_4KB;
+        case 0b01:
+            return GRANULE_64KB;
+        default:
+            return GRANULE_INVALID;
+        }
+    }
 
     bool tbi0() const { return bits_in_range(_value, 38, 38); }
     bool tbi1() const { return bits_in_range(_value, 37, 37); }
+
+    bool epd0() const { return bits_in_range(_value, 7, 7); }
+    bool epd1() const { return bits_in_range(_value, 23, 23); }
 
     uint8 t0sz() const { return uint8(bits_in_range(_value, 0, 5)); }
     uint8 t1sz() const { return uint8(bits_in_range(_value, 16, 21)); }
