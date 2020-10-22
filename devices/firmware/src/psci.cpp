@@ -90,7 +90,7 @@ Firmware::Psci::smc_call_service(const Vcpu_ctx &vctx, Reg_accessor &arch, Vbus:
         Msr::Info::Spsr spsr(arch.el2_spsr());
         enum Model::Cpu::Mode mode;
         uint64 boot_addr = arch.gpr(2);
-        uint64 boot_arg = arch.gpr(3);
+        uint64 boot_args[Model::Cpu::MAX_BOOT_ARGS] = {arch.gpr(3), 0, 0, 0};
 
         if (spsr.is_aa32()) {
             if (boot_addr & 0x1ull) {
@@ -103,7 +103,7 @@ Firmware::Psci::smc_call_service(const Vcpu_ctx &vctx, Reg_accessor &arch, Vbus:
             mode = Model::Cpu::AA64;
         }
 
-        err = Model::Cpu::start_cpu(decode_cpu_id(arch.gpr(1)), vbus, boot_addr, boot_arg,
+        err = Model::Cpu::start_cpu(decode_cpu_id(arch.gpr(1)), vbus, boot_addr, boot_args,
                                     arch.tmr_cntvoff(), mode);
         res = static_cast<uint64>(err);
         return true;
