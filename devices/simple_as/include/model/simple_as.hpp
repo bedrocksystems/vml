@@ -203,9 +203,12 @@ public:
      *  \pre Partial ownership of the object.
      *  \post Ownership unchanged. true if the address belongs to this AS, false otherwise.
      *  \param addr Guest physical address to test
+     *  \param sz Size of the access
      *  \return true if the address belongs to this AS, false otherwise.
      */
-    bool is_gpa_valid(GPA addr) const { return _as.contains(addr.get_value()); }
+    bool is_gpa_valid(GPA addr, size_t sz) const {
+        return _as.contains(Range<mword>(addr.get_value(), sz));
+    }
 
     /*! \brief Query the base of the address space from the guest point of view
      *  \pre Partial ownership of the object.
@@ -255,7 +258,7 @@ public:
      *  \post Ownership unchanged
      *  \return GUEST_PHYSICAL_STATIC_MEMORY
      */
-    virtual Type type() override { return GUEST_PHYSICAL_STATIC_MEMORY; }
+    virtual Type type() const override { return GUEST_PHYSICAL_STATIC_MEMORY; }
 
     /*! \brief Access function inherited from the parent class
      *  \pre Partial ownership of this device
@@ -279,9 +282,10 @@ public:
      *  \post Ownership unchanged. It the GPA is within this AS, a valid pointer to memory. nullptr
      *        otherwise.
      *  \param addr the Guest Physical address to convert
+     *  \param sz Size of the access
      *  \return A valid pointer to memory if GPA is valid within this AS. nullptr otherwise.
      */
-    char *gpa_to_vmm_view(GPA addr) const;
+    char *gpa_to_vmm_view(GPA addr, size_t sz) const;
 
 protected:
     /*! \brief Iterate over this AS and make sure that all data made it to physical RAM

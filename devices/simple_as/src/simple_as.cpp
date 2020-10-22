@@ -12,9 +12,8 @@
 
 Errno
 Model::Simple_as::read(char* dst, size_t size, GPA& addr) {
-    if (!_as.contains(Range<mword>(addr.get_value(), size))) {
+    if (!is_gpa_valid(addr, size))
         return EINVAL;
-    }
     mword offset = addr.get_value() - get_guest_view().get_value();
     memcpy(dst, get_vmm_view() + offset, size);
     return ENONE;
@@ -22,9 +21,8 @@ Model::Simple_as::read(char* dst, size_t size, GPA& addr) {
 
 Errno
 Model::Simple_as::write(GPA& addr, size_t size, const char* src) {
-    if (!_as.contains(Range<mword>(addr.get_value(), size))) {
+    if (!is_gpa_valid(addr, size))
         return EINVAL;
-    }
     mword offset = addr.get_value() - get_guest_view().get_value();
     memcpy(get_vmm_view() + offset, src, size);
     flush_data_cache(get_vmm_view() + offset, size);
@@ -49,8 +47,8 @@ Model::Simple_as::flush_callback(Vbus::Bus::Device_entry* de, void*) {
 }
 
 char*
-Model::Simple_as::gpa_to_vmm_view(GPA addr) const {
-    if (!is_gpa_valid(addr))
+Model::Simple_as::gpa_to_vmm_view(GPA addr, size_t sz) const {
+    if (!is_gpa_valid(addr, sz))
         return nullptr;
 
     mword off = addr.get_value() - _as.begin();
