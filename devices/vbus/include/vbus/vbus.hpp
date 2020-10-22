@@ -103,7 +103,7 @@ public:
      *  \post The return value contains 'DEVICE'. Ownership and state of the device is unchanged.
      *  \return The 'DEVICE' type
      */
-    virtual Type type() { return DEVICE; }
+    virtual Type type() const { return DEVICE; }
 
 private:
     const char* _name; /*!< Name of the device - cannot be changed at run-time */
