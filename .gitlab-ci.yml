@@ -2,6 +2,7 @@ stages:
   - coding-style
   - build
   - doc
+  - proof
 
 pages:
   stage: doc
@@ -35,3 +36,21 @@ build-llvm-platform_posix:
   only:
     - merge_requests
     - pipelines
+
+proof-pico:
+  stage: proof
+  image: registry.gitlab.com/bedrocksystems/docker-image:cpp2v-llvm${LLVM_VER}
+  variables:
+    LLVM_VER: "10"
+    DIRINPICO: lib/vml
+  script:
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bedrocksystems/pico.git /tmp/.pico
+    - cd /tmp/.pico
+    - ./incrproofci.sh
+  artifacts:
+    paths:
+      - .pico
+  only:
+    - merge_requests
+    - pipelines
+  allow_failure: true # for multi-repo merges to work, failure has to be allowed. see the CI protocol doc
