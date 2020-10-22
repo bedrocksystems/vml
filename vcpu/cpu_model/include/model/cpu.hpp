@@ -66,11 +66,13 @@ public:
         T32,
     };
 
+    static constexpr unsigned MAX_BOOT_ARGS = 4;
+
 private:
     Semaphore _resume_sm;
     Semaphore _off_sm;
     uint64 _boot_addr{0};
-    uint64 _boot_arg{0};
+    uint64 _boot_args[MAX_BOOT_ARGS] = {0, 0, 0, 0};
 
     Vcpu_id const _vcpu_id;
     uint16 _timer_irq;
@@ -114,8 +116,8 @@ private:
     void switch_on() { _off_sm.release(); }
     void resume();
 
-    void set_reset_parameters(uint64 const boot_addr, uint64 const boot_arg, uint64 const tmr_off,
-                              enum Mode m);
+    void set_reset_parameters(uint64 const boot_addr, uint64 const boot_arg[MAX_BOOT_ARGS],
+                              uint64 const tmr_off, enum Mode m);
 
     virtual void ctrl_tvm(bool enable, Request::Requestor requestor = Request::Requestor::VMM,
                           const Reg_selection regs = 0)
@@ -136,7 +138,7 @@ protected:
 
     void wait_for_switch_on() { _off_sm.acquire(); }
     uint64 boot_addr() const { return _boot_addr; }
-    uint64 boot_arg() const { return _boot_arg; }
+    const uint64 *boot_args() const { return _boot_args; }
     void switch_state_to_off();
     uint64 timer_offset() const { return _tmr_off; }
     void reset_interrupt_state() { _interrupt_state = NONE; }
@@ -189,8 +191,8 @@ public:
      * in the future if something else is needed.
      */
     enum Start_err { SUCCESS = 0, INVALID_PARAMETERS = -2, ALREADY_ON = -4, INVALID_ADDRESS = -9 };
-    static Start_err start_cpu(Vcpu_id vcpu_id, Vbus::Bus &vbus, uint64 boot_addr, uint64 boot_arg,
-                               uint64 timer_off, enum Mode);
+    static Start_err start_cpu(Vcpu_id vcpu_id, Vbus::Bus &vbus, uint64 boot_addr,
+                               uint64 boot_args[MAX_BOOT_ARGS], uint64 timer_off, enum Mode);
 
     // VCPU api end
 

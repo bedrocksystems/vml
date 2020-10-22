@@ -165,8 +165,8 @@ Model::Cpu::run(Vcpu_id cpu_id) {
 }
 
 Model::Cpu::Start_err
-Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr, uint64 boot_arg,
-                      uint64 timer_off, enum Mode m) {
+Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr,
+                      uint64 boot_args[MAX_BOOT_ARGS], uint64 timer_off, enum Mode m) {
     if (vcpu_id >= num_vcpus) {
         WARN("vCPU " FMTu64 " number out of bound", vcpu_id);
         return INVALID_PARAMETERS;
@@ -188,7 +188,7 @@ Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr, uint64
 
     Model::Cpu* const vcpu = vcpus[vcpu_id];
 
-    vcpu->set_reset_parameters(boot_addr, boot_arg, timer_off, m);
+    vcpu->set_reset_parameters(boot_addr, boot_args, timer_off, m);
     Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, vcpu_id, true);
     Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, vcpu_id, false);
     return SUCCESS;
@@ -480,10 +480,11 @@ Model::Cpu::pending_irq(uint64& lr) {
 }
 
 void
-Model::Cpu::set_reset_parameters(uint64 const boot_addr, uint64 const boot_arg,
+Model::Cpu::set_reset_parameters(uint64 const boot_addr, uint64 const boot_args[MAX_BOOT_ARGS],
                                  uint64 const tmr_off, enum Mode m) {
     _boot_addr = boot_addr;
-    _boot_arg = boot_arg;
+    for (unsigned i = 0; i < MAX_BOOT_ARGS; i++)
+        _boot_args[i] = boot_args[i];
     _tmr_off = tmr_off;
     _start_mode = m;
     Barrier::rw_before_rw();
