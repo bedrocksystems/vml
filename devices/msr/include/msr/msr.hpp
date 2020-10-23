@@ -609,7 +609,8 @@ private:
  * to system registers.
  */
 class Msr::Bus : public Vbus::Bus {
-    using Vbus::Bus::Bus;
+public:
+    Bus() : Vbus::Bus(Vbus::Space::SYSTEM_REGISTER) {}
 
 private:
     bool setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
