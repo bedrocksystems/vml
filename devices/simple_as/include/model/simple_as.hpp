@@ -267,7 +267,8 @@ public:
      *  \note This function can only be called in case of a guest page fault. But, this
      *        address space being static, this function shouldn't be called.
      */
-    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, mword, uint8, uint64 &) override {
+    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
+                             uint64 &) override {
         return Vbus::ACCESS_ERR;
     }
 

@@ -595,8 +595,8 @@ Msr::Bus::setup_arch_msr(Msr::Bus::Platform_info &info, Vbus::Bus &vbus, Model::
 }
 
 Vbus::Err
-Msr::Icc_sgi1r_el1::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, mword, uint8,
-                           uint64 &value) {
+Msr::Icc_sgi1r_el1::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, Vbus::Space, mword,
+                           uint8, uint64 &value) {
     if (access != Vbus::WRITE)
         return Vbus::Err::ACCESS_ERR;
 
@@ -625,7 +625,8 @@ Msr::Set_way_flush_reg::flush(const Vcpu_ctx *vctx, const uint8, const uint32) c
 }
 
 Vbus::Err
-Msr::Sctlr_el1::access(Vbus::Access access, const Vcpu_ctx *vcpu, mword, uint8, uint64 &res) {
+Msr::Sctlr_el1::access(Vbus::Access access, const Vcpu_ctx *vcpu, Vbus::Space, mword, uint8,
+                       uint64 &res) {
     ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
 
     if (!Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vcpu->vcpu_id)) {

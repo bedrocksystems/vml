@@ -133,8 +133,8 @@ Model::Gic_d::read_register(uint64 const offset, uint32 const base_reg, uint32 c
 }
 
 Vbus::Err
-Model::Gic_d::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, mword const offset,
-                     uint8 const size, uint64 &value) {
+Model::Gic_d::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, Vbus::Space,
+                     mword const offset, uint8 const size, uint64 &value) {
 
     bool ok = false;
 

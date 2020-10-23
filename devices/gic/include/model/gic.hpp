@@ -576,7 +576,8 @@ public:
         return true;
     }
 
-    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, mword, uint8, uint64 &) override;
+    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
+                             uint64 &) override;
     virtual void reset() override;
 
     virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
@@ -628,7 +629,8 @@ public:
     Gic_r(Gic_d &gic, Vcpu_id cpu_id, bool last)
         : Device("GICR"), gic_d(&gic), _vcpu_id(cpu_id), _last(last) {}
 
-    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, mword, uint8, uint64 &) override;
+    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
+                             uint64 &) override;
 
     uint8 aff0() const { return uint8(_vcpu_id); };
     uint8 aff1() const { return uint8(_vcpu_id >> 8); };
