@@ -24,6 +24,17 @@ namespace Vbus {
         NO_DEVICE = 4        /*!< No device at this address */
     };
 
+    /*! \brief The space that the VBus represents (devices can be added to different spaces)
+     */
+    enum Space {
+        MMIO,           /*!< Devices only, no regular memory */
+        REGULAR_MEMORY, /*!< Regular memory only */
+        ALL_MEM,        /*!< Everything that is byte-addressable */
+        IO_PORT,
+        MODEL_SPECIFIC_REGISTER,
+        SYSTEM_REGISTER,
+    };
+
     enum Access {
         READ = 0,
         WRITE = 1,
@@ -103,9 +114,10 @@ private:
 class Vbus::Bus {
 public:
     /*! \brief Constructs a virtual bus
+     *  \param sp Space that this VBus represents
      *  \post Full ownership of the vbus
      */
-    Bus() : _devices() {}
+    Bus(Vbus::Space sp = Space::ALL_MEM) : _space(sp), _devices() {}
 
     /*! \brief Add a device to the virtual bus
      *  \pre Full ownership of a valid virtual bus. Full ownership of a valid Device.
@@ -178,6 +190,7 @@ private:
 
     const Device_entry* lookup(mword addr, uint64 bytes) const;
 
+    Space _space;
     RangeMap<mword> _devices;
     bool _trace{false};
     bool _fold{true};
