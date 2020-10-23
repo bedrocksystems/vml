@@ -79,7 +79,8 @@ public:
      * handlers. The off is relative the to the registered range
      * in the bus.
      */
-    virtual Err access(Access access, const Vcpu_ctx* vcpu_ctx, mword off, uint8 bytes, uint64& res)
+    virtual Err access(Access access, const Vcpu_ctx* vcpu_ctx, Vbus::Space sp, mword off,
+                       uint8 bytes, uint64& res)
         = 0;
 
     /*! \brief Reset the device to its initial state

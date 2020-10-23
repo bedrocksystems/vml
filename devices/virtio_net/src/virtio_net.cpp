@@ -29,8 +29,8 @@ Model::Virtio_net::signal() {
 }
 
 Vbus::Err
-Model::Virtio_net::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, mword const offset,
-                          uint8 const size, uint64 &value) {
+Model::Virtio_net::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, Vbus::Space,
+                          mword const offset, uint8 const size, uint64 &value) {
 
     bool ok = false;
 
