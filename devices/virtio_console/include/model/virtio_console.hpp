@@ -58,7 +58,8 @@ public:
 
     virtual void reset() override { _reset(); }
 
-    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, mword, uint8, uint64 &) override;
+    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
+                             uint64 &) override;
 
     Virtio::Queue_data const &queue_data_rx() const { return _data[RX]; }
     Virtio::Queue_data const &queue_data_tx() const { return _data[TX]; }

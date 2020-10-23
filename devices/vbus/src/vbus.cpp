@@ -27,7 +27,7 @@ Vbus::Bus::access(Vbus::Access access, const Vcpu_ctx& vcpu_ctx, mword addr, uin
     if (entry == nullptr)
         return NO_DEVICE;
 
-    Err err = entry->device->access(access, &vcpu_ctx, addr - entry->begin(), bytes, val);
+    Err err = entry->device->access(access, &vcpu_ctx, _space, addr - entry->begin(), bytes, val);
     if (_trace && entry != nullptr) {
         if (_last_access != entry) {
             if (_fold && _num_accesses > 1) {

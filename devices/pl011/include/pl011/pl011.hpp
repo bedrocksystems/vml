@@ -205,13 +205,14 @@ public:
     /*! \brief MMIO access function - adhere to the Virtual bus interface
      *  \param access type of access (R/W/X)
      *  \param vctx VCPU context
+     *  \param sp Vbus space
      *  \param off offset within the device range
      *  \param bytes size of the access
      *  \param res Input or output value (depending on read or write)
      *  \return status of the access
      */
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx *vctx, mword off, uint8 bytes,
-                             uint64 &res) override;
+    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx *vctx, Vbus::Space sp, mword off,
+                             uint8 bytes, uint64 &res) override;
 
     /*! \brief Reset the PL011 to its initial state
      */

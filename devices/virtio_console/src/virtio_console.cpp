@@ -89,7 +89,7 @@ Model::Virtio_console::release_buffer() {
 }
 
 Vbus::Err
-Model::Virtio_console::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx,
+Model::Virtio_console::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, Vbus::Space,
                               mword const offset, uint8 const size, uint64 &value) {
 
     bool ok = false;
