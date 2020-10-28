@@ -1,4 +1,4 @@
-LIBS = vbus irq_controller cpu_model $(PLATFORM) arch_api
+LIBS = vbus irq_controller cpu_model $(PLATFORM) arch_api vuart
 
 ifeq ($(PLATFORM), bedrock)
 LIBS += lang cxx log nova
