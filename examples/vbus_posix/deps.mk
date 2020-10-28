@@ -1,5 +1,5 @@
 # vmm libs - devices
-LIBS += vbus pl011 gic irq_controller timer simple_as msr firmware
+LIBS += vbus pl011 gic irq_controller timer simple_as msr firmware vuart
 
 # vmm libs - config
 LIBS += vmm_debug
