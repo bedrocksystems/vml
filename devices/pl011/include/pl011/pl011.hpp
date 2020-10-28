@@ -13,23 +13,13 @@
 
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
+#include <vuart/vuart.hpp>
+#include <vuart/vuart_callback.hpp>
 
 namespace Model {
     class Pl011;
-    class Pl011_callback;
     class Irq_controller;
 }
-
-/*! \brief Callback interface to send chars to the backend
- */
-class Model::Pl011_callback {
-public:
-    /*! \brief Will be called when the pl011 needs to send chars to the outside
-     *  \param c character to send
-     *  \return number of characters written - 1 for now
-     */
-    virtual uint32 from_guest_sent(const char &c) = 0;
-};
 
 /*! \brief Virtual PL011 UART Device
  *
@@ -45,7 +35,7 @@ public:
  * process for now. Of course, a guest can still query the status of the data transmitted
  * and it will always see that there is no error.
  */
-class Model::Pl011 : public Vbus::Device {
+class Model::Pl011 : public Vuart::Vuart {
 private:
     enum {
         UARTDR = 0x00,
@@ -176,9 +166,8 @@ private:
     bool can_rx() const { return (_cr & UARTEN) && (_cr & RXE); }
     bool is_rx_irq_active() const { return _imsc & RXIM; }
 
-    Pl011_callback *_callback{nullptr}; /*!< Callback interface used to send chars (TX) */
-    Irq_controller *_irq_ctlr;          /*!< Interrupt controller that will receive interrupts */
-    uint16 _irq_id;                     /*!< IRQ id when sending an interrupt to the controller */
+    Irq_controller *_irq_ctlr; /*!< Interrupt controller that will receive interrupts */
+    uint16 _irq_id;            /*!< IRQ id when sending an interrupt to the controller */
 
 public:
     /*! \brief Constructor for the PL011
@@ -186,21 +175,16 @@ public:
      *  \param irq IRQ id to use when sending interrupt to the interrupt controller
      */
     Pl011(Irq_controller &irq_ctlr, uint16 const irq)
-        : Device("pl011"), _irq_ctlr(&irq_ctlr), _irq_id(irq) {
+        : Vuart::Vuart("pl011"), _irq_ctlr(&irq_ctlr), _irq_id(irq) {
         reset();
     }
-
-    /*! \brief Register the callback handler to send data outside
-     *  \param callback The callback object
-     */
-    void register_callback(Pl011_callback *callback) { _callback = callback; }
 
     /*! \brief Send characters to the guest
      *  \param buff Buffer containing the characters
      *  \param size Number of characters to read from the buffer
      *  \return true is the whole data could be transmitted, false otherwise
      */
-    bool to_guest(char *buff, uint32 size);
+    virtual bool to_guest(char *buff, uint32 size) override;
 
     /*! \brief MMIO access function - adhere to the Virtual bus interface
      *  \param access type of access (R/W/X)
