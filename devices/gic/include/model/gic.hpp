@@ -260,8 +260,10 @@ private:
             disable();
             set_group1(false);
 
-            Irq_injection_info_update update(0);
-            injection_info.set(update);
+            if (!_hw) {
+                Irq_injection_info_update update(0);
+                injection_info.set(update);
+            }
 
             _routing.value = 0;
         }
@@ -579,6 +581,7 @@ public:
     virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
     virtual void reset() override;
+    virtual Type type() const override { return IRQ_CONTROLLER; }
 
     virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
     virtual bool config_spi(uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
@@ -638,6 +641,7 @@ public:
     uint8 aff3() const { return uint8(_vcpu_id >> 24); };
 
     virtual void reset() override {}
+    virtual Type type() const override { return IRQ_CONTROLLER; }
 
     bool can_receive_irq(const Model::Gic_d::Irq &irq) const;
 };
