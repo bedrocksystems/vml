@@ -6,6 +6,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 
+#include <lifecycle.hpp>
 #include <model/cpu.hpp>
 #include <model/psci.hpp>
 #include <model/simple_as.hpp>
@@ -139,14 +140,16 @@ Firmware::Psci::smc_call_service(const Vcpu_ctx &vctx, Reg_accessor &arch, Vbus:
         return true;
     }
     case SYSTEM_OFF:
+        Lifecycle::notify_system_off(vctx);
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
         Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_off, true);
-        Vcpu::Roundup::resume();
+        Vcpu::Roundup::resume_from_vcpu(vctx.vcpu_id);
 
         INFO("System was halted by the guest.");
         return true;
     case SYSTEM_RESET: {
         INFO("System reset requested by the guest.");
+        Lifecycle::notify_system_reset(vctx);
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
         /*
          * Reset myself since CPU 0 will not be turned off. Others will be
@@ -155,7 +158,7 @@ Firmware::Psci::smc_call_service(const Vcpu_ctx &vctx, Reg_accessor &arch, Vbus:
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, vctx.vcpu_id, true);
         // We always restart from VCPU 0 so, this is the only one that won't be off
         Model::Cpu::ctrl_feature_on_all_but_vcpu(Model::Cpu::ctrl_feature_off, 0, true);
-        Vcpu::Roundup::resume();
+        Vcpu::Roundup::resume_from_vcpu(vctx.vcpu_id);
 
         vbus.reset();
         INFO("System is now reset. Starting back...");
