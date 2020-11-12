@@ -809,6 +809,11 @@ bool
 Model::Gic_d::deassert_pi(Vcpu_id, Irq &irq) {
     ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
 
+    if (irq._hw) {
+        INFO("Hardware interrupts behave as level-triggered. Pending kept on for %u", irq.id());
+        return true;
+    }
+
     Irq_injection_info_update update(0);
     irq.injection_info.set(update);
 
@@ -818,7 +823,7 @@ Model::Gic_d::deassert_pi(Vcpu_id, Irq &irq) {
 bool
 Model::Gic_d::deassert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
     if (_ctlr.affinity_routing())
-        deassert_pi(target, irq);
+        return deassert_pi(target, irq);
 
     if (Model::GICV2_MAX_CPUS <= sender)
         return false;
@@ -1003,7 +1008,18 @@ Model::Gic_d::reset() {
         for (uint8 i = 0; i < MAX_PPI; i++)
             _local[cpu]._ppi[i].reset(uint8(1u << cpu));
 
-        _local[cpu]._pending_irqs.reset();
+        for (uint32 i = 0; i < MAX_IRQ; i++) {
+            Irq &irq = _irq_object(_local[cpu], i);
+
+            if (irq.hw()) {
+                if (_local[cpu]._in_injection_irqs.is_set(i)) {
+                    _local[cpu]._pending_irqs.atomic_set(i);
+                }
+            } else {
+                _local[cpu]._pending_irqs.atomic_clr(i);
+            }
+        }
+
         _local[cpu]._in_injection_irqs.reset();
     }
 

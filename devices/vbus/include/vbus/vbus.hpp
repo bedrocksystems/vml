@@ -97,6 +97,7 @@ public:
         GUEST_PHYSICAL_STATIC_MEMORY,  /*!< Behaves as static physical memory for the guest */
         GUEST_PHYSICAL_DYNAMIC_MEMORY, /*!< Behaves as dynamic physical memory for the guest.
                                           Provides mapping APIs */
+        IRQ_CONTROLLER,                /*!< Interrupt Controller */
     };
 
     /*! \brief Query the type of the device
@@ -188,6 +189,7 @@ public:
 
 private:
     static void reset_device_cb(Vbus::Bus::Device_entry* entry, void*);
+    static void reset_irq_ctlr_cb(Vbus::Bus::Device_entry* entry, void*);
 
     const Device_entry* lookup(mword addr, uint64 bytes) const;
 
