@@ -276,7 +276,7 @@ public:
      *  \pre Partial ownership of this device
      *  \post Ownership unchanged
      */
-    virtual void reset() override {}
+    virtual void reset(const Vcpu_ctx *) override {}
 
     /*! \brief Converts a GPA to an address valid for the VMM
      *  \pre Partial ownership of this device

@@ -56,7 +56,7 @@ public:
     bool to_guest(char *buff, uint32 size);
     char *from_guest(uint32 &size);
 
-    virtual void reset() override { _reset(); }
+    virtual void reset(const Vcpu_ctx *) override { _reset(); }
 
     virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
                              uint64 &) override;

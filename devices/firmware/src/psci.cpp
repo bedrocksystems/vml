@@ -154,7 +154,7 @@ Firmware::Psci::smc_call_service(const Vcpu_ctx &vctx, Reg_accessor &arch, Vbus:
         Vcpu::Roundup::resume_from_vcpu(vctx.vcpu_id);
         Lifecycle::notify_system_reset(vctx);
 
-        vbus.reset();
+        vbus.reset(vctx);
         INFO("System is now reset. Starting back...");
 
         // We always restart from VCPU 0 so, this is the only one that won't be off

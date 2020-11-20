@@ -360,7 +360,7 @@ public:
         return Vbus::Err::OK;
     }
 
-    virtual void reset() override { _value = _reset_value; }
+    virtual void reset(const Vcpu_ctx*) override { _value = _reset_value; }
 };
 
 class Msr::Set_way_flush_reg : public Msr::Register {
@@ -480,7 +480,7 @@ public:
         return Vbus::Err::OK;
     }
 
-    virtual void reset() override {}
+    virtual void reset(const Vcpu_ctx*) override {}
 };
 
 class Msr::Icc_sgi1r_el1 : public Register_base {
@@ -493,7 +493,7 @@ public:
     virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx*, Vbus::Space, mword, uint8,
                              uint64&) override;
 
-    virtual void reset() override {}
+    virtual void reset(const Vcpu_ctx*) override {}
 };
 
 class Msr::Cntp_ctl : public Register {
@@ -551,7 +551,7 @@ public:
         return Vbus::Err::OK;
     }
 
-    virtual void reset() override {}
+    virtual void reset(const Vcpu_ctx*) override {}
 };
 
 class Msr::Cntp_tval : public Register {
@@ -590,7 +590,7 @@ public:
         return Vbus::Err::UPDATE_REGISTER;     // Tell the VCPU to update the relevant physical
                                                // register
     }
-    virtual void reset() override {}
+    virtual void reset(const Vcpu_ctx*) override {}
 };
 
 class Msr::Sctlr_el1 : public Msr::Register_base {
@@ -600,7 +600,7 @@ public:
 
     virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vcpu, Vbus::Space, mword, uint8,
                              uint64& res) override;
-    virtual void reset() override {}
+    virtual void reset(const Vcpu_ctx*) override {}
 
 private:
     Vbus::Bus* _vbus;
