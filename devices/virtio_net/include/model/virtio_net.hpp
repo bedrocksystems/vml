@@ -89,7 +89,7 @@ public:
 
     void signal();
 
-    virtual void reset() override { _reset(); }
+    virtual void reset(const Vcpu_ctx *) override { _reset(); }
 
     virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
                              uint64 &) override;

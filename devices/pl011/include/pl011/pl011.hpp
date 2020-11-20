@@ -176,7 +176,7 @@ public:
      */
     Pl011(Irq_controller &irq_ctlr, uint16 const irq)
         : Vuart::Vuart("pl011"), _irq_ctlr(&irq_ctlr), _irq_id(irq) {
-        reset();
+        reset(nullptr);
     }
 
     /*! \brief Send characters to the guest
@@ -200,7 +200,7 @@ public:
 
     /*! \brief Reset the PL011 to its initial state
      */
-    virtual void reset() override {
+    virtual void reset(const Vcpu_ctx *) override {
         _ilpr = 0;
         _ibrd = 0;
         _fbrd = 0;

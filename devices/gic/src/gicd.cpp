@@ -1000,7 +1000,7 @@ Model::Gic_d::send_sgi(Vcpu_id const self, Vcpu_id const cpu, unsigned const sgi
 }
 
 void
-Model::Gic_d::reset() {
+Model::Gic_d::reset(const Vcpu_ctx *) {
     for (uint16 cpu = 0; cpu < _num_vcpus; cpu++) {
         for (uint8 i = 0; i < MAX_SGI; i++) {
             _local[cpu]._sgi[i].reset(uint8(1u << cpu));

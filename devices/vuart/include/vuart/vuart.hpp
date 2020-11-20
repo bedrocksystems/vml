@@ -62,7 +62,7 @@ public:
         return Vbus::OK;
     }
 
-    virtual void reset() override {}
+    virtual void reset(const Vcpu_ctx *) override {}
 
 private:
     const uint64 _write_off;
