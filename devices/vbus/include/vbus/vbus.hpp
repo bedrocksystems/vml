@@ -88,7 +88,7 @@ public:
      *  \post The ownership of the object is returned to the caller. The device is in its initial
      *        state.
      */
-    virtual void reset() = 0;
+    virtual void reset(const Vcpu_ctx* vcpu_ctx) = 0;
 
     /*! \brief Type that represents the device
      */
@@ -162,7 +162,7 @@ public:
      *  \post Ownership of the vbus is unchanged. All devices must have transitioned from some
      *        state to their initial state.
      */
-    void reset();
+    void reset(const Vcpu_ctx& vcpu_ctx);
 
     /*! \brief Debug only: control the trace of the access to the bus
      *  \param enabled Should accesses be traced?

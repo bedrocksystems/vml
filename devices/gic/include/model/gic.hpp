@@ -573,14 +573,14 @@ public:
         for (uint16 i = 0; i < MAX_SPI; i++)
             _spi[i]._id = uint16(MAX_PPI + MAX_SGI + i);
 
-        reset();
+        reset(nullptr); // vctx not used for now
 
         return true;
     }
 
     virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
-    virtual void reset() override;
+    virtual void reset(const Vcpu_ctx *) override;
     virtual Type type() const override { return IRQ_CONTROLLER; }
 
     virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
@@ -640,7 +640,7 @@ public:
     uint8 aff2() const { return uint8(_vcpu_id >> 16); };
     uint8 aff3() const { return uint8(_vcpu_id >> 24); };
 
-    virtual void reset() override {}
+    virtual void reset(const Vcpu_ctx *) override {}
     virtual Type type() const override { return IRQ_CONTROLLER; }
 
     bool can_receive_irq(const Model::Gic_d::Irq &irq) const;
