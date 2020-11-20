@@ -149,19 +149,18 @@ Firmware::Psci::smc_call_service(const Vcpu_ctx &vctx, Reg_accessor &arch, Vbus:
         return true;
     case SYSTEM_RESET: {
         INFO("System reset requested by the guest.");
-        Lifecycle::notify_system_reset(vctx);
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
-        /*
-         * Reset myself since CPU 0 will not be turned off. Others will be
-         * reset when turned on the next time.
-         */
-        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, vctx.vcpu_id, true);
-        // We always restart from VCPU 0 so, this is the only one that won't be off
-        Model::Cpu::ctrl_feature_on_all_but_vcpu(Model::Cpu::ctrl_feature_off, 0, true);
+        Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_off, true);
         Vcpu::Roundup::resume_from_vcpu(vctx.vcpu_id);
+        Lifecycle::notify_system_reset(vctx);
 
         vbus.reset();
         INFO("System is now reset. Starting back...");
+
+        // We always restart from VCPU 0 so, this is the only one that won't be off
+        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, 0, true);
+        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, 0, false);
+
         return true;
     }
     }
