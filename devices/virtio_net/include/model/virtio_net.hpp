@@ -17,6 +17,7 @@
 namespace Model {
     class Virtio_net;
     struct Virtio_net_config;
+    class Virtio_net_callback;
     class Irq_contoller;
 }
 
@@ -55,11 +56,17 @@ struct Model::Virtio_net_config {
 };
 #pragma pack()
 
+class Model::Virtio_net_callback {
+public:
+    virtual void device_reset(const Vcpu_ctx *ctx) = 0;
+};
+
 class Model::Virtio_net : public Vbus::Device, public Virtio::Device {
 
 private:
     Virtio::Ram const _ram;
     Virtio::Callback *_callback{nullptr};
+    Model::Virtio_net_callback *_virtio_net_callback{nullptr};
     Virtio_net_config config __attribute__((aligned(8)));
     Semaphore *_sem;
     bool _backend_connected{false};
@@ -81,7 +88,11 @@ public:
         memcpy(&config.mac, &mac, 6);
     }
 
-    void register_callback(Virtio::Callback &callback) { _callback = &callback; }
+    void register_callback(Virtio::Callback &callback,
+                           Model::Virtio_net_callback &virtio_net_callback) {
+        _callback = &callback;
+        _virtio_net_callback = &virtio_net_callback;
+    }
 
     void connect() { _backend_connected = true; }
 
@@ -89,7 +100,7 @@ public:
 
     void signal();
 
-    virtual void reset(const Vcpu_ctx *) override { _reset(); }
+    virtual void reset(const Vcpu_ctx *) override;
 
     virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
                              uint64 &) override;

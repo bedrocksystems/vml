@@ -28,6 +28,14 @@ Model::Virtio_net::signal() {
         _assert_irq();
 }
 
+void
+Model::Virtio_net::reset(const Vcpu_ctx *ctx) {
+    if (_virtio_net_callback)
+        _virtio_net_callback->device_reset(ctx);
+
+    _reset();
+}
+
 Vbus::Err
 Model::Virtio_net::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, Vbus::Space,
                           mword const offset, uint8 const size, uint64 &value) {
