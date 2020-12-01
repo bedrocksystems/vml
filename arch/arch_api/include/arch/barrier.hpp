@@ -22,4 +22,5 @@ namespace Barrier {
     void r_before_rw();
     void w_before_w();
     void rw_before_rw();
+    void instruction();
 }
