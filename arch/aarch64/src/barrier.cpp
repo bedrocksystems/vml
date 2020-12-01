@@ -20,20 +20,13 @@ namespace Barrier {
      * For example, r_before_rw ensures that all read operations are
      * completed before the barrier and all read and write operations
      * after the barrier must wait for the barrier to complete.
-     *
-     * Note that on ARM, there exists Instruction Synchronization Barriers
-     * also that make sure that all instructions are completed before the
-     * barrier. Those are typically used when dealing with memory management,
-     * cache control, self-editing code or SVE/WFE. For now, I don't think
-     * the VMM needs to deal with those cases. The kernel will issue an ISB
-     * on context switching (before jumping back to the guest) and the VMM
-     * won't manipulate MSRs directly.
      */
 
-    void r_before_rw() { asm volatile("dmb ishld" : : : "memory"); }
+    void r_before_rw() { asm volatile("dsb ld" : : : "memory"); }
 
-    void w_before_w() { asm volatile("dmb ishst" : : : "memory"); }
+    void w_before_w() { asm volatile("dsb st" : : : "memory"); }
 
-    void rw_before_rw() { asm volatile("dmb ish" : : : "memory"); }
+    void rw_before_rw() { asm volatile("dsb sy" : : : "memory"); }
 
+    void instruction() { asm volatile("isb" : : : "memory"); }
 }
