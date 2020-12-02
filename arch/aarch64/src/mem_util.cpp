@@ -20,7 +20,7 @@ flush_data_cache(void* start, size_t size, bool inst_cache_coherency) {
     for (size_t i = 0; i < size; i += cache_line_size) {
         const char* addr = reinterpret_cast<char*>(start) + i;
 
-        asm volatile("dc cvau, %0" : : "r"(addr) : "memory");
+        asm volatile("dc civac, %0" : : "r"(addr) : "memory");
 
         if (inst_cache_coherency)
             asm volatile("ic ivau, %0" : : "r"(addr) : "memory");
