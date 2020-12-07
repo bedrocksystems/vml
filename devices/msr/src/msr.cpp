@@ -308,29 +308,8 @@ Msr::Bus::setup_aarch32_memory_model(uint32 id_mmfr0_el1, uint32 id_mmfr1_el1, u
 }
 
 bool
-Msr::Bus::setup_aarch64_caching_info(Vbus::Bus &vbus, uint64 ctr_el0, uint64 clidr_el1,
-                                     uint64 ccsidr_el1[CCSIDR_NUM * 2]) {
-    Msr::Register *reg, *csselr_el1;
-
-    reg = new (nothrow) Msr::Register("CLIDR_EL1", CLIDR_EL1, false, clidr_el1);
-    ASSERT(reg);
-    if (!register_system_reg(reg))
-        return false;
-
-    csselr_el1 = new (nothrow) Msr::Register("CSSELR_EL1", CSSELR_EL1, true, 0x0ULL);
-    ASSERT(csselr_el1);
-    if (!register_system_reg(csselr_el1))
-        return false;
-
-    reg = new (nothrow) Msr::Register("CTR_EL0", Msr::Register_id::CTR_A64, false, ctr_el0);
-    ASSERT(reg);
-    if (!register_system_reg(reg))
-        return false;
-
-    Msr::Ccsidr *ccsidr = new (nothrow) Msr::Ccsidr(*csselr_el1, clidr_el1, ccsidr_el1);
-    ASSERT(ccsidr);
-    if (!register_system_reg(ccsidr))
-        return false;
+Msr::Bus::setup_aarch64_setway_flushes(Vbus::Bus &vbus) {
+    Msr::Register *reg;
 
     reg = new (nothrow) Msr::Set_way_flush_reg("DC ISW", DCISW_A64, vbus);
     ASSERT(reg);
@@ -345,6 +324,33 @@ Msr::Bus::setup_aarch64_caching_info(Vbus::Bus &vbus, uint64 ctr_el0, uint64 cli
     reg = new (nothrow) Msr::Set_way_flush_reg("DC CISW", DCCISW_A64, vbus);
     ASSERT(reg);
     if (!register_system_reg(reg))
+        return false;
+
+    return true;
+}
+
+bool
+Msr::Bus::setup_aarch64_caching_info(Cache_topo &topo) {
+    Msr::Register *reg, *csselr_el1;
+
+    reg = new (nothrow) Msr::Register("CLIDR_EL1", CLIDR_EL1, false, topo.clidr_el1);
+    ASSERT(reg);
+    if (!register_system_reg(reg))
+        return false;
+
+    csselr_el1 = new (nothrow) Msr::Register("CSSELR_EL1", CSSELR_EL1, true, 0x0ULL);
+    ASSERT(csselr_el1);
+    if (!register_system_reg(csselr_el1))
+        return false;
+
+    reg = new (nothrow) Msr::Register("CTR_EL0", Msr::Register_id::CTR_A64, false, topo.ctr_el0);
+    ASSERT(reg);
+    if (!register_system_reg(reg))
+        return false;
+
+    Msr::Ccsidr *ccsidr = new (nothrow) Msr::Ccsidr(*csselr_el1, topo.clidr_el1, topo.ccsidr_el1);
+    ASSERT(ccsidr);
+    if (!register_system_reg(ccsidr))
         return false;
 
     return true;
@@ -494,7 +500,7 @@ Msr::Bus::setup_arch_msr(Msr::Bus::Platform_info &info, Vbus::Bus &vbus, Model::
     if (!ok)
         return false;
 
-    ok = setup_aarch64_caching_info(vbus, info.ctr_el0, info.clidr_el1, info.ccsidr_el1);
+    ok = setup_aarch64_setway_flushes(vbus);
     if (!ok)
         return false;
 

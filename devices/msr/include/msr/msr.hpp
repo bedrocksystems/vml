@@ -618,8 +618,7 @@ private:
     bool setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
                                 uint64 id_aa64isar0_el1, uint64 id_aa64isar1_el1,
                                 uint64 id_aa64zfr0_el1);
-    bool setup_aarch64_caching_info(Vbus::Bus& vbus, uint64 ctr_el0, uint64 clidr_el1,
-                                    uint64 ccsidr_el1[CCSIDR_NUM * 2]);
+    bool setup_aarch64_setway_flushes(Vbus::Bus& vbus);
     bool setup_aarch64_memory_model(uint64 id_aa64mmfr0_el1, uint64 id_aa64mmfr1_el1,
                                     uint64 id_aa64mmfr2_el1);
     bool setup_aarch64_debug(uint64 id_aa64dfr0_el1, uint64 id_aa64dfr1_el1);
@@ -684,14 +683,16 @@ public:
         uint32 mvfr0_el1;
         uint32 mvfr1_el1;
         uint32 mvfr2_el1;
+    };
 
-        // Cache topology
+    struct Cache_topo {
         uint64 ctr_el0;
         uint64 clidr_el1;
         uint64 ccsidr_el1[CCSIDR_NUM * 2];
     };
 
     bool setup_arch_msr(Platform_info& info, Vbus::Bus&, Model::Gic_d&);
+    bool setup_aarch64_caching_info(Cache_topo& topo);
 
     Register_base* get_register_with_id(Msr::Id id) const {
         return reinterpret_cast<Register_base*>(get_device_at(id.id(), sizeof(uint64)));
