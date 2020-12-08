@@ -154,7 +154,8 @@ public:
     Ctr(uint64 val) : _value(val) {}
     Ctr() { asm volatile("mrs %0, ctr_el0" : "=r"(_value) : :); }
 
-    uint64 cache_line_size() { return 4ull << ((_value >> 16ull) & 0xfull); }
+    uint64 dcache_line_size() { return 4ull << ((_value >> 16ull) & 0xfull); }
+    uint64 icache_line_size() { return 4ull << (_value & 0xfull); }
 
 private:
     uint64 _value;
