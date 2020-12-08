@@ -22,7 +22,7 @@ LIBDIR  = $(BRS_ROOT)lib/ ../ $(PLATFORM_PATH)
 
 include deps.mk
 
-CC_SRCS = barrier.cpp mem_util.cpp
+CC_SRCS = mem_util.cpp
 OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
 SPECS =
