@@ -9,8 +9,8 @@
 
 #include <platform/types.hpp>
 
-/*
- * Make sure that any data from start to start + size is flushed
- * out of the data cache and is committed to main memory.
- */
-void flush_data_cache(void* start, size_t size, bool inst_cache_coherency = true);
+void dcache_clean_range(void* va_start, size_t size);
+
+void icache_invalidate_range(void* va_start, size_t size);
+
+void icache_sync_range(void* va_start, size_t size);

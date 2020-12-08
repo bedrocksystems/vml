@@ -5,8 +5,7 @@
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
-
-#include <arch/barrier.hpp>
+#pragma once
 
 namespace Barrier {
 
@@ -22,10 +21,12 @@ namespace Barrier {
      * after the barrier must wait for the barrier to complete.
      */
 
-    void r_before_rw() { asm volatile("lfence" : : : "memory"); }
+    static inline void r_before_rw(void) { asm volatile("dsb ishld" : : : "memory"); }
 
-    void w_before_w() { asm volatile("sfence" : : : "memory"); }
+    static inline void w_before_w(void) { asm volatile("dsb ishst" : : : "memory"); }
 
-    void rw_before_rw() { asm volatile("mfence" : : : "memory"); }
+    static inline void rw_before_rw(void) { asm volatile("dsb ish" : : : "memory"); }
+
+    static inline void instruction(void) { asm volatile("isb" : : : "memory"); }
 
 }

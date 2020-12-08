@@ -8,6 +8,7 @@
 #pragma once
 
 namespace Barrier {
+
     /*
      * Semantic of the functions below:
      * op1_before_op2
@@ -19,8 +20,13 @@ namespace Barrier {
      * completed before the barrier and all read and write operations
      * after the barrier must wait for the barrier to complete.
      */
-    void r_before_rw();
-    void w_before_w();
-    void rw_before_rw();
-    void instruction();
+
+    static inline void r_before_rw(void) { asm volatile("lfence" : : : "memory"); }
+
+    static inline void w_before_w(void) { asm volatile("sfence" : : : "memory"); }
+
+    static inline void rw_before_rw(void) { asm volatile("mfence" : : : "memory"); }
+
+    static inline void instruction(void) {}
+
 }

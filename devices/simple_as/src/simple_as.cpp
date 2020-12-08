@@ -25,13 +25,13 @@ Model::Simple_as::write(GPA& addr, size_t size, const char* src) {
         return EINVAL;
     mword offset = addr.get_value() - get_guest_view().get_value();
     memcpy(get_vmm_view() + offset, src, size);
-    flush_data_cache(get_vmm_view() + offset, size);
+    icache_sync_range(get_vmm_view() + offset, size);
     return ENONE;
 }
 
 void
 Model::Simple_as::flush_guest_as() const {
-    flush_data_cache(_vmm_view, _as.size());
+    icache_sync_range(_vmm_view, _as.size());
 }
 
 void
