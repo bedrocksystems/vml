@@ -16,6 +16,7 @@ namespace Esr {
     class Msr_mrs;
     class Mcr_mrc;
     class Mcrr_mrrc;
+    class Abort;
     class Data_abort;
     class Instruction_abort;
     class Soft_step;
@@ -106,31 +107,17 @@ public:
     constexpr uint8 cv() const { return (_esr >> 24) & 0x1; }
 };
 
-class Esr::Data_abort : public Common {
-    uint8 access_size() const { return (_esr >> 22) & 0x3; }
-
-public:
-    Data_abort(uint64 const esr) : Common(esr) {}
-
-    bool isv() const { return (_esr >> 24) & 0x1; }
-    uint8 reg() const { return (_esr >> 16) & 0x1f; }
-    bool write() const { return (_esr >> 6) & 0x1; }
-    uint8 access_size_bytes() const { return static_cast<uint8>((1 << access_size()) & 0xff); }
-};
-
-class Esr::Instruction_abort : public Esr::Common {
+class Esr::Abort : public Common {
 private:
-    static constexpr uint64 SET_MASK = 0x3ull;
     static constexpr uint64 FNV_MASK = 0x1ull;
     static constexpr uint64 S1PTW_MASK = 0x1ull;
     static constexpr uint64 IFSC_MASK = 0x3full;
 
-    static constexpr uint8 SET_SHIFT = 11;
     static constexpr uint8 FNV_SHIFT = 10;
     static constexpr uint8 S1PTW_SHIFT = 7;
 
 public:
-    Instruction_abort(uint64 const esr) : Common(esr) {}
+    Abort(uint64 const esr) : Common(esr) {}
 
     enum Fault_status_code {
         ADDR_SIZE_FAULT_LVL_0 = 0b000000,
@@ -155,14 +142,6 @@ public:
         OTHER_FAULT,
     };
 
-    enum Sync_err_type {
-        RECOVERABLE = 0b00,
-        UNCONTAINABLE = 0b01,
-        RESTARTABLE_OR_CORRECTED = 0b10,
-    };
-
-    uint8 instruction_len_bytes() const { return il() ? 4 : 2; }
-
     Fault_status_code fault_status_code() const { return Fault_status_code(_esr & IFSC_MASK); }
     Fault_type fault_type() const {
         switch (fault_status_code()) {
@@ -181,7 +160,43 @@ public:
     }
 
     bool stage1_page_table_walk() const { return (_esr >> S1PTW_SHIFT) & S1PTW_MASK; }
-    bool far_not_valid() const { return (_esr >> FNV_SHIFT) & FNV_MASK; }
+    bool far_not_valid() const { return (_esr >> FNV_SHIFT) & FNV_MASK; };
+
+    bool hpfar_is_valid() const {
+        return (fault_status_code() <= ACCESS_FLAG_FAULT_LVL_3)
+               || (stage1_page_table_walk() && (fault_type() == PERMISSION_FAULT));
+    }
+};
+
+class Esr::Data_abort : public Esr::Abort {
+    uint8 access_size() const { return (_esr >> 22) & 0x3; }
+
+public:
+    Data_abort(uint64 const esr) : Abort(esr) {}
+
+    bool isv() const { return (_esr >> 24) & 0x1; }
+    uint8 reg() const { return (_esr >> 16) & 0x1f; }
+    bool write() const { return (_esr >> 6) & 0x1; }
+    uint8 access_size_bytes() const { return static_cast<uint8>((1 << access_size()) & 0xff); }
+};
+
+class Esr::Instruction_abort : public Esr::Abort {
+private:
+    static constexpr uint64 SET_MASK = 0x3ull;
+
+    static constexpr uint8 SET_SHIFT = 11;
+
+public:
+    Instruction_abort(uint64 const esr) : Abort(esr) {}
+
+    enum Sync_err_type {
+        RECOVERABLE = 0b00,
+        UNCONTAINABLE = 0b01,
+        RESTARTABLE_OR_CORRECTED = 0b10,
+    };
+
+    uint8 instruction_len_bytes() const { return il() ? 4 : 2; }
+
     Sync_err_type sync_err_type() const { return Sync_err_type((_esr >> SET_SHIFT) & SET_MASK); }
 };
 
