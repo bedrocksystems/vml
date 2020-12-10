@@ -53,12 +53,18 @@ PATH_TO_OBJS = $(call find_common_path,$(VMM_ROOT),$(realpath $(CURDIR)))
 
 SRCDIR = src/
 OBJDIR = $(BLDDIR)$(PATH_TO_OBJS)/
+ifeq ($(ARCH), x86_64)
+ARCH_INC = x86
+else
+ARCH_INC = $(ARCH)
+endif
 
 find_path_to_lib = $(foreach d, $(LIBDIR), $(wildcard $(d)$(1)))
 find_path_to_lib_objs=$(call find_common_path,$(VMM_ROOT),$(realpath $(call find_path_to_lib,$(1))))
 find_path_to_archive=$(BLDDIR)$(call find_path_to_lib_objs,$(1))/lib$(1).a
 INCLS  = $(foreach l, $(LIBS), $(addsuffix /include,$(call find_path_to_lib,$l)))
-APPINCL = ./include ./include/$(ARCH)
+INCLS += $(foreach l, $(LIBS), $(addsuffix /include/$(ARCH_INC),$(call find_path_to_lib,$l)))
+APPINCL = ./include ./include/$(ARCH_INC)
 IFLAGS = $(addprefix -I, $(APPINCL)) $(addprefix -I, $(INCLS))
 LINKDEPS = $(foreach l,$(LINKLIBS),$(call find_path_to_archive,$l))
 EXTRA_LINK = -pthread
