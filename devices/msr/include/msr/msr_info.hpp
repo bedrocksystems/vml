@@ -154,10 +154,24 @@ public:
     Ctr(uint64 val) : _value(val) {}
     Ctr() { asm volatile("mrs %0, ctr_el0" : "=r"(_value) : :); }
 
+    bool dcache_clean_pou_for_itod() { return !(_value & IDC_MASK); }
+    bool icache_clean_pou_for_itod() { return !(_value & DIC_MASK); }
     uint64 dcache_line_size() { return 4ull << ((_value >> 16ull) & 0xfull); }
     uint64 icache_line_size() { return 4ull << (_value & 0xfull); }
 
+    enum Icache_policy { VPIPT = 0b00, AIVIVT = 0b01, VIPT = 0b10, PIPT = 0b11 };
+
+    Icache_policy get_icache_policy() { return Icache_policy(bits_in_range(_value, 14, 15)); }
+
+    bool can_invalidate_guest_icache() {
+        Icache_policy icp = get_icache_policy();
+        return icp == PIPT || icp == VPIPT;
+    }
+
 private:
+    static constexpr uint64 IDC_MASK = 1ull << 28;
+    static constexpr uint64 DIC_MASK = 1ull << 29;
+
     uint64 _value;
 };
 
