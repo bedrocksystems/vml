@@ -147,6 +147,7 @@ protected:
     Cpu_feature _tvm;
     Cpu_feature _singe_step;
     Cpu_feature _execution_paused;
+    Cpu_feature _icache_invalidate;
 
 public:
     // VCPU api start
@@ -181,6 +182,8 @@ public:
                                  Reg_selection regs);
     static void ctrl_feature_single_step(Model::Cpu *vcpu, bool enable,
                                          Request::Requestor requestor, Reg_selection regs);
+    static void ctrl_feature_icache_invalidate(Model::Cpu *vcpu, bool enable,
+                                               Request::Requestor requestor, Reg_selection regs);
     static bool requested_feature_tvm(Model::Cpu *vcpu, Request::Requestor requestor);
 
     static uint16 get_num_vcpus();

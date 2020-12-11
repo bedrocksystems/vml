@@ -18,7 +18,7 @@ else
 PLATFORM_PATH ?= ../../platform/
 endif
 
-LIBDIR  = $(BRS_ROOT)lib/ ../ ../../devices/ $(PLATFORM_PATH)
+LIBDIR  = $(BRS_ROOT)lib/ ../ ../../devices/  ../../vcpu/ $(PLATFORM_PATH)
 
 include deps.mk
 
