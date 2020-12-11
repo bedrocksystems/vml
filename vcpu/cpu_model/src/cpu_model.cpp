@@ -157,6 +157,12 @@ Model::Cpu::ctrl_feature_reset(Model::Cpu* vcpu, bool enable, Request::Requestor
     vcpu->_reset.needs_update(enable, requestor);
 }
 
+void
+Model::Cpu::ctrl_feature_icache_invalidate(Model::Cpu* vcpu, bool enable,
+                                           Request::Requestor requestor, Reg_selection) {
+    vcpu->_icache_invalidate.needs_update(enable, requestor);
+}
+
 Errno
 Model::Cpu::run(Vcpu_id cpu_id) {
     ASSERT(cpu_id < num_vcpus);

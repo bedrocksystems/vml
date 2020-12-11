@@ -10,7 +10,7 @@
 #include <platform/types.hpp>
 
 void
-icache_sync_range(void* start, size_t size) {
+dcache_clean_range(void* start, size_t size) {
     uint64 cache_line_size = 64; // Could we query this at run-time?
 
     for (size_t i = 0; i < size; i += cache_line_size) {
@@ -18,4 +18,14 @@ icache_sync_range(void* start, size_t size) {
 
         asm volatile("clflush (%0)" : : "r"(addr) : "memory");
     }
+}
+
+void
+icache_invalidate_range(void*, size_t) {
+    return;
+}
+
+void
+icache_sync_range(void* start, size_t size) {
+    dcache_clean_range(start, size);
 }
