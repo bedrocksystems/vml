@@ -380,8 +380,6 @@ Model::Cpu::switch_state_to_off() {
     if (__UNLIKELY__(Debug::current_level == Debug::Full))
         INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
              state_printable_name[new_state]);
-
-    Vcpu::Roundup::vcpu_notify_switched_off();
 }
 
 /*! \brief Enter an emulation section in the VMM. This may fail.

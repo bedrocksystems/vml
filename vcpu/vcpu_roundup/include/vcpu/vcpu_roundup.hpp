@@ -23,7 +23,7 @@ namespace Vcpu::Roundup {
     void resume_parallel(Vcpu_id vcpu_id);
 
     void wait_for_all_off();
-    void vcpu_notify_switched_off();
+    void vcpu_notify_initialized();
     void vcpu_notify_switched_on();
 
     void vcpu_notify_done_progessing();
