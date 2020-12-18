@@ -20,13 +20,21 @@ Model::Simple_as::read(char* dst, size_t size, GPA& addr) {
 }
 
 Errno
-Model::Simple_as::write(GPA& addr, size_t size, const char* src) {
-    if (!is_gpa_valid(addr, size))
+Model::Simple_as::write(GPA& gpa, size_t size, const char* src) {
+    mword offset;
+    void* hva = nullptr;
+
+    if (!is_gpa_valid(gpa, size))
         return EINVAL;
-    mword offset = addr.get_value() - get_guest_view().get_value();
-    memcpy(get_vmm_view() + offset, src, size);
-    dcache_clean_range(_vmm_view, _as.size());
-    icache_invalidate_range(_vmm_view, _as.size());
+
+    offset = gpa.get_value() - get_guest_view().get_value();
+    hva = get_vmm_view() + offset;
+
+    memcpy(hva, src, size);
+
+    dcache_clean_range(hva, size);
+    icache_invalidate_range(hva, size);
+
     return ENONE;
 }
 
