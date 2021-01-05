@@ -165,7 +165,7 @@ public:
 
     bool can_invalidate_guest_icache() {
         Icache_policy icp = get_icache_policy();
-        return icp == PIPT || icp == VPIPT;
+        return icp == PIPT;
     }
 
 private:
