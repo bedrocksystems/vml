@@ -55,7 +55,7 @@ public:
 
 private:
     atomic<uint32> _requests{0};
-    bool _enabled;
+    bool _enabled{false};
 };
 
 class Model::Cpu : private Model::Cpu_irq_interface {
