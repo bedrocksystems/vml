@@ -40,8 +40,10 @@ Model::Simple_as::write(GPA& gpa, size_t size, const char* src) {
 
 void
 Model::Simple_as::flush_guest_as() const {
-    dcache_clean_range(_vmm_view, _as.size());
-    icache_invalidate_range(_vmm_view, _as.size());
+    if (!_read_only) {
+        dcache_clean_range(_vmm_view, _as.size());
+        icache_invalidate_range(_vmm_view, _as.size());
+    }
 }
 
 void
