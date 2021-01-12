@@ -116,7 +116,7 @@ public:
 
 class Virtio::Device {
 protected:
-    enum { RX = 0, TX = 1, QUEUES = 2 };
+    enum { QUEUES = 2 };
 
     Model::Irq_controller *const _irq_ctlr;
     Ram const *const _ram;
@@ -128,7 +128,7 @@ protected:
     uint8 const _device_id;
     uint32 const _device_feature_lower;
 
-    uint32 _sel_queue{RX};
+    uint32 _sel_queue{0};
     uint32 _vendor_id{0x554d4551ULL /* QEMU */};
     uint32 _irq_status{0};
     uint32 _status{0};
@@ -225,10 +225,10 @@ protected:
     }
 
     void _reset() {
-        _queue[RX].destruct();
-        _queue[TX].destruct();
-        _data[RX] = {};
-        _data[TX] = {};
+        for (int i = 0; i < QUEUES; i++) {
+            _queue[i].destruct();
+            _data[i] = {};
+        }
 
         _status = 0;
         _irq_status = 0;
