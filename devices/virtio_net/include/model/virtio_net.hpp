@@ -64,6 +64,7 @@ public:
 class Model::Virtio_net : public Vbus::Device, public Virtio::Device {
 
 private:
+    enum { RX = 0, TX = 1 };
     Virtio::Ram const _ram;
     Virtio::Callback *_callback{nullptr};
     Model::Virtio_net_callback *_virtio_net_callback{nullptr};
