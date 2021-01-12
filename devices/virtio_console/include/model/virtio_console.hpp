@@ -28,6 +28,7 @@ struct Model::Virtio_console_config {
 
 class Model::Virtio_console : public Vbus::Device, private Virtio::Device {
 private:
+    enum { RX = 0, TX = 1 };
     Virtio::Ram const _ram;
     Model::Virtio_console_config config __attribute__((aligned(8)));
 
