@@ -32,6 +32,7 @@ export BLDDIR ?= $(CURDIR)/build-$(PLATFORM)-$(TARGET)/
 SUBDIRS = devices/vbus devices/pl011 devices/gic arch/$(TARGET)
 SUBDIRS += devices/timer devices/virtio_console devices/virtio_net devices/msr
 SUBDIRS += devices/simple_as devices/firmware vcpu/vcpu_roundup vcpu/cpu_model
+SUBDIRS += devices/virtio_sock
 
 EXAMPLES = examples/vbus_posix examples/virtio_posix
 
