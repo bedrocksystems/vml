@@ -132,6 +132,11 @@ Model::Cpu::requested_feature_tvm(Model::Cpu* vcpu, Request::Requestor requestor
     return vcpu->_tvm.is_requested_by(requestor);
 }
 
+bool
+Model::Cpu::requested_feature_single_step(Model::Cpu* vcpu, Request::Requestor requestor) {
+    return vcpu->_singe_step.is_requested_by(requestor);
+}
+
 void
 Model::Cpu::ctrl_feature_off(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
                              Reg_selection) {
