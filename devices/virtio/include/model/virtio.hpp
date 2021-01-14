@@ -116,7 +116,7 @@ public:
 
 class Virtio::Device {
 protected:
-    enum { QUEUES = 2 };
+    enum { QUEUES = 3 };
 
     Model::Irq_controller *const _irq_ctlr;
     Ram const *const _ram;
