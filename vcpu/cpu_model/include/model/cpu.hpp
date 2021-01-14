@@ -185,6 +185,7 @@ public:
     static void ctrl_feature_icache_invalidate(Model::Cpu *vcpu, bool enable,
                                                Request::Requestor requestor, Reg_selection regs);
     static bool requested_feature_tvm(Model::Cpu *vcpu, Request::Requestor requestor);
+    static bool requested_feature_single_step(Model::Cpu *vcpu, Request::Requestor requestor);
 
     static uint16 get_num_vcpus();
     static Pcpu_id get_pcpu(Vcpu_id);
