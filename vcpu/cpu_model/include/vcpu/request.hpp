@@ -23,22 +23,18 @@ namespace Request {
     }
 
     inline bool needs_update(Requestor requestor, bool enable, atomic<uint32> &requests) {
-        uint32 expected = requests.load();
-        uint32 desired;
+        uint32 previous = requests.load();
 
         if (enable) {
-            do {
-                desired = expected | requestor;
-            } while (!requests.cas(expected, desired));
-            if (expected == 0) {
+            previous = requests.fetch_or(requestor);
+            if (previous == 0) {
                 return true;
             }
         } else {
-            do {
-                desired = expected & ~requestor;
-            } while (!requests.cas(expected, desired));
+            previous = requests.fetch_and(~requestor);
+            uint32 desired = previous & ~requestor;
             if (desired == 0) {
-                if (expected == 0) {
+                if (previous == 0) {
                     return false;
                 }
                 return true;
