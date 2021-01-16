@@ -625,7 +625,7 @@ Msr::Set_way_flush_reg::flush(const Vcpu_ctx *vctx, const uint8, const uint32) c
      */
     if (!Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vctx->vcpu_id)) {
         _vbus->iter_devices(Model::Simple_as::flush_callback, nullptr);
-        DEBUG("Use of Set/way flush detected - flushing guest AS and enable TVM");
+        INFO("Use of Set/way flush detected - flushing guest AS and enable TVM");
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vctx->vcpu_id, true);
     }
 }
@@ -652,13 +652,13 @@ Msr::Sctlr_el1::access(Vbus::Access access, const Vcpu_ctx *vcpu, Vbus::Space, m
      */
 
     if (before.cache_enabled() != after.cache_enabled()) {
-        DEBUG("Cache setting toggled - flushing the guest AS");
+        INFO("Cache setting toggled - flushing the guest AS");
 
         _vbus->iter_devices(Model::Simple_as::flush_callback, nullptr);
     }
 
     if (after.cache_enabled()) {
-        DEBUG("Cache enabled - stop TVM trapping");
+        INFO("Cache enabled - stop TVM trapping");
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vcpu->vcpu_id, false);
     }
 
