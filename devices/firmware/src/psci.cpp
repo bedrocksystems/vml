@@ -135,7 +135,7 @@ Firmware::Psci::smc_call_service(const Vcpu_ctx &vctx, Reg_accessor &arch, Vbus:
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, vctx.vcpu_id, true);
 
         vbus.iter_devices(Model::Simple_as::flush_callback, nullptr);
-        DEBUG("VCPU " FMTu64 " will be switched off", vctx.vcpu_id);
+        INFO("VCPU " FMTu64 " will be switched off", vctx.vcpu_id);
         res = static_cast<uint64>(SUCCESS);
         return true;
     }
