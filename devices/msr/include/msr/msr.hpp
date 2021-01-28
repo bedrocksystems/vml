@@ -260,6 +260,8 @@ namespace Msr {
         = {DBGWCR0_EL1,  DBGWCR1_EL1,  DBGWCR2_EL1,  DBGWCR3_EL1, DBGWCR4_EL1,  DBGWCR5_EL1,
            DBGWCR6_EL1,  DBGWCR7_EL1,  DBGWCR8_EL1,  DBGWCR9_EL1, DBGWCR10_EL1, DBGWCR11_EL1,
            DBGWCR12_EL1, DBGWCR13_EL1, DBGWCR14_EL1, DBGWCR15_EL1};
+
+    void flush_on_cache_toggle(const Vcpu_ctx* vcpu, Vbus::Bus& vbus, uint64 new_value);
 }
 
 namespace Model {
