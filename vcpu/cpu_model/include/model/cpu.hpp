@@ -8,12 +8,13 @@
 #pragma once
 
 #include <model/vcpu_types.hpp>
+#include <platform/atomic.hpp>
 #include <platform/context.hpp>
 #include <platform/errno.hpp>
+#include <platform/log.hpp>
 #include <platform/semaphore.hpp>
 #include <platform/types.hpp>
 #include <platform/vm_types.hpp>
-#include <vcpu/request.hpp>
 
 namespace Model {
     class Cpu_irq_interface;
@@ -39,23 +40,53 @@ public:
     virtual uint8 aff3() const = 0;
 };
 
+namespace Request {
+    enum Requestor : uint32 {
+        VMM = 0,
+        VMI = 1,
+        MAX_REQUESTORS,
+    };
+}
+
 class Model::Cpu_feature {
 public:
     bool is_requested_by(Request::Requestor requestor) const {
-        return Request::is_requested_by(requestor, _requests);
+        ASSERT(requestor < Request::MAX_REQUESTORS);
+        return _requests[requestor] & ENABLE_MASK;
     }
-    bool is_requested() const { return static_cast<bool>(_requests.load()); }
-    bool is_enabled() const { return _enabled; }
-    void set_enabled(bool e);
-    bool needs_reconfiguration() const { return is_enabled() != is_requested(); }
-    bool needs_update(bool enable, Request::Requestor requestor) {
-        return Request::needs_update(requestor, enable, _requests);
+    bool is_requested() const {
+        return is_requested_by(Request::VMM) || is_requested_by(Request::VMI);
     }
-    void unset_requests() { _requests = 0; }
+    void force_reconfiguration() { _config_count++; }
+    void set_config_gen() { _current_config = _config_count; }
+    bool needs_reconfiguration() const { return _current_config != _config_count; }
+
+    static constexpr uint8 ENABLE_SHIFT = 63;
+    static constexpr uint64 ENABLE_MASK = 1ull << ENABLE_SHIFT;
+
+    void get_current_config(bool &enabled, Reg_selection &regs) {
+        uint64 vmm_conf = _requests[0];
+        uint64 vmi_conf = _requests[1];
+
+        enabled = (vmm_conf & ENABLE_MASK) || (vmi_conf & ENABLE_MASK);
+        regs = (vmm_conf & ~ENABLE_MASK) | (vmi_conf & ~ENABLE_MASK);
+
+        if (!enabled)
+            regs = 0; // Force no register when the feature is not enabled
+    }
+
+    // Each requestor is responsible of maintaining the consistency of its config
+    void request(bool enable, Request::Requestor requestor, Reg_selection regs = 0) {
+        ASSERT(requestor < Request::MAX_REQUESTORS);
+        ASSERT(!(ENABLE_MASK & regs)); // Reg_selection doesn't use the highest bit for now
+        force_reconfiguration();
+        _requests[requestor] = ((enable ? 1ull : 0ull) << ENABLE_SHIFT) | regs;
+    }
 
 private:
-    atomic<uint32> _requests{0};
-    bool _enabled{false};
+    uint64 _requests[Request::MAX_REQUESTORS];
+    atomic<uint64> _config_count{0};
+    uint64 _current_config{0};
 };
 
 class Model::Cpu : private Model::Cpu_irq_interface {

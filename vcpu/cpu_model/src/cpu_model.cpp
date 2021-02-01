@@ -140,32 +140,28 @@ Model::Cpu::requested_feature_single_step(Model::Cpu* vcpu, Request::Requestor r
 void
 Model::Cpu::ctrl_feature_off(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
                              Reg_selection) {
-    bool needs_update = vcpu->_execution_paused.needs_update(enable, requestor);
-    if (needs_update) {
-        if (!enable) {
-            vcpu->switch_on();
-            vcpu->_execution_paused.set_enabled(false);
-        } else {
-            /* A VCPU is switched off at the beginning of the VMExit handler so issuing a
-             * recall is a more robust approach as it will guarantee that the VCPU will not
-             * progress any more after that call.
-             */
-            vcpu->recall();
-            vcpu->_execution_paused.set_enabled(true);
-        }
+    vcpu->_execution_paused.request(enable, requestor);
+    if (!enable) {
+        vcpu->switch_on();
+    } else {
+        /* A VCPU is switched off at the beginning of the VMExit handler so issuing a
+         * recall is a more robust approach as it will guarantee that the VCPU will not
+         * progress any more after that call.
+         */
+        vcpu->recall();
     }
 }
 
 void
 Model::Cpu::ctrl_feature_reset(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
                                Reg_selection) {
-    vcpu->_reset.needs_update(enable, requestor);
+    vcpu->_reset.request(enable, requestor);
 }
 
 void
 Model::Cpu::ctrl_feature_icache_invalidate(Model::Cpu* vcpu, bool enable,
                                            Request::Requestor requestor, Reg_selection) {
-    vcpu->_icache_invalidate.needs_update(enable, requestor);
+    vcpu->_icache_invalidate.request(enable, requestor);
 }
 
 Errno
@@ -211,12 +207,6 @@ Model::Cpu::is_cpu_turned_on_by_guest(Vcpu_id cpu_id) {
         return false;
 
     return vcpus[cpu_id]->is_turned_on_by_guest();
-}
-
-void
-Model::Cpu_feature::set_enabled(bool e) {
-    _enabled = e;
-    Barrier::w_before_w();
 }
 
 Model::Cpu::Cpu(Gic_d& gic, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq)
