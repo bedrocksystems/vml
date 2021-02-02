@@ -657,6 +657,7 @@ public:
         uint64 id_aa64dfr1_el1;
         uint64 id_aa64isar0_el1;
         uint64 id_aa64isar1_el1;
+        uint64 id_aa64isar2_el1;
         uint64 id_aa64mmfr0_el1;
         uint64 id_aa64mmfr1_el1;
         uint64 id_aa64mmfr2_el1;
