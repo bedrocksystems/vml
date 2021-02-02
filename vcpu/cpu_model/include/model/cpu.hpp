@@ -84,7 +84,7 @@ public:
     }
 
 private:
-    uint64 _requests[Request::MAX_REQUESTORS];
+    uint64 _requests[Request::MAX_REQUESTORS] = {0ull, 0ull};
     atomic<uint64> _config_count{0};
     uint64 _current_config{0};
 };
