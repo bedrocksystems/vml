@@ -1,5 +1,5 @@
 # vmm libs - devices
-LIBS += vbus gic irq_controller timer virtio_console virtio_net virtio
+LIBS += vbus gic irq_controller timer virtio_console virtio_net virtio_base
 
 # vmm libs - config
 LIBS += vmm_debug
