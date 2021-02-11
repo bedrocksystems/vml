@@ -79,8 +79,8 @@ public:
     void request(bool enable, Request::Requestor requestor, Reg_selection regs = 0) {
         ASSERT(requestor < Request::MAX_REQUESTORS);
         ASSERT(!(ENABLE_MASK & regs)); // Reg_selection doesn't use the highest bit for now
-        force_reconfiguration();
         _requests[requestor] = ((enable ? 1ull : 0ull) << ENABLE_SHIFT) | regs;
+        force_reconfiguration();
     }
 
 private:
