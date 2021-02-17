@@ -240,6 +240,7 @@ public:
 
     // Functions that are implemented
     Cpu(Gic_d &gic, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq);
+    Cpu(Vcpu_id vcpu_id, Pcpu_id pcpu_id);
     bool setup(const Platform_ctx *ctx);
 
     void switch_state_to_roundedup();
