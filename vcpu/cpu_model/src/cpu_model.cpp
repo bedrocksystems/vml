@@ -217,6 +217,13 @@ Model::Cpu::Cpu(Gic_d& gic, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq)
     num_vcpus++;
 }
 
+Model::Cpu::Cpu(Vcpu_id vcpu_id, Pcpu_id pcpu_id)
+    : _vcpu_id(vcpu_id), _timer_irq(0), _pcpu_id(pcpu_id), _gic(nullptr) {
+    vcpus[vcpu_id] = this;
+    Barrier::w_before_w();
+    num_vcpus++;
+}
+
 bool
 Model::Cpu::setup(const Platform_ctx* ctx) {
     bool ok = _off_sm.init(ctx);
