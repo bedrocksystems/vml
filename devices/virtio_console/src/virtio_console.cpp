@@ -7,10 +7,14 @@
  */
 
 #include <model/virtio_console.hpp>
+#include <platform/virtqueue.hpp>
 
 void
 Model::Virtio_console::_notify(uint32 const) {
     _sem->release();
+
+    if (_queue[RX].queue().get_free())
+        _sig_notify_empty_space.sig();
 }
 
 void
@@ -29,8 +33,9 @@ Model::Virtio_console::to_guest(char *buff, uint32 size) {
     uint32 buf_idx = 0;
     while (size) {
         auto desc = _queue[RX].queue().recv();
-        if (not desc)
+        if (not desc) {
             return false;
+        }
 
         uint64 vmm_addr = 0;
         if (!_ram.local_address(desc->address, desc->length, vmm_addr)) {
