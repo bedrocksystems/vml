@@ -70,9 +70,13 @@ Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const val
         }
 
         return true;
-    case UARTCR:
+    case UARTCR: {
+        bool could_rx = can_rx();
         _cr = static_cast<uint16>(value);
+        if (!could_rx && can_rx())
+            _sig_notify_empty_space.sig();
         return true;
+    }
     case UARTIFLS:
         _ifls = static_cast<uint16>(value);
         return true;
@@ -116,6 +120,7 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
         if (is_fifo_empty() || !can_rx())
             value = 0; // This is an undefined behavior (not specified) returning 0 is fine
         else {
+            bool was_full = is_fifo_full();
             value = _rx_fifo[_rx_fifo_ridx++];
             _rx_fifo_ridx %= _rx_fifo_size;
             Barrier::r_before_rw();
@@ -125,6 +130,9 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
                 _ris &= static_cast<uint16>(~RXRIS);
                 _irq_ctlr->deassert_line_spi(_irq_id);
             }
+
+            if (was_full)
+                _sig_notify_empty_space.sig(); // FIFO is not full anymore, signal the waiter
         }
         return true;
     case UARTRSR: // We don't emulate errors so nothing to do here
@@ -226,14 +234,11 @@ Model::Pl011::to_guest(char *buff, uint32 size) {
         return false;
 
     uint32 written;
-    for (written = 0; written < size; written++) {
+    for (written = 0; written < size && !is_fifo_full(); written++) {
         _rx_fifo[_rx_fifo_widx++] = static_cast<uint16>(buff[written]);
         _rx_fifo_widx %= _rx_fifo_size;
         Barrier::rw_before_rw();
         _rx_fifo_chars++;
-
-        if (is_fifo_full())
-            break;
     }
 
     if (should_assert_rx_irq()) {
