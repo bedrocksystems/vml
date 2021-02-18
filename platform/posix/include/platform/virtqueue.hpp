@@ -106,6 +106,8 @@ public:
         update_used_index(1);
     }
 
+    uint16 get_free() const { return count_free(available_index()); }
+
 private:
     inline uint16 count_available(uint16 avail_idx) const {
         // Index is a 16 bit free running counter. The max limit for ring size is 32768. Therefore,
