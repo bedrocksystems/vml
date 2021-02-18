@@ -10,6 +10,7 @@
 
 #include <model/virtio.hpp>
 #include <platform/semaphore.hpp>
+#include <platform/signal.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
@@ -36,6 +37,7 @@ private:
     Virtio::Callback *_callback{nullptr};
     Virtio::Descriptor *_tx_desc{nullptr};
     bool _driver_initialized{false};
+    Platform::Signal _sig_notify_empty_space;
 
     bool mmio_write(Vcpu_id const, uint64 const, uint8 const, uint64 const);
     bool mmio_read(Vcpu_id const, uint64 const, uint8 const, uint64 &) const;
@@ -50,14 +52,19 @@ public:
                                                          irq, queue_entries),
           _ram(guest_base, size, host_base), _sem(sem) {}
 
+    bool init(const Platform_ctx *ctx) { return _sig_notify_empty_space.init(ctx); }
     void register_callback(Virtio::Callback &callback) { _callback = &callback; }
 
     void release_buffer();
 
     bool to_guest(char *buff, uint32 size);
     char *from_guest(uint32 &size);
+    void wait_for_available_buffer() { _sig_notify_empty_space.wait(); }
 
-    virtual void reset(const Vcpu_ctx *) override { _reset(); }
+    virtual void reset(const Vcpu_ctx *) override {
+        _sig_notify_empty_space.sig();
+        _reset();
+    }
 
     virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
