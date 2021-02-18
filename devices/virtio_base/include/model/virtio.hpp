@@ -373,7 +373,8 @@ protected:
     bool _read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
                         uint8 const bytes, uint64 const value, uint64 &result) const {
         if (!bytes || (bytes > 8) || (offset + bytes > base_max + 1)) {
-            WARN("Register read failure: off 0x%llu - base_reg 0x%u - base_max 0x%u - bytes "
+            WARN("Register read failure: off " FMTx64 " - base_reg 0x%u - base_max 0x%u - bytes "
+
                  "0x%u",
                  offset, base_reg, base_max, bytes);
             return false;
@@ -390,7 +391,7 @@ protected:
                          uint8 const bytes, uint64 const value, T &result) {
         unsigned constexpr tsize = sizeof(T);
         if (!bytes || (bytes > tsize) || (offset + bytes > base_max + 1)) {
-            WARN("Register write failure: off 0x%llu - base_reg 0x%u - base_max 0x%u - bytes "
+            WARN("Register write failure: off " FMTx64 " - base_reg 0x%u - base_max 0x%u - bytes "
                  "0x%u - tsize 0x%u",
                  offset, base_reg, base_max, bytes, tsize);
             return false;
