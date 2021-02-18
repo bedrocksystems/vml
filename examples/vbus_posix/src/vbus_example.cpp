@@ -63,6 +63,8 @@ main() {
     Model::Pl011 pl011(gicd, 0x42);
     Model::Physical_timer ptimer(gicd, 0, 0x12);
 
+    ok = pl011.init(&ctx);
+    ASSERT(ok);
     ok = ptimer.init_irq(0, 0x12, false, true);
     ASSERT(ok);
 

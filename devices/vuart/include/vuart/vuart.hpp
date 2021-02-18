@@ -28,6 +28,15 @@ public:
      */
     virtual bool to_guest(char *, uint32) { return true; }
 
+    /*! \brief Allows the UART to make the external interface wait for available receive space
+     *
+     * It is important to note that this is a best effort from the receiving side. It will do
+     * its best to store incoming characters and wait to not overflow the virtual UART. However,
+     * the interface also maintains a buffer than can overflow. In case of overflow, characters
+     * could be dropped.
+     */
+    virtual void wait_for_available_buffer() { return; }
+
     /*! \brief Register the callback handler to send data outside
      *  \param callback The callback object
      */

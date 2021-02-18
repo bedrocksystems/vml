@@ -11,6 +11,8 @@
  *  \brief Model for a PL011 device
  */
 
+#include <platform/atomic.hpp>
+#include <platform/signal.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 #include <vuart/vuart.hpp>
@@ -150,7 +152,7 @@ private:
 
     static constexpr uint8 RX_FIFO_MAX_SIZE = 16;
     uint8 _rx_fifo_size{1};            /*!< Maximum configured size */
-    uint8 _rx_fifo_chars{0};           /*!< Current number of chars in the FIFO */
+    atomic<uint8> _rx_fifo_chars{0};   /*!< Current number of chars in the FIFO */
     uint8 _rx_fifo_ridx{0};            /*!< Read index in the FIFO */
     uint8 _rx_fifo_widx{0};            /*!< Write index in the FIFO */
     uint16 _rx_fifo[RX_FIFO_MAX_SIZE]; /*!< Receive FIFO */
@@ -168,6 +170,7 @@ private:
 
     Irq_controller *_irq_ctlr; /*!< Interrupt controller that will receive interrupts */
     uint16 _irq_id;            /*!< IRQ id when sending an interrupt to the controller */
+    Platform::Signal _sig_notify_empty_space; /*!< Synchronize/wait on a buffer that is full */
 
 public:
     /*! \brief Constructor for the PL011
@@ -175,8 +178,13 @@ public:
      *  \param irq IRQ id to use when sending interrupt to the interrupt controller
      */
     Pl011(Irq_controller &irq_ctlr, uint16 const irq)
-        : Vuart::Vuart("pl011"), _irq_ctlr(&irq_ctlr), _irq_id(irq) {
+        : Vuart::Vuart("pl011"), _irq_ctlr(&irq_ctlr), _irq_id(irq), _sig_notify_empty_space() {}
+
+    bool init(const Platform_ctx *ctx) {
+        if (!_sig_notify_empty_space.init(ctx))
+            return false;
         reset(nullptr);
+        return true;
     }
 
     /*! \brief Send characters to the guest
@@ -185,6 +193,8 @@ public:
      *  \return true is the whole data could be transmitted, false otherwise
      */
     virtual bool to_guest(char *buff, uint32 size) override;
+
+    virtual void wait_for_available_buffer() override { _sig_notify_empty_space.wait(); }
 
     /*! \brief MMIO access function - adhere to the Virtual bus interface
      *  \param access type of access (R/W/X)
@@ -218,5 +228,6 @@ public:
         _rx_fifo_chars = 0;
         _rx_fifo_ridx = 0;
         _rx_fifo_widx = 0;
+        _sig_notify_empty_space.sig();
     }
 };
