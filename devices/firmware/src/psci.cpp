@@ -152,9 +152,10 @@ Firmware::Psci::smc_call_service(const Vcpu_ctx &vctx, Reg_accessor &arch, Vbus:
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
         Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_off, true);
         Vcpu::Roundup::resume_from_vcpu(vctx.vcpu_id);
+        vbus.reset(vctx);
+
         Lifecycle::notify_system_reset(vctx);
 
-        vbus.reset(vctx);
         INFO("System is now reset. Starting back...");
 
         // We always restart from VCPU 0 so, this is the only one that won't be off
