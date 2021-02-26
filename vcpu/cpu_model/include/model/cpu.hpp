@@ -57,8 +57,25 @@ public:
     bool is_requested() const {
         return is_requested_by(Request::VMM) || is_requested_by(Request::VMI);
     }
-    void force_reconfiguration() { _config_count++; }
-    void set_config_gen() { _current_config = _config_count; }
+    void force_reconfiguration() {
+        uint64 v = _config_count;
+        do {
+            if (__UNLIKELY__(v == UINT64_MAX))
+                return;
+        } while (!_config_count.compare_exchange_weak(v, v + 1));
+    }
+    void set_config_gen() {
+        _current_config = _config_count;
+        /* Force the next round to reconfigure due to possible concurrent updates
+         * to _config_count (leaving the value at UINT64_MAX). This will cause an extra
+         * configuration that is not needed. But, this is okay and will happen very very
+         * unfrequently (probably never?).
+         */
+        if (__UNLIKELY__(_current_config == UINT64_MAX)) {
+            _config_count = 1;
+            _current_config = 0;
+        }
+    }
     bool needs_reconfiguration() const { return _current_config != _config_count; }
 
     static constexpr uint8 ENABLE_SHIFT = 63;
@@ -84,7 +101,7 @@ public:
     }
 
 private:
-    uint64 _requests[Request::MAX_REQUESTORS] = {0ull, 0ull};
+    atomic<uint64> _requests[Request::MAX_REQUESTORS] = {0ull, 0ull};
     atomic<uint64> _config_count{0};
     uint64 _current_config{0};
 };
