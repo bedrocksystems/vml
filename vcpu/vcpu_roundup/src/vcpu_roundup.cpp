@@ -13,6 +13,7 @@
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/semaphore.hpp>
+#include <platform/signal.hpp>
 #include <vcpu/vcpu_roundup.hpp>
 
 /*! \file
@@ -87,18 +88,18 @@ public:
         vcpus_progressing = num_vcpus;
         _vcpu_waiters = 0;
 
-        if (!_sm_emulating.init(ctx) || !_sm_waiter.init(ctx, 1))
+        if (!_sig_emulating.init(ctx) || !_sm_waiter.init(ctx, 1))
             return ENOMEM;
 
         return ENONE;
     }
 
-    void wait_for_emulation_end() { _sm_emulating.acquire(); }
-    void signal_emulation_end() { _sm_emulating.release(); }
+    void wait_for_emulation_end() { _sig_emulating.wait(); }
+    void signal_emulation_end() { _sig_emulating.sig(); }
 
 private:
     Semaphore _sm_waiter;
-    Semaphore _sm_emulating;
+    Platform::Signal _sig_emulating;
     atomic<uint16> _vcpu_waiters;
 };
 
