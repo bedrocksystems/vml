@@ -230,7 +230,7 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
     if (!ok)
         return false;
 
-    ok = _resume_sm.init(ctx);
+    ok = _resume_sig.init(ctx);
     if (!ok)
         return false;
 

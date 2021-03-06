@@ -2,7 +2,7 @@ LIBS = vbus cpu_model timer gic irq_controller vmm_debug vmi_interface simple_as
 
 ifeq ($(PLATFORM), bedrock)
 
-LIBS += lang cxx log zeta nova pt alloc msc uuid
+LIBS += lang cxx log zeta nova pt alloc msc uuid concurrent
 
 # vmi libs
 ifneq ($(ENABLE_VMI), 0)
