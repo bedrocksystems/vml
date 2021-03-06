@@ -13,6 +13,7 @@
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/semaphore.hpp>
+#include <platform/signal.hpp>
 #include <platform/types.hpp>
 #include <platform/vm_types.hpp>
 
@@ -117,7 +118,7 @@ public:
     static constexpr unsigned MAX_BOOT_ARGS = 4;
 
 private:
-    Semaphore _resume_sm;
+    Platform::Signal _resume_sig;
     Semaphore _off_sm;
     uint64 _boot_addr{0};
     uint64 _boot_args[MAX_BOOT_ARGS] = {0, 0, 0, 0};
@@ -160,7 +161,7 @@ private:
         return !_execution_paused.is_requested_by(Request::Requestor::VMM);
     }
 
-    void resume_vcpu() { _resume_sm.release(); }
+    void resume_vcpu() { _resume_sig.sig(); }
     void switch_on() { _off_sm.release(); }
     void resume();
 
@@ -271,7 +272,7 @@ public:
     virtual uint8 aff2() const override;
     virtual uint8 aff3() const override;
 
-    void wait_for_resume() { _resume_sm.acquire(); }
+    void wait_for_resume() { _resume_sig.wait(); }
     void assert_vtimer(uint64 const control);
     void wait_for_interrupt(uint64 const control, uint64 const timeout_absolut);
     void interrupt_pending() override;
