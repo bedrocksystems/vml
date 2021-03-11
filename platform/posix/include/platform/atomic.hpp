@@ -35,6 +35,10 @@ public:
             return std::atomic_compare_exchange_strong(this, &e, d);
     }
 
+    inline T add_fetch(T v) { return this->operator+=(v); }
+
+    inline T sub_fetch(T v) { return this->operator-=(v); }
+
     /*! \brief Atomically assign the given value
      *  \param v value to assign
      *  \return the assigned value

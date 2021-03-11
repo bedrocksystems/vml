@@ -201,24 +201,25 @@ Vcpu::Roundup::resume_from_vcpu(Vcpu_id) {
  */
 void
 Vcpu::Roundup::vcpu_notify_done_progessing() {
-    uint16 prev = roundup_info.vcpus_progressing.fetch_sub(1);
-    ASSERT(prev != 0);
-    if (prev == 1)
+    ASSERT(roundup_info.vcpus_progressing != 0);
+
+    uint16 progressing = roundup_info.vcpus_progressing.sub_fetch(1);
+    if (progressing == 0)
         roundup_info.signal_emulation_end();
 }
 
 void
 Vcpu::Roundup::vcpu_notify_initialized() {
-    uint16 prev = initialized_info.vcpus_pending_init.fetch_add(1);
+    uint16 total = initialized_info.vcpus_pending_init.add_fetch(1);
 
-    if (prev == roundup_info.num_vcpus - 1) {
+    if (total == roundup_info.num_vcpus) {
         initialized_info.signal_all_vcpus_initialized();
     }
 }
 
 void
 Vcpu::Roundup::vcpu_notify_switched_on() {
-    initialized_info.vcpus_pending_init.fetch_sub(1);
+    initialized_info.vcpus_pending_init--;
 }
 
 void
@@ -247,10 +248,10 @@ Vcpu::Roundup::roundup_parallel(Vcpu_id id) {
 
 void
 Vcpu::Roundup::resume_parallel(Vcpu_id id) {
-    uint16 prev = parallel_info.count.fetch_sub(1);
-    ASSERT(prev != 0);
+    ASSERT(parallel_info.count != 0);
+    uint16 cur_count = parallel_info.count.sub_fetch(1);
 
-    if (prev == 1) {
+    if (cur_count == 0) {
         Vcpu::Roundup::resume_from_vcpu(id);
         while (parallel_info.num_waiters > 0) {
             parallel_info.resume_waiter_sem.release();
