@@ -209,16 +209,9 @@ Model::Cpu::is_cpu_turned_on_by_guest(Vcpu_id cpu_id) {
     return vcpus[cpu_id]->is_turned_on_by_guest();
 }
 
-Model::Cpu::Cpu(Gic_d& gic, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq)
-    : _vcpu_id(vcpu_id), _timer_irq(irq), _pcpu_id(pcpu_id), _gic(&gic) {
-    gic.enable_cpu(this, _vcpu_id);
-    vcpus[vcpu_id] = this;
-    Barrier::w_before_w();
-    num_vcpus++;
-}
-
-Model::Cpu::Cpu(Vcpu_id vcpu_id, Pcpu_id pcpu_id)
-    : _vcpu_id(vcpu_id), _timer_irq(0), _pcpu_id(pcpu_id), _gic(nullptr) {
+Model::Cpu::Cpu(Irq_controller* girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq)
+    : _vcpu_id(vcpu_id), _timer_irq(irq), _pcpu_id(pcpu_id), _girq_ctlr(girq_ctlr) {
+    _girq_ctlr->enable_cpu(this, _vcpu_id);
     vcpus[vcpu_id] = this;
     Barrier::w_before_w();
     num_vcpus++;
@@ -234,11 +227,7 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
     if (!ok)
         return false;
 
-    _gic_r = new (nothrow) Model::Gic_r(*_gic, _vcpu_id, _vcpu_id == configured_vcpus - 1u);
-    if (_gic_r == nullptr)
-        return false;
-
-    _timer = new (nothrow) Model::Timer(*_gic, _vcpu_id, _timer_irq);
+    _timer = new (nothrow) Model::Timer(*_girq_ctlr, _vcpu_id, _timer_irq);
     if (_timer == nullptr) {
         delete _gic_r;
         return false;
@@ -474,15 +463,6 @@ Model::Cpu::interrupt_pending() {
 
         unblock();
     }
-}
-
-bool
-Model::Cpu::pending_irq(uint64& lr) {
-    Gic_d::Lr lrc(lr);
-
-    bool res = _gic->pending_irq(_vcpu_id, lrc);
-    lr = lrc.value();
-    return res;
 }
 
 void

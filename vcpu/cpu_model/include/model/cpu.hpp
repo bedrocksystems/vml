@@ -22,7 +22,7 @@ namespace Model {
     class Cpu;
     class Cpu_feature;
     class Timer;
-    class Gic_d;
+    class Irq_controller;
     class Gic_r;
 }
 
@@ -182,7 +182,7 @@ protected:
     uint64 _tmr_off{0};
 
     Pcpu_id const _pcpu_id;
-    Model::Gic_d *const _gic;
+    Model::Irq_controller *const _girq_ctlr;
     Model::Gic_r *_gic_r{nullptr};
 
     void wait_for_switch_on() { _off_sm.acquire(); }
@@ -257,8 +257,7 @@ public:
     virtual Errno run() = 0;
 
     // Functions that are implemented
-    Cpu(Gic_d &gic, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq);
-    Cpu(Vcpu_id vcpu_id, Pcpu_id pcpu_id);
+    Cpu(Irq_controller *girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq);
     bool setup(const Platform_ctx *ctx);
 
     void switch_state_to_roundedup();
@@ -276,7 +275,6 @@ public:
     void assert_vtimer(uint64 const control);
     void wait_for_interrupt(uint64 const control, uint64 const timeout_absolut);
     void interrupt_pending() override;
-    bool pending_irq(uint64 &lr);
 
     virtual Model::Gic_r *gic_r() override { return _gic_r; }
 };
