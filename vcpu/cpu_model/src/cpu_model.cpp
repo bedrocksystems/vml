@@ -45,7 +45,7 @@ Model::Cpu::is_64bit(Vcpu_id id) {
 
 uint16
 Model::Cpu::get_num_vcpus() {
-    return static_cast<uint16>(num_vcpus);
+    return configured_vcpus;
 }
 
 Pcpu_id
