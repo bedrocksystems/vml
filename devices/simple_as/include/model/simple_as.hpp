@@ -12,6 +12,7 @@
 
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
+#include <platform/memory.hpp>
 #include <platform/rangemap.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
@@ -125,24 +126,62 @@ pp_is_exec_set(Page_permission a) {
     return static_cast<bool>(a & Page_permission::EXEC);
 }
 
+/*! \brief Simple Wrapper for primitive types.
+ */
+template<typename T>
+class PrimitiveTypeWrapper {
+public:
+    PrimitiveTypeWrapper() = delete;
+    PrimitiveTypeWrapper(T value) : _value(value) {}
+
+    void set_value(T value) { _value = value; }
+    T get_value() const { return _value; }
+
+    // Operator overloading
+    bool operator==(const T &value) { return value == _value; }
+    bool operator!=(const T &value) { return value != _value; }
+    bool operator==(const PrimitiveTypeWrapper &other) { return _value == other._value; }
+    bool operator!=(const PrimitiveTypeWrapper &other) { return _value != other._value; }
+    T &operator=(T value) { _value = value; }
+    T operator()(void) const { return _value; }
+    operator T &() const { return _value; }
+
+protected:
+    T _value;
+};
+
 /*! \brief Guest Physical Address
  */
-class GPA {
+class GPA : public PrimitiveTypeWrapper<uint64> {
 public:
-    /*! \brief Construct a GPA based on a uint64 value
-     *  \pre Nothing
-     *  \post Full ownership of a valid GPA with the value given as a parameter
-     */
-    explicit GPA(uint64 v) : _value(v) {}
+    static constexpr uint64 INVALID_GPA = ~0ull;
+    using PrimitiveTypeWrapper::PrimitiveTypeWrapper;
 
-    /*! \brief Return an integer (uint64) representing the guest address
-     *  \pre Partial ownership of a valid GPA
-     *  \post Ownership unchanged, a uint64 value matching the internal representation is returned
+    /**
+     * \brief Get the guest frame number.
      */
-    uint64 get_value() const { return _value; }
+    uint64 gfn(void) { return (_value >> PAGE_BITS); }
+};
 
-private:
-    uint64 _value;
+/*! \brief Guest Virtual Address
+ */
+class GVA : public PrimitiveTypeWrapper<mword> {
+public:
+    static constexpr mword INVALID_GVA = ~0ull;
+    using PrimitiveTypeWrapper::PrimitiveTypeWrapper;
+
+    /**
+     * \brief Get the guest page number (virtual address shifted by page bits)
+     */
+    mword gpn(void) { return (_value >> PAGE_BITS); }
+};
+
+/*! \brief Host Virtual Address
+ */
+class HVA : public PrimitiveTypeWrapper<mword> {
+public:
+    static constexpr mword INVALID_GVA = ~0ull;
+    using PrimitiveTypeWrapper::PrimitiveTypeWrapper;
 };
 
 /*! \brief Simple (static) Address space representation for the guest
