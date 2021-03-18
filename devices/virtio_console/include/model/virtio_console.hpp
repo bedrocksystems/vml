@@ -15,7 +15,7 @@
 #include <vbus/vbus.hpp>
 
 namespace Model {
-    class Virtio_console;
+    class VirtioMMIO_console;
     struct Virtio_console_config;
     class Irq_controller;
 }
@@ -27,13 +27,12 @@ struct Model::Virtio_console_config {
     uint32 emerg_wr;
 };
 
-class Model::Virtio_console : public Vbus::Device, private Virtio::Device {
+class Model::VirtioMMIO_console : public Virtio::Virtio_console, private Virtio::Device {
 private:
     enum { RX = 0, TX = 1 };
     Model::Virtio_console_config config __attribute__((aligned(8)));
 
     Semaphore *_sem;
-    Virtio::Callback *_callback{nullptr};
     Virtio::Descriptor *_tx_desc{nullptr};
     bool _driver_initialized{false};
     Platform::Signal _sig_notify_empty_space;
@@ -45,20 +44,18 @@ private:
     void _driver_ok() override;
 
 public:
-    Virtio_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
-                   uint16 const queue_entries, Semaphore *sem)
-        : Vbus::Device("virtio console"), Virtio::Device(3, bus, irq_ctlr, &config, sizeof(config),
-                                                         irq, queue_entries),
-          _sem(sem) {}
+    VirtioMMIO_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
+                       uint16 const queue_entries, Semaphore *sem)
+        : Virtio::Device(3, bus, irq_ctlr, &config, sizeof(config), irq, queue_entries), _sem(sem) {
+    }
 
     bool init(const Platform_ctx *ctx) { return _sig_notify_empty_space.init(ctx); }
-    void register_callback(Virtio::Callback &callback) { _callback = &callback; }
 
-    void release_buffer();
+    virtual void release_buffer() override;
 
-    bool to_guest(char *buff, uint32 size);
-    char *from_guest(uint32 &size);
-    void wait_for_available_buffer() { _sig_notify_empty_space.wait(); }
+    virtual bool to_guest(const char *buff, uint32 size) override;
+    virtual const char *from_guest(uint32 &size) override;
+    virtual void wait_for_available_buffer() override { _sig_notify_empty_space.wait(); }
 
     virtual void reset(const Vcpu_ctx *) override {
         _sig_notify_empty_space.sig();

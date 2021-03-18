@@ -21,6 +21,7 @@ namespace Virtio {
     class Queue_state;
     struct Queue_data;
     class Callback;
+    class Virtio_console;
 };
 
 class Virtio::Callback {
@@ -399,4 +400,20 @@ public:
           _device_feature_lower(device_feature_lower) {}
 
     uint64 drv_feature() const { return (uint64(_drv_feature_upper) << 32) | _drv_feature_lower; }
+};
+
+class Virtio::Virtio_console : public Vbus::Device {
+public:
+    Virtio_console() : Vbus::Device("virtio console") {}
+
+    virtual bool to_guest(const char *, uint32) = 0;
+    virtual void wait_for_available_buffer() = 0;
+
+    virtual const char *from_guest(uint32 &size) = 0;
+    virtual void release_buffer() = 0;
+
+    void register_callback(Virtio::Callback *callback) { _callback = callback; }
+
+protected:
+    Virtio::Callback *_callback{nullptr};
 };

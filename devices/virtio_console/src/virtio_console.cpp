@@ -10,7 +10,7 @@
 #include <platform/virtqueue.hpp>
 
 void
-Model::Virtio_console::_notify(uint32 const) {
+Model::VirtioMMIO_console::_notify(uint32 const) {
     _sem->release();
 
     if (_queue[RX].queue().get_free())
@@ -18,7 +18,7 @@ Model::Virtio_console::_notify(uint32 const) {
 }
 
 void
-Model::Virtio_console::_driver_ok() {
+Model::VirtioMMIO_console::_driver_ok() {
     _driver_initialized = true;
 
     if (_callback)
@@ -26,7 +26,7 @@ Model::Virtio_console::_driver_ok() {
 }
 
 bool
-Model::Virtio_console::to_guest(char *buff, uint32 size) {
+Model::VirtioMMIO_console::to_guest(const char *buff, uint32 size) {
     if (!_queue[RX].constructed() || (!_driver_initialized))
         return false;
 
@@ -61,8 +61,8 @@ Model::Virtio_console::to_guest(char *buff, uint32 size) {
     return true;
 }
 
-char *
-Model::Virtio_console::from_guest(uint32 &size) {
+const char *
+Model::VirtioMMIO_console::from_guest(uint32 &size) {
     if (!_queue[TX].constructed() || (!_driver_initialized))
         return nullptr;
 
@@ -82,7 +82,7 @@ Model::Virtio_console::from_guest(uint32 &size) {
 }
 
 void
-Model::Virtio_console::release_buffer() {
+Model::VirtioMMIO_console::release_buffer() {
     if (!_queue[TX].constructed() || (!_driver_initialized))
         return;
 
@@ -94,8 +94,8 @@ Model::Virtio_console::release_buffer() {
 }
 
 Vbus::Err
-Model::Virtio_console::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, Vbus::Space,
-                              mword const offset, uint8 const size, uint64 &value) {
+Model::VirtioMMIO_console::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, Vbus::Space,
+                                  mword const offset, uint8 const size, uint64 &value) {
 
     bool ok = false;
 
@@ -108,13 +108,13 @@ Model::Virtio_console::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ct
 }
 
 bool
-Model::Virtio_console::mmio_write(Vcpu_id const, uint64 const offset, uint8 const access_size,
-                                  uint64 const value) {
+Model::VirtioMMIO_console::mmio_write(Vcpu_id const, uint64 const offset, uint8 const access_size,
+                                      uint64 const value) {
     return _write(offset, access_size, value);
 }
 
 bool
-Model::Virtio_console::mmio_read(Vcpu_id const, uint64 const offset, uint8 const access_size,
-                                 uint64 &value) const {
+Model::VirtioMMIO_console::mmio_read(Vcpu_id const, uint64 const offset, uint8 const access_size,
+                                     uint64 &value) const {
     return _read(offset, access_size, value);
 }
