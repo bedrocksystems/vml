@@ -21,7 +21,6 @@
 
 namespace Model {
     static uint16 configured_vcpus;
-    static atomic<uint64> num_vcpus;
     static Cpu** vcpus;
 }
 
@@ -50,13 +49,13 @@ Model::Cpu::get_num_vcpus() {
 
 Pcpu_id
 Model::Cpu::get_pcpu(Vcpu_id id) {
-    ASSERT(id < num_vcpus);
+    ASSERT(id < configured_vcpus);
     return vcpus[id]->_pcpu_id;
 }
 
 void
 Model::Cpu::roundup(Vcpu_id cpu_id) {
-    ASSERT(cpu_id < num_vcpus);
+    ASSERT(cpu_id < configured_vcpus);
 
     vcpus[cpu_id]->switch_state_to_roundedup();
     vcpus[cpu_id]->recall();
@@ -65,20 +64,20 @@ Model::Cpu::roundup(Vcpu_id cpu_id) {
 
 void
 Model::Cpu::roundup_all() {
-    for (Vcpu_id i = 0; i < num_vcpus; ++i)
+    for (Vcpu_id i = 0; i < configured_vcpus; ++i)
         roundup(i);
 }
 
 void
 Model::Cpu::resume_all() {
-    for (Vcpu_id i = 0; i < num_vcpus; ++i)
+    for (Vcpu_id i = 0; i < configured_vcpus; ++i)
         vcpus[i]->resume();
 }
 
 void
 Model::Cpu::ctrl_feature_on_vcpu(ctrl_feature_cb cb, Vcpu_id vcpu_id, bool enabled,
                                  Request::Requestor requestor, Reg_selection regs) {
-    ASSERT(vcpu_id < num_vcpus);
+    ASSERT(vcpu_id < configured_vcpus);
 
     Model::Cpu* vcpu = vcpus[vcpu_id];
     cb(vcpu, enabled, requestor, regs);
@@ -87,8 +86,8 @@ Model::Cpu::ctrl_feature_on_vcpu(ctrl_feature_cb cb, Vcpu_id vcpu_id, bool enabl
 void
 Model::Cpu::ctrl_feature_on_all_but_vcpu(ctrl_feature_cb cb, Vcpu_id id, bool enabled,
                                          Request::Requestor requestor, Reg_selection regs) {
-    ASSERT(id < num_vcpus);
-    for (Vcpu_id i = 0; i < num_vcpus; ++i) {
+    ASSERT(id < configured_vcpus);
+    for (Vcpu_id i = 0; i < configured_vcpus; ++i) {
         Model::Cpu* vcpu = vcpus[i];
 
         if (i != id)
@@ -99,7 +98,7 @@ Model::Cpu::ctrl_feature_on_all_but_vcpu(ctrl_feature_cb cb, Vcpu_id id, bool en
 void
 Model::Cpu::ctrl_feature_on_all_vcpus(ctrl_feature_cb cb, bool enabled,
                                       Request::Requestor requestor, Reg_selection regs) {
-    for (Vcpu_id i = 0; i < num_vcpus; ++i) {
+    for (Vcpu_id i = 0; i < configured_vcpus; ++i) {
         Model::Cpu* vcpu = vcpus[i];
 
         cb(vcpu, enabled, requestor, regs);
@@ -109,7 +108,7 @@ Model::Cpu::ctrl_feature_on_all_vcpus(ctrl_feature_cb cb, bool enabled,
 bool
 Model::Cpu::is_feature_enabled_on_vcpu(requested_feature_cb cb, Vcpu_id vcpu_id,
                                        Request::Requestor requestor) {
-    ASSERT(vcpu_id < num_vcpus);
+    ASSERT(vcpu_id < configured_vcpus);
 
     Model::Cpu* vcpu = vcpus[vcpu_id];
     return cb(vcpu, requestor);
@@ -166,7 +165,7 @@ Model::Cpu::ctrl_feature_icache_invalidate(Model::Cpu* vcpu, bool enable,
 
 Errno
 Model::Cpu::run(Vcpu_id cpu_id) {
-    ASSERT(cpu_id < num_vcpus);
+    ASSERT(cpu_id < configured_vcpus);
 
     return vcpus[cpu_id]->run();
 }
@@ -174,7 +173,7 @@ Model::Cpu::run(Vcpu_id cpu_id) {
 Model::Cpu::Start_err
 Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr,
                       uint64 boot_args[MAX_BOOT_ARGS], uint64 timer_off, enum Mode m) {
-    if (vcpu_id >= num_vcpus) {
+    if (vcpu_id >= configured_vcpus) {
         WARN("vCPU " FMTu64 " number out of bound", vcpu_id);
         return INVALID_PARAMETERS;
     }
@@ -203,7 +202,7 @@ Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr,
 
 bool
 Model::Cpu::is_cpu_turned_on_by_guest(Vcpu_id cpu_id) {
-    if (cpu_id >= num_vcpus)
+    if (cpu_id >= configured_vcpus)
         return false;
 
     return vcpus[cpu_id]->is_turned_on_by_guest();
@@ -214,7 +213,6 @@ Model::Cpu::Cpu(Irq_controller* girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uin
     _girq_ctlr->enable_cpu(this, _vcpu_id);
     vcpus[vcpu_id] = this;
     Barrier::w_before_w();
-    num_vcpus++;
 }
 
 bool
