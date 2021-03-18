@@ -167,10 +167,10 @@ main() {
     ok = bus.register_device(&sas, VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);
     ASSERT(ok);
 
-    Model::Virtio_console virtio_console(gicd, bus, 0x13, 10, &sem);
+    Model::VirtioMMIO_console virtio_console(gicd, bus, 0x13, 10, &sem);
 
     Dummy_Virtio_Interface virtio_interface;
-    virtio_console.register_callback(virtio_interface);
+    virtio_console.register_callback(&virtio_interface);
 
     INFO("== Virtio Test application ==");
     INFO("Adding devices to the virtual bus");
