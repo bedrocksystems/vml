@@ -67,3 +67,17 @@ Model::Simple_as::gpa_to_vmm_view(GPA addr, size_t sz) const {
 
     return _vmm_view + off;
 }
+
+char*
+Model::Simple_as::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
+    const Vbus::Device* dev = bus.get_device_at(addr.get_value(), sz);
+
+    if (__UNLIKELY__(dev == nullptr
+                     || (dev->type() != Vbus::Device::GUEST_PHYSICAL_DYNAMIC_MEMORY
+                         && dev->type() != Vbus::Device::GUEST_PHYSICAL_STATIC_MEMORY))) {
+        return nullptr;
+    }
+
+    static const Model::Simple_as* tgt = reinterpret_cast<const Model::Simple_as*>(dev);
+    return tgt->gpa_to_vmm_view(addr, sz);
+}

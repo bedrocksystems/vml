@@ -18,17 +18,18 @@
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
-static const constexpr uint64 VIRTIO_BASE = 0x44000;
-static const constexpr uint64 VIRTIO_GUEST_BASE = 0x80000000;
 static const constexpr uint32 VIRTIO_RAM_SIZE = 0x10000;
+static uint8 vRAM[VIRTIO_RAM_SIZE];
+static const constexpr uint64 VIRTIO_BASE = 0x44000;
+static const uint64 VIRTIO_GUEST_BASE = reinterpret_cast<uint64>(vRAM);
 
-static const constexpr uint32 Q0_DESC = VIRTIO_GUEST_BASE;
-static const constexpr uint32 Q0_DRIVER = VIRTIO_GUEST_BASE + 0x1000;
-static const constexpr uint32 Q0_DEVICE = VIRTIO_GUEST_BASE + 0x2000;
+static const uint64 Q0_DESC = VIRTIO_GUEST_BASE;
+static const uint64 Q0_DRIVER = VIRTIO_GUEST_BASE + 0x1000;
+static const uint64 Q0_DEVICE = VIRTIO_GUEST_BASE + 0x2000;
 
-static const constexpr uint32 Q1_DESC = VIRTIO_GUEST_BASE + 0x3000;
-static const constexpr uint32 Q1_DRIVER = VIRTIO_GUEST_BASE + 0x4000;
-static const constexpr uint32 Q1_DEVICE = VIRTIO_GUEST_BASE + 0x5000;
+static const uint64 Q1_DESC = VIRTIO_GUEST_BASE + 0x3000;
+static const uint64 Q1_DRIVER = VIRTIO_GUEST_BASE + 0x4000;
+static const uint64 Q1_DEVICE = VIRTIO_GUEST_BASE + 0x5000;
 
 enum Debug::Level Debug::current_level = Debug::None;
 
@@ -158,10 +159,15 @@ main() {
     ok = vcpu.setup(&ctx);
     ASSERT(ok);
 
-    auto host_mem = new uint8[VIRTIO_RAM_SIZE];
-    Model::Virtio_console virtio_console(gicd, VIRTIO_GUEST_BASE,
-                                         reinterpret_cast<uint64>(host_mem), VIRTIO_RAM_SIZE, 0x13,
-                                         10, &sem);
+    Vbus::Bus bus;
+    Model::Simple_as sas(false);
+
+    sas.set_guest_as(VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);
+
+    ok = bus.register_device(&sas, VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);
+    ASSERT(ok);
+
+    Model::Virtio_console virtio_console(gicd, bus, 0x13, 10, &sem);
 
     Dummy_Virtio_Interface virtio_interface;
     virtio_console.register_callback(virtio_interface);

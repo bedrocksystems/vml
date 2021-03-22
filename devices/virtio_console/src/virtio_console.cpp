@@ -37,15 +37,14 @@ Model::Virtio_console::to_guest(char *buff, uint32 size) {
             return false;
         }
 
-        uint64 vmm_addr = 0;
-        if (!_ram.local_address(desc->address, desc->length, vmm_addr)) {
+        char *dst = Model::Simple_as::gpa_to_vmm_view(*_vbus, GPA(desc->address), desc->length);
+        if (dst == nullptr) {
             _queue[RX].queue().send(desc);
             return false; /* outside guest physical memory */
         }
 
         uint32 n_copy = size <= desc->length ? size : desc->length;
 
-        char *dst = reinterpret_cast<char *>(vmm_addr);
         for (unsigned i = 0; i < n_copy; i++) {
             dst[i] = buff[buf_idx + i];
         }
@@ -71,14 +70,15 @@ Model::Virtio_console::from_guest(uint32 &size) {
     if (not _tx_desc)
         return nullptr;
 
-    uint64 vmm_addr = 0;
-    if (!_ram.local_address(_tx_desc->address, _tx_desc->length, vmm_addr)) {
+    char *vmm_addr
+        = Model::Simple_as::gpa_to_vmm_view(*_vbus, GPA(_tx_desc->address), _tx_desc->length);
+    if (vmm_addr == nullptr) {
         _queue[TX].queue().send(_tx_desc);
         return nullptr; /* outside guest physical memory */
     }
 
     size = _tx_desc->length;
-    return reinterpret_cast<char *>(vmm_addr);
+    return vmm_addr;
 }
 
 void
