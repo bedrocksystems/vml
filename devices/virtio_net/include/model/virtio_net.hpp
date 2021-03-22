@@ -65,7 +65,6 @@ class Model::Virtio_net : public Vbus::Device, public Virtio::Device {
 
 private:
     enum { RX = 0, TX = 1 };
-    Virtio::Ram const _ram;
     Virtio::Callback *_callback{nullptr};
     Model::Virtio_net_callback *_virtio_net_callback{nullptr};
     Virtio_net_config config __attribute__((aligned(8)));
@@ -79,12 +78,12 @@ private:
     void _driver_ok() override;
 
 public:
-    Virtio_net(Irq_controller &irq_ctlr, uint64 const guest_base, uint64 const host_base,
-               uint64 const size, uint16 const irq, uint16 const queue_entries,
-               uint32 const device_feature, uint64 mac, uint16 mtu, Semaphore *sem)
-        : Vbus::Device("virtio network"), Virtio::Device(1, _ram, irq_ctlr, &config, sizeof(config),
+    Virtio_net(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 const irq,
+               uint16 const queue_entries, uint32 const device_feature, uint64 mac, uint16 mtu,
+               Semaphore *sem)
+        : Vbus::Device("virtio network"), Virtio::Device(1, vbus, irq_ctlr, &config, sizeof(config),
                                                          irq, queue_entries, device_feature),
-          _ram(guest_base, size, host_base), _sem(sem) {
+          _sem(sem) {
         config.mtu = mtu;
         memcpy(&config.mac, &mac, 6);
     }

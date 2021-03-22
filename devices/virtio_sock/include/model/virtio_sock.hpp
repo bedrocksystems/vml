@@ -34,7 +34,6 @@ class Model::Virtio_sock : public Vbus::Device, public Virtio::Device {
 
 private:
     enum { RX = 0, TX = 1, EVENT = 2 };
-    Virtio::Ram const _ram;
     Virtio::Callback *_callback{nullptr};
     Model::Virtio_sock_callback *_virtio_sock_callback{nullptr};
     Virtio_sock_config config;
@@ -48,12 +47,11 @@ private:
     void _driver_ok() override;
 
 public:
-    Virtio_sock(Irq_controller &irq_ctlr, uint64 const guest_base, uint64 const host_base,
-                uint64 const size, uint16 const irq, uint16 const queue_entries, uint64 cid,
-                Semaphore *sem)
-        : Vbus::Device("virtio socket"), Virtio::Device(19, _ram, irq_ctlr, &config, sizeof(config),
+    Virtio_sock(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
+                uint16 const queue_entries, uint64 cid, Semaphore *sem)
+        : Vbus::Device("virtio socket"), Virtio::Device(19, bus, irq_ctlr, &config, sizeof(config),
                                                         irq, queue_entries),
-          _ram(guest_base, size, host_base), _sem(sem) {
+          _sem(sem) {
         config.guest_cid = cid;
     }
 

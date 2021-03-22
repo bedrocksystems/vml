@@ -9,6 +9,7 @@
 #pragma once
 
 #include <model/irq_controller.hpp>
+#include <model/simple_as.hpp>
 #include <platform/log.hpp>
 #include <platform/new.hpp>
 #include <platform/types.hpp>
@@ -19,33 +20,7 @@ namespace Virtio {
     class Device;
     class Queue_state;
     struct Queue_data;
-    class Ram;
     class Callback;
-};
-
-class Virtio::Ram {
-private:
-    uint64 const _base;
-    uint64 const _size;
-    uint64 const _local;
-
-public:
-    Ram(uint64 const addr, uint64 const sz, uint64 const local)
-        : _base(addr), _size(sz), _local(local) {}
-
-    uint64 base() const { return _base; }
-    uint64 size() const { return _size; }
-    uint64 local() const { return _local; }
-
-    bool local_address(uint64 const guest, uint32 const access_size, uint64 &vmm_addr) const {
-        if (guest < _base || guest >= _base + _size)
-            return false;
-        if (_base + _size - guest < access_size)
-            return false;
-
-        vmm_addr = _local + (guest - _base);
-        return true;
-    }
 };
 
 class Virtio::Callback {
@@ -76,23 +51,29 @@ private:
     bool _constructed{false};
 
 public:
-    void construct(Queue_data &data, Ram const &ram) {
+    void construct(Queue_data &data, Vbus::Bus const &bus) {
         _data = &data;
 
         /* don't accept queues with zero elements */
         if (_data->num == 0)
             return destruct();
 
-        uint64 desc_addr = 0;
-        if (!ram.local_address(data.descr(), Virtio::Descriptor::size(_data->num), desc_addr))
+        void *desc_addr = nullptr;
+        desc_addr = Model::Simple_as::gpa_to_vmm_view(bus, GPA(data.descr()),
+                                                      Virtio::Descriptor::size(_data->num));
+        if (desc_addr == nullptr)
             return destruct();
 
-        uint64 avail_addr = 0;
-        if (!ram.local_address(data.driver(), Virtio::Available::size(_data->num), avail_addr))
+        void *avail_addr = nullptr;
+        avail_addr = Model::Simple_as::gpa_to_vmm_view(bus, GPA(data.driver()),
+                                                       Virtio::Available::size(_data->num));
+        if (avail_addr == nullptr)
             return destruct();
 
-        uint64 used_addr = 0;
-        if (!ram.local_address(data.device(), Virtio::Used::size(_data->num), used_addr))
+        void *used_addr = nullptr;
+        used_addr = Model::Simple_as::gpa_to_vmm_view(bus, GPA(data.device()),
+                                                      Virtio::Used::size(_data->num));
+        if (used_addr == nullptr)
             return destruct();
 
         _virtqueue.descriptor = reinterpret_cast<Virtio::Descriptor *>(desc_addr);
@@ -119,7 +100,7 @@ protected:
     enum { QUEUES = 3 };
 
     Model::Irq_controller *const _irq_ctlr;
-    Ram const *const _ram;
+    Vbus::Bus const *const _vbus;
     uint64 *_config_space{nullptr};
     uint32 _config_size;
 
@@ -216,7 +197,7 @@ protected:
 
     void _queue_state(bool const construct) {
         if (construct && !_queue[_sel_queue].constructed()) {
-            _queue[_sel_queue].construct(_queue_data(), *_ram);
+            _queue[_sel_queue].construct(_queue_data(), *_vbus);
         }
 
         if (!construct && _queue[_sel_queue].constructed()) {
@@ -409,11 +390,12 @@ protected:
     virtual void _driver_ok() = 0;
 
 public:
-    Device(uint8 const device_id, Ram const &ram, Model::Irq_controller &irq_ctlr,
+    Device(uint8 const device_id, const Vbus::Bus &bus, Model::Irq_controller &irq_ctlr,
            void *config_space, uint32 config_size, uint16 const irq, uint16 const queue_num,
            uint32 const device_feature_lower = 0)
-        : _irq_ctlr(&irq_ctlr), _ram(&ram), _config_space(reinterpret_cast<uint64 *>(config_space)),
-          _config_size(config_size), _irq(irq), _queue_num_max(queue_num), _device_id(device_id),
+        : _irq_ctlr(&irq_ctlr), _vbus(&bus),
+          _config_space(reinterpret_cast<uint64 *>(config_space)), _config_size(config_size),
+          _irq(irq), _queue_num_max(queue_num), _device_id(device_id),
           _device_feature_lower(device_feature_lower) {}
 
     uint64 drv_feature() const { return (uint64(_drv_feature_upper) << 32) | _drv_feature_lower; }
