@@ -30,7 +30,6 @@ struct Model::Virtio_console_config {
 class Model::Virtio_console : public Vbus::Device, private Virtio::Device {
 private:
     enum { RX = 0, TX = 1 };
-    Virtio::Ram const _ram;
     Model::Virtio_console_config config __attribute__((aligned(8)));
 
     Semaphore *_sem;
@@ -46,11 +45,11 @@ private:
     void _driver_ok() override;
 
 public:
-    Virtio_console(Irq_controller &irq_ctlr, uint64 const guest_base, uint64 const host_base,
-                   uint64 const size, uint16 const irq, uint16 const queue_entries, Semaphore *sem)
-        : Vbus::Device("virtio console"), Virtio::Device(3, _ram, irq_ctlr, &config, sizeof(config),
+    Virtio_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
+                   uint16 const queue_entries, Semaphore *sem)
+        : Vbus::Device("virtio console"), Virtio::Device(3, bus, irq_ctlr, &config, sizeof(config),
                                                          irq, queue_entries),
-          _ram(guest_base, size, host_base), _sem(sem) {}
+          _sem(sem) {}
 
     bool init(const Platform_ctx *ctx) { return _sig_notify_empty_space.init(ctx); }
     void register_callback(Virtio::Callback &callback) { _callback = &callback; }

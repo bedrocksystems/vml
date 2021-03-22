@@ -327,6 +327,8 @@ public:
      */
     char *gpa_to_vmm_view(GPA addr, size_t sz) const;
 
+    static char *gpa_to_vmm_view(const Vbus::Bus &bus, GPA addr, size_t sz);
+
 protected:
     /*! \brief Iterate over this AS and make sure that all data made it to physical RAM
      *  \pre Partial ownership of this device
