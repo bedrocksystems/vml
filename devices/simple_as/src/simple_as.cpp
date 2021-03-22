@@ -11,7 +11,7 @@
 #include <platform/string.hpp>
 
 Errno
-Model::Simple_as::read(char* dst, size_t size, GPA& addr) {
+Model::Simple_as::read(char* dst, size_t size, const GPA& addr) const {
     if (!is_gpa_valid(addr, size))
         return EINVAL;
     mword offset = addr.get_value() - get_guest_view().get_value();

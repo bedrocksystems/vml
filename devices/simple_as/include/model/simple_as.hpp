@@ -272,7 +272,7 @@ public:
      *  \param addr start of the read on the guest AS
      *  \return ENONE if the operation was a success, error code otherwise
      */
-    Errno read(char *dst, size_t size, GPA &addr);
+    Errno read(char *dst, size_t size, const GPA &addr) const;
 
     /*! \brief Write data to the guest AS
      *  \pre Partial ownership of the object. Full ownership of the source buffer.
