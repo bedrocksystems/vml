@@ -31,7 +31,7 @@ public:
     virtual bool block() override { return true; }
     virtual void block_timeout(uint64) override {}
     virtual bool unblock() override { return true; };
-    virtual bool recall() override {
+    virtual bool recall(bool) override {
         DEBUG("VCPU recalled - an interrupt is waiting.");
 
         wait_sm.release();

@@ -58,7 +58,7 @@ Model::Cpu::roundup(Vcpu_id cpu_id) {
     ASSERT(cpu_id < configured_vcpus);
 
     vcpus[cpu_id]->switch_state_to_roundedup();
-    vcpus[cpu_id]->recall();
+    vcpus[cpu_id]->recall(true);
     vcpus[cpu_id]->unblock(); // If the VCPU is in WFI, unblock it
 }
 
@@ -147,7 +147,7 @@ Model::Cpu::ctrl_feature_off(Model::Cpu* vcpu, bool enable, Request::Requestor r
          * recall is a more robust approach as it will guarantee that the VCPU will not
          * progress any more after that call.
          */
-        vcpu->recall();
+        vcpu->recall(true);
     }
 }
 
@@ -451,7 +451,7 @@ Model::Cpu::wait_for_interrupt(uint64 const control, uint64 const timeout_absolu
 
 void
 Model::Cpu::interrupt_pending() {
-    recall();
+    recall(false);
 
     Interrupt_state expected = (_interrupt_state == PENDING) ? PENDING : NONE;
 
