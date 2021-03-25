@@ -253,7 +253,7 @@ public:
     virtual bool block() = 0;
     virtual void block_timeout(uint64) = 0;
     virtual bool unblock() = 0;
-    virtual bool recall() = 0;
+    virtual bool recall(bool strong) = 0;
     virtual Errno run() = 0;
 
     // Functions that are implemented
