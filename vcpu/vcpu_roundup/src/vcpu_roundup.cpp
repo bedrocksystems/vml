@@ -12,6 +12,7 @@
 #include <platform/context.hpp>
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
+#include <platform/mutex.hpp>
 #include <platform/semaphore.hpp>
 #include <platform/signal.hpp>
 #include <vcpu/vcpu_roundup.hpp>
@@ -61,8 +62,8 @@ public:
     void begin_roundup(bool from_vcpu) {
         if (from_vcpu)
             yield();
-
-        _sm_waiter.acquire();
+        bool ok = _waiter_mutex.enter();
+        ASSERT(ok);
     }
 
     /*! \brief Finish the round up, the next one can begin on exit of this function.
@@ -79,7 +80,10 @@ public:
         Barrier::rw_before_rw();
     }
 
-    void signal_next_waiter() { _sm_waiter.release(); }
+    void signal_next_waiter() {
+        bool ok = _waiter_mutex.exit();
+        ASSERT(ok);
+    }
 
     /*! \brief Resource acquisition for this class
      */
@@ -88,7 +92,7 @@ public:
         vcpus_progressing = num_vcpus;
         _vcpu_waiters = 0;
 
-        if (!_sig_emulating.init(ctx) || !_sm_waiter.init(ctx, 1))
+        if (!_sig_emulating.init(ctx) || !_waiter_mutex.init(ctx))
             return ENOMEM;
 
         return ENONE;
@@ -98,7 +102,7 @@ public:
     void signal_emulation_end() { _sig_emulating.sig(); }
 
 private:
-    Semaphore _sm_waiter;
+    Platform::Mutex _waiter_mutex;
     Platform::Signal _sig_emulating;
     atomic<uint16> _vcpu_waiters;
 };
