@@ -9,7 +9,6 @@
 #include <arch/barrier.hpp>
 #include <debug_switches.hpp>
 #include <model/cpu.hpp>
-#include <model/gic.hpp>
 #include <model/timer.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/atomic.hpp>
