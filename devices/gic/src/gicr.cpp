@@ -63,7 +63,7 @@ constexpr uint16 GICR_IIDR_IMPLEMENTER = 0x43b;
 enum { GICR_SIZE = 0x20000 };
 
 bool
-Model::Gic_r::can_receive_irq(const Model::Gic_d::Irq &) const {
+Model::Gic_r::can_receive_irq() const {
     return !_waker.sleeping();
 }
 

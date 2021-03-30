@@ -536,7 +536,7 @@ Model::Gic_d::highest_irq(Vcpu_id const cpu_id) {
     Model::Gic_d::Irq *r = nullptr;
     size_t irq_id = 0;
     Banked &cpu = _local[cpu_id];
-    const Gic_r *gic_r = _local[cpu_id]._notify->gic_r();
+    const Local_Irq_controller *gic_r = _local[cpu_id]._notify->local_irq_ctlr();
 
     do {
         irq_id = cpu._pending_irqs.first_set(irq_id, MAX_IRQ - 1);
@@ -546,7 +546,7 @@ Model::Gic_d::highest_irq(Vcpu_id const cpu_id) {
         Irq &irq = _irq_object(cpu, irq_id);
 
         if ((irq_id >= MAX_PPI + MAX_SGI) && _ctlr.affinity_routing()
-            && !gic_r->can_receive_irq(irq)) {
+            && !gic_r->can_receive_irq()) {
             /*
              * If this interface is not capable of receiving the IRQ anymore,
              * in the GICv3 world (affinity_routing enabled), we have to release
@@ -871,9 +871,9 @@ Model::Gic_d::route_spi(Model::Gic_d::Irq &irq) {
             if (irq.group1() && !_ctlr.group1_enabled())
                 continue;
 
-            const Gic_r *gicr = cpu->gic_r();
+            const Local_Irq_controller *gicr = cpu->local_irq_ctlr();
 
-            if (gicr->can_receive_irq(irq))
+            if (gicr->can_receive_irq())
                 return Irq_target(Irq_target::CPU_ID, i);
         }
     } else {
