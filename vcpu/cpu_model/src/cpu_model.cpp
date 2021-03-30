@@ -227,14 +227,12 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
 
     _timer = new (nothrow) Model::Timer(*_girq_ctlr, _vcpu_id, _timer_irq);
     if (_timer == nullptr) {
-        delete _gic_r;
         return false;
     }
 
     ok = _timer->init_irq(_vcpu_id, _timer_irq, _timer_irq, true);
     if (!ok) {
         delete _timer;
-        delete _gic_r;
         return false;
     }
 
@@ -414,19 +412,19 @@ Model::Cpu::switch_state_to_emulating() {
 
 uint8
 Model::Cpu::aff0() const {
-    return _gic_r->aff0();
+    return _lirq_ctlr->aff0();
 }
 uint8
 Model::Cpu::aff1() const {
-    return _gic_r->aff1();
+    return _lirq_ctlr->aff1();
 }
 uint8
 Model::Cpu::aff2() const {
-    return _gic_r->aff2();
+    return _lirq_ctlr->aff2();
 }
 uint8
 Model::Cpu::aff3() const {
-    return _gic_r->aff3();
+    return _lirq_ctlr->aff3();
 }
 
 void

@@ -14,6 +14,7 @@
 namespace Model {
     class Cpu_irq_interface;
     class Irq_controller;
+    class Local_Irq_controller;
 }
 
 class Model::Irq_controller : public Vbus::Device {
@@ -28,4 +29,17 @@ public:
     virtual void deassert_line_ppi(Vcpu_id, uint32) = 0;
     virtual void deassert_line_spi(uint32) = 0;
     virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id const) = 0;
+};
+
+class Model::Local_Irq_controller : public Vbus::Device {
+public:
+    Local_Irq_controller(const char *name) : Vbus::Device(name) {}
+    virtual ~Local_Irq_controller() {}
+
+    virtual uint8 aff0() const = 0;
+    virtual uint8 aff1() const = 0;
+    virtual uint8 aff2() const = 0;
+    virtual uint8 aff3() const = 0;
+
+    virtual bool can_receive_irq() const = 0;
 };

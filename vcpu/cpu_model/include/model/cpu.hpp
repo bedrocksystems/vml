@@ -23,7 +23,7 @@ namespace Model {
     class Cpu_feature;
     class Timer;
     class Irq_controller;
-    class Gic_r;
+    class Local_Irq_controller;
 }
 
 namespace Vbus {
@@ -33,7 +33,7 @@ namespace Vbus {
 class Model::Cpu_irq_interface {
 public:
     virtual void interrupt_pending() = 0;
-    virtual Model::Gic_r *gic_r() = 0;
+    virtual Model::Local_Irq_controller *local_irq_ctlr() = 0;
 
     virtual uint8 aff0() const = 0;
     virtual uint8 aff1() const = 0;
@@ -183,7 +183,7 @@ protected:
 
     Pcpu_id const _pcpu_id;
     Model::Irq_controller *const _girq_ctlr;
-    Model::Gic_r *_gic_r{nullptr};
+    Model::Local_Irq_controller *_lirq_ctlr{nullptr};
 
     void wait_for_switch_on() { _off_sm.acquire(); }
     uint64 boot_addr() const { return _boot_addr; }
@@ -276,5 +276,5 @@ public:
     void wait_for_interrupt(uint64 const control, uint64 const timeout_absolut);
     void interrupt_pending() override;
 
-    virtual Model::Gic_r *gic_r() override { return _gic_r; }
+    virtual Model::Local_Irq_controller *local_irq_ctlr() override { return _lirq_ctlr; }
 };
