@@ -610,7 +610,7 @@ public:
     Gic_version version() const { return _version; }
 };
 
-class Model::Gic_r : public Vbus::Device {
+class Model::Gic_r : public Model::Local_Irq_controller {
 private:
     Gic_d *const gic_d;
     Vcpu_id const _vcpu_id;
@@ -630,18 +630,18 @@ private:
 
 public:
     Gic_r(Gic_d &gic, Vcpu_id cpu_id, bool last)
-        : Device("GICR"), gic_d(&gic), _vcpu_id(cpu_id), _last(last) {}
+        : Local_Irq_controller("GICR"), gic_d(&gic), _vcpu_id(cpu_id), _last(last) {}
 
     virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
 
-    uint8 aff0() const { return uint8(_vcpu_id); };
-    uint8 aff1() const { return uint8(_vcpu_id >> 8); };
-    uint8 aff2() const { return uint8(_vcpu_id >> 16); };
-    uint8 aff3() const { return uint8(_vcpu_id >> 24); };
+    virtual uint8 aff0() const override { return uint8(_vcpu_id); }
+    virtual uint8 aff1() const override { return uint8(_vcpu_id >> 8); }
+    virtual uint8 aff2() const override { return uint8(_vcpu_id >> 16); }
+    virtual uint8 aff3() const override { return uint8(_vcpu_id >> 24); }
 
     virtual void reset(const Vcpu_ctx *) override {}
     virtual Type type() const override { return IRQ_CONTROLLER; }
 
-    bool can_receive_irq(const Model::Gic_d::Irq &irq) const;
+    virtual bool can_receive_irq() const override;
 };
