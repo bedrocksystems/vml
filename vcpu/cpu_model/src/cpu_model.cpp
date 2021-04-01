@@ -9,7 +9,7 @@
 #include <arch/barrier.hpp>
 #include <debug_switches.hpp>
 #include <model/cpu.hpp>
-#include <model/timer.hpp>
+#include <model/irq_controller.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/atomic.hpp>
 #include <platform/log.hpp>
@@ -207,8 +207,8 @@ Model::Cpu::is_cpu_turned_on_by_guest(Vcpu_id cpu_id) {
     return vcpus[cpu_id]->is_turned_on_by_guest();
 }
 
-Model::Cpu::Cpu(Irq_controller* girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq)
-    : _vcpu_id(vcpu_id), _timer_irq(irq), _pcpu_id(pcpu_id), _girq_ctlr(girq_ctlr) {
+Model::Cpu::Cpu(Irq_controller* girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id)
+    : _vcpu_id(vcpu_id), _pcpu_id(pcpu_id), _girq_ctlr(girq_ctlr) {
     _girq_ctlr->enable_cpu(this, _vcpu_id);
     vcpus[vcpu_id] = this;
     Barrier::w_before_w();
@@ -224,18 +224,7 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
     if (!ok)
         return false;
 
-    _timer = new (nothrow) Model::Timer(*_girq_ctlr, _vcpu_id, _timer_irq);
-    if (_timer == nullptr) {
-        return false;
-    }
-
-    ok = _timer->init_irq(_vcpu_id, _timer_irq, _timer_irq, true);
-    if (!ok) {
-        delete _timer;
-        return false;
-    }
-
-    return true;
+    return _irq_sig.init(ctx);
 }
 
 /*! \brief Request the VCPU to round (i.e. stop its progress)
@@ -427,17 +416,14 @@ Model::Cpu::aff3() const {
 }
 
 void
-Model::Cpu::assert_vtimer(uint64 const control) {
-    _timer->assert_irq(control);
-}
-
-void
-Model::Cpu::wait_for_interrupt(uint64 const control, uint64 const timeout_absolut) {
+Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolut) {
     Interrupt_state expected = NONE;
     if (_interrupt_state.cas(expected, SLEEPING)) {
-        bool will_timeout = _timer->schedule_timeout(control, timeout_absolut, this);
+
         if (!will_timeout)
             block();
+        else
+            block_timeout(timeout_absolut);
 
         expected = SLEEPING;
     } else

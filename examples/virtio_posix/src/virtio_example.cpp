@@ -37,11 +37,8 @@ static Semaphore wait_sm;
 
 class Dummy_vcpu : public Model::Cpu {
 public:
-    Dummy_vcpu(Model::Gic_d &gic) : Model::Cpu(&gic, 0, 16, true) {}
+    Dummy_vcpu(Model::Gic_d &gic) : Model::Cpu(&gic, 0, 0) {}
 
-    virtual bool block() override { return true; }
-    virtual void block_timeout(uint64) override {}
-    virtual bool unblock() override { return true; };
     virtual bool recall(bool) override { return true; }
     virtual Errno run() override { return ENONE; }
     virtual void ctrl_tvm(bool, Request::Requestor, const Reg_selection) override {}
