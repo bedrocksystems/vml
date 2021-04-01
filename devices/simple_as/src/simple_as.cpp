@@ -78,6 +78,6 @@ Model::Simple_as::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
         return nullptr;
     }
 
-    static const Model::Simple_as* tgt = reinterpret_cast<const Model::Simple_as*>(dev);
+    const Model::Simple_as* tgt = reinterpret_cast<const Model::Simple_as*>(dev);
     return tgt->gpa_to_vmm_view(addr, sz);
 }
