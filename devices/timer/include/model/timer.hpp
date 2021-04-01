@@ -59,13 +59,8 @@ public:
         }
     }
 
-    template<typename T>
-    bool schedule_timeout(uint64 const control, uint64 const timeout_absolut, T *host) {
+    bool schedule_timeout(uint64 const control) {
         Cntv_ctl ctl = Cntv_ctl(uint8(control));
-
-        if (!ctl.can_fire())
-            return false;
-        host->block_timeout(timeout_absolut);
-        return true;
+        return ctl.can_fire();
     }
 };
