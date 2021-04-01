@@ -21,7 +21,6 @@ namespace Model {
     class Cpu_irq_interface;
     class Cpu;
     class Cpu_feature;
-    class Timer;
     class Irq_controller;
     class Local_Irq_controller;
 }
@@ -124,11 +123,10 @@ private:
     uint64 _boot_args[MAX_BOOT_ARGS] = {0, 0, 0, 0};
 
     Vcpu_id const _vcpu_id;
-    uint16 _timer_irq;
-    Model::Timer *_timer{nullptr};
 
     enum Interrupt_state { NONE, SLEEPING, PENDING };
     atomic<Interrupt_state> _interrupt_state{NONE};
+    Platform::Signal _irq_sig;
 
     /*! \brief State Machine for the state of the VCPU
      *
@@ -176,6 +174,16 @@ private:
         = 0;
 
     static void roundup(Vcpu_id);
+
+    void block_timeout(uint64 const absolut_timeout) { _irq_sig.wait(absolut_timeout); }
+    bool block() {
+        _irq_sig.wait();
+        return true;
+    }
+    bool unblock() {
+        _irq_sig.sig();
+        return true;
+    }
 
 protected:
     Mode _start_mode{AA64};
@@ -250,14 +258,11 @@ public:
     // VCPU api end
 
     // Functions that should be provided by the implementation
-    virtual bool block() = 0;
-    virtual void block_timeout(uint64) = 0;
-    virtual bool unblock() = 0;
     virtual bool recall(bool strong) = 0;
     virtual Errno run() = 0;
 
     // Functions that are implemented
-    Cpu(Irq_controller *girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id, uint16 const irq);
+    Cpu(Irq_controller *girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id);
     bool setup(const Platform_ctx *ctx);
 
     void switch_state_to_roundedup();
@@ -272,8 +277,7 @@ public:
     virtual uint8 aff3() const override;
 
     void wait_for_resume() { _resume_sig.wait(); }
-    void assert_vtimer(uint64 const control);
-    void wait_for_interrupt(uint64 const control, uint64 const timeout_absolut);
+    void wait_for_interrupt(bool will_timeout, uint64 timeout_absolut);
     void interrupt_pending() override;
 
     virtual Model::Local_Irq_controller *local_irq_ctlr() override { return _lirq_ctlr; }

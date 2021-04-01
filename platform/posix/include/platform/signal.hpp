@@ -45,6 +45,24 @@ public:
         _signaled = false;
     }
 
+    bool wait(unsigned long long abs_ticks) {
+        std::unique_lock<decltype(_mutex)> lock(_mutex);
+
+        while (!_signaled) {
+            std::chrono::steady_clock::duration end(abs_ticks);
+            std::chrono::steady_clock::time_point deadline(end);
+            std::cv_status status;
+
+            status = _cv.wait_until(lock, deadline);
+            if (status == std::cv_status::timeout)
+                return false;
+        }
+
+        _signaled = false;
+
+        return true;
+    }
+
     /*! \brief Signal a (future) waiter
      */
     void sig() {
