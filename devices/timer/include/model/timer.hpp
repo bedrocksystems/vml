@@ -63,4 +63,6 @@ public:
         Cntv_ctl ctl = Cntv_ctl(uint8(control));
         return ctl.can_fire();
     }
+
+    uint16 irq_num() const { return _irq; }
 };
