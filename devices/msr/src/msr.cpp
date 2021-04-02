@@ -154,6 +154,14 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
     ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
+
+    /*
+     * PAuth is not yet implemented in the VMM. Removing this feature in case the host
+     * exposes it
+     */
+    id_aa64isar1_el1 &= ~(0xffull << 4);  // APA, API
+    id_aa64isar1_el1 &= ~(0xffull << 24); // GPA, GPI
+
     reg = new (nothrow)
         Msr::Register("ID_AA64ISAR1_EL1", ID_AA64ISAR1_EL1, false, id_aa64isar1_el1);
     ASSERT(reg);
