@@ -13,7 +13,7 @@
 #include <model/irq_controller.hpp>
 #include <model/timer.hpp>
 #include <platform/log.hpp>
-#include <platform/semaphore.hpp>
+#include <platform/signal.hpp>
 
 namespace Model {
     class Physical_timer;
@@ -33,7 +33,7 @@ public:
      *  \param irq The IRQ number associated with the timer (should be a PPI)
      */
     Physical_timer(Irq_controller &irq_ctlr, Vcpu_id const cpu, uint16 const irq)
-        : Timer(irq_ctlr, cpu, irq), _cntv_ctl(0), _cval(0), _wait_timer(), _ready_sm() {}
+        : Timer(irq_ctlr, cpu, irq), _cntv_ctl(0), _cval(0) {}
 
     /*! \brief Set the compare value of the timer
      *  \pre Fractional ownership of an initialized timer object.
@@ -46,7 +46,7 @@ public:
      */
     void set_cval(uint64 cval) {
         _cval = cval;
-        _wait_timer.release();
+        _wait_timer.sig();
     }
 
     /*! \brief Get the compare value of the timer
@@ -67,7 +67,7 @@ public:
     void set_ctl(uint8 ctl) {
         _cntv_ctl.set(ctl);
         if (_cntv_ctl.can_fire())
-            _wait_timer.release();
+            _wait_timer.sig();
     }
 
     /*! \brief Get the control value of the timer
@@ -105,12 +105,14 @@ public:
      *  \pre Partial ownership of an initialized timer object
      *  \post No change in ownership. Will only return once timer_loop has started.
      */
-    void wait_for_loop_start() { _ready_sm.acquire(); }
+    void wait_for_loop_start() { _ready_sig.wait(); }
 
 private:
     bool can_fire() const { return _cntv_ctl.can_fire(); }
-    void set_ready() { _ready_sm.release(); }
-    Semaphore &get_timer_sm() { return _wait_timer; }
+    void set_ready() { _ready_sig.sig(); }
+
+    bool timer_wait_timeout(uint64 timeout_abs) { return _wait_timer.wait(timeout_abs); }
+    void timer_wait() { return _wait_timer.wait(); }
 
     bool is_istatus_set() const { return _cntv_ctl.status(); };
     void set_istatus() { _cntv_ctl.set_status(); }
@@ -121,6 +123,6 @@ private:
 
     Cntv_ctl _cntv_ctl;
     uint64 _cval;
-    Semaphore _wait_timer;
-    Semaphore _ready_sm;
+    Platform::Signal _wait_timer;
+    Platform::Signal _ready_sig;
 };

@@ -26,11 +26,11 @@ Model::Physical_timer::timer_loop(const Platform_ctx*, Model::Physical_timer* ti
          * for some timer register to change before firing again.
          */
         if (!timer->can_fire() || timer->is_istatus_set()) {
-            timer->get_timer_sm().acquire();
+            timer->timer_wait();
             released = true;
             timer->clear_istatus();
         } else {
-            released = timer->get_timer_sm().try_acquire_until(timer->get_cval());
+            released = timer->timer_wait_timeout(timer->get_cval());
         }
 
         // false => timeout
@@ -48,7 +48,7 @@ Model::Physical_timer::init(const Platform_ctx* ctx) {
     if (!ok)
         return false;
 
-    ok = _ready_sm.init(ctx);
+    ok = _ready_sig.init(ctx);
     if (!ok)
         return false;
 
