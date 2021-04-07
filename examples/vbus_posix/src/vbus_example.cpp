@@ -8,9 +8,9 @@
 
 #include <thread>
 
+#include <model/aa64_timer.hpp>
 #include <model/cpu.hpp>
 #include <model/gic.hpp>
-#include <model/physical_timer.hpp>
 #include <model/psci.hpp>
 #include <model/simple_as.hpp>
 #include <msr/msr.hpp>
@@ -58,7 +58,7 @@ main() {
     ASSERT(ok);
 
     Model::Pl011 pl011(gicd, 0x42);
-    Model::Physical_timer ptimer(gicd, 0, 0x12);
+    Model::AA64Timer ptimer(gicd, 0, 0x12);
 
     ok = pl011.init(&ctx);
     ASSERT(ok);
@@ -74,9 +74,9 @@ main() {
     INFO("== Virtual Bus Testing/Demo app ==");
     INFO("Adding devices to the virtual bus");
 
-    ok = ptimer.init(&ctx);
+    ok = ptimer.init_timer_loop(&ctx);
 
-    std::thread timer_thread(Model::Physical_timer::timer_loop, &ctx, &ptimer);
+    std::thread timer_thread(Model::Timer::timer_loop, &ctx, &ptimer);
     timer_thread.detach();
 
     ptimer.wait_for_loop_start();

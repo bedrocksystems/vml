@@ -10,36 +10,36 @@
 #include <model/irq_controller.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/errno.hpp>
+#include <platform/signal.hpp>
 
 namespace Model {
     class Timer;
 };
 
 class Model::Timer {
+private:
+    Platform::Signal _ready_sig;
+    Platform::Signal _wait_timer;
+
 protected:
     Irq_controller *const _irq_ctlr;
     Vcpu_id const _vcpu;
     uint16 const _irq;
 
-    enum : uint8 { ENABLED_BIT = 0x1, MASKED_BIT = 0x2, STATUS_BIT = 0x4 };
+    void set_ready() { _ready_sig.sig(); }
+    bool timer_wait_timeout(uint64 timeout_abs) { return _wait_timer.wait(timeout_abs); }
+    void timer_wait() { return _wait_timer.wait(); }
+    void timer_wakeup() { _wait_timer.sig(); }
 
-    class Cntv_ctl {
-    public:
-        Cntv_ctl(uint8 val) : _value(val) {}
+    void clear_irq_status() {
+        set_irq_status(false);
+        _irq_ctlr->deassert_line_ppi(_vcpu, _irq);
+    }
 
-        constexpr bool enabled() const { return (_value & ENABLED_BIT) != 0; }
-        constexpr bool masked() const { return (_value & MASKED_BIT) != 0; }
-        constexpr bool status() const { return (_value & STATUS_BIT) != 0; }
-        constexpr bool can_fire() const { return enabled() && !masked(); }
-        void set_status() { _value |= STATUS_BIT; }
-        void clear_status() { _value &= static_cast<uint8>(~STATUS_BIT); }
-
-        constexpr uint8 get() const { return _value; }
-        void set(uint8 val) { _value = val; }
-
-    private:
-        uint8 _value;
-    };
+    virtual bool can_fire() const = 0;
+    virtual bool is_irq_status_set() const = 0;
+    virtual void set_irq_status(bool set) = 0;
+    virtual uint64 get_timeout_abs() const = 0;
 
 public:
     Timer(Irq_controller &irq_ctlr, Vcpu_id const vcpu_id, uint16 const irq)
@@ -49,20 +49,37 @@ public:
         return _irq_ctlr->config_irq(vcpu_id, _irq, hw, pirq, edge);
     }
 
-    bool assert_irq(uint64 const control) {
-        Cntv_ctl ctl = Cntv_ctl(uint8(control));
-
-        if (ctl.can_fire()) {
-            return _irq_ctlr->assert_ppi(_vcpu, _irq);
-        } else {
-            return false;
-        }
-    }
-
-    bool schedule_timeout(uint64 const control) {
-        Cntv_ctl ctl = Cntv_ctl(uint8(control));
-        return ctl.can_fire();
-    }
+    bool assert_irq() { return _irq_ctlr->assert_ppi(_vcpu, _irq); }
 
     uint16 irq_num() const { return _irq; }
+
+    /*! \brief Wait for the timer loop to start before returning
+     *  \pre Partial ownership of an initialized timer object
+     *  \post No change in ownership. Will only return once timer_loop has started.
+     */
+    void wait_for_loop_start() { _ready_sig.wait(); }
+
+    /*! \brief Initialize the timer object - this function must called before any other call
+     *  \pre Full ownership of an non-initialized timer object
+     *  \post If the result is true, returns the full ownership of the timer object with its
+     *  internal state as initialized. Otherwise, the ownership is unchanged and the timer stay
+     *  uninitialized.
+     *  \param ctx Platform specific data
+     *  \return true on success, false otherwise
+     */
+    bool init_timer_loop(const Platform_ctx *ctx);
+
+    /*! \brief Internal timer loop that sends IRQs to the GIC
+     *
+     *  The caller is expected to call this function from a separate thread that it has
+     *  previously created. The thread will then be considered as 'detached' and cannot
+     *  join the main thread. This is because a physical timer is not meant to be stopped.
+     *
+     *  \pre Full ownership of an initialized timer object
+     *  \post Fractional ownership of an initialized timer object (part of the ownership is
+     *  kept by the thread).
+     *  \param ctx Platform specific data
+     *  \param timer The timer object that will be partially owned by the timer loop thread
+     */
+    [[noreturn]] static void timer_loop(const Platform_ctx *ctx, Model::Timer *timer);
 };

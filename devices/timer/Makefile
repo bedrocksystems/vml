@@ -22,7 +22,7 @@ LIBDIR  = $(BRS_ROOT)lib/  ../../vcpu/ ../../config/ ../ $(PLATFORM_PATH)
 
 include deps.mk
 
-CC_SRCS = physical_timer.cpp
+CC_SRCS = timer.cpp
 OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
 SPECS =

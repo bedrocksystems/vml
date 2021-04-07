@@ -7,8 +7,8 @@
  */
 #pragma once
 
+#include <model/aa64_timer.hpp>
 #include <model/cpu.hpp>
-#include <model/physical_timer.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/log.hpp>
 #include <platform/reg_accessor.hpp>
@@ -500,10 +500,10 @@ public:
 
 class Msr::Cntp_ctl : public Register {
 private:
-    Model::Physical_timer* _ptimer;
+    Model::AA64Timer* _ptimer;
 
 public:
-    Cntp_ctl(const char* name, Msr::Register_id id, Model::Physical_timer& t)
+    Cntp_ctl(const char* name, Msr::Register_id id, Model::AA64Timer& t)
         : Register(name, id, true, 0, 0b11), _ptimer(&t) {}
 
     virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vcpu_ctx, Vbus::Space sp,
@@ -521,10 +521,10 @@ public:
 
 class Msr::Cntp_cval : public Register {
 private:
-    Model::Physical_timer* _ptimer;
+    Model::AA64Timer* _ptimer;
 
 public:
-    Cntp_cval(const char* name, Msr::Register_id id, Model::Physical_timer& t)
+    Cntp_cval(const char* name, Msr::Register_id id, Model::AA64Timer& t)
         : Register(name, id, true, 0), _ptimer(&t) {}
 
     virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vcpu_ctx, Vbus::Space sp,
@@ -558,11 +558,11 @@ public:
 
 class Msr::Cntp_tval : public Register {
 private:
-    Model::Physical_timer* _ptimer;
+    Model::AA64Timer* _ptimer;
     static constexpr uint64 CNTP_TVAL_MASK = 0xffffffffull;
 
 public:
-    Cntp_tval(const char* name, Msr::Register_id id, Model::Physical_timer& t)
+    Cntp_tval(const char* name, Msr::Register_id id, Model::AA64Timer& t)
         : Register(name, id, true, 0, CNTP_TVAL_MASK), _ptimer(&t) {}
 
     virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vctx, Vbus::Space, mword, uint8,
@@ -647,7 +647,7 @@ protected:
     }
 
 public:
-    bool setup_aarch64_physical_timer(Model::Physical_timer& ptimer);
+    bool setup_aarch64_physical_timer(Model::AA64Timer& ptimer);
 
     struct Platform_info {
         // AArch64 registers

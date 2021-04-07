@@ -6,13 +6,12 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 
-#include <model/physical_timer.hpp>
 #include <model/timer.hpp>
 #include <platform/context.hpp>
 #include <platform/log.hpp>
 
 [[noreturn]] void
-Model::Physical_timer::timer_loop(const Platform_ctx*, Model::Physical_timer* timer) {
+Model::Timer::timer_loop(const Platform_ctx*, Model::Timer* timer) {
     ASSERT(timer != nullptr);
 
     INFO("The physical timer is ready");
@@ -25,32 +24,24 @@ Model::Physical_timer::timer_loop(const Platform_ctx*, Model::Physical_timer* ti
          * Use fired to prevent asserting the interrupt several times. We then wait
          * for some timer register to change before firing again.
          */
-        if (!timer->can_fire() || timer->is_istatus_set()) {
+        if (!timer->can_fire() || timer->is_irq_status_set()) {
             timer->timer_wait();
             released = true;
-            timer->clear_istatus();
+            timer->clear_irq_status();
         } else {
-            released = timer->timer_wait_timeout(timer->get_cval());
+            released = timer->timer_wait_timeout(timer->get_timeout_abs());
         }
 
         // false => timeout
         if (!released) {
-            bool fired = timer->assert_irq(timer->get_ctl());
+            bool fired = timer->can_fire() && timer->assert_irq();
             if (fired)
-                timer->set_istatus();
+                timer->set_irq_status(true);
         }
     }
 }
 
 bool
-Model::Physical_timer::init(const Platform_ctx* ctx) {
-    bool ok = _wait_timer.init(ctx);
-    if (!ok)
-        return false;
-
-    ok = _ready_sig.init(ctx);
-    if (!ok)
-        return false;
-
-    return true;
+Model::Timer::init_timer_loop(const Platform_ctx* ctx) {
+    return _wait_timer.init(ctx) && _ready_sig.init(ctx);
 }

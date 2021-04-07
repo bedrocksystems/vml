@@ -6,9 +6,9 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 
+#include <model/aa64_timer.hpp>
 #include <model/cpu.hpp>
 #include <model/gic.hpp>
-#include <model/physical_timer.hpp>
 #include <model/simple_as.hpp>
 #include <msr/msr.hpp>
 #include <msr/msr_info.hpp>
@@ -396,7 +396,7 @@ Msr::Bus::setup_aarch32_media_vfp(uint32 mvfr0_el1, uint32 mvfr1_el1, uint32 mvf
 }
 
 bool
-Msr::Bus::setup_aarch64_physical_timer(Model::Physical_timer &ptimer) {
+Msr::Bus::setup_aarch64_physical_timer(Model::AA64Timer &ptimer) {
     Msr::Register *reg;
 
     reg = new (nothrow) Msr::Cntp_tval("CNTP_TVAL_EL0", Msr::Register_id::CNTP_TVAL_EL0, ptimer);

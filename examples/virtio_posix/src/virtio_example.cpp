@@ -10,7 +10,6 @@
 
 #include <model/cpu.hpp>
 #include <model/gic.hpp>
-#include <model/physical_timer.hpp>
 #include <model/virtio_console.hpp>
 #include <platform/context.hpp>
 #include <platform/log.hpp>
@@ -144,10 +143,6 @@ main() {
     ASSERT(ok);
 
     Dummy_vcpu vcpu(gicd);
-    Model::Physical_timer ptimer(gicd, 0, 0x12);
-
-    ok = ptimer.init_irq(0, 0x12, false, true);
-    ASSERT(ok);
 
     Semaphore sem;
     ok = sem.init(&ctx);
@@ -171,13 +166,6 @@ main() {
 
     INFO("== Virtio Test application ==");
     INFO("Adding devices to the virtual bus");
-
-    ok = ptimer.init(&ctx);
-
-    std::thread timer_thread(Model::Physical_timer::timer_loop, &ctx, &ptimer);
-    timer_thread.detach();
-
-    ptimer.wait_for_loop_start();
 
     ok = vbus.register_device(&gicd, 0x43000, 0x1000);
     ASSERT(ok == true);
