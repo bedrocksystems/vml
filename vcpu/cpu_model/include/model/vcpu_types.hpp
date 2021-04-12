@@ -13,12 +13,12 @@
 
 typedef uint64 Vcpu_id;
 typedef uint64 Pcpu_id;
-class Reg_accessor;
+class RegAccessor;
 
 static constexpr Vcpu_id INVALID_VCPU_ID = ~0x0ull;
 
 struct Vcpu_ctx {
     const Platform_ctx* ctx;
-    Reg_accessor* regs;
+    RegAccessor* regs;
     Vcpu_id vcpu_id;
 };

@@ -93,7 +93,7 @@ main() {
 
     vbus.iter_devices(Model::Simple_as::flush_callback, nullptr);
 
-    Reg_accessor regs(ctx, 0);
+    RegAccessor regs(ctx, 0);
     Vcpu_ctx vctx{nullptr, &regs, 0};
     uint64 val;
 

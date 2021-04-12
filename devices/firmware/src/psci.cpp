@@ -57,7 +57,7 @@ decode_cpu_id(uint64 arg) {
 }
 
 bool
-Firmware::Psci::smc_call_service(const Vcpu_ctx &vctx, Reg_accessor &arch, Vbus::Bus &vbus,
+Firmware::Psci::smc_call_service(const Vcpu_ctx &vctx, RegAccessor &arch, Vbus::Bus &vbus,
                                  uint64 const function_id, uint64 &res) {
     switch (static_cast<Function_id>(function_id)) {
     case SMCCC_VERSION:

@@ -173,7 +173,7 @@ main() {
     ok = vbus.register_device(&virtio_console, VIRTIO_BASE, 0x1000);
     ASSERT(ok == true);
 
-    Reg_accessor regs(ctx, 0);
+    RegAccessor regs(ctx, 0);
     Vcpu_ctx vctx{nullptr, &regs, 0};
     uint64 val;
 
