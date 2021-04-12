@@ -10,9 +10,9 @@
 #include <platform/context.hpp>
 #include <platform/vm_types.hpp>
 
-class Reg_accessor {
+class RegAccessor {
 public:
-    Reg_accessor(const Platform_ctx&, const Reg_selection) {}
+    RegAccessor(const Platform_ctx&, const Reg_selection) {}
 
     inline uint64 gpr(uint8) const { return 0; }
     inline void gpr(uint8, const uint64, bool overwrite = false) { (void)overwrite; }
