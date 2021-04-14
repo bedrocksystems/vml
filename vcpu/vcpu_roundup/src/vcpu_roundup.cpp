@@ -43,12 +43,12 @@ public:
     void yield() {
         _vcpu_waiters++;
         Barrier::rw_before_rw();
-        Vcpu::Roundup::vcpu_notify_done_progessing();
+        vcpu_notify_done_progressing();
     }
 
     void unyield() {
-        ASSERT(_vcpu_waiters >= 1);
-        _vcpu_waiters--;
+        auto waiters_old = _vcpu_waiters--;
+        ASSERT(waiters_old >= 1);
     }
 
     /*! \brief Atomic entry into the roundup logic
@@ -72,12 +72,9 @@ public:
      * As a default, we assume everybody makes progress.
      */
     void end_roundup(bool from_vcpu = false) {
-        ASSERT(_vcpu_waiters <= num_vcpus);
         if (from_vcpu)
             unyield();
-
-        vcpus_progressing = num_vcpus - _vcpu_waiters;
-        Barrier::rw_before_rw();
+        end_roundup_core();
     }
 
     void signal_next_waiter() {
@@ -101,7 +98,26 @@ public:
     void wait_for_emulation_end() { _sig_emulating.wait(); }
     void signal_emulation_end() { _sig_emulating.sig(); }
 
+    /*! \brief Signal that a VCPU has stopped progressing.
+     *
+     * The last VCPU to stop progressing will also signal the caller of 'roundup' and
+     * will effectively unblock it.
+     */
+    void vcpu_notify_done_progressing() {
+        auto progressing = vcpus_progressing.fetch_sub(1);
+        ASSERT(progressing != 0);
+        if (progressing == 1)
+            signal_emulation_end();
+    }
+
 private:
+    inline void end_roundup_core() {
+        uint16 num_waiters = _vcpu_waiters;
+        ASSERT(num_waiters <= num_vcpus);
+        vcpus_progressing = num_vcpus - num_waiters;
+        Barrier::rw_before_rw();
+    }
+
     Platform::Mutex _waiter_mutex;
     Platform::Signal _sig_emulating;
     atomic<uint16> _vcpu_waiters;
@@ -148,6 +164,11 @@ Vcpu::Roundup::init(const Platform_ctx* ctx, uint16 num_vcpus) {
         return err;
 
     return roundup_info.init(ctx, num_vcpus);
+}
+
+void
+Vcpu::Roundup::vcpu_notify_done_progressing() {
+    roundup_info.vcpu_notify_done_progressing();
 }
 
 /*! \brief Internal roundup function
@@ -198,19 +219,14 @@ Vcpu::Roundup::resume_from_vcpu(Vcpu_id) {
     roundup_info.signal_next_waiter();
 }
 
-/*! \brief Signal that a VCPU has stopped progressing.
- *
- * The last VCPU to stop progressing will also signal the caller of 'roundup' and
- * will effectively unblock it.
- */
-void
-Vcpu::Roundup::vcpu_notify_done_progessing() {
-    ASSERT(roundup_info.vcpus_progressing != 0);
+// void
+// Vcpu::Roundup::vcpu_notify_done_progessing() {
+//     ASSERT(roundup_info.vcpus_progressing != 0);
 
-    uint16 progressing = roundup_info.vcpus_progressing.sub_fetch(1);
-    if (progressing == 0)
-        roundup_info.signal_emulation_end();
-}
+//     uint16 progressing = roundup_info.vcpus_progressing.sub_fetch(1);
+//     if (progressing == 0)
+//         roundup_info.signal_emulation_end();
+// }
 
 void
 Vcpu::Roundup::vcpu_notify_initialized() {
@@ -237,16 +253,16 @@ Vcpu::Roundup::roundup_parallel(Vcpu_id id) {
 
     if (count == 0) {
         roundup_from_vcpu(id);
-        uint16 parallel_callers = parallel_info.count - 1; // This is stable now
+        uint16 parallel_callers = parallel_info.count - 1;
         parallel_info.num_waiters = parallel_callers;
         while (parallel_callers > 0) {
             parallel_info.count_sem.release();
             parallel_callers--;
         }
     } else {
-        roundup_info.yield(); // Signal that we are waiting and not progressing anymore
+        roundup_info.yield();
         parallel_info.count_sem.acquire();
-        roundup_info.unyield(); // Progress resumed, we are not waiting anymore
+        roundup_info.unyield();
     }
 }
 

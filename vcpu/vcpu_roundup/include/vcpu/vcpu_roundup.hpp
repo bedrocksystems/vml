@@ -26,6 +26,6 @@ namespace Vcpu::Roundup {
     void vcpu_notify_initialized();
     void vcpu_notify_switched_on();
 
-    void vcpu_notify_done_progessing();
+    void vcpu_notify_done_progressing();
 
 }

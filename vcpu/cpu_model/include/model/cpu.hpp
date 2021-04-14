@@ -184,6 +184,7 @@ private:
         _irq_sig.sig();
         return true;
     }
+    void roundup_impl();
 
 protected:
     Mode _start_mode{AA64};
@@ -265,7 +266,7 @@ public:
     Cpu(Irq_controller *girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id);
     bool setup(const Platform_ctx *ctx);
 
-    void switch_state_to_roundedup();
+    bool switch_state_to_roundedup();
     void switch_state_to_on();
     bool switch_state_to_emulating();
 

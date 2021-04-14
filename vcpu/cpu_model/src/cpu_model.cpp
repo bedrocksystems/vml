@@ -53,23 +53,32 @@ Model::Cpu::get_pcpu(Vcpu_id id) {
 }
 
 void
+Model::Cpu::roundup_impl() {
+    bool emulating = switch_state_to_roundedup();
+    recall(true);
+    unblock(); // If the VCPU is in WFI, unblock it
+    if (!emulating)
+        Vcpu::Roundup::vcpu_notify_done_progressing();
+}
+
+// is this function still needed?
+void
 Model::Cpu::roundup(Vcpu_id cpu_id) {
     ASSERT(cpu_id < configured_vcpus);
-
-    vcpus[cpu_id]->switch_state_to_roundedup();
-    vcpus[cpu_id]->recall(true);
-    vcpus[cpu_id]->unblock(); // If the VCPU is in WFI, unblock it
+    vcpus[cpu_id]->roundup_impl();
 }
 
 void
 Model::Cpu::roundup_all() {
-    for (Vcpu_id i = 0; i < configured_vcpus; ++i)
-        roundup(i);
+    uint64 max = configured_vcpus;
+    for (Vcpu_id i = 0; i < max; ++i)
+        vcpus[i]->roundup_impl();
 }
 
 void
 Model::Cpu::resume_all() {
-    for (Vcpu_id i = 0; i < configured_vcpus; ++i)
+    uint64 max = configured_vcpus;
+    for (Vcpu_id i = 0; i < max; ++i)
         vcpus[i]->resume();
 }
 
@@ -234,12 +243,11 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
  * 'done progressing' right away. The only exception is CPUs that are emulating:
  * we need to wait for them to finish. They will signal themselves later on.
  */
-void
+bool
 Model::Cpu::switch_state_to_roundedup() {
     enum State new_state, cur_state;
-
+    cur_state = _state;
     do {
-        cur_state = new_state = _state;
         switch (cur_state) {
         case ON:
             new_state = ON_ROUNDEDUP;
@@ -262,22 +270,20 @@ Model::Cpu::switch_state_to_roundedup() {
         INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
              state_printable_name[new_state]);
 
-    if (cur_state != EMULATE)
-        Vcpu::Roundup::vcpu_notify_done_progessing();
+    return (cur_state == EMULATE);
 }
 
 void
 Model::Cpu::resume() {
-    enum State new_state, cur_state = _state;
-
+    enum State new_state, cur_state;
+    cur_state = _state;
     do {
-        cur_state = new_state = _state;
         switch (cur_state) {
-        case OFF_ROUNDEDUP:
-            new_state = OFF;
-            break;
         case ON_ROUNDEDUP:
             new_state = ON;
+            break;
+        case OFF_ROUNDEDUP:
+            new_state = OFF;
             break;
         case EMULATE_ROUNDEDUP:
             new_state = EMULATE;
@@ -323,7 +329,7 @@ Model::Cpu::switch_state_to_on() {
     } while (!_state.cas(cur_state, new_state));
 
     if (cur_state == EMULATE_ROUNDEDUP)
-        Vcpu::Roundup::vcpu_notify_done_progessing();
+        Vcpu::Roundup::vcpu_notify_done_progressing();
 
     if (cur_state == OFF || cur_state == OFF_ROUNDEDUP)
         Vcpu::Roundup::vcpu_notify_switched_on();
