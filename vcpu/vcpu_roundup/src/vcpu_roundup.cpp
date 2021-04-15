@@ -219,15 +219,6 @@ Vcpu::Roundup::resume_from_vcpu(Vcpu_id) {
     roundup_info.signal_next_waiter();
 }
 
-// void
-// Vcpu::Roundup::vcpu_notify_done_progessing() {
-//     ASSERT(roundup_info.vcpus_progressing != 0);
-
-//     uint16 progressing = roundup_info.vcpus_progressing.sub_fetch(1);
-//     if (progressing == 0)
-//         roundup_info.signal_emulation_end();
-// }
-
 void
 Vcpu::Roundup::vcpu_notify_initialized() {
     uint16 total = initialized_info.vcpus_pending_init.add_fetch(1);
@@ -253,16 +244,16 @@ Vcpu::Roundup::roundup_parallel(Vcpu_id id) {
 
     if (count == 0) {
         roundup_from_vcpu(id);
-        uint16 parallel_callers = parallel_info.count - 1;
+        uint16 parallel_callers = parallel_info.count - 1; // This is stable now
         parallel_info.num_waiters = parallel_callers;
         while (parallel_callers > 0) {
             parallel_info.count_sem.release();
             parallel_callers--;
         }
     } else {
-        roundup_info.yield();
+        roundup_info.yield(); // Signal that we are waiting and not progressing anymore
         parallel_info.count_sem.acquire();
-        roundup_info.unyield();
+        roundup_info.unyield(); // Progress resumed, we are not waiting anymore
     }
 }
 

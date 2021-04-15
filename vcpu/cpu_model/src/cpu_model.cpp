@@ -245,8 +245,8 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
  */
 bool
 Model::Cpu::switch_state_to_roundedup() {
-    enum State new_state, cur_state;
-    cur_state = _state;
+    enum State new_state, cur_state = _state;
+
     do {
         switch (cur_state) {
         case ON:
@@ -275,8 +275,8 @@ Model::Cpu::switch_state_to_roundedup() {
 
 void
 Model::Cpu::resume() {
-    enum State new_state, cur_state;
-    cur_state = _state;
+    enum State new_state, cur_state = _state;
+
     do {
         switch (cur_state) {
         case ON_ROUNDEDUP:
@@ -312,7 +312,6 @@ Model::Cpu::switch_state_to_on() {
     enum State new_state, cur_state = _state;
 
     do {
-        cur_state = new_state = _state;
         switch (cur_state) {
         case OFF_ROUNDEDUP:
         case EMULATE_ROUNDEDUP:
@@ -341,10 +340,9 @@ Model::Cpu::switch_state_to_on() {
 
 void
 Model::Cpu::switch_state_to_off() {
-    enum State new_state, cur_state;
+    enum State new_state, cur_state = _state;
 
     do {
-        cur_state = new_state = _state;
         switch (cur_state) {
         case ON_ROUNDEDUP:
             new_state = OFF_ROUNDEDUP;
@@ -375,16 +373,15 @@ Model::Cpu::switch_state_to_off() {
  */
 bool
 Model::Cpu::switch_state_to_emulating() {
-    enum State new_state, cur_state;
-
     while (_execution_paused.is_requested()) {
         switch_state_to_off();
         wait_for_switch_on();
         switch_state_to_on();
     }
 
+    enum State new_state, cur_state = _state;
+
     do {
-        cur_state = new_state = _state;
         switch (cur_state) {
         case ON_ROUNDEDUP:
             return false;
