@@ -12,7 +12,7 @@
 #include <platform/types.hpp>
 
 Vbus::Err
-Model::Pl011::access(Vbus::Access const access, const Vcpu_ctx *, Vbus::Space, mword const offset,
+Model::Pl011::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset,
                      uint8 const size, uint64 &value) {
 
     bool ok = false;

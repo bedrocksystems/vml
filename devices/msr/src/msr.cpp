@@ -609,7 +609,7 @@ Msr::Bus::setup_arch_msr(Msr::Bus::Platform_info &info, Vbus::Bus &vbus, Model::
 }
 
 Vbus::Err
-Msr::Icc_sgi1r_el1::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, Vbus::Space, mword,
+Msr::Icc_sgi1r_el1::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::Space, mword,
                            uint8, uint64 &value) {
     if (access != Vbus::WRITE)
         return Vbus::Err::ACCESS_ERR;
@@ -620,7 +620,7 @@ Msr::Icc_sgi1r_el1::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, 
 }
 
 void
-Msr::Set_way_flush_reg::flush(const Vcpu_ctx *vctx, const uint8, const uint32) const {
+Msr::Set_way_flush_reg::flush(const VcpuCtx *vctx, const uint8, const uint32) const {
     /*
      * Set/Way flushing instructions cannot and shouldn't be executed by the VMM.
      * Hence, we choose to replace set/way flushing by VA flushing forcing us to flush
@@ -639,7 +639,7 @@ Msr::Set_way_flush_reg::flush(const Vcpu_ctx *vctx, const uint8, const uint32) c
 }
 
 void
-Msr::flush_on_cache_toggle(const Vcpu_ctx *vcpu, Vbus::Bus &vbus, uint64 new_value) {
+Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, Vbus::Bus &vbus, uint64 new_value) {
     if (!Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vcpu->vcpu_id)) {
         // Another requestor needed TVM - no action to take on our side
         return;
@@ -669,7 +669,7 @@ Msr::flush_on_cache_toggle(const Vcpu_ctx *vcpu, Vbus::Bus &vbus, uint64 new_val
 }
 
 Vbus::Err
-Msr::Sctlr_el1::access(Vbus::Access access, const Vcpu_ctx *vcpu, Vbus::Space, mword, uint8,
+Msr::Sctlr_el1::access(Vbus::Access access, const VcpuCtx *vcpu, Vbus::Space, mword, uint8,
                        uint64 &res) {
     ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
 

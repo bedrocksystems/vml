@@ -55,7 +55,7 @@ public:
 };
 
 void
-init_virtio_console(Vbus::Bus &vbus, Vcpu_ctx &vctx) {
+init_virtio_console(Vbus::Bus &vbus, VcpuCtx &vctx) {
     uint64 val;
     Vbus::Err err;
 
@@ -174,7 +174,7 @@ main() {
     ASSERT(ok == true);
 
     RegAccessor regs(ctx, 0);
-    Vcpu_ctx vctx{nullptr, &regs, 0};
+    VcpuCtx vctx{nullptr, &regs, 0};
     uint64 val;
 
     INFO("Accessing the Virtio console model");

@@ -205,12 +205,12 @@ public:
      *  \param res Input or output value (depending on read or write)
      *  \return status of the access
      */
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx *vctx, Vbus::Space sp, mword off,
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx *vctx, Vbus::Space sp, mword off,
                              uint8 bytes, uint64 &res) override;
 
     /*! \brief Reset the PL011 to its initial state
      */
-    virtual void reset(const Vcpu_ctx *) override {
+    virtual void reset(const VcpuCtx *) override {
         _ilpr = 0;
         _ibrd = 0;
         _fbrd = 0;

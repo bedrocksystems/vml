@@ -57,12 +57,12 @@ public:
     virtual const char *from_guest(uint32 &size) override;
     virtual void wait_for_available_buffer() override { _sig_notify_empty_space.wait(); }
 
-    virtual void reset(const Vcpu_ctx *) override {
+    virtual void reset(const VcpuCtx *) override {
         _sig_notify_empty_space.sig();
         _reset();
     }
 
-    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
+    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
 
     Virtio::Queue_data const &queue_data_rx() const { return _data[RX]; }

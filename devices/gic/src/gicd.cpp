@@ -133,7 +133,7 @@ Model::Gic_d::read_register(uint64 const offset, uint32 const base_reg, uint32 c
 }
 
 Vbus::Err
-Model::Gic_d::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, Vbus::Space,
+Model::Gic_d::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::Space,
                      mword const offset, uint8 const size, uint64 &value) {
 
     bool ok = false;
@@ -1000,7 +1000,7 @@ Model::Gic_d::send_sgi(Vcpu_id const self, Vcpu_id const cpu, unsigned const sgi
 }
 
 void
-Model::Gic_d::reset(const Vcpu_ctx *) {
+Model::Gic_d::reset(const VcpuCtx *) {
     for (uint16 cpu = 0; cpu < _num_vcpus; cpu++) {
         for (uint8 i = 0; i < MAX_SGI; i++) {
             _local[cpu]._sgi[i].reset(uint8(1u << cpu));
