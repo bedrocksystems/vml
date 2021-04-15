@@ -258,9 +258,10 @@ Model::Cpu::switch_state_to_roundedup() {
         case EMULATE:
             new_state = EMULATE_ROUNDEDUP;
             break;
-        case OFF_ROUNDEDUP:
-        case ON_ROUNDEDUP:
-        case EMULATE_ROUNDEDUP:
+        default:
+            // case OFF_ROUNDEDUP:
+            // case ON_ROUNDEDUP:
+            // case EMULATE_ROUNDEDUP:
             ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(),
                        state_printable_name[cur_state]);
         }
