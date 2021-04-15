@@ -53,4 +53,3 @@ proof-pico:
   only:
     - merge_requests
     - pipelines
-  allow_failure: true # for multi-repo merges to work, failure has to be allowed. see the CI protocol doc
