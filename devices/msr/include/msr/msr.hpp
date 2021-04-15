@@ -261,7 +261,7 @@ namespace Msr {
            DBGWCR6_EL1,  DBGWCR7_EL1,  DBGWCR8_EL1,  DBGWCR9_EL1, DBGWCR10_EL1, DBGWCR11_EL1,
            DBGWCR12_EL1, DBGWCR13_EL1, DBGWCR14_EL1, DBGWCR15_EL1};
 
-    void flush_on_cache_toggle(const Vcpu_ctx* vcpu, Vbus::Bus& vbus, uint64 new_value);
+    void flush_on_cache_toggle(const VcpuCtx* vcpu, Vbus::Bus& vbus, uint64 new_value);
 }
 
 namespace Model {
@@ -322,7 +322,7 @@ class Msr::Register_base : public Vbus::Device {
 public:
     Register_base(const char* name, Id reg_id) : Vbus::Device::Device(name), _reg_id(reg_id) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vcpu_ctx, Vbus::Space, mword off,
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, Vbus::Space, mword off,
                              uint8 bytes, uint64& res)
         = 0;
 
@@ -347,7 +347,7 @@ public:
         : Register_base(name, reg_id), _value(reset_value), _reset_value(reset_value),
           _write_mask(mask), _writable(writable) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx*, Vbus::Space, mword, uint8,
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx*, Vbus::Space, mword, uint8,
                              uint64& value) override {
         if (access == Vbus::WRITE && !_writable)
             return Vbus::Err::ACCESS_ERR;
@@ -362,14 +362,14 @@ public:
         return Vbus::Err::OK;
     }
 
-    virtual void reset(const Vcpu_ctx*) override { _value = _reset_value; }
+    virtual void reset(const VcpuCtx*) override { _value = _reset_value; }
 };
 
 class Msr::Set_way_flush_reg : public Msr::Register {
 public:
     Set_way_flush_reg(const char* name, Id const reg_id, Vbus::Bus& vbus)
         : Register(name, reg_id, true, 0x0, 0x00000000fffffffeull), _vbus(&vbus) {}
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vctx, Vbus::Space sp, mword off,
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vctx, Vbus::Space sp, mword off,
                              uint8 bytes, uint64& value) override {
         Vbus::Err ret = Register::access(access, vctx, sp, off, bytes, value);
 
@@ -381,7 +381,7 @@ public:
     }
 
 protected:
-    void flush(const Vcpu_ctx*, const uint8, const uint32) const;
+    void flush(const VcpuCtx*, const uint8, const uint32) const;
 
     Vbus::Bus* _vbus;
 };
@@ -452,7 +452,7 @@ public:
         }
     }
 
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vcpu_ctx, Vbus::Space sp, mword,
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, Vbus::Space sp, mword,
                              uint8, uint64& value) override {
         if (access == Vbus::WRITE)
             return Vbus::Err::ACCESS_ERR;
@@ -482,7 +482,7 @@ public:
         return Vbus::Err::OK;
     }
 
-    virtual void reset(const Vcpu_ctx*) override {}
+    virtual void reset(const VcpuCtx*) override {}
 };
 
 class Msr::Icc_sgi1r_el1 : public Register_base {
@@ -492,10 +492,10 @@ private:
 public:
     Icc_sgi1r_el1(Model::Gic_d& gic) : Register_base("ICC_SGI1R_EL1", ICC_SGI1R_EL1), _gic(&gic) {}
 
-    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx*, Vbus::Space, mword, uint8,
+    virtual Vbus::Err access(Vbus::Access, const VcpuCtx*, Vbus::Space, mword, uint8,
                              uint64&) override;
 
-    virtual void reset(const Vcpu_ctx*) override {}
+    virtual void reset(const VcpuCtx*) override {}
 };
 
 class Msr::Cntp_ctl : public Register {
@@ -506,7 +506,7 @@ public:
     Cntp_ctl(const char* name, Msr::Register_id id, Model::AA64Timer& t)
         : Register(name, id, true, 0, 0b11), _ptimer(&t) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vcpu_ctx, Vbus::Space sp,
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, Vbus::Space sp,
                              mword addr, uint8 size, uint64& value) {
         _value = _ptimer->get_ctl();
 
@@ -527,7 +527,7 @@ public:
     Cntp_cval(const char* name, Msr::Register_id id, Model::AA64Timer& t)
         : Register(name, id, true, 0), _ptimer(&t) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vcpu_ctx, Vbus::Space sp,
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, Vbus::Space sp,
                              mword addr, uint8 size, uint64& value) {
         _value = _ptimer->get_cval();
 
@@ -544,7 +544,7 @@ class Msr::Cntpct_el0 : public Register_base {
 public:
     Cntpct_el0() : Register_base("CNTPCT_EL0", CNTPCT_EL0) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vctx, Vbus::Space, mword, uint8,
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vctx, Vbus::Space, mword, uint8,
                              uint64& value) override {
         if (access != Vbus::READ)
             return Vbus::Err::ACCESS_ERR;
@@ -553,7 +553,7 @@ public:
         return Vbus::Err::OK;
     }
 
-    virtual void reset(const Vcpu_ctx*) override {}
+    virtual void reset(const VcpuCtx*) override {}
 };
 
 class Msr::Cntp_tval : public Register {
@@ -565,7 +565,7 @@ public:
     Cntp_tval(const char* name, Msr::Register_id id, Model::AA64Timer& t)
         : Register(name, id, true, 0, CNTP_TVAL_MASK), _ptimer(&t) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vctx, Vbus::Space, mword, uint8,
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vctx, Vbus::Space, mword, uint8,
                              uint64& value) {
         if (access == Vbus::READ) {
             uint64 cval = _ptimer->get_cval(),
@@ -586,13 +586,13 @@ class Msr::Wtrapped_msr : public Msr::Register_base {
 public:
     using Msr::Register_base::Register_base;
 
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx*, Vbus::Space, mword, uint8,
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx*, Vbus::Space, mword, uint8,
                              uint64&) override {
         ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
         return Vbus::Err::UPDATE_REGISTER;     // Tell the VCPU to update the relevant physical
                                                // register
     }
-    virtual void reset(const Vcpu_ctx*) override {}
+    virtual void reset(const VcpuCtx*) override {}
 };
 
 class Msr::Sctlr_el1 : public Msr::Register_base {
@@ -600,9 +600,9 @@ public:
     Sctlr_el1(const char* name, Msr::Id reg_id, Vbus::Bus& vbus)
         : Msr::Register_base(name, reg_id), _vbus(&vbus) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const Vcpu_ctx* vcpu, Vbus::Space, mword, uint8,
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu, Vbus::Space, mword, uint8,
                              uint64& res) override;
-    virtual void reset(const Vcpu_ctx*) override {}
+    virtual void reset(const VcpuCtx*) override {}
 
 private:
     Vbus::Bus* _vbus;

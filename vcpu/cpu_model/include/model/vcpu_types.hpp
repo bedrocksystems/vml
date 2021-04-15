@@ -17,7 +17,7 @@ class RegAccessor;
 
 static constexpr Vcpu_id INVALID_VCPU_ID = ~0x0ull;
 
-struct Vcpu_ctx {
+struct VcpuCtx {
     const Platform_ctx* ctx;
     RegAccessor* regs;
     Vcpu_id vcpu_id;

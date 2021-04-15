@@ -58,7 +58,7 @@ struct Model::Virtio_net_config {
 
 class Model::Virtio_net_callback {
 public:
-    virtual void device_reset(const Vcpu_ctx *ctx) = 0;
+    virtual void device_reset(const VcpuCtx *ctx) = 0;
 };
 
 class Model::Virtio_net : public Vbus::Device, public Virtio::Device {
@@ -100,9 +100,9 @@ public:
 
     void signal();
 
-    virtual void reset(const Vcpu_ctx *) override;
+    virtual void reset(const VcpuCtx *) override;
 
-    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
+    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
 
     Virtio::Queue_data const &queue_data_rx() const { return _data[RX]; }

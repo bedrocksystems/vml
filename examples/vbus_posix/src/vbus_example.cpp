@@ -94,7 +94,7 @@ main() {
     vbus.iter_devices(Model::Simple_as::flush_callback, nullptr);
 
     RegAccessor regs(ctx, 0);
-    Vcpu_ctx vctx{nullptr, &regs, 0};
+    VcpuCtx vctx{nullptr, &regs, 0};
     uint64 val;
 
     INFO("Accessing the GIC model");

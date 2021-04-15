@@ -29,7 +29,7 @@ Model::Virtio_net::signal() {
 }
 
 void
-Model::Virtio_net::reset(const Vcpu_ctx *ctx) {
+Model::Virtio_net::reset(const VcpuCtx *ctx) {
     if (_virtio_net_callback)
         _virtio_net_callback->device_reset(ctx);
 
@@ -37,7 +37,7 @@ Model::Virtio_net::reset(const Vcpu_ctx *ctx) {
 }
 
 Vbus::Err
-Model::Virtio_net::access(Vbus::Access const access, const Vcpu_ctx *vcpu_ctx, Vbus::Space,
+Model::Virtio_net::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::Space,
                           mword const offset, uint8 const size, uint64 &value) {
 
     bool ok = false;

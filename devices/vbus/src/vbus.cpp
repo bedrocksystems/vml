@@ -20,7 +20,7 @@ Vbus::Bus::lookup(mword addr, uint64 bytes) const {
 }
 
 Vbus::Err
-Vbus::Bus::access(Vbus::Access access, const Vcpu_ctx& vcpu_ctx, mword addr, uint8 bytes,
+Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 bytes,
                   uint64& val) {
     const Device_entry* entry = lookup(addr, bytes);
 
@@ -76,17 +76,17 @@ Vbus::Bus::iter_devices(void (*f)(Vbus::Bus::Device_entry* de, void*), void* arg
 void
 Vbus::Bus::reset_device_cb(Vbus::Bus::Device_entry* entry, void* arg) {
     if (entry->device->type() != Device::IRQ_CONTROLLER)
-        entry->device->reset(reinterpret_cast<Vcpu_ctx*>(arg));
+        entry->device->reset(reinterpret_cast<VcpuCtx*>(arg));
 }
 
 void
 Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::Device_entry* entry, void* arg) {
     if (entry->device->type() == Device::IRQ_CONTROLLER)
-        entry->device->reset(reinterpret_cast<Vcpu_ctx*>(arg));
+        entry->device->reset(reinterpret_cast<VcpuCtx*>(arg));
 }
 
 void
-Vbus::Bus::reset(const Vcpu_ctx& vcpu_ctx) {
-    iter_devices(Vbus::Bus::reset_device_cb, const_cast<Vcpu_ctx*>(&vcpu_ctx));
-    iter_devices(Vbus::Bus::reset_irq_ctlr_cb, const_cast<Vcpu_ctx*>(&vcpu_ctx));
+Vbus::Bus::reset(const VcpuCtx& vcpu_ctx) {
+    iter_devices(Vbus::Bus::reset_device_cb, const_cast<VcpuCtx*>(&vcpu_ctx));
+    iter_devices(Vbus::Bus::reset_irq_ctlr_cb, const_cast<VcpuCtx*>(&vcpu_ctx));
 }

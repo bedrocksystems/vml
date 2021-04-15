@@ -10,7 +10,7 @@
 #include <platform/rangemap.hpp>
 #include <platform/types.hpp>
 
-struct Vcpu_ctx;
+struct VcpuCtx;
 
 namespace Vbus {
 
@@ -79,7 +79,7 @@ public:
      * handlers. The off is relative the to the registered range
      * in the bus.
      */
-    virtual Err access(Access access, const Vcpu_ctx* vcpu_ctx, Vbus::Space sp, mword off,
+    virtual Err access(Access access, const VcpuCtx* vcpu_ctx, Vbus::Space sp, mword off,
                        uint8 bytes, uint64& res)
         = 0;
 
@@ -88,7 +88,7 @@ public:
      *  \post The ownership of the object is returned to the caller. The device is in its initial
      *        state.
      */
-    virtual void reset(const Vcpu_ctx* vcpu_ctx) = 0;
+    virtual void reset(const VcpuCtx* vcpu_ctx) = 0;
 
     /*! \brief Type that represents the device
      */
@@ -155,14 +155,14 @@ public:
      *  \param val Buffer for read or write operations
      *  \return The status of the access
      */
-    Err access(Access access, const Vcpu_ctx& vcpu_ctx, mword addr, uint8 size, uint64& val);
+    Err access(Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 size, uint64& val);
 
     /*! \brief Reset all devices on the bus
      *  \pre Fractional ownership of a valid virtual bus.
      *  \post Ownership of the vbus is unchanged. All devices must have transitioned from some
      *        state to their initial state.
      */
-    void reset(const Vcpu_ctx& vcpu_ctx);
+    void reset(const VcpuCtx& vcpu_ctx);
 
     /*! \brief Debug only: control the trace of the access to the bus
      *  \param enabled Should accesses be traced?

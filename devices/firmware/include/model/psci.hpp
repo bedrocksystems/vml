@@ -16,6 +16,6 @@ namespace Vbus {
 }
 
 namespace Firmware::Psci {
-    bool smc_call_service(const Vcpu_ctx &vctx, RegAccessor &arch, Vbus::Bus &vbus,
+    bool smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::Bus &vbus,
                           uint64 const function_id, uint64 &res);
 }

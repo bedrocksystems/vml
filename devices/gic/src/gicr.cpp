@@ -68,7 +68,7 @@ Model::Gic_r::can_receive_irq() const {
 }
 
 Vbus::Err
-Model::Gic_r::access(Vbus::Access const access, const Vcpu_ctx *, Vbus::Space, mword const offset,
+Model::Gic_r::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset,
                      uint8 const size, uint64 &value) {
 
     bool ok = false;

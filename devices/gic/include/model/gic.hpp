@@ -578,9 +578,9 @@ public:
         return true;
     }
 
-    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
+    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
-    virtual void reset(const Vcpu_ctx *) override;
+    virtual void reset(const VcpuCtx *) override;
     virtual Type type() const override { return IRQ_CONTROLLER; }
 
     virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
@@ -632,7 +632,7 @@ public:
     Gic_r(Gic_d &gic, Vcpu_id cpu_id, bool last)
         : Local_Irq_controller("GICR"), gic_d(&gic), _vcpu_id(cpu_id), _last(last) {}
 
-    virtual Vbus::Err access(Vbus::Access, const Vcpu_ctx *, Vbus::Space, mword, uint8,
+    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
 
     virtual uint8 aff0() const override { return uint8(_vcpu_id); }
@@ -640,7 +640,7 @@ public:
     virtual uint8 aff2() const override { return uint8(_vcpu_id >> 16); }
     virtual uint8 aff3() const override { return uint8(_vcpu_id >> 24); }
 
-    virtual void reset(const Vcpu_ctx *) override {}
+    virtual void reset(const VcpuCtx *) override {}
     virtual Type type() const override { return IRQ_CONTROLLER; }
 
     virtual bool can_receive_irq() const override;
