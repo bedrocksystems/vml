@@ -14,6 +14,9 @@
 
 const Vbus::Bus::Device_entry*
 Vbus::Bus::lookup(mword addr, uint64 bytes) const {
+    if (__UNLIKELY__((addr + bytes < addr) || (bytes == 0)))
+        return nullptr;
+
     Range<mword> target(addr, bytes);
 
     return static_cast<Device_entry*>(_devices.lookup(&target));
@@ -59,8 +62,10 @@ Vbus::Bus::get_device_at(mword addr, uint64 size) const {
 
 bool
 Vbus::Bus::register_device(Device* d, mword addr, mword bytes) {
-    Range<mword> range(addr, bytes);
+    if (__UNLIKELY__((addr + bytes < addr) || (bytes == 0)))
+        return false;
 
+    Range<mword> range(addr, bytes);
     Device_entry* de = new (nothrow) Device_entry(d, range);
     if (de == nullptr)
         return false;
