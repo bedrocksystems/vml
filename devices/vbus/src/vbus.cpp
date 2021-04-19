@@ -81,13 +81,13 @@ Vbus::Bus::iter_devices(void (*f)(Vbus::Bus::Device_entry* de, void*), void* arg
 void
 Vbus::Bus::reset_device_cb(Vbus::Bus::Device_entry* entry, void* arg) {
     if (entry->device->type() != Device::IRQ_CONTROLLER)
-        entry->device->reset(reinterpret_cast<VcpuCtx*>(arg));
+        entry->device->reset(static_cast<VcpuCtx*>(arg));
 }
 
 void
 Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::Device_entry* entry, void* arg) {
     if (entry->device->type() == Device::IRQ_CONTROLLER)
-        entry->device->reset(reinterpret_cast<VcpuCtx*>(arg));
+        entry->device->reset(static_cast<VcpuCtx*>(arg));
 }
 
 void
