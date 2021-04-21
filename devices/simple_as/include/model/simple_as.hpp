@@ -29,12 +29,60 @@ enum class Page_permission : uint8 {
     NONE = 0,
     READ = (1 << 0),
     WRITE = (1 << 1),
-    EXEC = (1 << 2),
+    EXEC_USER = (1 << 2),
+    EXEC_SUPERVISOR = (1 << 3),
+    EXEC = EXEC_USER | EXEC_SUPERVISOR,
     READ_WRITE = READ | WRITE,
+    READ_EXEC_USER = READ | EXEC_USER,
+    READ_EXEC_SUPERVISOR = READ | EXEC_SUPERVISOR,
     READ_EXEC = READ | EXEC,
+    WRITE_EXEC_USER = WRITE | EXEC_USER,
+    WRITE_EXEC_SUPERVISOR = WRITE | EXEC_SUPERVISOR,
     WRITE_EXEC = WRITE | EXEC,
+    READ_WRITE_EXEC_USER = READ | WRITE | EXEC_USER,
+    READ_WRITE_EXEC_SUPERVISOR = READ | WRITE | EXEC_SUPERVISOR,
     READ_WRITE_EXEC = READ | WRITE | EXEC,
 };
+
+inline const char *
+page_permission_to_str(Page_permission p) {
+    switch (p) {
+    case Page_permission::NONE:
+        return "---";
+    case Page_permission::READ:
+        return "R--";
+    case Page_permission::WRITE:
+        return "-W-";
+    case Page_permission::EXEC_USER:
+        return "--XU";
+    case Page_permission::EXEC_SUPERVISOR:
+        return "--XS";
+    case Page_permission::EXEC:
+        return "--X";
+    case Page_permission::READ_WRITE:
+        return "RW-";
+    case Page_permission::READ_EXEC_USER:
+        return "R-XU";
+    case Page_permission::READ_EXEC_SUPERVISOR:
+        return "R-XS";
+    case Page_permission::READ_EXEC:
+        return "R-X";
+    case Page_permission::WRITE_EXEC_USER:
+        return "-WXU";
+    case Page_permission::WRITE_EXEC_SUPERVISOR:
+        return "-WXS";
+    case Page_permission::WRITE_EXEC:
+        return "-WX";
+    case Page_permission::READ_WRITE_EXEC_USER:
+        return "RWXU";
+    case Page_permission::READ_WRITE_EXEC_SUPERVISOR:
+        return "RWXS";
+    case Page_permission::READ_WRITE_EXEC:
+        return "RWX";
+    default:
+        return "UNKNOWN";
+    }
+}
 
 /*! \brief binary or operator on Page_permission
  *  \pre None
@@ -96,7 +144,7 @@ operator^=(Page_permission &a, Page_permission b) {
  */
 inline Page_permission
 operator~(Page_permission a) {
-    return static_cast<Page_permission>((~static_cast<uint8>(a)) & 0x7);
+    return static_cast<Page_permission>((~static_cast<uint8>(a)) & 0xf);
 }
 
 /*! \brief function to determine whether read is set in an instance of Page_permission
@@ -117,13 +165,34 @@ pp_is_write_set(Page_permission a) {
     return static_cast<bool>(a & Page_permission::WRITE);
 }
 
-/*! \brief function to determine whether exec is set in an instance of Page_permission
+/*! \brief function to determine whether exec (user or supervisor) is set in an instance
+           of Page_permission
  *  \pre None
- *  \post returns true if exec is set, otherwise false
+ *  \post returns true if exec user or supervisor is set, otherwise false
  */
 inline bool
 pp_is_exec_set(Page_permission a) {
     return static_cast<bool>(a & Page_permission::EXEC);
+}
+
+/*! \brief function to determine whether exec user is set in an instance
+           of Page_permission
+ *  \pre None
+ *  \post returns true if exec user is set, otherwise false
+ */
+inline bool
+pp_is_exec_user_set(Page_permission a) {
+    return static_cast<bool>(a & Page_permission::EXEC_USER);
+}
+
+/*! \brief function to determine whether exec supervisor is set in an instance
+           of Page_permission
+ *  \pre None
+ *  \post returns true if exec supervisor is set, otherwise false
+ */
+inline bool
+pp_is_exec_supervisor_set(Page_permission a) {
+    return static_cast<bool>(a & Page_permission::EXEC_SUPERVISOR);
 }
 
 /*! \brief Simple Wrapper for primitive types.
