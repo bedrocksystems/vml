@@ -12,6 +12,12 @@ BRS_ROOT ?= ../../zeta/
 DOXYGEN ?= doxygen
 CMDGOAL = $(if $(strip $(MAKECMDGOALS)),$(MAKECMDGOALS),all)
 export PLATFORM ?= posix
+export TARGET ?= x86_64
+
+SUBDIRS = devices/vbus devices/pl011 devices/gic arch/$(TARGET)
+SUBDIRS += devices/timer devices/virtio_console devices/virtio_net devices/msr
+SUBDIRS += devices/simple_as devices/firmware vcpu/vcpu_roundup vcpu/cpu_model
+SUBDIRS += devices/virtio_sock
 
 ifeq ($(CMDGOAL), doc)
 check_tool=$(if $(shell which $(1)),,$(error "$(1) not found - Consider installing this tool))
@@ -27,17 +33,11 @@ doc:
 else
 ifeq ($(PLATFORM), posix)
 
-export TARGET ?= x86_64
 export BLDDIR ?= $(CURDIR)/build-$(PLATFORM)-$(TARGET)/
-SUBDIRS = devices/vbus devices/pl011 devices/gic arch/$(TARGET)
-SUBDIRS += devices/timer devices/virtio_console devices/virtio_net devices/msr
-SUBDIRS += devices/simple_as devices/firmware vcpu/vcpu_roundup vcpu/cpu_model
-SUBDIRS += devices/virtio_sock
 
 EXAMPLES = examples/vbus_posix examples/virtio_posix
 
 $(CMDGOAL): $(EXAMPLES)
-.PHONY: $(CMDGOAL) $(EXAMPLES) $(SUBDIRS)
 
 $(EXAMPLES) $(SUBDIRS):
 		+$(MAKE) -C $@ BRS_ROOT=$(realpath .)/ VMM_ROOT=$(realpath .)/ $(CMDGOAL)
@@ -45,6 +45,11 @@ $(EXAMPLES) $(SUBDIRS):
 $(EXAMPLES): $(SUBDIRS)
 
 else
-$(error "PLATFORM: $(PLATFORM) is invalid. This makefile is meant to be used for POSIX compilation only for now")
+# Bedrock platform
+$(CMDGOAL): $(SUBDIRS)
+$(SUBDIRS):
+		+$(MAKE) -C $@ $(CMDGOAL)
 endif
 endif
+
+.PHONY: $(CMDGOAL) $(EXAMPLES) $(SUBDIRS)
