@@ -1,6 +1,4 @@
 variables:
-  PICO_PATH: '${CI_BUILDS_DIR}/bedrocksystems/pico/'
-  VML_PATH:  '${CI_BUILDS_DIR}/bedrocksystems/pico/lib/vml/'
   ENABLE_VMI: 0
 
 stages:
@@ -51,6 +49,7 @@ tidy-aarch64:
   stage: tidy
   variables:
     LLVM: '1'
+    VML_PATH: '${CI_BUILDS_DIR}/bedrocksystems/pico/lib/vml/'
   script:
     - make -C $VML_PATH tidy -k
   allow_failure: true # For now, we don't strictly enforce the coding style
