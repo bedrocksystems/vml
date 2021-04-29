@@ -558,6 +558,9 @@ private:
     Irq_target route_spi(Model::Gic_d::Irq &irq);
     bool redirect_spi(Irq &irq);
     Irq *highest_irq(Vcpu_id const cpu_id);
+    bool vcpu_can_receive_irq(const Local_Irq_controller *gic_r) const {
+        return !_ctlr.affinity_routing() || gic_r->can_receive_irq();
+    }
 
 public:
     Gic_d(Gic_version const version, uint16 num_vcpus)

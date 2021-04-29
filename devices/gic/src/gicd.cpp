@@ -546,8 +546,7 @@ Model::Gic_d::highest_irq(Vcpu_id const cpu_id) {
 
         Irq &irq = _irq_object(cpu, irq_id);
 
-        if ((irq_id >= MAX_PPI + MAX_SGI) && _ctlr.affinity_routing()
-            && !gic_r->can_receive_irq()) {
+        if ((irq_id >= MAX_PPI + MAX_SGI) && !vcpu_can_receive_irq(gic_r)) {
             /*
              * If this interface is not capable of receiving the IRQ anymore,
              * in the GICv3 world (affinity_routing enabled), we have to release
@@ -719,15 +718,22 @@ Model::Gic_d::notify_target(Irq &irq, const Irq_target &target) {
     if (target.is_target_set()) {
         for (uint16 i = 0; i < min<uint16>(_num_vcpus, Model::GICV2_MAX_CPUS); i++) {
             Banked *target_cpu = &_local[i];
+            const Local_Irq_controller *gic_r = target_cpu->_notify->local_irq_ctlr();
 
             target_cpu->_pending_irqs.atomic_set(irq.id());
-            target_cpu->_notify->interrupt_pending();
+
+            // Avoid recalling a VCPU that has silenced IRQs
+            if (__LIKELY__(vcpu_can_receive_irq(gic_r)))
+                target_cpu->_notify->interrupt_pending();
         }
     } else {
         Banked *target_cpu = &_local[target.target()];
+        const Local_Irq_controller *gic_r = target_cpu->_notify->local_irq_ctlr();
 
         target_cpu->_pending_irqs.atomic_set(irq.id());
-        target_cpu->_notify->interrupt_pending();
+
+        if (__LIKELY__(vcpu_can_receive_irq(gic_r)))
+            target_cpu->_notify->interrupt_pending();
     }
 
     return true;
