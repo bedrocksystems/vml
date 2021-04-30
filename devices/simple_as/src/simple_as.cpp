@@ -47,7 +47,7 @@ Model::Simple_as::flush_guest_as() const {
 }
 
 void
-Model::Simple_as::flush_callback(Vbus::Bus::Device_entry* de, void*) {
+Model::Simple_as::flush_callback(Vbus::Bus::DeviceEntry* de, void*) {
     Vbus::Device* dev = de->device;
 
     if (dev->type() == Vbus::Device::GUEST_PHYSICAL_STATIC_MEMORY
