@@ -36,23 +36,23 @@ private:
     enum { RX = 0, TX = 1, EVENT = 2 };
     Virtio::Callback *_callback{nullptr};
     Model::Virtio_sock_callback *_virtio_sock_callback{nullptr};
-    Virtio_sock_config config;
+    Virtio_sock_config _config;
     Semaphore *_sem;
     bool _backend_connected{false};
 
-    bool mmio_write(Vcpu_id const, uint64 const, uint8 const, uint64 const);
-    bool mmio_read(Vcpu_id const, uint64 const, uint8 const, uint64 &) const;
+    bool mmio_write(Vcpu_id, uint64, uint8, uint64);
+    bool mmio_read(Vcpu_id, uint64, uint8, uint64 &) const;
 
-    void _notify(uint32) override;
-    void _driver_ok() override;
+    void notify(uint32) override;
+    void driver_ok() override;
 
 public:
     Virtio_sock(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
                 uint16 const queue_entries, uint64 cid, Semaphore *sem)
-        : Vbus::Device("virtio socket"), Virtio::Device(19, bus, irq_ctlr, &config, sizeof(config),
-                                                        irq, queue_entries),
+        : Vbus::Device("virtio socket"), Virtio::Device(19, bus, irq_ctlr, &_config,
+                                                        sizeof(_config), irq, queue_entries),
           _sem(sem) {
-        config.guest_cid = cid;
+        _config.guest_cid = cid;
     }
 
     void register_callback(Virtio::Callback &callback,
@@ -72,7 +72,7 @@ public:
     virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
 
-    Virtio::Queue_data const &queue_data_rx() const { return _data[RX]; }
-    Virtio::Queue_data const &queue_data_tx() const { return _data[TX]; }
-    Virtio::Queue_data const &queue_data_event() const { return _data[EVENT]; }
+    Virtio::QueueData const &queue_data_rx() const { return _data[RX]; }
+    Virtio::QueueData const &queue_data_tx() const { return _data[TX]; }
+    Virtio::QueueData const &queue_data_event() const { return _data[EVENT]; }
 };

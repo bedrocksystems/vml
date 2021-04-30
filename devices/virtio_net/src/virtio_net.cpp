@@ -10,14 +10,14 @@
 #include <platform/types.hpp>
 
 void
-Model::Virtio_net::_notify(uint32 const) {
+Model::Virtio_net::notify(uint32 const) {
     if (_backend_connected) {
         _sem->release();
     }
 }
 
 void
-Model::Virtio_net::_driver_ok() {
+Model::Virtio_net::driver_ok() {
     if (_callback)
         _callback->driver_ok();
 }
@@ -25,7 +25,7 @@ Model::Virtio_net::_driver_ok() {
 void
 Model::Virtio_net::signal() {
     if (_backend_connected)
-        _assert_irq();
+        assert_irq();
 }
 
 void
@@ -33,7 +33,7 @@ Model::Virtio_net::reset(const VcpuCtx *ctx) {
     if (_virtio_net_callback)
         _virtio_net_callback->device_reset(ctx);
 
-    _reset();
+    reset_virtio();
 }
 
 Vbus::Err
@@ -53,11 +53,11 @@ Model::Virtio_net::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vb
 bool
 Model::Virtio_net::mmio_write(Vcpu_id const, uint64 const offset, uint8 const access_size,
                               uint64 const value) {
-    return _write(offset, access_size, value);
+    return write(offset, access_size, value);
 }
 
 bool
 Model::Virtio_net::mmio_read(Vcpu_id const, uint64 const offset, uint8 const access_size,
                              uint64 &value) const {
-    return _read(offset, access_size, value);
+    return read(offset, access_size, value);
 }
