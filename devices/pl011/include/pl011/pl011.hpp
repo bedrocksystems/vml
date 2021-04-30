@@ -157,8 +157,8 @@ private:
     uint8 _rx_fifo_widx{0};            /*!< Write index in the FIFO */
     uint16 _rx_fifo[RX_FIFO_MAX_SIZE]; /*!< Receive FIFO */
 
-    bool mmio_write(uint64 const offset, uint8 const access_size, uint64 const value);
-    bool mmio_read(uint64 const offset, uint8 const access_size, uint64 &value);
+    bool mmio_write(uint64 offset, uint8 access_size, uint64 value);
+    bool mmio_read(uint64 offset, uint8 access_size, uint64 &value);
     bool should_assert_rx_irq() const;
 
     bool is_fifo_enabled() const { return FEN & _lcrh; }
@@ -206,7 +206,7 @@ public:
      *  \return status of the access
      */
     virtual Vbus::Err access(Vbus::Access access, const VcpuCtx *vctx, Vbus::Space sp, mword off,
-                             uint8 bytes, uint64 &res) override;
+                             uint8 size, uint64 &value) override;
 
     /*! \brief Reset the PL011 to its initial state
      */

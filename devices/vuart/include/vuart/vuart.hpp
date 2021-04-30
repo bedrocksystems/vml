@@ -19,7 +19,7 @@ namespace Vuart {
 class Vuart::Vuart : public Vbus::Device {
 public:
     Vuart() : Vbus::Device("vUART") {}
-    Vuart(const char *name) : Vbus::Device(name) {}
+    explicit Vuart(const char *name) : Vbus::Device(name) {}
 
     /*! \brief Send characters to the guest
      *  \param buff Buffer containing the characters
