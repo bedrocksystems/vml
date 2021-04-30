@@ -22,7 +22,7 @@ static constexpr uint32 MINOR_VERSION = 0x1u;
 static constexpr uint32 SMCCC_MAJOR_VERSION = 0x1u << 16;
 static constexpr uint32 SMCCC_MINOR_VERSION = 0x1u;
 
-enum Function_id : uint32 {
+enum FunctionId : uint32 {
     SMCCC_VERSION = 0x80000000u,
     SMCCC_ARCH_FEATURES = 0x80000001u,
     VERSION = 0x84000000u,
@@ -57,10 +57,34 @@ decode_cpu_id(uint64 arg) {
     return static_cast<uint32>(arg | ((arg >> 8) & 0xffull << 24));
 }
 
+static uint64
+start_cpu(RegAccessor &arch, Vbus::Bus &vbus) {
+    enum Model::Cpu::Start_err err;
+    Msr::Info::Spsr spsr(arch.el2_spsr());
+    enum Model::Cpu::Mode mode;
+    uint64 boot_addr = arch.gpr(2);
+    uint64 boot_args[Model::Cpu::MAX_BOOT_ARGS] = {arch.gpr(3), 0, 0, 0};
+
+    if (spsr.is_aa32()) {
+        if (boot_addr & 0x1ull) {
+            mode = Model::Cpu::T32;
+            boot_addr = boot_addr & ~0x1ull;
+        } else {
+            mode = Model::Cpu::AA32;
+        }
+    } else {
+        mode = Model::Cpu::AA64;
+    }
+
+    Vcpu_id vid = cpu_affinity_to_id(CpuAffinity(decode_cpu_id(arch.gpr(1))));
+    err = Model::Cpu::start_cpu(vid, vbus, boot_addr, boot_args, arch.tmr_cntvoff(), mode);
+    return static_cast<uint64>(err);
+}
+
 bool
 Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::Bus &vbus,
                                  uint64 const function_id, uint64 &res) {
-    switch (static_cast<Function_id>(function_id)) {
+    switch (static_cast<FunctionId>(function_id)) {
     case SMCCC_VERSION:
         res = static_cast<uint64>(SMCCC_MAJOR_VERSION | SMCCC_MINOR_VERSION);
         return true;
@@ -88,26 +112,7 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         return true;
     case CPU_ON_64:
     case CPU_ON_32: {
-        enum Model::Cpu::Start_err err;
-        Msr::Info::Spsr spsr(arch.el2_spsr());
-        enum Model::Cpu::Mode mode;
-        uint64 boot_addr = arch.gpr(2);
-        uint64 boot_args[Model::Cpu::MAX_BOOT_ARGS] = {arch.gpr(3), 0, 0, 0};
-
-        if (spsr.is_aa32()) {
-            if (boot_addr & 0x1ull) {
-                mode = Model::Cpu::T32;
-                boot_addr = boot_addr & ~0x1ull;
-            } else {
-                mode = Model::Cpu::AA32;
-            }
-        } else {
-            mode = Model::Cpu::AA64;
-        }
-
-        Vcpu_id vid = cpu_affinity_to_id(CpuAffinity(decode_cpu_id(arch.gpr(1))));
-        err = Model::Cpu::start_cpu(vid, vbus, boot_addr, boot_args, arch.tmr_cntvoff(), mode);
-        res = static_cast<uint64>(err);
+        res = start_cpu(arch, vbus);
         return true;
     }
     case CPU_SUSPEND_32:
