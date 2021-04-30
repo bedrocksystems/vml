@@ -117,7 +117,7 @@ private:
          * The only exception is SGIs that are banked by sender.
          */
         bool is_injected(uint8 sender_id = 0) const {
-            return (_info != NO_INJECTION) && (_info & (INJECTED_BIT << sender_id));
+            return (sender_id != NO_INJECTION) && (_info & (INJECTED_BIT << sender_id));
         }
         void set_injected(uint8 sender_id = 0) { _info |= (INJECTED_BIT << sender_id); }
         void unset_injected(uint8 sender_id = 0) { _info &= ~(INJECTED_BIT << sender_id); }
