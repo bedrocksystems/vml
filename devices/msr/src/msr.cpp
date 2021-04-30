@@ -91,16 +91,15 @@ Msr::Bus::setup_aarch32_debug(uint64 id_aa64dfr0_el1, uint32 id_dfr0_el1) {
 
     Msr::Info::Id_aa64dfr0 aa64dfr0(id_aa64dfr0_el1);
 
-    uint32 dbgidr = static_cast<uint32>(aa64dfr0.wrp() << 28u)
-                    | static_cast<uint32>(aa64dfr0.brp() << 24u)
-                    | static_cast<uint32>(aa64dfr0.ctx_cmp() << 20u)
-                    | static_cast<uint32>(aa64dfr0.debug_ver() << 16u) | 1u << 15u;
-
     /*
      * XXX: same reason as above. We don't implement pmu and debug features for now.
      * When we do, the next statement can be removed and the rest should work.
+     * uint32 dbgidr = static_cast<uint32>(aa64dfr0.wrp() << 28u)
+     *                 | static_cast<uint32>(aa64dfr0.brp() << 24u)
+     *                 | static_cast<uint32>(aa64dfr0.ctx_cmp() << 20u)
+     *                 | static_cast<uint32>(aa64dfr0.debug_ver() << 16u) | 1u << 15u;
      */
-    dbgidr = 0;
+    uint32 dbgidr = 0;
     reg = new (nothrow) Msr::Register("DBGDIDR", DBGDIDR, false, dbgidr);
     ASSERT(reg);
     if (!register_system_reg(reg))
