@@ -18,8 +18,8 @@
 namespace Virtio {
     class Console;
     class Device;
-    class Queue_state;
-    struct Queue_data;
+    class QueueState;
+    struct QueueData;
     class Callback;
     class Virtio_console;
 };
@@ -29,7 +29,7 @@ public:
     virtual void driver_ok() = 0;
 };
 
-struct Virtio::Queue_data {
+struct Virtio::QueueData {
     uint32 descr_low{0};
     uint32 descr_high{0};
     uint32 driver_low{0};
@@ -44,15 +44,15 @@ struct Virtio::Queue_data {
     uint64 device() const { return (uint64(device_high) << 32) | device_low; }
 };
 
-class Virtio::Queue_state {
+class Virtio::QueueState {
 private:
-    Queue_data *_data{nullptr};
+    QueueData *_data{nullptr};
     Virtio::Queue _virtqueue;
     Virtio::DeviceQueue _device_queue{nullptr, 0};
     bool _constructed{false};
 
 public:
-    void construct(Queue_data &data, Vbus::Bus const &bus) {
+    void construct(QueueData &data, Vbus::Bus const &bus) {
         _data = &data;
 
         /* don't accept queues with zero elements */
@@ -120,8 +120,8 @@ protected:
     uint32 _drv_feature_lower{0};
     uint32 _config_generation{0};
 
-    Queue_data _data[QUEUES];
-    Queue_state _queue[QUEUES];
+    QueueData _data[QUEUES];
+    QueueState _queue[QUEUES];
 
     enum {
         RO_MAGIC = 0x0,
@@ -183,7 +183,7 @@ protected:
         RW_CONFIG_END = 0x163,
     };
 
-    enum Device_status {
+    enum DeviceStatus {
         DEVICE_RESET = 0,
         ACKNOWLEDGE = 1,
         DRIVER = 2,
@@ -193,12 +193,12 @@ protected:
         DEVICE_NEEDS_RESET = 64,
     };
 
-    Queue_data const &_queue_data() const { return _data[_sel_queue]; }
-    Queue_data &_queue_data() { return _data[_sel_queue]; }
+    QueueData const &queue_data() const { return _data[_sel_queue]; }
+    QueueData &queue_data() { return _data[_sel_queue]; }
 
-    void _queue_state(bool const construct) {
+    void queue_state(bool const construct) {
         if (construct && !_queue[_sel_queue].constructed()) {
-            _queue[_sel_queue].construct(_queue_data(), *_vbus);
+            _queue[_sel_queue].construct(queue_data(), *_vbus);
         }
 
         if (!construct && _queue[_sel_queue].constructed()) {
@@ -206,7 +206,7 @@ protected:
         }
     }
 
-    void _reset() {
+    void reset_virtio() {
         for (int i = 0; i < QUEUES; i++) {
             _queue[i].destruct();
             _data[i] = {};
@@ -220,140 +220,141 @@ protected:
         _drv_feature_lower = 0;
     }
 
-    void _assert_irq() {
+    void assert_irq() {
         _irq_status = 0x1;
         _irq_ctlr->assert_spi(_irq);
     }
 
-    void _deassert_irq() { _irq_status = 0; }
+    void deassert_irq() {
+        _irq_status = 0;
+        _irq_ctlr->deassert_line_spi(_irq);
+    }
 
-    void _update_config_gen() { __atomic_fetch_add(&_config_generation, 1, __ATOMIC_SEQ_CST); }
+    void update_config_gen() { __atomic_fetch_add(&_config_generation, 1, __ATOMIC_SEQ_CST); }
 
-    bool _read(uint64 const offset, uint8 const bytes, uint64 &value) const {
+    bool read(uint64 const offset, uint8 const bytes, uint64 &value) const {
         if (bytes > 4)
             return false;
 
         switch (offset) {
         case RO_MAGIC ... RO_MAGIC_END:
-            return _read_register(offset, RO_MAGIC, RO_MAGIC_END, bytes, 0x74726976ULL, value);
+            return read_register(offset, RO_MAGIC, RO_MAGIC_END, bytes, 0x74726976ULL, value);
         case RO_VERSION ... RO_VERSION_END:
-            return _read_register(offset, RO_VERSION, RO_VERSION_END, bytes, 2, value);
+            return read_register(offset, RO_VERSION, RO_VERSION_END, bytes, 2, value);
         case RO_DEVICE_ID ... RO_DEVICE_ID_END:
-            return _read_register(offset, RO_DEVICE_ID, RO_DEVICE_ID_END, bytes, _device_id, value);
+            return read_register(offset, RO_DEVICE_ID, RO_DEVICE_ID_END, bytes, _device_id, value);
         case RO_VENDOR_ID ... RO_VENDOR_ID_END:
-            return _read_register(offset, RO_VENDOR_ID, RO_VENDOR_ID_END, bytes, _vendor_id, value);
+            return read_register(offset, RO_VENDOR_ID, RO_VENDOR_ID_END, bytes, _vendor_id, value);
         case RO_DEVICE_FEATURE ... RO_DEVICE_FEATURE_END:
             if (_drv_device_sel == 0)
-                return _read_register(offset, RO_DEVICE_FEATURE, RO_DEVICE_FEATURE_END, bytes,
-                                      _device_feature_lower, value);
+                return read_register(offset, RO_DEVICE_FEATURE, RO_DEVICE_FEATURE_END, bytes,
+                                     _device_feature_lower, value);
             else
-                return _read_register(offset, RO_DEVICE_FEATURE, RO_DEVICE_FEATURE_END, bytes,
-                                      1 /*VIRTIO_F_VERSION_1*/, value);
+                return read_register(offset, RO_DEVICE_FEATURE, RO_DEVICE_FEATURE_END, bytes,
+                                     1 /*VIRTIO_F_VERSION_1*/, value);
         case RW_DEVICE_FEATURE_SEL ... RW_DEVICE_FEATURE_SEL_END:
-            return _read_register(offset, RW_DEVICE_FEATURE_SEL, RW_DEVICE_FEATURE_SEL_END, bytes,
-                                  _drv_device_sel, value);
+            return read_register(offset, RW_DEVICE_FEATURE_SEL, RW_DEVICE_FEATURE_SEL_END, bytes,
+                                 _drv_device_sel, value);
         case RW_DRIVER_FEATURE_SEL ... RW_DRIVER_FEATURE_SEL_END:
-            return _read_register(offset, RW_DRIVER_FEATURE_SEL, RW_DRIVER_FEATURE_SEL_END, bytes,
-                                  _drv_feature_sel, value);
+            return read_register(offset, RW_DRIVER_FEATURE_SEL, RW_DRIVER_FEATURE_SEL_END, bytes,
+                                 _drv_feature_sel, value);
         case RO_QUEUE_NUM_MAX ... RO_QUEUE_NUM_MAX_END:
-            return _read_register(offset, RO_QUEUE_NUM_MAX, RO_QUEUE_NUM_MAX_END, bytes,
-                                  _queue_num_max, value);
+            return read_register(offset, RO_QUEUE_NUM_MAX, RO_QUEUE_NUM_MAX_END, bytes,
+                                 _queue_num_max, value);
         case RW_QUEUE_READY ... RW_QUEUE_READY_END:
-            return _read_register(offset, RW_QUEUE_READY, RW_QUEUE_READY_END, bytes,
-                                  _queue_data().ready, value);
+            return read_register(offset, RW_QUEUE_READY, RW_QUEUE_READY_END, bytes,
+                                 queue_data().ready, value);
         case RO_IRQ_STATUS ... RO_IRQ_STATUS_END:
-            return _read_register(offset, RO_IRQ_STATUS, RO_IRQ_STATUS_END, bytes, _irq_status,
-                                  value);
+            return read_register(offset, RO_IRQ_STATUS, RO_IRQ_STATUS_END, bytes, _irq_status,
+                                 value);
         case RW_STATUS ... RW_STATUS_END:
-            return _read_register(offset, RW_STATUS, RW_STATUS_END, bytes, _status, value);
+            return read_register(offset, RW_STATUS, RW_STATUS_END, bytes, _status, value);
 
         case RO_CONFIG_GENERATION ... RO_CONFIG_GENERATION_END:
-            return _read_register(offset, RO_CONFIG_GENERATION, RO_CONFIG_GENERATION_END, bytes,
-                                  __atomic_load_n(&_config_generation, __ATOMIC_SEQ_CST), value);
+            return read_register(offset, RO_CONFIG_GENERATION, RO_CONFIG_GENERATION_END, bytes,
+                                 __atomic_load_n(&_config_generation, __ATOMIC_SEQ_CST), value);
 
         // Config space access can be byte aligned.
         case RW_CONFIG ... RW_CONFIG_END:
-            return _read_register(offset, RW_CONFIG, (RW_CONFIG + _config_size - 1), bytes,
-                                  _config_space[(offset & ~(8ULL - 1)) - RW_CONFIG], value);
+            return read_register(offset, RW_CONFIG, (RW_CONFIG + _config_size - 1), bytes,
+                                 _config_space[(offset & ~(8ULL - 1)) - RW_CONFIG], value);
         }
         return false;
     }
 
-    bool _write(uint64 const offset, uint8 const bytes, uint64 const value) {
+    bool write(uint64 const offset, uint8 const bytes, uint64 const value) {
         if (bytes > 4)
             return false;
 
         switch (offset) {
         case RW_DEVICE_FEATURE_SEL ... RW_DEVICE_FEATURE_SEL_END:
-            return _write_register(offset, RW_DEVICE_FEATURE_SEL, RW_DEVICE_FEATURE_SEL_END, bytes,
-                                   value, _drv_device_sel);
+            return write_register(offset, RW_DEVICE_FEATURE_SEL, RW_DEVICE_FEATURE_SEL_END, bytes,
+                                  value, _drv_device_sel);
         case WO_DRIVER_FEATURE ... WO_DRIVER_FEATURE_END:
             if (_drv_feature_sel == 0)
-                return _write_register(offset, WO_DRIVER_FEATURE, WO_DRIVER_FEATURE_END, bytes,
-                                       value, _drv_feature_lower);
+                return write_register(offset, WO_DRIVER_FEATURE, WO_DRIVER_FEATURE_END, bytes,
+                                      value, _drv_feature_lower);
             else
-                return _write_register(offset, WO_DRIVER_FEATURE, WO_DRIVER_FEATURE_END, bytes,
-                                       value, _drv_feature_upper);
+                return write_register(offset, WO_DRIVER_FEATURE, WO_DRIVER_FEATURE_END, bytes,
+                                      value, _drv_feature_upper);
         case RW_DRIVER_FEATURE_SEL ... RW_DRIVER_FEATURE_SEL_END:
-            return _write_register(offset, RW_DRIVER_FEATURE_SEL, RW_DRIVER_FEATURE_SEL_END, bytes,
-                                   value, _drv_feature_sel);
+            return write_register(offset, RW_DRIVER_FEATURE_SEL, RW_DRIVER_FEATURE_SEL_END, bytes,
+                                  value, _drv_feature_sel);
         case WO_QUEUE_SEL ... WO_QUEUE_SEL_END:
             if (value >= QUEUES)
                 return true; /* ignore out of bound */
-            return _write_register(offset, WO_QUEUE_SEL, WO_QUEUE_SEL_END, bytes, value,
-                                   _sel_queue);
+            return write_register(offset, WO_QUEUE_SEL, WO_QUEUE_SEL_END, bytes, value, _sel_queue);
         case WO_QUEUE_NUM ... WO_QUEUE_NUM_END:
             if (value > _queue_num_max)
                 return true; /* ignore out of bound */
-            return _write_register(offset, WO_QUEUE_NUM, WO_QUEUE_NUM_END, bytes, value,
-                                   _queue_data().num);
+            return write_register(offset, WO_QUEUE_NUM, WO_QUEUE_NUM_END, bytes, value,
+                                  queue_data().num);
         case RW_QUEUE_READY ... RW_QUEUE_READY_END: {
-            if (!_write_register(offset, RW_QUEUE_READY, RW_QUEUE_READY_END, bytes, value,
-                                 _queue_data().ready))
+            if (!write_register(offset, RW_QUEUE_READY, RW_QUEUE_READY_END, bytes, value,
+                                queue_data().ready))
                 return false;
-            bool const construct = (value == 1) ? true : false;
-            _queue_state(construct);
+            queue_state(value == 1);
             return true;
         }
         case WO_IRQ_ACK ... WO_IRQ_ACK_END:
             return true;
         case RW_STATUS ... RW_STATUS_END:
             if (value == DEVICE_RESET)
-                _reset();
+                reset_virtio();
             else if (value & DRIVER_OK)
-                _driver_ok();
-            return _write_register(offset, RW_STATUS, RW_STATUS_END, bytes, value, _status);
+                driver_ok();
+            return write_register(offset, RW_STATUS, RW_STATUS_END, bytes, value, _status);
         case WO_QUEUE_NOTIFY:
-            _notify(uint32(value));
+            notify(uint32(value));
             return true;
         case WO_QUEUE_DESCR_LOW ... WO_QUEUE_DESCR_LOW_END:
-            return _write_register(offset, WO_QUEUE_DESCR_LOW, WO_QUEUE_DESCR_LOW_END, bytes, value,
-                                   _queue_data().descr_low);
+            return write_register(offset, WO_QUEUE_DESCR_LOW, WO_QUEUE_DESCR_LOW_END, bytes, value,
+                                  queue_data().descr_low);
         case WO_QUEUE_DESCR_HIGH ... WO_QUEUE_DESCR_HIGH_END:
-            return _write_register(offset, WO_QUEUE_DESCR_HIGH, WO_QUEUE_DESCR_HIGH_END, bytes,
-                                   value, _queue_data().descr_high);
+            return write_register(offset, WO_QUEUE_DESCR_HIGH, WO_QUEUE_DESCR_HIGH_END, bytes,
+                                  value, queue_data().descr_high);
         case WO_QUEUE_DRIVER_LOW ... WO_QUEUE_DRIVER_LOW_END:
-            return _write_register(offset, WO_QUEUE_DRIVER_LOW, WO_QUEUE_DRIVER_LOW_END, bytes,
-                                   value, _queue_data().driver_low);
+            return write_register(offset, WO_QUEUE_DRIVER_LOW, WO_QUEUE_DRIVER_LOW_END, bytes,
+                                  value, queue_data().driver_low);
         case WO_QUEUE_DRIVER_HIGH ... WO_QUEUE_DRIVER_HIGH_END:
-            return _write_register(offset, WO_QUEUE_DRIVER_HIGH, WO_QUEUE_DRIVER_HIGH_END, bytes,
-                                   value, _queue_data().driver_high);
+            return write_register(offset, WO_QUEUE_DRIVER_HIGH, WO_QUEUE_DRIVER_HIGH_END, bytes,
+                                  value, queue_data().driver_high);
         case WO_QUEUE_DEVICE_LOW ... WO_QUEUE_DEVICE_LOW_END:
-            return _write_register(offset, WO_QUEUE_DEVICE_LOW, WO_QUEUE_DEVICE_LOW_END, bytes,
-                                   value, _queue_data().device_low);
+            return write_register(offset, WO_QUEUE_DEVICE_LOW, WO_QUEUE_DEVICE_LOW_END, bytes,
+                                  value, queue_data().device_low);
         case WO_QUEUE_DEVICE_HIGH ... WO_QUEUE_DEVICE_HIGH_END:
-            return _write_register(offset, WO_QUEUE_DEVICE_HIGH, WO_QUEUE_DEVICE_HIGH_END, bytes,
-                                   value, _queue_data().device_high);
+            return write_register(offset, WO_QUEUE_DEVICE_HIGH, WO_QUEUE_DEVICE_HIGH_END, bytes,
+                                  value, queue_data().device_high);
         // Config space access can be byte aligned.
         case RW_CONFIG ... RW_CONFIG_END:
-            return _write_register(offset, RW_CONFIG, (RW_CONFIG + _config_size - 1), bytes, value,
-                                   _config_space[(offset & ~(8ULL - 1)) - RW_CONFIG]);
+            return write_register(offset, RW_CONFIG, (RW_CONFIG + _config_size - 1), bytes, value,
+                                  _config_space[(offset & ~(8ULL - 1)) - RW_CONFIG]);
         }
         return false;
     }
 
-    bool _read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
-                        uint8 const bytes, uint64 const value, uint64 &result) const {
+    bool read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
+                       uint8 const bytes, uint64 const value, uint64 &result) const {
         if (!bytes || (bytes > 8) || (offset + bytes > base_max + 1)) {
             WARN("Register read failure: off " FMTx64 " - base_reg 0x%u - base_max 0x%u - bytes "
 
@@ -369,26 +370,26 @@ protected:
     }
 
     template<typename T>
-    bool _write_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
-                         uint8 const bytes, uint64 const value, T &result) {
-        unsigned constexpr tsize = sizeof(T);
-        if (!bytes || (bytes > tsize) || (offset + bytes > base_max + 1)) {
+    bool write_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
+                        uint8 const bytes, uint64 const value, T &result) {
+        unsigned constexpr TSIZE = sizeof(T);
+        if (!bytes || (bytes > TSIZE) || (offset + bytes > base_max + 1)) {
             WARN("Register write failure: off " FMTx64 " - base_reg 0x%u - base_max 0x%u - bytes "
                  "0x%u - tsize 0x%u",
-                 offset, base_reg, base_max, bytes, tsize);
+                 offset, base_reg, base_max, bytes, TSIZE);
             return false;
         }
 
         uint64 const base = offset - base_reg;
-        uint64 const mask = (bytes >= tsize) ? (T(0) - 1) : ((T(1) << (bytes * 8)) - 1);
+        uint64 const mask = (bytes >= TSIZE) ? (T(0) - 1) : ((T(1) << (bytes * 8)) - 1);
 
-        result &= (bytes >= tsize) ? T(0) : ~(T(mask) << (base * 8));
+        result &= (bytes >= TSIZE) ? T(0) : ~(T(mask) << (base * 8));
         result |= T(value & mask) << (base * 8);
         return true;
     }
 
-    virtual void _notify(uint32) = 0;
-    virtual void _driver_ok() = 0;
+    virtual void notify(uint32) = 0;
+    virtual void driver_ok() = 0;
 
 public:
     Device(uint8 const device_id, const Vbus::Bus &bus, Model::Irq_controller &irq_ctlr,

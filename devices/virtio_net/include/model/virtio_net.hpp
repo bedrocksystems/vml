@@ -67,25 +67,26 @@ private:
     enum { RX = 0, TX = 1 };
     Virtio::Callback *_callback{nullptr};
     Model::Virtio_net_callback *_virtio_net_callback{nullptr};
-    Virtio_net_config config __attribute__((aligned(8)));
+    Virtio_net_config _config __attribute__((aligned(8)));
     Semaphore *_sem;
     bool _backend_connected{false};
 
-    bool mmio_write(Vcpu_id const, uint64 const, uint8 const, uint64 const);
-    bool mmio_read(Vcpu_id const, uint64 const, uint8 const, uint64 &) const;
+    bool mmio_write(Vcpu_id, uint64, uint8, uint64);
+    bool mmio_read(Vcpu_id, uint64, uint8, uint64 &) const;
 
-    void _notify(uint32) override;
-    void _driver_ok() override;
+    void notify(uint32) override;
+    void driver_ok() override;
 
 public:
-    Virtio_net(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 const irq,
+    Virtio_net(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 irq,
                uint16 const queue_entries, uint32 const device_feature, uint64 mac, uint16 mtu,
                Semaphore *sem)
-        : Vbus::Device("virtio network"), Virtio::Device(1, vbus, irq_ctlr, &config, sizeof(config),
-                                                         irq, queue_entries, device_feature),
+        : Vbus::Device("virtio network"), Virtio::Device(1, vbus, irq_ctlr, &_config,
+                                                         sizeof(_config), irq, queue_entries,
+                                                         device_feature),
           _sem(sem) {
-        config.mtu = mtu;
-        memcpy(&config.mac, &mac, 6);
+        _config.mtu = mtu;
+        memcpy(&_config.mac, &mac, 6);
     }
 
     void register_callback(Virtio::Callback &callback,
@@ -105,6 +106,6 @@ public:
     virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
 
-    Virtio::Queue_data const &queue_data_rx() const { return _data[RX]; }
-    Virtio::Queue_data const &queue_data_tx() const { return _data[TX]; }
+    Virtio::QueueData const &queue_data_rx() const { return _data[RX]; }
+    Virtio::QueueData const &queue_data_tx() const { return _data[TX]; }
 };

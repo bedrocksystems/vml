@@ -30,24 +30,24 @@ struct Model::Virtio_console_config {
 class Model::VirtioMMIO_console : public Virtio::Virtio_console, private Virtio::Device {
 private:
     enum { RX = 0, TX = 1 };
-    Model::Virtio_console_config config __attribute__((aligned(8)));
+    Model::Virtio_console_config _config __attribute__((aligned(8)));
 
     Semaphore *_sem;
     Virtio::Descriptor *_tx_desc{nullptr};
     bool _driver_initialized{false};
     Platform::Signal _sig_notify_empty_space;
 
-    bool mmio_write(Vcpu_id const, uint64 const, uint8 const, uint64 const);
-    bool mmio_read(Vcpu_id const, uint64 const, uint8 const, uint64 &) const;
+    bool mmio_write(Vcpu_id, uint64, uint8, uint64);
+    bool mmio_read(Vcpu_id, uint64, uint8, uint64 &) const;
 
-    void _notify(uint32) override;
-    void _driver_ok() override;
+    void notify(uint32) override;
+    void driver_ok() override;
 
 public:
     VirtioMMIO_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
                        uint16 const queue_entries, Semaphore *sem)
-        : Virtio::Device(3, bus, irq_ctlr, &config, sizeof(config), irq, queue_entries), _sem(sem) {
-    }
+        : Virtio::Device(3, bus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries),
+          _sem(sem) {}
 
     bool init(const Platform_ctx *ctx) { return _sig_notify_empty_space.init(ctx); }
 
@@ -59,12 +59,12 @@ public:
 
     virtual void reset(const VcpuCtx *) override {
         _sig_notify_empty_space.sig();
-        _reset();
+        reset_virtio();
     }
 
     virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
 
-    Virtio::Queue_data const &queue_data_rx() const { return _data[RX]; }
-    Virtio::Queue_data const &queue_data_tx() const { return _data[TX]; }
+    Virtio::QueueData const &queue_data_rx() const { return _data[RX]; }
+    Virtio::QueueData const &queue_data_tx() const { return _data[TX]; }
 };
