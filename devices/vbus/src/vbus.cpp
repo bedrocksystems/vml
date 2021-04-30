@@ -12,20 +12,20 @@
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
-const Vbus::Bus::Device_entry*
+const Vbus::Bus::DeviceEntry*
 Vbus::Bus::lookup(mword addr, uint64 bytes) const {
     if (__UNLIKELY__((addr + bytes < addr) || (bytes == 0)))
         return nullptr;
 
     Range<mword> target(addr, bytes);
 
-    return static_cast<Device_entry*>(_devices.lookup(&target));
+    return static_cast<DeviceEntry*>(_devices.lookup(&target));
 }
 
 Vbus::Err
 Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 bytes,
                   uint64& val) {
-    const Device_entry* entry = lookup(addr, bytes);
+    const DeviceEntry* entry = lookup(addr, bytes);
 
     if (entry == nullptr)
         return NO_DEVICE;
@@ -53,7 +53,7 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
 
 Vbus::Device*
 Vbus::Bus::get_device_at(mword addr, uint64 size) const {
-    const Device_entry* entry = lookup(addr, size);
+    const DeviceEntry* entry = lookup(addr, size);
 
     if (entry == nullptr)
         return nullptr;
@@ -66,7 +66,7 @@ Vbus::Bus::register_device(Device* d, mword addr, mword bytes) {
         return false;
 
     Range<mword> range(addr, bytes);
-    Device_entry* de = new (nothrow) Device_entry(d, range);
+    DeviceEntry* de = new (nothrow) DeviceEntry(d, range);
     if (de == nullptr)
         return false;
 
@@ -74,18 +74,18 @@ Vbus::Bus::register_device(Device* d, mword addr, mword bytes) {
 }
 
 void
-Vbus::Bus::iter_devices(void (*f)(Vbus::Bus::Device_entry* de, void*), void* arg) {
+Vbus::Bus::iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, void*), void* arg) {
     _devices.iter(reinterpret_cast<void (*)(RangeNode<mword>*, void*)>(f), arg);
 }
 
 void
-Vbus::Bus::reset_device_cb(Vbus::Bus::Device_entry* entry, void* arg) {
+Vbus::Bus::reset_device_cb(Vbus::Bus::DeviceEntry* entry, void* arg) {
     if (entry->device->type() != Device::IRQ_CONTROLLER)
         entry->device->reset(static_cast<VcpuCtx*>(arg));
 }
 
 void
-Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::Device_entry* entry, void* arg) {
+Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, void* arg) {
     if (entry->device->type() == Device::IRQ_CONTROLLER)
         entry->device->reset(static_cast<VcpuCtx*>(arg));
 }

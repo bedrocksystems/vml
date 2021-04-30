@@ -63,7 +63,7 @@ public:
      *  \post A valid Device object is constructed with name set correctly
      *  \param name Name of the device
      */
-    Device(const char* name) : _name(name) {}
+    explicit Device(const char* name) : _name(name) {}
     virtual ~Device() {}
 
     /*! \brief Query the name of the device
@@ -119,7 +119,7 @@ public:
      *  \param sp Space that this VBus represents
      *  \post Full ownership of the vbus
      */
-    Bus(Vbus::Space sp = Space::ALL_MEM) : _space(sp), _devices() {}
+    explicit Bus(Vbus::Space sp = Space::ALL_MEM) : _space(sp), _devices() {}
 
     /*! \brief Add a device to the virtual bus
      *  \pre Full ownership of a valid virtual bus. Full ownership of a valid Device.
@@ -155,7 +155,7 @@ public:
      *  \param val Buffer for read or write operations
      *  \return The status of the access
      */
-    Err access(Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 size, uint64& val);
+    Err access(Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 bytes, uint64& val);
 
     /*! \brief Reset all devices on the bus
      *  \pre Fractional ownership of a valid virtual bus.
@@ -173,8 +173,8 @@ public:
         _fold = fold_successive;
     }
 
-    struct Device_entry : RangeNode<mword> {
-        Device_entry(Device* d, const Range<mword>& r) : RangeNode(r), device(d) {}
+    struct DeviceEntry : RangeNode<mword> {
+        DeviceEntry(Device* d, const Range<mword>& r) : RangeNode(r), device(d) {}
 
         Device* device;
     };
@@ -185,18 +185,18 @@ public:
      *  \param f The callback function that will be called on all devices
      *  \param arg the argument that will be passed every time the callback is invoked
      */
-    void iter_devices(void (*f)(Vbus::Bus::Device_entry* de, void*), void* arg);
+    void iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, void*), void* arg);
 
 private:
-    static void reset_device_cb(Vbus::Bus::Device_entry* entry, void*);
-    static void reset_irq_ctlr_cb(Vbus::Bus::Device_entry* entry, void*);
+    static void reset_device_cb(Vbus::Bus::DeviceEntry* entry, void*);
+    static void reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, void*);
 
-    const Device_entry* lookup(mword addr, uint64 bytes) const;
+    const DeviceEntry* lookup(mword addr, uint64 bytes) const;
 
     Space _space;
     RangeMap<mword> _devices;
     bool _trace{false};
     bool _fold{true};
-    const Device_entry* _last_access{nullptr};
+    const DeviceEntry* _last_access{nullptr};
     size_t _num_accesses{0};
 };

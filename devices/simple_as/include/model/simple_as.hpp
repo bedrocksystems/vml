@@ -359,7 +359,7 @@ public:
      *  \post If the device is an address space, the flush function is called.
      *  \param de current device when iterating over the devices in a bus
      */
-    static void flush_callback(Vbus::Bus::Device_entry *de, void *);
+    static void flush_callback(Vbus::Bus::DeviceEntry *de, void *);
 
     /*! \brief Return the type of this device
      *  \pre Partial ownership of this device
