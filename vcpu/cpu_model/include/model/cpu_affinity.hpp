@@ -30,7 +30,7 @@ private:
 class CpuCluster {
 public:
     CpuCluster() {
-        for (auto e : _vcpus)
+        for (auto& e : _vcpus)
             e = INVALID_VCPU_ID;
     }
 
