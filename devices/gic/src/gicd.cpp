@@ -169,7 +169,7 @@ Model::Gic_d::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const 
 
         Irq &irq = _irq_object(cpu, irq_id);
 
-        if (__UNLIKELY__(Debug::current_level > Debug::Condensed))
+        if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
             INFO("GOS requested IRQ %u to be routed to VCPU " FMTu64, irq.id(), value);
 
         irq._routing.value = value;
@@ -625,10 +625,10 @@ Model::Gic_d::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
         state = Irq_state::ACTIVE_PENDING;
     }
 
-    if (__UNLIKELY__(Debug::current_level > Debug::Condensed))
+    if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
         INFO("Injecting IRQ %u on VCPU " FMTu64, irq->id(), cpu_id);
 
-    if (__UNLIKELY__(Debug::current_level == Debug::Full && irq->id() < MAX_SGI)) {
+    if (__UNLIKELY__(Debug::current_level == Debug::FULL && irq->id() < MAX_SGI)) {
         if (is_affinity_routing_enabled())
             INFO("Injecting SGI %u on VCPU " FMTu64, irq->id(), cpu_id)
         else
@@ -653,7 +653,7 @@ Model::Gic_d::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, Irq_state s
     switch (state) {
     case Irq_state::INACTIVE: {
         // Done injecting
-        if (__UNLIKELY__(Debug::current_level > Debug::Condensed))
+        if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
             INFO("IRQ %u handled by the guest on VCPU " FMTu64, irq_id, cpu_id);
 
         Irq_injection_info_update desired, cur;
@@ -680,7 +680,7 @@ Model::Gic_d::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, Irq_state s
     case Irq_state::ACTIVE:
     case Irq_state::ACTIVE_PENDING:
     case Irq_state::PENDING: {
-        if (__UNLIKELY__(Debug::current_level > Debug::Condensed))
+        if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
             INFO("IRQ %u came back, not yet injected on VCPU " FMTu64, irq_id, cpu_id);
 
         if (state == Irq_state::PENDING) {
@@ -745,7 +745,7 @@ Model::Gic_d::redirect_spi(Irq &irq) {
 
     Irq_target target = route_spi(irq);
 
-    if (__UNLIKELY__(Debug::current_level > Debug::Condensed))
+    if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
         INFO("SPI %u re-routed to VCPU" FMTx32, irq.id(), target.raw());
 
     Irq_injection_info_update desired(0), cur;
@@ -771,7 +771,7 @@ Model::Gic_d::assert_pi(Vcpu_id cpu_id, Irq &irq) {
     if (irq.id() > MAX_PPI + MAX_SGI) {
         target = route_spi(irq);
 
-        if (__UNLIKELY__(Debug::current_level > Debug::Condensed))
+        if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
             INFO("SPI %u routed to VCPU" FMTx32, irq.id(), target.raw());
     } else {
         target = Irq_target(Irq_target::CPU_ID, cpu_id);
@@ -806,7 +806,7 @@ Model::Gic_d::assert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
         desired.set_pending(static_cast<uint8>(sender));
     } while (!irq.injection_info.cas(cur, desired));
 
-    if (__UNLIKELY__(Debug::current_level == Debug::Full))
+    if (__UNLIKELY__(Debug::current_level == Debug::FULL))
         INFO("SGI %u sent from " FMTx64 " to " FMTx64, irq.id(), sender, target);
 
     return notify_target(irq, Irq_target(Irq_target::CPU_ID, target));

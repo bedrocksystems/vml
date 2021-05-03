@@ -267,7 +267,7 @@ Model::Cpu::switch_state_to_roundedup() {
         }
     } while (!_state.cas(cur_state, new_state));
 
-    if (__UNLIKELY__(Debug::current_level == Debug::Full))
+    if (__UNLIKELY__(Debug::current_level == Debug::FULL))
         INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
              state_printable_name[new_state]);
 
@@ -295,7 +295,7 @@ Model::Cpu::resume() {
         }
     } while (!_state.cas(cur_state, new_state));
 
-    if (__UNLIKELY__(Debug::current_level == Debug::Full))
+    if (__UNLIKELY__(Debug::current_level == Debug::FULL))
         INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
              state_printable_name[new_state]);
 
@@ -334,7 +334,7 @@ Model::Cpu::switch_state_to_on() {
     if (cur_state == OFF || cur_state == OFF_ROUNDEDUP)
         Vcpu::Roundup::vcpu_notify_switched_on();
 
-    if (__UNLIKELY__(Debug::current_level == Debug::Full))
+    if (__UNLIKELY__(Debug::current_level == Debug::FULL))
         INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
              state_printable_name[new_state]);
 }
@@ -357,7 +357,7 @@ Model::Cpu::switch_state_to_off() {
         }
     } while (!_state.cas(cur_state, new_state));
 
-    if (__UNLIKELY__(Debug::current_level == Debug::Full))
+    if (__UNLIKELY__(Debug::current_level == Debug::FULL))
         INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
              state_printable_name[new_state]);
 }
@@ -395,7 +395,7 @@ Model::Cpu::switch_state_to_emulating() {
         }
     } while (!_state.cas(cur_state, new_state));
 
-    if (__UNLIKELY__(Debug::current_level == Debug::Full))
+    if (__UNLIKELY__(Debug::current_level == Debug::FULL))
         INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
              state_printable_name[new_state]);
 

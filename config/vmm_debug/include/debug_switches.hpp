@@ -19,10 +19,10 @@ namespace Debug {
      * Each library is responsible for its own usage of each level.
      */
     enum Level {
-        None = 0,      /*!< No debugging enabled */
-        Condensed = 1, /*!< Summarized debugging information/logic */
-        Detailled = 2, /*!< Non-summarized debugging information/logic */
-        Full = 3,      /*!< All debugging facilities enabled - Very intrusive! */
+        NONE = 0,      /*!< No debugging enabled */
+        CONDENSED = 1, /*!< Summarized debugging information/logic */
+        DETAILLED = 2, /*!< Non-summarized debugging information/logic */
+        FULL = 3,      /*!< All debugging facilities enabled - Very intrusive! */
     };
 
     /*! \brief Current debugging level. The final binary is responsible for defining this variable.
