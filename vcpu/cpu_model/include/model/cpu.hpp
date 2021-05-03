@@ -124,8 +124,6 @@ private:
 
     Vcpu_id const _vcpu_id;
 
-    enum Interrupt_state { NONE, SLEEPING, PENDING };
-    atomic<Interrupt_state> _interrupt_state{NONE};
     Platform::Signal _irq_sig;
 
     /*! \brief State Machine for the state of the VCPU
@@ -175,15 +173,9 @@ private:
 
     static void roundup(Vcpu_id);
 
-    void block_timeout(uint64 const absolut_timeout) { _irq_sig.wait(absolut_timeout); }
-    bool block() {
-        _irq_sig.wait();
-        return true;
-    }
-    bool unblock() {
-        _irq_sig.sig();
-        return true;
-    }
+    bool block_timeout(uint64 const absolut_timeout) { return _irq_sig.wait(absolut_timeout); }
+    void block() { _irq_sig.wait(); }
+    void unblock() { _irq_sig.sig(); }
     void roundup_impl();
 
 protected:
@@ -199,7 +191,6 @@ protected:
     const uint64 *boot_args() const { return _boot_args; }
     void switch_state_to_off();
     uint64 timer_offset() const { return _tmr_off; }
-    void reset_interrupt_state() { _interrupt_state = NONE; }
 
     Cpu_feature _reset;
     Cpu_feature _tvm;
