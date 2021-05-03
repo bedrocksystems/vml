@@ -20,7 +20,7 @@
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
-enum Debug::Level Debug::current_level = Debug::None;
+enum Debug::Level Debug::current_level = Debug::NONE;
 
 static Semaphore wait_sm;
 

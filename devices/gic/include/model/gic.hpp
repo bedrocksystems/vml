@@ -232,7 +232,7 @@ private:
 
         uint8 target() const { return _target; }
         void target(uint8 const t) {
-            if (__UNLIKELY__(Debug::current_level > Debug::Condensed))
+            if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
                 INFO("GOS requested IRQ %u to be routed to VCPU(s) mask 0x%x", _id, t);
             _target = t;
         }

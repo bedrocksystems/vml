@@ -30,7 +30,7 @@ static const uint64 Q1_DESC = VIRTIO_GUEST_BASE + 0x3000;
 static const uint64 Q1_DRIVER = VIRTIO_GUEST_BASE + 0x4000;
 static const uint64 Q1_DEVICE = VIRTIO_GUEST_BASE + 0x5000;
 
-enum Debug::Level Debug::current_level = Debug::None;
+enum Debug::Level Debug::current_level = Debug::NONE;
 
 static Semaphore wait_sm;
 
