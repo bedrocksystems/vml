@@ -22,7 +22,7 @@ LIBDIR  = $(BRS_ROOT)lib/  ../../devices/ ../../config/ ../../arch/ ../ $(PLATFO
 
 include deps.mk
 
-CC_SRCS = cpu_model.cpp
+CC_SRCS = cpu_model.cpp cpu_affinity.cpp
 OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
 SPECS =

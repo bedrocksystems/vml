@@ -402,23 +402,6 @@ Model::Cpu::switch_state_to_emulating() {
     return true;
 }
 
-uint8
-Model::Cpu::aff0() const {
-    return _lirq_ctlr->aff0();
-}
-uint8
-Model::Cpu::aff1() const {
-    return _lirq_ctlr->aff1();
-}
-uint8
-Model::Cpu::aff2() const {
-    return _lirq_ctlr->aff2();
-}
-uint8
-Model::Cpu::aff3() const {
-    return _lirq_ctlr->aff3();
-}
-
 void
 Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolut) {
     if (!will_timeout)
