@@ -33,11 +33,6 @@ class Model::Cpu_irq_interface {
 public:
     virtual void interrupt_pending() = 0;
     virtual Model::Local_Irq_controller *local_irq_ctlr() = 0;
-
-    virtual uint8 aff0() const = 0;
-    virtual uint8 aff1() const = 0;
-    virtual uint8 aff2() const = 0;
-    virtual uint8 aff3() const = 0;
 };
 
 namespace Request {
@@ -262,11 +257,6 @@ public:
     bool switch_state_to_emulating();
 
     Vcpu_id id() const { return _vcpu_id; }
-
-    virtual uint8 aff0() const override;
-    virtual uint8 aff1() const override;
-    virtual uint8 aff2() const override;
-    virtual uint8 aff3() const override;
 
     void wait_for_resume() { _resume_sig.wait(); }
     void wait_for_interrupt(bool will_timeout, uint64 timeout_absolut);

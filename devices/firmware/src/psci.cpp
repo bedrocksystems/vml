@@ -8,6 +8,7 @@
 
 #include <lifecycle.hpp>
 #include <model/cpu.hpp>
+#include <model/cpu_affinity.hpp>
 #include <model/psci.hpp>
 #include <model/simple_as.hpp>
 #include <msr/msr_info.hpp>
@@ -104,8 +105,8 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
             mode = Model::Cpu::AA64;
         }
 
-        err = Model::Cpu::start_cpu(decode_cpu_id(arch.gpr(1)), vbus, boot_addr, boot_args,
-                                    arch.tmr_cntvoff(), mode);
+        Vcpu_id vid = cpu_affinity_to_id(CpuAffinity(decode_cpu_id(arch.gpr(1))));
+        err = Model::Cpu::start_cpu(vid, vbus, boot_addr, boot_args, arch.tmr_cntvoff(), mode);
         res = static_cast<uint64>(err);
         return true;
     }

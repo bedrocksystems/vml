@@ -7,6 +7,7 @@
  */
 #include <debug_switches.hpp>
 #include <model/cpu.hpp>
+#include <model/cpu_affinity.hpp>
 #include <model/gic.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/algorithm.hpp>
@@ -923,15 +924,18 @@ class Icc_sgi1r_el1 {
 private:
     uint64 const _value;
 
-    static constexpr uint8 MAX_CPU_ID_IN_TARGET_LIST = 16;
-
 public:
     Icc_sgi1r_el1(uint64 const value) : _value(value) {}
+
+    static constexpr uint8 MAX_CPU_ID_IN_TARGET_LIST = 16;
 
     uint16 targets() const { return _value & 0xffff; }
     uint8 intid() const { return (_value >> 24) & 0xf; }
     uint8 irm() const { return (_value >> 30) & 0x1; }
 
+    uint32 cluster_affinity() const {
+        return (uint32(aff1()) << 8u) | (uint32(aff2()) << 16u) | (uint32(aff3()) << 24u);
+    }
     uint8 aff1() const { return (_value >> 16) & 0xff; }
     uint8 aff2() const { return (_value >> 32) & 0xff; }
     uint8 aff3() const { return (_value >> 48) & 0xff; }
@@ -960,17 +964,22 @@ Model::Gic_d::icc_sgi1r_el1(uint64 const value, Vcpu_id const self) {
             send_sgi(self, tcpu, sysreg.intid(), false, true);
         }
     } else {
-        uint16 const targets = sysreg.targets();
-        for (Vcpu_id tcpu = 0; tcpu < sizeof(targets) * 8; tcpu++) {
+        CpuCluster *cluster = cpu_affinity_to_cluster(CpuAffinity(sysreg.cluster_affinity()));
+
+        if (__UNLIKELY__(cluster == nullptr)) {
+            WARN("Cluster with affinity %u does not exist", sysreg.cluster_affinity());
+            return;
+        }
+
+        for (uint8 tcpu = 0; tcpu < Icc_sgi1r_el1::MAX_CPU_ID_IN_TARGET_LIST; tcpu++) {
             if (!sysreg.target(static_cast<uint32>(tcpu)))
                 continue;
 
-            Cpu_irq_interface *const cpu = _local[tcpu]._notify;
-            if (!cpu || cpu->aff1() != sysreg.aff1() || cpu->aff2() != sysreg.aff2()
-                || cpu->aff3() != sysreg.aff3())
+            Vcpu_id vid = cluster->vcpu_id(tcpu);
+            if (vid == INVALID_VCPU_ID)
                 continue;
 
-            send_sgi(self, tcpu, sysreg.intid(), false, true);
+            send_sgi(self, vid, sysreg.intid(), false, true);
         }
     }
 }

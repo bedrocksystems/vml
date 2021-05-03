@@ -33,6 +33,7 @@ namespace Vbus {
         IO_PORT,
         MODEL_SPECIFIC_REGISTER,
         SYSTEM_REGISTER,
+        AFFINITY, /*!< Use to look up VCPU based on their affinity */
     };
 
     enum Access {
