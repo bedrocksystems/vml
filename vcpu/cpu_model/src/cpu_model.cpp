@@ -421,33 +421,22 @@ Model::Cpu::aff3() const {
 
 void
 Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolut) {
-    Interrupt_state expected = NONE;
-    if (_interrupt_state.cas(expected, SLEEPING)) {
-
-        if (!will_timeout)
-            block();
-        else
-            block_timeout(timeout_absolut);
-
-        expected = SLEEPING;
-    } else
-        expected = PENDING;
-
-    _interrupt_state.cas(expected, NONE);
+    if (!will_timeout)
+        /*
+         * Future, this should be done a in a loop such that:
+         * while (!pending_irq())
+         *    block();
+         * That's an optimization and we are missing a few pieces to get there.
+         */
+        block();
+    else
+        block_timeout(timeout_absolut);
 }
 
 void
 Model::Cpu::interrupt_pending() {
     recall(false);
-
-    Interrupt_state expected = (_interrupt_state == PENDING) ? PENDING : NONE;
-
-    if (!_interrupt_state.cas(expected, PENDING)) {
-        expected = SLEEPING;
-        _interrupt_state.cas(expected, NONE);
-
-        unblock();
-    }
+    unblock();
 }
 
 void
