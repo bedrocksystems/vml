@@ -59,7 +59,7 @@ decode_cpu_id(uint64 arg) {
 
 static uint64
 start_cpu(RegAccessor &arch, Vbus::Bus &vbus) {
-    enum Model::Cpu::Start_err err;
+    enum Model::Cpu::StartErr err;
     Msr::Info::Spsr spsr(arch.el2_spsr());
     enum Model::Cpu::Mode mode;
     uint64 boot_addr = arch.gpr(2);

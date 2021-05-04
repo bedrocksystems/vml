@@ -30,10 +30,8 @@ bool
 Model::Cpu::init(uint16 config_vcpus) {
     configured_vcpus = config_vcpus;
     vcpus = new (nothrow) Model::Cpu*[configured_vcpus];
-    if (vcpus == nullptr)
-        return false;
 
-    return true;
+    return vcpus != nullptr;
 }
 
 bool
@@ -178,7 +176,7 @@ Model::Cpu::run(Vcpu_id cpu_id) {
     return vcpus[cpu_id]->run();
 }
 
-Model::Cpu::Start_err
+Model::Cpu::StartErr
 Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr,
                       uint64 boot_args[MAX_BOOT_ARGS], uint64 timer_off, enum Mode m) {
     if (vcpu_id >= configured_vcpus) {
