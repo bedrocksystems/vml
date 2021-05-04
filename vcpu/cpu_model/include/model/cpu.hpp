@@ -156,11 +156,11 @@ private:
     void switch_on() { _off_sm.release(); }
     void resume();
 
-    void set_reset_parameters(uint64 const boot_addr, uint64 const boot_arg[MAX_BOOT_ARGS],
-                              uint64 const tmr_off, enum Mode m);
+    void set_reset_parameters(uint64 boot_addr, uint64 const boot_arg[MAX_BOOT_ARGS],
+                              uint64 tmr_off, enum Mode m);
 
     virtual void ctrl_tvm(bool enable, Request::Requestor requestor = Request::Requestor::VMM,
-                          const Reg_selection regs = 0)
+                          Reg_selection regs = 0)
         = 0;
     virtual void ctrl_single_step(bool enable,
                                   Request::Requestor requestor = Request::Requestor::VMM)
@@ -238,9 +238,9 @@ public:
      * Values are chosen to match the PSCI spec for conveniency. This could be changed
      * in the future if something else is needed.
      */
-    enum Start_err { SUCCESS = 0, INVALID_PARAMETERS = -2, ALREADY_ON = -4, INVALID_ADDRESS = -9 };
-    static Start_err start_cpu(Vcpu_id vcpu_id, Vbus::Bus &vbus, uint64 boot_addr,
-                               uint64 boot_args[MAX_BOOT_ARGS], uint64 timer_off, enum Mode);
+    enum StartErr { SUCCESS = 0, INVALID_PARAMETERS = -2, ALREADY_ON = -4, INVALID_ADDRESS = -9 };
+    static StartErr start_cpu(Vcpu_id vcpu_id, Vbus::Bus &vbus, uint64 boot_addr,
+                              uint64 boot_args[MAX_BOOT_ARGS], uint64 timer_off, enum Mode);
 
     // VCPU api end
 
