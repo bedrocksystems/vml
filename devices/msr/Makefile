@@ -9,11 +9,11 @@
 #
 
 PLATFORM ?= bedrock
-BRS_ROOT ?= ../../../../zeta/
+BRS_ROOT ?= ../../../../../zeta/
 LIBNAME = $(shell basename `pwd`)
 
 ifeq ($(PLATFORM), bedrock)
-PLATFORM_PATH ?= ../../../../apps/vmm/lib/
+PLATFORM_PATH ?= ../../../lib/
 else
 PLATFORM_PATH ?= ../../platform/
 endif
