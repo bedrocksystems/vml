@@ -35,7 +35,7 @@
 
 /*! \brief Global (static and unique) object containing the state of the current roundup
  */
-class Global_roundup_info {
+class GlobalRoundupInfo {
 public:
     uint16 num_vcpus;                 /*!< Number of VCPU(s) for this virtual machine */
     atomic<uint16> vcpus_progressing; /*!< VCPU(s) currently making progress (emulation or not) */
@@ -123,7 +123,7 @@ private:
     atomic<uint16> _vcpu_waiters;
 };
 
-class Vcpu_initialized_info {
+class VcpuInitializedInfo {
 public:
     Errno init(const Platform_ctx* ctx, uint16 nvcpus) {
         vcpus_pending_init = nvcpus;
@@ -142,16 +142,16 @@ private:
     Semaphore _sm_all_initialized;
 };
 
-struct Parallel_roundup_info {
+struct ParallelRoundupInfo {
     Semaphore count_sem;
     Semaphore resume_waiter_sem;
     atomic<uint16> count;
     uint16 num_waiters;
 };
 
-static Global_roundup_info roundup_info;
-static Parallel_roundup_info parallel_info;
-static Vcpu_initialized_info initialized_info;
+static GlobalRoundupInfo roundup_info;
+static ParallelRoundupInfo parallel_info;
+static VcpuInitializedInfo initialized_info;
 
 Errno
 Vcpu::Roundup::init(const Platform_ctx* ctx, uint16 num_vcpus) {
