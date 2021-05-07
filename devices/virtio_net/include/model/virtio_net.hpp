@@ -78,15 +78,21 @@ private:
     void driver_ok() override;
 
 public:
+    struct UserConfig {
+        uint32 device_feature{0};
+        uint64 mac{0};
+        uint16 mtu{0};
+        uint16 port_id{0};
+    };
+
     Virtio_net(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 irq,
-               uint16 const queue_entries, uint32 const device_feature, uint64 mac, uint16 mtu,
-               Semaphore *sem)
+               uint16 const queue_entries, const UserConfig &config, Semaphore *sem)
         : Vbus::Device("virtio network"), Virtio::Device(1, vbus, irq_ctlr, &_config,
                                                          sizeof(_config), irq, queue_entries,
-                                                         device_feature),
+                                                         config.device_feature),
           _sem(sem) {
-        _config.mtu = mtu;
-        memcpy(&_config.mac, &mac, 6);
+        _config.mtu = config.mtu;
+        memcpy(&_config.mac, &config.mac, 6);
     }
 
     void register_callback(Virtio::Callback &callback,
