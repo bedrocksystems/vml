@@ -18,14 +18,14 @@
 #include <vbus/vbus.hpp>
 
 namespace Model {
-    class Simple_as;
+    class SimpleAS;
 };
 
 /*! \brief Page permission data type
  *
  * This enum represents page permissions as bitflags.
  */
-enum class Page_permission : uint8 {
+enum class PagePermission : uint8 {
     NONE = 0,
     READ = (1 << 0),
     WRITE = (1 << 1),
@@ -45,154 +45,154 @@ enum class Page_permission : uint8 {
 };
 
 inline const char *
-page_permission_to_str(Page_permission p) {
+page_permission_to_str(PagePermission p) {
     switch (p) {
-    case Page_permission::NONE:
+    case PagePermission::NONE:
         return "---";
-    case Page_permission::READ:
+    case PagePermission::READ:
         return "R--";
-    case Page_permission::WRITE:
+    case PagePermission::WRITE:
         return "-W-";
-    case Page_permission::EXEC_USER:
+    case PagePermission::EXEC_USER:
         return "--XU";
-    case Page_permission::EXEC_SUPERVISOR:
+    case PagePermission::EXEC_SUPERVISOR:
         return "--XS";
-    case Page_permission::EXEC:
+    case PagePermission::EXEC:
         return "--X";
-    case Page_permission::READ_WRITE:
+    case PagePermission::READ_WRITE:
         return "RW-";
-    case Page_permission::READ_EXEC_USER:
+    case PagePermission::READ_EXEC_USER:
         return "R-XU";
-    case Page_permission::READ_EXEC_SUPERVISOR:
+    case PagePermission::READ_EXEC_SUPERVISOR:
         return "R-XS";
-    case Page_permission::READ_EXEC:
+    case PagePermission::READ_EXEC:
         return "R-X";
-    case Page_permission::WRITE_EXEC_USER:
+    case PagePermission::WRITE_EXEC_USER:
         return "-WXU";
-    case Page_permission::WRITE_EXEC_SUPERVISOR:
+    case PagePermission::WRITE_EXEC_SUPERVISOR:
         return "-WXS";
-    case Page_permission::WRITE_EXEC:
+    case PagePermission::WRITE_EXEC:
         return "-WX";
-    case Page_permission::READ_WRITE_EXEC_USER:
+    case PagePermission::READ_WRITE_EXEC_USER:
         return "RWXU";
-    case Page_permission::READ_WRITE_EXEC_SUPERVISOR:
+    case PagePermission::READ_WRITE_EXEC_SUPERVISOR:
         return "RWXS";
-    case Page_permission::READ_WRITE_EXEC:
+    case PagePermission::READ_WRITE_EXEC:
         return "RWX";
     default:
         return "UNKNOWN";
     }
 }
 
-/*! \brief binary or operator on Page_permission
+/*! \brief binary or operator on PagePermission
  *  \pre None
  *  \post returns binary or of input permissions
  */
-inline Page_permission
-operator|(Page_permission a, Page_permission b) {
-    return static_cast<Page_permission>(static_cast<uint8>(a) | static_cast<uint8>(b));
+inline PagePermission
+operator|(PagePermission a, PagePermission b) {
+    return static_cast<PagePermission>(static_cast<uint8>(a) | static_cast<uint8>(b));
 }
 
-/*! \brief binary and operator on Page_permission
+/*! \brief binary and operator on PagePermission
  *  \pre None
  *  \post returns binary and of input permissions
  */
-inline Page_permission
-operator&(Page_permission a, Page_permission b) {
-    return static_cast<Page_permission>(static_cast<uint8>(a) & static_cast<uint8>(b));
+inline PagePermission
+operator&(PagePermission a, PagePermission b) {
+    return static_cast<PagePermission>(static_cast<uint8>(a) & static_cast<uint8>(b));
 }
 
-/*! \brief binary xor operator on Page_permission
+/*! \brief binary xor operator on PagePermission
  *  \pre None
  *  \post returns binary xor of input permissions
  */
-inline Page_permission
-operator^(Page_permission a, Page_permission b) {
-    return static_cast<Page_permission>(static_cast<uint8>(a) ^ static_cast<uint8>(b));
+inline PagePermission
+operator^(PagePermission a, PagePermission b) {
+    return static_cast<PagePermission>(static_cast<uint8>(a) ^ static_cast<uint8>(b));
 }
 
-/*! \brief binary or assignment operator on Page_permission
+/*! \brief binary or assignment operator on PagePermission
  *  \pre None
  *  \post returns binary or of input permissions and sets this value in the first parameter
  */
-inline Page_permission &
-operator|=(Page_permission &a, Page_permission b) {
+inline PagePermission &
+operator|=(PagePermission &a, PagePermission b) {
     return (a = a | b);
 }
 
-/*! \brief binary and assignment operator on Page_permission
+/*! \brief binary and assignment operator on PagePermission
  *  \pre None
  *  \post returns binary and of input permissions and sets this value in the first parameter
  */
-inline Page_permission &
-operator&=(Page_permission &a, Page_permission b) {
+inline PagePermission &
+operator&=(PagePermission &a, PagePermission b) {
     return (a = a & b);
 }
 
-/*! \brief binary xor assignment operator on Page_permission
+/*! \brief binary xor assignment operator on PagePermission
  *  \pre None
  *  \post returns binary xor of input permissions and sets this value in the first parameter
  */
-inline Page_permission &
-operator^=(Page_permission &a, Page_permission b) {
+inline PagePermission &
+operator^=(PagePermission &a, PagePermission b) {
     return (a = a ^ b);
 }
 
-/*! \brief binary not operator on Page_permission
+/*! \brief binary not operator on PagePermission
  *  \pre None
  *  \post returns binary not of input permission
  */
-inline Page_permission
-operator~(Page_permission a) {
-    return static_cast<Page_permission>((~static_cast<uint8>(a)) & 0xf);
+inline PagePermission
+operator~(PagePermission a) {
+    return static_cast<PagePermission>((~static_cast<uint8>(a)) & 0xf);
 }
 
-/*! \brief function to determine whether read is set in an instance of Page_permission
+/*! \brief function to determine whether read is set in an instance of PagePermission
  *  \pre None
  *  \post returns true if read is set, otherwise false
  */
 inline bool
-pp_is_read_set(Page_permission a) {
-    return static_cast<bool>(a & Page_permission::READ);
+pp_is_read_set(PagePermission a) {
+    return static_cast<bool>(a & PagePermission::READ);
 }
 
-/*! \brief function to determine whether write is set in an instance of Page_permission
+/*! \brief function to determine whether write is set in an instance of PagePermission
  *  \pre None
  *  \post returns true if write is set, otherwise false
  */
 inline bool
-pp_is_write_set(Page_permission a) {
-    return static_cast<bool>(a & Page_permission::WRITE);
+pp_is_write_set(PagePermission a) {
+    return static_cast<bool>(a & PagePermission::WRITE);
 }
 
 /*! \brief function to determine whether exec (user or supervisor) is set in an instance
-           of Page_permission
+           of PagePermission
  *  \pre None
  *  \post returns true if exec user or supervisor is set, otherwise false
  */
 inline bool
-pp_is_exec_set(Page_permission a) {
-    return static_cast<bool>(a & Page_permission::EXEC);
+pp_is_exec_set(PagePermission a) {
+    return static_cast<bool>(a & PagePermission::EXEC);
 }
 
 /*! \brief function to determine whether exec user is set in an instance
-           of Page_permission
+           of PagePermission
  *  \pre None
  *  \post returns true if exec user is set, otherwise false
  */
 inline bool
-pp_is_exec_user_set(Page_permission a) {
-    return static_cast<bool>(a & Page_permission::EXEC_USER);
+pp_is_exec_user_set(PagePermission a) {
+    return static_cast<bool>(a & PagePermission::EXEC_USER);
 }
 
 /*! \brief function to determine whether exec supervisor is set in an instance
-           of Page_permission
+           of PagePermission
  *  \pre None
  *  \post returns true if exec supervisor is set, otherwise false
  */
 inline bool
-pp_is_exec_supervisor_set(Page_permission a) {
-    return static_cast<bool>(a & Page_permission::EXEC_SUPERVISOR);
+pp_is_exec_supervisor_set(PagePermission a) {
+    return static_cast<bool>(a & PagePermission::EXEC_SUPERVISOR);
 }
 
 /*! \brief Simple Wrapper for primitive types.
@@ -201,7 +201,13 @@ template<typename T>
 class PrimitiveTypeWrapper {
 public:
     PrimitiveTypeWrapper() = delete;
-    PrimitiveTypeWrapper(T value) : _value(value) {}
+
+    /*
+     * We ignore the coding style for this constructor. At the moment, VMI
+     * is converting from uint64 to GPA freely. We can address that but it
+     * requires a bit of surgery.
+     */
+    PrimitiveTypeWrapper(T value) : _value(value) {} // NOLINT
 
     void set_value(T value) { _value = value; }
     T get_value() const { return _value; }
@@ -213,7 +219,7 @@ public:
     bool operator!=(const PrimitiveTypeWrapper &other) { return _value != other._value; }
     T &operator=(T value) { _value = value; }
     T operator()(void) const { return _value; }
-    operator T &() const { return _value; }
+    explicit operator T &() const { return _value; }
 
 protected:
     T _value;
@@ -259,14 +265,14 @@ public:
  * This is useful to perform address space operations from the bus. An example
  * is flushing the whole AS of the guest.
  */
-class Model::Simple_as : public Vbus::Device {
+class Model::SimpleAS : public Vbus::Device {
 public:
     /*! \brief Construct a Simple AS
      *  \pre Nothing
      *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    Simple_as(bool read_only) : Vbus::Device("SimpleAS"), _read_only(read_only) {}
+    explicit SimpleAS(bool read_only) : Vbus::Device("SimpleAS"), _read_only(read_only) {}
 
     /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
@@ -274,7 +280,7 @@ public:
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    Simple_as(const char *name, bool read_only) : Vbus::Device(name), _read_only(read_only) {}
+    SimpleAS(const char *name, bool read_only) : Vbus::Device(name), _read_only(read_only) {}
 
     /*! \brief Get the size of this AS
      *  \pre Partial ownership of this object
@@ -352,7 +358,7 @@ public:
      *  \param src buffer that contains the data to write
      *  \return ENONE if the operation was a success, error code otherwise
      */
-    Errno write(GPA &addr, size_t size, const char *src);
+    Errno write(GPA &gpa, size_t size, const char *src) const;
 
     /*! \brief Callback that can be used to iterate over flushable AS in a virtual Bus
      *  \pre Nothing

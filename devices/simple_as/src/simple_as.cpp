@@ -11,7 +11,7 @@
 #include <platform/string.hpp>
 
 Errno
-Model::Simple_as::read(char* dst, size_t size, const GPA& addr) const {
+Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
     if (!is_gpa_valid(addr, size))
         return EINVAL;
     mword offset = addr.get_value() - get_guest_view().get_value();
@@ -20,7 +20,7 @@ Model::Simple_as::read(char* dst, size_t size, const GPA& addr) const {
 }
 
 Errno
-Model::Simple_as::write(GPA& gpa, size_t size, const char* src) {
+Model::SimpleAS::write(GPA& gpa, size_t size, const char* src) const {
     mword offset;
     void* hva = nullptr;
 
@@ -39,7 +39,7 @@ Model::Simple_as::write(GPA& gpa, size_t size, const char* src) {
 }
 
 void
-Model::Simple_as::flush_guest_as() const {
+Model::SimpleAS::flush_guest_as() const {
     if (!_read_only) {
         dcache_clean_range(_vmm_view, _as.size());
         icache_invalidate_range(_vmm_view, _as.size());
@@ -47,19 +47,19 @@ Model::Simple_as::flush_guest_as() const {
 }
 
 void
-Model::Simple_as::flush_callback(Vbus::Bus::DeviceEntry* de, void*) {
+Model::SimpleAS::flush_callback(Vbus::Bus::DeviceEntry* de, void*) {
     Vbus::Device* dev = de->device;
 
     if (dev->type() == Vbus::Device::GUEST_PHYSICAL_STATIC_MEMORY
         || dev->type() == Vbus::Device::GUEST_PHYSICAL_DYNAMIC_MEMORY) {
-        Model::Simple_as* as = reinterpret_cast<Model::Simple_as*>(dev);
+        Model::SimpleAS* as = reinterpret_cast<Model::SimpleAS*>(dev);
 
         as->flush_guest_as();
     }
 }
 
 char*
-Model::Simple_as::gpa_to_vmm_view(GPA addr, size_t sz) const {
+Model::SimpleAS::gpa_to_vmm_view(GPA addr, size_t sz) const {
     if (!is_gpa_valid(addr, sz))
         return nullptr;
 
@@ -69,7 +69,7 @@ Model::Simple_as::gpa_to_vmm_view(GPA addr, size_t sz) const {
 }
 
 char*
-Model::Simple_as::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
+Model::SimpleAS::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
     const Vbus::Device* dev = bus.get_device_at(addr.get_value(), sz);
 
     if (__UNLIKELY__(dev == nullptr
@@ -78,6 +78,6 @@ Model::Simple_as::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
         return nullptr;
     }
 
-    const Model::Simple_as* tgt = reinterpret_cast<const Model::Simple_as*>(dev);
+    const Model::SimpleAS* tgt = reinterpret_cast<const Model::SimpleAS*>(dev);
     return tgt->gpa_to_vmm_view(addr, sz);
 }

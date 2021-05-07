@@ -60,20 +60,20 @@ public:
             return destruct();
 
         void *desc_addr = nullptr;
-        desc_addr = Model::Simple_as::gpa_to_vmm_view(bus, GPA(data.descr()),
-                                                      Virtio::Descriptor::size(_data->num));
+        desc_addr = Model::SimpleAS::gpa_to_vmm_view(bus, GPA(data.descr()),
+                                                     Virtio::Descriptor::size(_data->num));
         if (desc_addr == nullptr)
             return destruct();
 
         void *avail_addr = nullptr;
-        avail_addr = Model::Simple_as::gpa_to_vmm_view(bus, GPA(data.driver()),
-                                                       Virtio::Available::size(_data->num));
+        avail_addr = Model::SimpleAS::gpa_to_vmm_view(bus, GPA(data.driver()),
+                                                      Virtio::Available::size(_data->num));
         if (avail_addr == nullptr)
             return destruct();
 
         void *used_addr = nullptr;
-        used_addr = Model::Simple_as::gpa_to_vmm_view(bus, GPA(data.device()),
-                                                      Virtio::Used::size(_data->num));
+        used_addr = Model::SimpleAS::gpa_to_vmm_view(bus, GPA(data.device()),
+                                                     Virtio::Used::size(_data->num));
         if (used_addr == nullptr)
             return destruct();
 

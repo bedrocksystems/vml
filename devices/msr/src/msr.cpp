@@ -631,7 +631,7 @@ Msr::Set_way_flush_reg::flush(const VcpuCtx *vctx, const uint8, const uint32) co
      * guest OS wants to achieve.
      */
     if (!Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vctx->vcpu_id)) {
-        _vbus->iter_devices(Model::Simple_as::flush_callback, nullptr);
+        _vbus->iter_devices(Model::SimpleAS::flush_callback, nullptr);
         INFO("Use of Set/way flush detected - flushing guest AS and enable TVM");
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vctx->vcpu_id, true);
     }
@@ -658,7 +658,7 @@ Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, Vbus::Bus &vbus, uint64 new_valu
     if (before.cache_enabled() != after.cache_enabled()) {
         INFO("Cache setting toggled - flushing the guest AS");
 
-        vbus.iter_devices(Model::Simple_as::flush_callback, nullptr);
+        vbus.iter_devices(Model::SimpleAS::flush_callback, nullptr);
     }
 
     if (after.cache_enabled()) {

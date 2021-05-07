@@ -44,7 +44,7 @@ main() {
     Platform_ctx ctx;
     Vbus::Bus vbus;
     Model::Gic_d gicd(Model::GIC_V2, 1);
-    Model::Simple_as as(false);
+    Model::SimpleAS as(false);
     Msr::Bus msr_bus;
 
     bool ok = gicd.init();
@@ -91,7 +91,7 @@ main() {
     ok = vbus.register_device(&as, reinterpret_cast<mword>(guest_as), 4096);
     ASSERT(ok == true);
 
-    vbus.iter_devices(Model::Simple_as::flush_callback, nullptr);
+    vbus.iter_devices(Model::SimpleAS::flush_callback, nullptr);
 
     RegAccessor regs(ctx, 0);
     VcpuCtx vctx{nullptr, &regs, 0};

@@ -37,7 +37,7 @@ Model::VirtioMMIO_console::to_guest(const char *buff, uint32 size) {
             return false;
         }
 
-        char *dst = Model::Simple_as::gpa_to_vmm_view(*_vbus, GPA(desc->address), desc->length);
+        char *dst = Model::SimpleAS::gpa_to_vmm_view(*_vbus, GPA(desc->address), desc->length);
         if (dst == nullptr) {
             _queue[RX].queue().send(desc);
             return false; /* outside guest physical memory */
@@ -71,7 +71,7 @@ Model::VirtioMMIO_console::from_guest(uint32 &size) {
         return nullptr;
 
     char *vmm_addr
-        = Model::Simple_as::gpa_to_vmm_view(*_vbus, GPA(_tx_desc->address), _tx_desc->length);
+        = Model::SimpleAS::gpa_to_vmm_view(*_vbus, GPA(_tx_desc->address), _tx_desc->length);
     if (vmm_addr == nullptr) {
         _queue[TX].queue().send(_tx_desc);
         return nullptr; /* outside guest physical memory */

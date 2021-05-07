@@ -152,7 +152,7 @@ main() {
     ASSERT(ok);
 
     Vbus::Bus bus;
-    Model::Simple_as sas(false);
+    Model::SimpleAS sas(false);
 
     sas.set_guest_as(VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);
 
