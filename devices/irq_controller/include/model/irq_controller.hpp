@@ -50,10 +50,5 @@ public:
     explicit Local_Irq_controller(const char *name) : Vbus::Device(name) {}
     virtual ~Local_Irq_controller() {}
 
-    virtual uint8 aff0() const = 0;
-    virtual uint8 aff1() const = 0;
-    virtual uint8 aff2() const = 0;
-    virtual uint8 aff3() const = 0;
-
     virtual bool can_receive_irq() const = 0;
 };
