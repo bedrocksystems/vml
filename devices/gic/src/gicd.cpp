@@ -970,7 +970,7 @@ Model::Gic_d::icc_sgi1r_el1(uint64 const value, Vcpu_id const self) {
             send_sgi(self, tcpu, sysreg.intid(), false, true);
         }
     } else {
-        CpuCluster *cluster = cpu_affinity_to_cluster(CpuAffinity(sysreg.cluster_affinity()));
+        const CpuCluster *cluster = cpu_affinity_to_cluster(CpuAffinity(sysreg.cluster_affinity()));
 
         if (__UNLIKELY__(cluster == nullptr)) {
             WARN("Cluster with affinity %u does not exist", sysreg.cluster_affinity());

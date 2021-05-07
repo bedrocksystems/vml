@@ -8,6 +8,7 @@
 #pragma once
 
 #include <debug_switches.hpp>
+#include <model/cpu_affinity.hpp>
 #include <model/irq_controller.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/atomic.hpp>
@@ -603,6 +604,7 @@ class Model::Gic_r : public Model::Local_Irq_controller {
 private:
     Gic_d *const gic_d;
     Vcpu_id const _vcpu_id;
+    CpuAffinity const _aff;
     bool const _last;
 
     struct Waker {
@@ -618,16 +620,11 @@ private:
     bool mmio_read(uint64 const, uint8 const, uint64 &) const;
 
 public:
-    Gic_r(Gic_d &gic, Vcpu_id cpu_id, bool last)
-        : Local_Irq_controller("GICR"), gic_d(&gic), _vcpu_id(cpu_id), _last(last) {}
+    Gic_r(Gic_d &gic, Vcpu_id cpu_id, CpuAffinity aff, bool last)
+        : Local_Irq_controller("GICR"), gic_d(&gic), _vcpu_id(cpu_id), _aff(aff), _last(last) {}
 
     virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
                              uint64 &) override;
-
-    virtual uint8 aff0() const override { return uint8(_vcpu_id); }
-    virtual uint8 aff1() const override { return uint8(_vcpu_id >> 8); }
-    virtual uint8 aff2() const override { return uint8(_vcpu_id >> 16); }
-    virtual uint8 aff3() const override { return uint8(_vcpu_id >> 24); }
 
     virtual void reset(const VcpuCtx *) override {}
     virtual Type type() const override { return IRQ_CONTROLLER; }

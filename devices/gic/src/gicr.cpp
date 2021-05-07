@@ -173,10 +173,10 @@ Model::Gic_r::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) c
 
     switch (offset) {
     case GICR_TYPER ... GICR_TYPER_END: {
-        uint64 ret = uint64(aff3()) << 56 | uint64(aff2()) << 48 | uint64(aff1()) << 40
-                     | uint64(aff0()) << 32;
-        ret |= uint64(_vcpu_id) << 8;      /* processor id */
-        ret |= (_last ? 1ull : 0ull) << 4; /* last re-distributor */
+        uint64 ret = uint64(_aff.aff3()) << 56 | uint64(_aff.aff2()) << 48
+                     | uint64(_aff.aff1()) << 40 | uint64(_aff.aff0()) << 32;
+        ret |= uint64(_aff.aff1()) << 16 | uint64(_aff.aff0()) << 8; /* processor id */
+        ret |= (_last ? 1ull : 0ull) << 4;                           /* last re-distributor */
         return gic.read_register(offset, GICR_TYPER, GICR_TYPER_END, bytes, ret, value);
     }
     case GICR_WAKER ... GICR_WAKER_END: {
