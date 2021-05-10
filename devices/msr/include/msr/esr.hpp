@@ -13,13 +13,13 @@
 
 namespace Esr {
     class Common;
-    class Msr_mrs;
-    class Mcr_mrc;
-    class Mcrr_mrrc;
+    class MsrMrs;
+    class McrMrc;
+    class McrrMrrc;
     class Abort;
-    class Data_abort;
-    class Instruction_abort;
-    class Soft_step;
+    class DataAbort;
+    class InstructionAbort;
+    class SoftStep;
     class Breakpoint;
 
     constexpr uint8 ZERO_REG = 31;
@@ -27,10 +27,10 @@ namespace Esr {
 
 class Esr::Common {
 public:
-    Common(uint64 const esr) : _esr(esr) {}
+    explicit Common(uint64 const esr) : _esr(esr) {}
 
     bool il() const { return (_esr >> IL_SHIFT) & IL_MASK; }
-    uint8 exception_class() { return (_esr >> EC_SHIFT) & EC_MASK; }
+    uint8 exception_class() const { return (_esr >> EC_SHIFT) & EC_MASK; }
 
 private:
     static constexpr uint64 EC_MASK = 0x3full;
@@ -43,9 +43,9 @@ protected:
     uint64 const _esr;
 };
 
-class Esr::Msr_mrs : public Esr::Common {
+class Esr::MsrMrs : public Esr::Common {
 public:
-    Msr_mrs(uint64 const esr) : Common(esr) {}
+    explicit MsrMrs(uint64 const esr) : Common(esr) {}
 
     constexpr bool write() const { return !(_esr & 0x1); }
     constexpr uint8 crm() const { return (_esr >> 1) & 0xf; }
@@ -60,9 +60,9 @@ public:
     Msr::Id system_register() const { return Msr::Id(op0(), crn(), op1(), crm(), op2()); }
 };
 
-class Esr::Mcr_mrc : public Esr::Common {
+class Esr::McrMrc : public Esr::Common {
 public:
-    Mcr_mrc(uint64 const esr) : Common(esr) {}
+    explicit McrMrc(uint64 const esr) : Common(esr) {}
 
     constexpr bool write() const { return !(_esr & 0x1); }
     constexpr uint8 crm() const { return (_esr >> 1) & 0xf; }
@@ -93,9 +93,9 @@ public:
     constexpr uint8 cv() const { return (_esr >> 24) & 0x1; }
 };
 
-class Esr::Mcrr_mrrc : public Common {
+class Esr::McrrMrrc : public Common {
 public:
-    Mcrr_mrrc(uint64 const esr) : Common(esr) {}
+    explicit McrrMrrc(uint64 const esr) : Common(esr) {}
 
     constexpr bool write() const { return !(_esr & 0x1); }
     constexpr uint8 crm() const { return (_esr >> 1) & 0xf; }
@@ -103,7 +103,7 @@ public:
     constexpr uint8 rt2() const { return (_esr >> 10) & 0x1f; }
     constexpr uint8 opc1() const { return (_esr >> 16) & 0xf; }
 
-    constexpr enum Esr::Mcr_mrc::Cond cond() const { return Mcr_mrc::Cond((_esr >> 20) & 0xf); }
+    constexpr enum Esr::McrMrc::Cond cond() const { return McrMrc::Cond((_esr >> 20) & 0xf); }
     constexpr uint8 cv() const { return (_esr >> 24) & 0x1; }
 };
 
@@ -117,9 +117,9 @@ private:
     static constexpr uint8 S1PTW_SHIFT = 7;
 
 public:
-    Abort(uint64 const esr) : Common(esr) {}
+    explicit Abort(uint64 const esr) : Common(esr) {}
 
-    enum Fault_status_code {
+    enum FaultStatusCode {
         ADDR_SIZE_FAULT_LVL_0 = 0b000000,
         ADDR_SIZE_FAULT_LVL_1 = 0b000001,
         ADDR_SIZE_FAULT_LVL_2 = 0b000010,
@@ -136,14 +136,14 @@ public:
         PERMISSION_FAULT_LVL_3 = 0b001111,
     };
 
-    enum Fault_type {
+    enum FaultType {
         TRANSLATION_FAULT,
         PERMISSION_FAULT,
         OTHER_FAULT,
     };
 
-    Fault_status_code fault_status_code() const { return Fault_status_code(_esr & IFSC_MASK); }
-    Fault_type fault_type() const {
+    FaultStatusCode fault_status_code() const { return FaultStatusCode(_esr & IFSC_MASK); }
+    FaultType fault_type() const {
         switch (fault_status_code()) {
         case TRANSLATION_FAULT_LVL_0:
         case TRANSLATION_FAULT_LVL_1:
@@ -168,11 +168,11 @@ public:
     }
 };
 
-class Esr::Data_abort : public Esr::Abort {
+class Esr::DataAbort : public Esr::Abort {
     uint8 access_size() const { return (_esr >> 22) & 0x3; }
 
 public:
-    Data_abort(uint64 const esr) : Abort(esr) {}
+    explicit DataAbort(uint64 const esr) : Abort(esr) {}
 
     bool isv() const { return (_esr >> 24) & 0x1; }
     uint8 reg() const { return (_esr >> 16) & 0x1f; }
@@ -180,16 +180,16 @@ public:
     uint8 access_size_bytes() const { return static_cast<uint8>((1 << access_size()) & 0xff); }
 };
 
-class Esr::Instruction_abort : public Esr::Abort {
+class Esr::InstructionAbort : public Esr::Abort {
 private:
     static constexpr uint64 SET_MASK = 0x3ull;
 
     static constexpr uint8 SET_SHIFT = 11;
 
 public:
-    Instruction_abort(uint64 const esr) : Abort(esr) {}
+    explicit InstructionAbort(uint64 const esr) : Abort(esr) {}
 
-    enum Sync_err_type {
+    enum SyncErrType {
         RECOVERABLE = 0b00,
         UNCONTAINABLE = 0b01,
         RESTARTABLE_OR_CORRECTED = 0b10,
@@ -197,10 +197,10 @@ public:
 
     uint8 instruction_len_bytes() const { return il() ? 4 : 2; }
 
-    Sync_err_type sync_err_type() const { return Sync_err_type((_esr >> SET_SHIFT) & SET_MASK); }
+    SyncErrType sync_err_type() const { return SyncErrType((_esr >> SET_SHIFT) & SET_MASK); }
 };
 
-class Esr::Soft_step : public Common {
+class Esr::SoftStep : public Common {
 private:
     static constexpr uint64 ISV_MASK = 0x1ull << 24;
     static constexpr uint64 EX_MASK = 0x1ull << 6;
@@ -209,14 +209,14 @@ private:
     bool ex() const { return _esr & EX_MASK; }
 
 public:
-    Soft_step(uint64 const esr) : Common(esr) {}
+    explicit SoftStep(uint64 const esr) : Common(esr) {}
 
     bool is_exclusive_load() const { return isv() && ex(); }
 };
 
 class Esr::Breakpoint : public Common {
 public:
-    Breakpoint(uint64 const esr) : Common(esr) {}
+    explicit Breakpoint(uint64 const esr) : Common(esr) {}
 
     bool is_thumb() const { return !il(); }
     uint16 id() const { return static_cast<uint16>(_esr); }
