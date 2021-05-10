@@ -23,22 +23,8 @@ namespace Model {
 
     enum { ACCESS_SIZE_32 = 4 };
 
-    enum Irqs {
-        MAX_SGI = 16,
-        MAX_PPI = 16,
-        MAX_SPI = 992,
-        MAX_IRQ = 1024 - 4,
-    };
-
     static constexpr uint32 SPECIAL_INTID_NONE = 1023;
     static constexpr uint8 PRIORITY_ANY = 0xff;
-
-    enum Gic_version {
-        GIC_UNKNOWN = 0,
-        GIC_V2 = 2,
-        GIC_V3 = 3,
-    };
-
     static constexpr uint8 GICV2_MAX_CPUS = 8;
 }
 
@@ -349,7 +335,7 @@ private:
         }
     };
 
-    Gic_version const _version;
+    GICVersion const _version;
     uint16 const _num_vcpus;
 
     struct {
@@ -563,7 +549,7 @@ private:
     }
 
 public:
-    Gic_d(Gic_version const version, uint16 num_vcpus)
+    Gic_d(GICVersion const version, uint16 num_vcpus)
         : Irq_controller("GICD"), _version(version), _num_vcpus(num_vcpus) {}
 
     bool init() {
@@ -610,7 +596,7 @@ public:
     void update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, Irq_state state);
     void icc_sgi1r_el1(uint64 const, Vcpu_id const);
     bool is_affinity_routing_enabled() const { return _ctlr.affinity_routing(); }
-    Gic_version version() const { return _version; }
+    GICVersion version() const { return _version; }
 };
 
 class Model::Gic_r : public Model::Local_Irq_controller {

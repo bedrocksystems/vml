@@ -15,6 +15,20 @@ namespace Model {
     class Cpu_irq_interface;
     class Irq_controller;
     class Local_Irq_controller;
+
+    // Likely we will need to change this for x86
+    enum Irqs {
+        MAX_SGI = 16,
+        MAX_PPI = 16,
+        MAX_SPI = 992,
+        MAX_IRQ = 1024 - 4,
+    };
+
+    enum GICVersion {
+        GIC_UNKNOWN = 0,
+        GIC_V2 = 2,
+        GIC_V3 = 3,
+    };
 }
 
 class Model::Irq_controller : public Vbus::Device {
