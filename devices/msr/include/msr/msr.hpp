@@ -265,7 +265,7 @@ namespace Msr {
 }
 
 namespace Model {
-    class Gic_d;
+    class GicD;
 }
 
 static constexpr uint32
@@ -496,10 +496,10 @@ public:
 
 class Msr::IccSgi1rEl1 : public RegisterBase {
 private:
-    Model::Gic_d* _gic;
+    Model::GicD* _gic;
 
 public:
-    explicit IccSgi1rEl1(Model::Gic_d& gic)
+    explicit IccSgi1rEl1(Model::GicD& gic)
         : RegisterBase("ICC_SGI1R_EL1", ICC_SGI1R_EL1), _gic(&gic) {}
 
     virtual Vbus::Err access(Vbus::Access, const VcpuCtx*, Vbus::Space, mword, uint8,
@@ -689,7 +689,7 @@ private:
 
     virtual bool setup_page_table_regs(Vbus::Bus&);
     bool setup_tvm(Vbus::Bus&);
-    bool setup_gic_registers(Model::Gic_d&);
+    bool setup_gic_registers(Model::GicD&);
 
 protected:
     bool register_system_reg(RegisterBase* reg) {
@@ -706,7 +706,7 @@ public:
         uint64 ccsidr_el1[CCSIDR_NUM * 2];
     };
 
-    bool setup_arch_msr(const PlatformInfo& info, Vbus::Bus&, Model::Gic_d&);
+    bool setup_arch_msr(const PlatformInfo& info, Vbus::Bus&, Model::GicD&);
     bool setup_aarch64_caching_info(const CacheTopo& topo);
 
     RegisterBase* get_register_with_id(Msr::Id id) const {

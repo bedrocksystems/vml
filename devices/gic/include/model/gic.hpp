@@ -19,8 +19,8 @@
 
 namespace Model {
     class Cpu_irq_interface;
-    class Gic_d;
-    class Gic_r;
+    class GicD;
+    class GicR;
 
     enum { ACCESS_SIZE_32 = 4 };
 
@@ -29,15 +29,15 @@ namespace Model {
     static constexpr uint8 GICV2_MAX_CPUS = 8;
 }
 
-class Model::Gic_d : public Model::Irq_controller {
-    friend Gic_r;
+class Model::GicD : public Model::Irq_controller {
+    friend GicR;
 
 private:
     struct Banked;
 
-    class Irq_injection_info;
+    class IrqInjectionInfo;
 
-    class Irq_target {
+    class IrqTarget {
     public:
         /* The CPU set format is only supported in GICv2 mode. A consequence of that
          * is that the mask will never have more than 8 bits sets because GICv2 will
@@ -49,10 +49,10 @@ private:
         static constexpr uint32 TARGET_DATA_MASK = ~FORMAT_MASK;
         static constexpr uint32 INVALID_TARGET = ~0x0u;
 
-        Irq_target() : _tgt(INVALID_TARGET) {}
-        Irq_target(Format f, uint64 target)
+        IrqTarget() : _tgt(INVALID_TARGET) {}
+        IrqTarget(Format f, uint64 target)
             : _tgt((f & FORMAT_MASK) | (static_cast<uint32>(target) & TARGET_DATA_MASK)) {}
-        Irq_target(uint32 raw) : _tgt(raw) {}
+        explicit IrqTarget(uint32 raw) : _tgt(raw) {}
 
         bool is_valid() const { return _tgt != INVALID_TARGET; }
         uint32 raw() const { return _tgt; }
@@ -77,11 +77,11 @@ private:
         uint32 _tgt;
     };
 
-    class Irq_injection_info_update {
+    class IrqInjectionInfoUpdate {
     public:
-        friend class Irq_injection_info;
+        friend class IrqInjectionInfo;
 
-        Irq_injection_info_update(uint64 val = 0) : _info(val) {}
+        explicit IrqInjectionInfoUpdate(uint64 val = 0) : _info(val) {}
 
         static constexpr uint8 PENDING_SHIFT = 32;
         static constexpr uint64 PENDING_BIT = 1ull << PENDING_SHIFT;
@@ -91,11 +91,11 @@ private:
 
         bool pending() const { return (_info & PENDING_FIELD) != 0; }
         bool is_targeting_cpu(Vcpu_id id) const {
-            Irq_target tgt(static_cast<uint32>(_info));
+            IrqTarget tgt(static_cast<uint32>(_info));
             return tgt.is_cpu_targeted(id);
         }
 
-        void set_target_cpu(const Irq_target &tgt) {
+        void set_target_cpu(const IrqTarget &tgt) {
             _info = (_info & 0xffffffff00000000ull) | tgt.raw();
         }
 
@@ -139,16 +139,16 @@ private:
         uint64 _info;
     };
 
-    class Irq_injection_info {
+    class IrqInjectionInfo {
     public:
-        Irq_injection_info(uint64 val) : _info(val) {}
+        explicit IrqInjectionInfo(uint64 val) : _info(val) {}
 
-        Irq_injection_info_update read() const { return Irq_injection_info_update(_info); }
-        bool cas(Irq_injection_info_update &expected, Irq_injection_info_update &desired) {
+        IrqInjectionInfoUpdate read() const { return IrqInjectionInfoUpdate(_info); }
+        bool cas(IrqInjectionInfoUpdate &expected, IrqInjectionInfoUpdate &desired) {
             return _info.cas(expected._info, desired._info);
         }
 
-        void set(Irq_injection_info_update &new_val) { _info = new_val._info; }
+        void set(IrqInjectionInfoUpdate &new_val) { _info = new_val._info; }
 
     private:
         /*
@@ -191,7 +191,7 @@ private:
         bool _hw{false};
         bool _active{false};
 
-        Irq_injection_info injection_info{0};
+        IrqInjectionInfo injection_info{0};
 
         void enable(bool mmio_one = true) {
             if (mmio_one)
@@ -248,7 +248,7 @@ private:
             set_group1(false);
 
             if (!_hw) {
-                Irq_injection_info_update update(0);
+                IrqInjectionInfoUpdate update(0);
                 injection_info.set(update);
             }
 
@@ -260,7 +260,7 @@ private:
     };
 
 public:
-    enum Irq_state { INACTIVE = 0, PENDING = 1, ACTIVE = 2, ACTIVE_PENDING = 3 };
+    enum IrqState { INACTIVE = 0, PENDING = 1, ACTIVE = 2, ACTIVE_PENDING = 3 };
 
     class Lr {
     private:
@@ -279,8 +279,8 @@ public:
         static constexpr uint64 STATE_MASK = 0x3ull;
 
     public:
-        Lr(uint64 const lr) : _lr(lr) {}
-        Lr(Irq_state const state, Irq &irq, uint32 const vintid, uint8 sender = 0) : _lr(0) {
+        explicit Lr(uint64 const lr) : _lr(lr) {}
+        Lr(IrqState const state, Irq &irq, uint32 const vintid, uint8 sender = 0) : _lr(0) {
             _lr |= uint64(state) << STATE_SHIFT;
             _lr |= (irq.hw() ? 1ull : 0ull) << HW_BIT_SHIFT;
             _lr |= (irq.group1() ? 1ULL : 0ull) << GROUP_BIT_SHIFT;
@@ -302,12 +302,12 @@ public:
             _lr |= uint64(vintid); /* low 32bit */
         }
 
-        Irq_state state() const { return Irq_state((_lr >> STATE_SHIFT) & STATE_MASK); }
-        void set_state(Irq_state st) {
+        IrqState state() const { return IrqState((_lr >> STATE_SHIFT) & STATE_MASK); }
+        void set_state(IrqState st) {
             _lr = (_lr & ~(STATE_MASK << STATE_SHIFT)) | (uint64(st) << STATE_SHIFT);
         }
-        void activate() { set_state(Irq_state::ACTIVE); }
-        void deactivate() { set_state(Irq_state::INACTIVE); }
+        void activate() { set_state(IrqState::ACTIVE); }
+        void deactivate() { set_state(IrqState::INACTIVE); }
 
         bool hw() const { return _lr & (1ull << HW_BIT_SHIFT); }
         uint32 pintid() const { return (_lr >> PIRQ_ID_SHIFT) & PIRQ_ID_MASK; }
@@ -349,7 +349,7 @@ private:
     Banked *_local;
     Irq _spi[MAX_SPI];
 
-    Irq &_irq_object(Banked &cpu, uint64 const id) {
+    Irq &irq_object(Banked &cpu, uint64 const id) {
         if (id < MAX_SGI)
             return cpu._sgi[id];
         if (id < MAX_SGI + MAX_PPI)
@@ -358,7 +358,7 @@ private:
             return _spi[id - MAX_SGI - MAX_PPI];
     }
 
-    Irq const &_irq_object(Banked const &cpu, uint64 const id) const {
+    Irq const &irq_object(Banked const &cpu, uint64 const id) const {
         if (id < MAX_SGI)
             return cpu._sgi[id];
         if (id < MAX_SGI + MAX_PPI)
@@ -367,7 +367,7 @@ private:
             return _spi[id - MAX_SGI - MAX_PPI];
     }
 
-    struct Irq_mmio_access {
+    struct IrqMmioAccess {
         uint64 base_abs;
         uint16 irq_base;
         uint16 irq_max;
@@ -419,13 +419,13 @@ private:
     }
 
     template<typename T, void (Irq::*IRQ_FUN)(T)>
-    bool write(Banked &cpu, const Irq_mmio_access &acc, uint64 const value) {
+    bool write(Banked &cpu, const IrqMmioAccess &acc, uint64 const value) {
         if (!acc.is_valid())
             return false;
 
         for (unsigned i = 0; i < acc.num_irqs(); i++) {
             uint64 const pos = acc.first_irq_accessed() + i;
-            Irq &irq = _irq_object(cpu, pos);
+            Irq &irq = irq_object(cpu, pos);
             T const val = static_cast<T>((value >> (i * irq_per_bytes_to_bits(acc.irq_per_bytes)))
                                          & irq_per_bytes_to_mask(acc.irq_per_bytes));
             (irq.*IRQ_FUN)(val);
@@ -433,13 +433,13 @@ private:
         return true;
     }
 
-    bool change_target(Banked &cpu, const Irq_mmio_access &acc, uint64 const value) {
+    bool change_target(Banked &cpu, const IrqMmioAccess &acc, uint64 const value) {
         if (!acc.is_valid())
             return false;
 
         for (unsigned i = 0; i < acc.num_irqs(); i++) {
             uint64 const pos = acc.first_irq_accessed() + i;
-            Irq &irq = _irq_object(cpu, pos);
+            Irq &irq = irq_object(cpu, pos);
             uint8 const val
                 = static_cast<uint8>((value >> (i * irq_per_bytes_to_bits(acc.irq_per_bytes)))
                                      & irq_per_bytes_to_mask(acc.irq_per_bytes));
@@ -452,14 +452,14 @@ private:
         return true;
     }
 
-    template<bool (Gic_d::*GIC_FUN)(Vcpu_id, Vcpu_id, Irq &)>
-    bool mmio_assert_sgi(Vcpu_id vcpu_id, const Irq_mmio_access &acc, uint64 const value) {
+    template<bool (GicD::*GIC_FUN)(Vcpu_id, Vcpu_id, Irq &)>
+    bool mmio_assert_sgi(Vcpu_id vcpu_id, const IrqMmioAccess &acc, uint64 const value) {
         if (!acc.is_valid())
             return false;
 
         for (unsigned i = 0; i < acc.num_irqs(); i++) {
             uint64 const pos = acc.first_irq_accessed() + i;
-            Irq &irq = _irq_object(_local[vcpu_id], pos);
+            Irq &irq = irq_object(_local[vcpu_id], pos);
 
             uint8 sender_bitfield = static_cast<uint8>(value >> (i * Model::GICV2_MAX_CPUS));
 
@@ -472,14 +472,14 @@ private:
         return true;
     }
 
-    template<bool (Gic_d::*GIC_FUN)(Vcpu_id, Irq &)>
-    bool mmio_assert(Vcpu_id cpu_id, const Irq_mmio_access &acc, uint64 const value) {
+    template<bool (GicD::*GIC_FUN)(Vcpu_id, Irq &)>
+    bool mmio_assert(Vcpu_id cpu_id, const IrqMmioAccess &acc, uint64 const value) {
         if (!acc.is_valid())
             return false;
 
         for (unsigned i = 0; i < acc.num_irqs(); i++) {
             uint64 const pos = acc.first_irq_accessed() + i;
-            Irq &irq = _irq_object(_local[cpu_id], pos);
+            Irq &irq = irq_object(_local[cpu_id], pos);
 
             bool const set = (value >> i) & 0x1;
             if (!set)
@@ -491,14 +491,14 @@ private:
     }
 
     template<typename T, T (Irq::*IRQ_FUN)() const>
-    bool read(Banked const &cpu, const Irq_mmio_access &acc, uint64 &value) const {
+    bool read(Banked const &cpu, const IrqMmioAccess &acc, uint64 &value) const {
         if (!acc.is_valid())
             return false;
 
         value = 0;
         for (unsigned i = 0; i < acc.num_irqs(); i++) {
             uint64 const pos = acc.first_irq_accessed() + i;
-            Irq const &irq = _irq_object(cpu, pos);
+            Irq const &irq = irq_object(cpu, pos);
 
             value |= static_cast<uint64>((irq.*IRQ_FUN)())
                      << (i * irq_per_bytes_to_bits(acc.irq_per_bytes));
@@ -511,46 +511,44 @@ private:
     bool write_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
                         uint8 const bytes, uint64 const value, T &result, T fixed_clear = 0,
                         T fixed_set = 0) {
-        unsigned constexpr tsize = sizeof(T);
-        if (!bytes || (bytes > tsize) || (offset + bytes > base_max + 1))
+        unsigned constexpr TSIZE = sizeof(T);
+        if (!bytes || (bytes > TSIZE) || (offset + bytes > base_max + 1))
             return false;
 
         uint64 const base = offset - base_reg;
-        uint64 const mask = (bytes >= tsize) ? (T(0) - 1) : ((T(1) << (bytes * 8)) - 1);
+        uint64 const mask = (bytes >= TSIZE) ? (T(0) - 1) : ((T(1) << (bytes * 8)) - 1);
 
-        result &= (bytes >= tsize) ? T(0) : ~(T(mask) << (base * 8));
+        result &= (bytes >= TSIZE) ? T(0) : ~(T(mask) << (base * 8));
         result |= T(value & mask) << (base * 8);
         result &= ~fixed_clear;
         result |= fixed_set;
         return true;
     }
 
-    bool read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
-                       uint8 const bytes, uint64 const value, uint64 &result) const;
+    bool read_register(uint64 offset, uint32 base_reg, uint32 base_max, uint8 bytes, uint64 value,
+                       uint64 &result) const;
 
     void send_sgi(Vcpu_id, Vcpu_id, unsigned, bool, bool);
 
-    bool mmio_write(Vcpu_id const, uint64 const offset, uint8 const access_size,
-                    uint64 const value);
-    bool mmio_read(Vcpu_id const, uint64 const offset, uint8 const access_size,
-                   uint64 &value) const;
+    bool mmio_write(Vcpu_id, uint64 offset, uint8 bytes, uint64 value);
+    bool mmio_read(Vcpu_id, uint64 offset, uint8 bytes, uint64 &value) const;
 
     bool assert_sgi(Vcpu_id, Vcpu_id, Irq &irq);
     bool assert_pi(Vcpu_id vcpu_id, Irq &irq);
     bool deassert_pi(Vcpu_id vcpu_id, Irq &irq);
     bool deassert_sgi(Vcpu_id, Vcpu_id, Irq &irq);
-    void deassert_line(Vcpu_id const cpu_id, uint32 const irq_id);
+    void deassert_line(Vcpu_id cpu_id, uint32 irq_id);
 
-    bool notify_target(Irq &irq, const Irq_target &target);
-    Irq_target route_spi(Model::Gic_d::Irq &irq);
+    bool notify_target(Irq &irq, const IrqTarget &target);
+    IrqTarget route_spi(Model::GicD::Irq &irq);
     bool redirect_spi(Irq &irq);
-    Irq *highest_irq(Vcpu_id const cpu_id);
+    Irq *highest_irq(Vcpu_id cpu_id);
     bool vcpu_can_receive_irq(const Local_Irq_controller *gic_r) const {
         return !_ctlr.affinity_routing() || gic_r->can_receive_irq();
     }
 
 public:
-    Gic_d(GICVersion const version, uint16 num_vcpus)
+    GicD(GICVersion const version, uint16 num_vcpus)
         : Irq_controller("GICD"), _version(version), _num_vcpus(num_vcpus) {}
 
     bool init() {
@@ -574,12 +572,12 @@ public:
     virtual Type type() const override { return IRQ_CONTROLLER; }
 
     virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
-    virtual bool config_spi(uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
+    virtual bool config_spi(uint32 vintid, bool hw, uint16 pintid, bool edge) override;
     virtual bool assert_ppi(Vcpu_id, uint32) override;
     virtual bool assert_spi(uint32) override;
     virtual void deassert_line_ppi(Vcpu_id, uint32) override;
     virtual void deassert_line_spi(uint32) override;
-    virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id const) override;
+    virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id) override;
 
     bool any_irq_active(Vcpu_id);
     bool has_irq_to_inject(Vcpu_id cpu_id) { return highest_irq(cpu_id) != nullptr; }
@@ -594,15 +592,15 @@ public:
     }
 
     bool pending_irq(Vcpu_id, Lr &, uint8 min_priority = PRIORITY_ANY);
-    void update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, Irq_state state);
-    void icc_sgi1r_el1(uint64 const, Vcpu_id const);
+    void update_inj_status(Vcpu_id cpu_id, uint32 irq_id, IrqState state);
+    void icc_sgi1r_el1(uint64, Vcpu_id);
     bool is_affinity_routing_enabled() const { return _ctlr.affinity_routing(); }
     GICVersion version() const { return _version; }
 };
 
-class Model::Gic_r : public Model::Local_Irq_controller {
+class Model::GicR : public Model::Local_Irq_controller {
 private:
-    Gic_d *const gic_d;
+    GicD *const _gic_d;
     Vcpu_id const _vcpu_id;
     CpuAffinity const _aff;
     bool const _last;
@@ -616,12 +614,12 @@ private:
         constexpr bool sleeping() const { return value & SLEEP_BIT; }
     } _waker;
 
-    bool mmio_write(uint64 const, uint8 const, uint64 const);
-    bool mmio_read(uint64 const, uint8 const, uint64 &) const;
+    bool mmio_write(uint64, uint8, uint64);
+    bool mmio_read(uint64, uint8, uint64 &) const;
 
 public:
-    Gic_r(Gic_d &gic, Vcpu_id cpu_id, CpuAffinity aff, bool last)
-        : Local_Irq_controller("GICR"), gic_d(&gic), _vcpu_id(cpu_id), _aff(aff), _last(last) {}
+    GicR(GicD &gic, Vcpu_id cpu_id, CpuAffinity aff, bool last)
+        : Local_Irq_controller("GICR"), _gic_d(&gic), _vcpu_id(cpu_id), _aff(aff), _last(last) {}
 
     virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
                              uint64 &) override;

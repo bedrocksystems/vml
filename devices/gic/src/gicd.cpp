@@ -99,7 +99,7 @@ private:
     uint32 const _value;
 
 public:
-    Sgir(uint32 const value) : _value(value) {}
+    explicit Sgir(uint32 const value) : _value(value) {}
 
     enum {
         FILTER_USE_LIST = 0,
@@ -122,8 +122,8 @@ public:
 };
 
 bool
-Model::Gic_d::read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
-                            uint8 const bytes, uint64 const value, uint64 &result) const {
+Model::GicD::read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
+                           uint8 const bytes, uint64 const value, uint64 &result) const {
     if (!bytes || (bytes > 8) || (offset + bytes > base_max + 1))
         return false;
 
@@ -134,8 +134,8 @@ Model::Gic_d::read_register(uint64 const offset, uint32 const base_reg, uint32 c
 }
 
 Vbus::Err
-Model::Gic_d::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::Space,
-                     mword const offset, uint8 const size, uint64 &value) {
+Model::GicD::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::Space,
+                    mword const offset, uint8 const size, uint64 &value) {
 
     bool ok = false;
 
@@ -148,8 +148,8 @@ Model::Gic_d::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::S
 }
 
 bool
-Model::Gic_d::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const bytes,
-                         uint64 const value) {
+Model::GicD::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const bytes,
+                        uint64 const value) {
 
     if (offset >= GICD_SIZE || bytes > ACCESS_SIZE_32 * 2 || cpu_id >= _num_vcpus)
         return false;
@@ -167,7 +167,7 @@ Model::Gic_d::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const 
         if (irq_id < MAX_SGI + MAX_PPI || irq_id >= MAX_IRQ)
             return true; /* ignore */
 
-        Irq &irq = _irq_object(cpu, irq_id);
+        Irq &irq = irq_object(cpu, irq_id);
 
         if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
             INFO("GOS requested IRQ %u to be routed to VCPU " FMTu64, irq.id(), value);
@@ -180,22 +180,22 @@ Model::Gic_d::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const 
     if (bytes > ACCESS_SIZE_32)
         return false;
 
-    Irq_mmio_access acc{.base_abs = 0, // Filled by the logic below
-                        .irq_base = 0,
-                        .irq_max = MAX_SGI + MAX_SPI + MAX_PPI,
-                        .offset = offset,
-                        .bytes = bytes,
-                        .irq_per_bytes = 8}; // Work with a bitfield by default
+    IrqMmioAccess acc{.base_abs = 0, // Filled by the logic below
+                      .irq_base = 0,
+                      .irq_max = MAX_SGI + MAX_SPI + MAX_PPI,
+                      .offset = offset,
+                      .bytes = bytes,
+                      .irq_per_bytes = 8}; // Work with a bitfield by default
 
     switch (offset) {
     case GICD_CTLR ... GICD_CTLR_END: {
         constexpr uint32 const GICD_GRP0 = 1 << 0;
         constexpr uint32 const GICD_GRP1 = 1 << 1;
         constexpr uint32 const GICD_ARE = 1 << 4;
-        constexpr uint32 const enforce_zero_v2 = ~(GICD_GRP0 | GICD_GRP1);
-        constexpr uint32 const enforce_zero = ~(GICD_ARE | GICD_GRP0 | GICD_GRP1);
+        constexpr uint32 const ENFORCE_ZERO_V2 = ~(GICD_GRP0 | GICD_GRP1);
+        constexpr uint32 const ENFORCE_ZERO = ~(GICD_ARE | GICD_GRP0 | GICD_GRP1);
         return write_register(offset, GICD_CTLR, GICD_CTLR_END, bytes, value, _ctlr.value,
-                              (_version >= 3) ? enforce_zero : enforce_zero_v2);
+                              (_version >= 3) ? ENFORCE_ZERO : ENFORCE_ZERO_V2);
     }
     case GICD_IGROUP ... GICD_IGROUP_END:
         acc.base_abs = GICD_IGROUP;
@@ -211,14 +211,14 @@ Model::Gic_d::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const 
         if (offset == GICD_ISPENDR)
             reg &= ~((1ULL << MAX_SGI) - 1); /* SGIs are WI */
         acc.base_abs = GICD_ISPENDR;
-        return mmio_assert<&Gic_d::assert_pi>(cpu_id, acc, reg);
+        return mmio_assert<&GicD::assert_pi>(cpu_id, acc, reg);
     }
     case GICD_ICPENDR ... GICD_ICPENDR_END: {
         uint64 reg = value;
         if (offset == GICD_ICPENDR)
             reg &= ~((1ULL << MAX_SGI) - 1); /* SGIs are WI */
         acc.base_abs = GICD_ICPENDR;
-        return mmio_assert<&Gic_d::deassert_pi>(cpu_id, acc, reg);
+        return mmio_assert<&GicD::deassert_pi>(cpu_id, acc, reg);
     }
     case GICD_ISACTIVER ... GICD_ISACTIVER_END:
         acc.base_abs = GICD_ISACTIVER;
@@ -277,7 +277,7 @@ Model::Gic_d::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const 
         acc.irq_per_bytes = 1;
         acc.base_abs = GICD_CPENDSGIR;
         acc.irq_max = MAX_SGI;
-        return mmio_assert_sgi<&Gic_d::deassert_sgi>(cpu_id, acc, value);
+        return mmio_assert_sgi<&GicD::deassert_sgi>(cpu_id, acc, value);
     }
     case GICD_SPENDSGIR ... GICD_SPENDSGIR_END: {
         if (_ctlr.affinity_routing())
@@ -286,7 +286,7 @@ Model::Gic_d::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const 
         acc.irq_per_bytes = 1;
         acc.base_abs = GICD_SPENDSGIR;
         acc.irq_max = MAX_SGI;
-        return mmio_assert_sgi<&Gic_d::assert_sgi>(cpu_id, acc, value);
+        return mmio_assert_sgi<&GicD::assert_sgi>(cpu_id, acc, value);
     }
     case GICD_TYPER ... GICD_TYPER_END:             /* RO */
     case GICD_IIDR ... GICD_IIDR_END:               /* RO */
@@ -318,8 +318,8 @@ Model::Gic_d::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const 
 }
 
 bool
-Model::Gic_d::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const bytes,
-                        uint64 &value) const {
+Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const bytes,
+                       uint64 &value) const {
 
     if (offset >= GICD_SIZE || (bytes > ACCESS_SIZE_32 * 2) || cpu_id >= _num_vcpus)
         return false;
@@ -337,7 +337,7 @@ Model::Gic_d::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const b
         if (!_ctlr.affinity_routing())
             return true; /* RAZ */
 
-        Irq const &irq = _irq_object(cpu, irq_id);
+        Irq const &irq = irq_object(cpu, irq_id);
         value = irq._routing.value;
 
         return true;
@@ -347,12 +347,12 @@ Model::Gic_d::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const b
     if (bytes > ACCESS_SIZE_32)
         return false;
 
-    Irq_mmio_access acc{.base_abs = 0, // Filled by the logic below
-                        .irq_base = 0,
-                        .irq_max = MAX_SGI + MAX_SPI + MAX_PPI,
-                        .offset = offset,
-                        .bytes = bytes,
-                        .irq_per_bytes = 8}; // Work with a bitfield by default
+    IrqMmioAccess acc{.base_abs = 0, // Filled by the logic below
+                      .irq_base = 0,
+                      .irq_max = MAX_SGI + MAX_SPI + MAX_PPI,
+                      .offset = offset,
+                      .bytes = bytes,
+                      .irq_per_bytes = 8}; // Work with a bitfield by default
 
     switch (offset) {
     case GICD_CTLR ... GICD_CTLR_END:
@@ -476,15 +476,15 @@ Model::Gic_d::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const b
 }
 
 bool
-Model::Gic_d::config_irq(Vcpu_id const cpu_id, uint32 const irq_id, bool const hw,
-                         uint16 const pintid, bool edge) {
+Model::GicD::config_irq(Vcpu_id const cpu_id, uint32 const irq_id, bool const hw,
+                        uint16 const pintid, bool edge) {
     if (irq_id >= MAX_IRQ)
         return false;
     if (cpu_id >= _num_vcpus)
         return false;
 
     Banked &cpu = _local[cpu_id];
-    Irq &irq = _irq_object(cpu, irq_id);
+    Irq &irq = irq_object(cpu, irq_id);
 
     irq._hw = hw;
     irq._pintid = pintid;
@@ -494,14 +494,14 @@ Model::Gic_d::config_irq(Vcpu_id const cpu_id, uint32 const irq_id, bool const h
 }
 
 bool
-Model::Gic_d::assert_ppi(Vcpu_id const cpu_id, uint32 const irq_id) {
+Model::GicD::assert_ppi(Vcpu_id const cpu_id, uint32 const irq_id) {
     if (cpu_id >= _num_vcpus)
         return false;
     if (irq_id >= MAX_SGI + MAX_PPI)
         return false;
 
     Banked &cpu = _local[cpu_id];
-    Irq &irq = _irq_object(cpu, irq_id);
+    Irq &irq = irq_object(cpu, irq_id);
 
     if (!irq.hw_edge())
         irq.assert_line();
@@ -510,31 +510,31 @@ Model::Gic_d::assert_ppi(Vcpu_id const cpu_id, uint32 const irq_id) {
 }
 
 void
-Model::Gic_d::deassert_line(Vcpu_id const cpu_id, uint32 const irq_id) {
+Model::GicD::deassert_line(Vcpu_id const cpu_id, uint32 const irq_id) {
     if (cpu_id >= _num_vcpus)
         return;
     if (irq_id >= MAX_SGI + MAX_PPI)
         return;
 
     Banked &cpu = _local[cpu_id];
-    Irq &irq = _irq_object(cpu, irq_id);
+    Irq &irq = irq_object(cpu, irq_id);
 
     irq.deassert_line();
 }
 
 void
-Model::Gic_d::deassert_line_ppi(Vcpu_id const cpu_id, uint32 const irq_id) {
+Model::GicD::deassert_line_ppi(Vcpu_id const cpu_id, uint32 const irq_id) {
     deassert_line(cpu_id, irq_id);
 }
 
 void
-Model::Gic_d::deassert_line_spi(uint32 const irq_id) {
+Model::GicD::deassert_line_spi(uint32 const irq_id) {
     deassert_line(0, irq_id);
 }
 
-Model::Gic_d::Irq *
-Model::Gic_d::highest_irq(Vcpu_id const cpu_id) {
-    Model::Gic_d::Irq *r = nullptr;
+Model::GicD::Irq *
+Model::GicD::highest_irq(Vcpu_id const cpu_id) {
+    Model::GicD::Irq *r = nullptr;
     size_t irq_id = 0;
     Banked &cpu = _local[cpu_id];
     const Local_Irq_controller *gic_r = _local[cpu_id]._notify->local_irq_ctlr();
@@ -544,7 +544,7 @@ Model::Gic_d::highest_irq(Vcpu_id const cpu_id) {
         if (irq_id == Bitset<MAX_IRQ>::NOT_FOUND)
             break;
 
-        Irq &irq = _irq_object(cpu, irq_id);
+        Irq &irq = irq_object(cpu, irq_id);
 
         if ((irq_id >= MAX_PPI + MAX_SGI) && !vcpu_can_receive_irq(gic_r)) {
             /*
@@ -568,11 +568,11 @@ Model::Gic_d::highest_irq(Vcpu_id const cpu_id) {
 }
 
 bool
-Model::Gic_d::any_irq_active(Vcpu_id cpu_id) {
+Model::GicD::any_irq_active(Vcpu_id cpu_id) {
     Banked &cpu = _local[cpu_id];
 
     for (uint32 i = 0; i < MAX_IRQ; i++) {
-        Irq &irq = _irq_object(cpu, i);
+        Irq &irq = irq_object(cpu, i);
 
         if (irq.active())
             return true;
@@ -582,7 +582,7 @@ Model::Gic_d::any_irq_active(Vcpu_id cpu_id) {
 }
 
 bool
-Model::Gic_d::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
+Model::GicD::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
     ASSERT(cpu_id < _num_vcpus);
 
     Irq *irq = highest_irq(cpu_id);
@@ -590,7 +590,7 @@ Model::Gic_d::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
         return false;
     ASSERT(irq->id() < MAX_IRQ);
 
-    Irq_injection_info_update desired, cur;
+    IrqInjectionInfoUpdate desired, cur;
     uint8 sender_id;
 
     do {
@@ -611,7 +611,7 @@ Model::Gic_d::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
     } while (!irq->injection_info.cas(cur, desired));
 
     Banked &cpu = _local[cpu_id];
-    Irq_state state = Irq_state::PENDING;
+    IrqState state = IrqState::PENDING;
 
     cpu._in_injection_irqs.atomic_set(irq->id());
     cpu._pending_irqs.atomic_clr(irq->id());
@@ -622,7 +622,7 @@ Model::Gic_d::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
      * both state, we have to ignore that.
      */
     if (irq->active() && !irq->hw()) {
-        state = Irq_state::ACTIVE_PENDING;
+        state = IrqState::ACTIVE_PENDING;
     }
 
     if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
@@ -641,22 +641,22 @@ Model::Gic_d::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
 }
 
 void
-Model::Gic_d::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, Irq_state state) {
+Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState state) {
     ASSERT(cpu_id < _num_vcpus);
     ASSERT(irq_id < MAX_IRQ);
 
     Banked &cpu = _local[cpu_id];
-    Irq &irq = _irq_object(cpu, irq_id);
+    Irq &irq = irq_object(cpu, irq_id);
 
     cpu._in_injection_irqs.atomic_clr(irq.id());
 
     switch (state) {
-    case Irq_state::INACTIVE: {
+    case IrqState::INACTIVE: {
         // Done injecting
         if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
             INFO("IRQ %u handled by the guest on VCPU " FMTu64, irq_id, cpu_id);
 
-        Irq_injection_info_update desired, cur;
+        IrqInjectionInfoUpdate desired, cur;
 
         irq.deactivate();
 
@@ -677,19 +677,19 @@ Model::Gic_d::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, Irq_state s
 
         return;
     }
-    case Irq_state::ACTIVE:
-    case Irq_state::ACTIVE_PENDING:
-    case Irq_state::PENDING: {
+    case IrqState::ACTIVE:
+    case IrqState::ACTIVE_PENDING:
+    case IrqState::PENDING: {
         if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
             INFO("IRQ %u came back, not yet injected on VCPU " FMTu64, irq_id, cpu_id);
 
-        if (state == Irq_state::PENDING) {
+        if (state == IrqState::PENDING) {
             irq.deactivate();
         } else {
             irq.activate();
         }
 
-        Irq_injection_info_update desired, cur;
+        IrqInjectionInfoUpdate desired, cur;
         do {
             cur = irq.injection_info.read();
             uint8 sender_id = cur.get_injected_sender_id();
@@ -699,7 +699,7 @@ Model::Gic_d::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, Irq_state s
 
             desired = cur;
             desired.unset_injected(sender_id);
-            if (state == Irq_state::ACTIVE)
+            if (state == IrqState::ACTIVE)
                 desired.unset_pending(sender_id);
         } while (!irq.injection_info.cas(cur, desired));
 
@@ -710,7 +710,7 @@ Model::Gic_d::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, Irq_state s
 }
 
 bool
-Model::Gic_d::notify_target(Irq &irq, const Irq_target &target) {
+Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
     if (__UNLIKELY__(!target.is_valid())) {
         return false;
     }
@@ -740,15 +740,15 @@ Model::Gic_d::notify_target(Irq &irq, const Irq_target &target) {
 }
 
 bool
-Model::Gic_d::redirect_spi(Irq &irq) {
+Model::GicD::redirect_spi(Irq &irq) {
     ASSERT(irq.id() >= MAX_PPI + MAX_SGI);
 
-    Irq_target target = route_spi(irq);
+    IrqTarget target = route_spi(irq);
 
     if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
         INFO("SPI %u re-routed to VCPU" FMTx32, irq.id(), target.raw());
 
-    Irq_injection_info_update desired(0), cur;
+    IrqInjectionInfoUpdate desired(0), cur;
 
     do {
         cur = irq.injection_info.read();
@@ -763,8 +763,8 @@ Model::Gic_d::redirect_spi(Irq &irq) {
 }
 
 bool
-Model::Gic_d::assert_pi(Vcpu_id cpu_id, Irq &irq) {
-    Irq_target target;
+Model::GicD::assert_pi(Vcpu_id cpu_id, Irq &irq) {
+    IrqTarget target;
 
     ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
 
@@ -774,10 +774,10 @@ Model::Gic_d::assert_pi(Vcpu_id cpu_id, Irq &irq) {
         if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
             INFO("SPI %u routed to VCPU" FMTx32, irq.id(), target.raw());
     } else {
-        target = Irq_target(Irq_target::CPU_ID, cpu_id);
+        target = IrqTarget(IrqTarget::CPU_ID, cpu_id);
     }
 
-    Irq_injection_info_update update(0);
+    IrqInjectionInfoUpdate update(0);
 
     update.set_target_cpu(target);
     update.set_pending();
@@ -787,7 +787,7 @@ Model::Gic_d::assert_pi(Vcpu_id cpu_id, Irq &irq) {
 }
 
 bool
-Model::Gic_d::assert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
+Model::GicD::assert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
     ASSERT(irq.id() < MAX_SGI);
 
     if (_ctlr.affinity_routing())
@@ -796,12 +796,12 @@ Model::Gic_d::assert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
     if (Model::GICV2_MAX_CPUS <= sender)
         return false;
 
-    Irq_injection_info_update desired, cur;
+    IrqInjectionInfoUpdate desired, cur;
 
     do {
         cur = irq.injection_info.read();
         desired = cur;
-        desired.set_target_cpu(Irq_target(Irq_target::CPU_ID, target));
+        desired.set_target_cpu(IrqTarget(IrqTarget::CPU_ID, target));
         desired.unset_injected(static_cast<uint8>(sender));
         desired.set_pending(static_cast<uint8>(sender));
     } while (!irq.injection_info.cas(cur, desired));
@@ -809,11 +809,11 @@ Model::Gic_d::assert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
     if (__UNLIKELY__(Debug::current_level == Debug::FULL))
         INFO("SGI %u sent from " FMTx64 " to " FMTx64, irq.id(), sender, target);
 
-    return notify_target(irq, Irq_target(Irq_target::CPU_ID, target));
+    return notify_target(irq, IrqTarget(IrqTarget::CPU_ID, target));
 }
 
 bool
-Model::Gic_d::deassert_pi(Vcpu_id, Irq &irq) {
+Model::GicD::deassert_pi(Vcpu_id, Irq &irq) {
     ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
 
     if (irq._hw) {
@@ -821,21 +821,21 @@ Model::Gic_d::deassert_pi(Vcpu_id, Irq &irq) {
         return true;
     }
 
-    Irq_injection_info_update update(0);
+    IrqInjectionInfoUpdate update(0);
     irq.injection_info.set(update);
 
     return true;
 }
 
 bool
-Model::Gic_d::deassert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
+Model::GicD::deassert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
     if (_ctlr.affinity_routing())
         return deassert_pi(target, irq);
 
     if (Model::GICV2_MAX_CPUS <= sender)
         return false;
 
-    Irq_injection_info_update desired, cur;
+    IrqInjectionInfoUpdate desired, cur;
 
     do {
         cur = irq.injection_info.read();
@@ -847,13 +847,13 @@ Model::Gic_d::deassert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
     return true;
 }
 
-Model::Gic_d::Irq_target
-Model::Gic_d::route_spi(Model::Gic_d::Irq &irq) {
+Model::GicD::IrqTarget
+Model::GicD::route_spi(Model::GicD::Irq &irq) {
     if (!_ctlr.affinity_routing()) {
-        constexpr uint16 target_mode_max_cpus = 8U;
-        Irq_target res(Irq_target::CPU_SET, 0);
+        constexpr uint16 TARGET_MODE_MAX_CPUS = 8U;
+        IrqTarget res(IrqTarget::CPU_SET, 0);
 
-        for (Vcpu_id i = 0; i < min<uint16>(_num_vcpus, target_mode_max_cpus); i++) {
+        for (Vcpu_id i = 0; i < min<uint16>(_num_vcpus, TARGET_MODE_MAX_CPUS); i++) {
             if (!_local[i]._notify)
                 continue;
             if (irq.group0() && !_ctlr.group0_enabled())
@@ -881,7 +881,7 @@ Model::Gic_d::route_spi(Model::Gic_d::Irq &irq) {
             const Local_Irq_controller *gicr = cpu->local_irq_ctlr();
 
             if (gicr->can_receive_irq())
-                return Irq_target(Irq_target::CPU_ID, i);
+                return IrqTarget(IrqTarget::CPU_ID, i);
         }
     } else {
         uint32 const cpu_id = static_cast<uint32>(irq._routing.aff3() << 24)
@@ -889,16 +889,16 @@ Model::Gic_d::route_spi(Model::Gic_d::Irq &irq) {
                               | static_cast<uint32>(irq._routing.aff1() << 8)
                               | static_cast<uint32>(irq._routing.aff0());
         if (cpu_id >= _num_vcpus)
-            return Irq_target(); // Empty target
+            return IrqTarget(); // Empty target
         if (_local[cpu_id]._notify)
-            return Irq_target(Irq_target::CPU_ID, cpu_id);
+            return IrqTarget(IrqTarget::CPU_ID, cpu_id);
     }
 
-    return Irq_target(); // Empty target
+    return IrqTarget(); // Empty target
 }
 
 bool
-Model::Gic_d::assert_spi(uint32 const irq_id) {
+Model::GicD::assert_spi(uint32 const irq_id) {
     if (irq_id >= MAX_IRQ)
         return false;
     if (irq_id < MAX_SGI + MAX_PPI)
@@ -913,12 +913,12 @@ Model::Gic_d::assert_spi(uint32 const irq_id) {
 }
 
 bool
-Model::Gic_d::config_spi(uint32 const vintid, bool const hw, uint16 const pintid, bool edge) {
+Model::GicD::config_spi(uint32 const vintid, bool const hw, uint16 const pintid, bool edge) {
     return config_irq(0, vintid, hw, pintid, edge);
 }
 
 void
-Model::Gic_d::enable_cpu(Cpu_irq_interface *cpu, Vcpu_id const cpu_id) {
+Model::GicD::enable_cpu(Cpu_irq_interface *cpu, Vcpu_id const cpu_id) {
     ASSERT(cpu_id < _num_vcpus);
     /* for now only once a cpu can register */
     ASSERT(_local[cpu_id]._notify == nullptr);
@@ -926,12 +926,12 @@ Model::Gic_d::enable_cpu(Cpu_irq_interface *cpu, Vcpu_id const cpu_id) {
     _local[cpu_id]._notify = cpu;
 }
 
-class Icc_sgi1r_el1 {
+class IccSgi1rEl1 {
 private:
     uint64 const _value;
 
 public:
-    Icc_sgi1r_el1(uint64 const value) : _value(value) {}
+    explicit IccSgi1rEl1(uint64 const value) : _value(value) {}
 
     static constexpr uint8 MAX_CPU_ID_IN_TARGET_LIST = 16;
 
@@ -956,8 +956,8 @@ public:
 };
 
 void
-Model::Gic_d::icc_sgi1r_el1(uint64 const value, Vcpu_id const self) {
-    Icc_sgi1r_el1 const sysreg(value);
+Model::GicD::icc_sgi1r_el1(uint64 const value, Vcpu_id const self) {
+    IccSgi1rEl1 const sysreg(value);
 
     if (sysreg.intid() >= MAX_SGI)
         return;
@@ -977,7 +977,7 @@ Model::Gic_d::icc_sgi1r_el1(uint64 const value, Vcpu_id const self) {
             return;
         }
 
-        for (uint8 tcpu = 0; tcpu < Icc_sgi1r_el1::MAX_CPU_ID_IN_TARGET_LIST; tcpu++) {
+        for (uint8 tcpu = 0; tcpu < IccSgi1rEl1::MAX_CPU_ID_IN_TARGET_LIST; tcpu++) {
             if (!sysreg.target(static_cast<uint32>(tcpu)))
                 continue;
 
@@ -991,8 +991,8 @@ Model::Gic_d::icc_sgi1r_el1(uint64 const value, Vcpu_id const self) {
 }
 
 void
-Model::Gic_d::send_sgi(Vcpu_id const self, Vcpu_id const cpu, unsigned const sgi,
-                       bool const both_groups, bool const sgir_group1) {
+Model::GicD::send_sgi(Vcpu_id const self, Vcpu_id const cpu, unsigned const sgi,
+                      bool const both_groups, bool const sgir_group1) {
     ASSERT(sgi < MAX_SGI);
     ASSERT(cpu < _num_vcpus);
 
@@ -1015,7 +1015,7 @@ Model::Gic_d::send_sgi(Vcpu_id const self, Vcpu_id const cpu, unsigned const sgi
 }
 
 void
-Model::Gic_d::reset(const VcpuCtx *) {
+Model::GicD::reset(const VcpuCtx *) {
     for (uint16 cpu = 0; cpu < _num_vcpus; cpu++) {
         for (uint8 i = 0; i < MAX_SGI; i++) {
             _local[cpu]._sgi[i].reset(uint8(1u << cpu));
@@ -1024,7 +1024,7 @@ Model::Gic_d::reset(const VcpuCtx *) {
             _local[cpu]._ppi[i].reset(uint8(1u << cpu));
 
         for (uint32 i = 0; i < MAX_IRQ; i++) {
-            Irq &irq = _irq_object(_local[cpu], i);
+            Irq &irq = irq_object(_local[cpu], i);
 
             if (irq.hw()) {
                 if (_local[cpu]._in_injection_irqs.is_set(i)) {

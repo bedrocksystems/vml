@@ -388,13 +388,13 @@ Msr::Bus::setup_tvm(Vbus::Bus &vbus) {
 }
 
 bool
-Msr::Bus::setup_gic_registers(Model::Gic_d &gicd) {
+Msr::Bus::setup_gic_registers(Model::GicD &gicd) {
     Msr::IccSgi1rEl1 *sgi1r = new (nothrow) Msr::IccSgi1rEl1(gicd);
     return register_system_reg(sgi1r);
 }
 
 bool
-Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Model::Gic_d &gicd) {
+Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Model::GicD &gicd) {
     Msr::Register *reg;
 
     if (!setup_aarch64_features(info.aa64.id_aa64pfr0_el1, info.aa64.id_aa64pfr1_el1,

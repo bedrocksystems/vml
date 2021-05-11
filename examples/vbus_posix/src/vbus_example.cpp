@@ -26,7 +26,7 @@ static Semaphore wait_sm;
 
 class Dummy_vcpu : public Model::Cpu {
 public:
-    Dummy_vcpu(Model::Gic_d &gic) : Model::Cpu(&gic, 0, 0) {}
+    Dummy_vcpu(Model::GicD &gic) : Model::Cpu(&gic, 0, 0) {}
 
     virtual bool recall(bool) override {
         DEBUG("VCPU recalled - an interrupt is waiting.");
@@ -43,7 +43,7 @@ int
 main() {
     Platform_ctx ctx;
     Vbus::Bus vbus;
-    Model::Gic_d gicd(Model::GIC_V2, 1);
+    Model::GicD gicd(Model::GIC_V2, 1);
     Model::SimpleAS as(false);
     Msr::Bus msr_bus;
 

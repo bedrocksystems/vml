@@ -63,13 +63,13 @@ constexpr uint16 GICR_IIDR_IMPLEMENTER = 0x43b;
 enum { GICR_SIZE = 0x20000 };
 
 bool
-Model::Gic_r::can_receive_irq() const {
+Model::GicR::can_receive_irq() const {
     return !_waker.sleeping();
 }
 
 Vbus::Err
-Model::Gic_r::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset,
-                     uint8 const size, uint64 &value) {
+Model::GicR::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset,
+                    uint8 const size, uint64 &value) {
 
     bool ok = false;
 
@@ -82,22 +82,22 @@ Model::Gic_r::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mw
 }
 
 bool
-Model::Gic_r::mmio_write(uint64 const offset, uint8 const bytes, uint64 const value) {
+Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const value) {
     if (offset >= GICR_SIZE)
         return false;
     if (bytes > ACCESS_SIZE_32)
         return false;
 
-    Gic_d &gic = *gic_d;
+    GicD &gic = *_gic_d;
     ASSERT(_vcpu_id < gic._num_vcpus);
-    Gic_d::Banked &cpu = gic._local[_vcpu_id];
+    GicD::Banked &cpu = gic._local[_vcpu_id];
 
-    Gic_d::Irq_mmio_access acc{.base_abs = 0, // Filled by the logic below
-                               .irq_base = 0,
-                               .irq_max = MAX_SGI + MAX_PPI,
-                               .offset = offset,
-                               .bytes = bytes,
-                               .irq_per_bytes = 8}; // Work with a bitfield by default
+    GicD::IrqMmioAccess acc{.base_abs = 0, // Filled by the logic below
+                            .irq_base = 0,
+                            .irq_max = MAX_SGI + MAX_PPI,
+                            .offset = offset,
+                            .bytes = bytes,
+                            .irq_per_bytes = 8}; // Work with a bitfield by default
 
     switch (offset) {
     case GICR_CTLR ... GICR_CTLR_END:
@@ -119,57 +119,57 @@ Model::Gic_r::mmio_write(uint64 const offset, uint8 const bytes, uint64 const va
     }
     case GICR_IGROUP0 ... GICR_IGROUP0_END:
         acc.base_abs = GICR_IGROUP0;
-        return gic.write<bool, &Gic_d::Irq::set_group1>(cpu, acc, value);
+        return gic.write<bool, &GicD::Irq::set_group1>(cpu, acc, value);
     case GICR_ISENABLER0 ... GICR_ISENABLER0_END:
         acc.base_abs = GICR_ISENABLER0;
-        return gic.write<bool, &Gic_d::Irq::enable>(cpu, acc, value);
+        return gic.write<bool, &GicD::Irq::enable>(cpu, acc, value);
     case GICR_ICENABLER0 ... GICR_ICENABLER0_END:
         acc.base_abs = GICR_ICENABLER0;
-        return gic.write<bool, &Gic_d::Irq::disable>(cpu, acc, value);
+        return gic.write<bool, &GicD::Irq::disable>(cpu, acc, value);
     case GICR_ISACTIVER0 ... GICR_ISACTIVER0_END:
         acc.base_abs = GICR_ISACTIVER0;
-        return gic.write<bool, &Gic_d::Irq::activate>(cpu, acc, value);
+        return gic.write<bool, &GicD::Irq::activate>(cpu, acc, value);
     case GICR_ICACTIVER0 ... GICR_ICACTIVER0_END:
         acc.base_abs = GICR_ICACTIVER0;
-        return gic.write<bool, &Gic_d::Irq::deactivate>(cpu, acc, value);
+        return gic.write<bool, &GicD::Irq::deactivate>(cpu, acc, value);
     case GICR_IPRIORITYR0 ... GICR_IPRIORITYR0_END:
         acc.base_abs = GICR_IPRIORITYR0;
         acc.irq_per_bytes = 1;
-        return gic.write<uint8, &Gic_d::Irq::prio>(cpu, acc, value);
+        return gic.write<uint8, &GicD::Irq::prio>(cpu, acc, value);
     case GICR_ISPENDR0 ... GICR_ISPENDR0_END:
         if (!gic.is_affinity_routing_enabled())
             return false;
         acc.base_abs = GICR_ISPENDR0;
-        return gic.mmio_assert<&Gic_d::assert_pi>(_vcpu_id, acc, value);
+        return gic.mmio_assert<&GicD::assert_pi>(_vcpu_id, acc, value);
     case GICR_ICPENDR0 ... GICR_ICPENDR0_END:
         if (!gic.is_affinity_routing_enabled())
             return false;
         acc.base_abs = GICR_ICPENDR0;
-        return gic.mmio_assert<&Gic_d::deassert_pi>(_vcpu_id, acc, value);
+        return gic.mmio_assert<&GicD::deassert_pi>(_vcpu_id, acc, value);
     case GICR_ICFGR0 ... GICR_ICFGR0_END:
         acc.base_abs = GICR_ICFGR0;
         acc.irq_max = MAX_SGI;
         acc.irq_per_bytes = 4;
-        return gic.write<uint8, &Gic_d::Irq::set_encoded_edge>(cpu, acc, value);
+        return gic.write<uint8, &GicD::Irq::set_encoded_edge>(cpu, acc, value);
     case GICR_ICFGR1 ... GICR_ICFGR1_END:
         acc.base_abs = GICR_ICFGR1;
         acc.irq_base = MAX_SGI;
         acc.irq_max = MAX_PPI;
         acc.irq_per_bytes = 4;
-        return gic.write<uint8, &Gic_d::Irq::set_encoded_edge>(cpu, acc, value);
+        return gic.write<uint8, &GicD::Irq::set_encoded_edge>(cpu, acc, value);
     }
 
     return false;
 }
 
 bool
-Model::Gic_r::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) const {
+Model::GicR::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) const {
     if (offset >= GICR_SIZE)
         return false;
 
-    Gic_d &gic = *gic_d;
+    GicD &gic = *_gic_d;
     ASSERT(_vcpu_id < gic._num_vcpus);
-    Gic_d::Banked const &cpu = gic._local[_vcpu_id];
+    GicD::Banked const &cpu = gic._local[_vcpu_id];
 
     switch (offset) {
     case GICR_TYPER ... GICR_TYPER_END: {
@@ -187,12 +187,12 @@ Model::Gic_r::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) c
     if (bytes > ACCESS_SIZE_32)
         return false;
 
-    Gic_d::Irq_mmio_access acc{.base_abs = 0, // Filled by the logic below
-                               .irq_base = 0,
-                               .irq_max = MAX_SGI + MAX_PPI,
-                               .offset = offset,
-                               .bytes = bytes,
-                               .irq_per_bytes = 8}; // Work with a bitfield by default
+    GicD::IrqMmioAccess acc{.base_abs = 0, // Filled by the logic below
+                            .irq_base = 0,
+                            .irq_max = MAX_SGI + MAX_PPI,
+                            .offset = offset,
+                            .bytes = bytes,
+                            .irq_per_bytes = 8}; // Work with a bitfield by default
 
     switch (offset) {
     case GICR_CTLR ... GICR_CTLR_END:
@@ -211,40 +211,40 @@ Model::Gic_r::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) c
         return true;
     case GICR_ISENABLER0 ... GICR_ISENABLER0_END:
         acc.base_abs = GICR_ISENABLER0;
-        return gic.read<bool, &Gic_d::Irq::enabled>(cpu, acc, value);
+        return gic.read<bool, &GicD::Irq::enabled>(cpu, acc, value);
     case GICR_ICENABLER0 ... GICR_ICENABLER0_END:
         acc.base_abs = GICR_ICENABLER0;
-        return gic.read<bool, &Gic_d::Irq::enabled>(cpu, acc, value);
+        return gic.read<bool, &GicD::Irq::enabled>(cpu, acc, value);
     case GICR_ISACTIVER0 ... GICR_ISACTIVER0_END:
         acc.base_abs = GICR_ISACTIVER0;
-        return gic.read<bool, &Gic_d::Irq::active>(cpu, acc, value);
+        return gic.read<bool, &GicD::Irq::active>(cpu, acc, value);
     case GICR_ICACTIVER0 ... GICR_ICACTIVER0_END:
         acc.base_abs = GICR_ICACTIVER0;
-        return gic.read<bool, &Gic_d::Irq::active>(cpu, acc, value);
+        return gic.read<bool, &GicD::Irq::active>(cpu, acc, value);
     case GICR_ISPENDR0 ... GICR_ISPENDR0_END:
         acc.base_abs = GICR_ISPENDR0;
-        return gic.read<bool, &Gic_d::Irq::pending>(cpu, acc, value);
+        return gic.read<bool, &GicD::Irq::pending>(cpu, acc, value);
     case GICR_ICPENDR0 ... GICR_ICPENDR0_END:
         acc.base_abs = GICR_ICPENDR0;
-        return gic.read<bool, &Gic_d::Irq::pending>(cpu, acc, value);
+        return gic.read<bool, &GicD::Irq::pending>(cpu, acc, value);
     case GICR_IGROUP0 ... GICR_IGROUP0_END:
         acc.base_abs = GICR_IGROUP0;
-        return gic.read<bool, &Gic_d::Irq::group1>(cpu, acc, value);
+        return gic.read<bool, &GicD::Irq::group1>(cpu, acc, value);
     case GICR_ICFGR0 ... GICR_ICFGR0_END:
         acc.base_abs = GICR_ICFGR0;
         acc.irq_max = MAX_SGI;
         acc.irq_per_bytes = 4;
-        return gic.read<uint8, &Gic_d::Irq::edge_encoded>(cpu, acc, value);
+        return gic.read<uint8, &GicD::Irq::edge_encoded>(cpu, acc, value);
     case GICR_ICFGR1 ... GICR_ICFGR1_END:
         acc.base_abs = GICR_ICFGR1;
         acc.irq_base = MAX_SGI;
         acc.irq_max = MAX_PPI;
         acc.irq_per_bytes = 4;
-        return gic.read<uint8, &Gic_d::Irq::edge_encoded>(cpu, acc, value);
+        return gic.read<uint8, &GicD::Irq::edge_encoded>(cpu, acc, value);
     case GICR_IPRIORITYR0 ... GICR_IPRIORITYR0_END:
         acc.base_abs = GICR_IPRIORITYR0;
         acc.irq_per_bytes = 1;
-        return gic.read<uint8, &Gic_d::Irq::prio>(cpu, acc, value);
+        return gic.read<uint8, &GicD::Irq::prio>(cpu, acc, value);
     }
     return false;
 }
