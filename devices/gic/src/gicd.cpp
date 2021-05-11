@@ -187,7 +187,7 @@ Model::GicD::write_irouter(Banked &cpu, uint64 offset, uint8 bytes, uint64 value
 }
 
 bool
-Model::GicD::write_sgir(Vcpu_id cpu_id, uint64 offset, uint8 bytes, uint64 value) {
+Model::GicD::write_sgir(Vcpu_id cpu_id, uint64 value) {
     Sgir const sgir(value & 0xfffffffful);
 
     switch (sgir.filter()) {
@@ -269,7 +269,7 @@ Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 va
         acc.irq_per_bytes = 4;
         return write<uint8, &Irq::set_encoded_edge>(cpu, acc, value);
     case GICD_SGIR ... GICD_SGIR_END:
-        return write_sgir(cpu_id, acc.offset, acc.bytes, value);
+        return write_sgir(cpu_id, value);
     case GICD_CPENDSGIR ... GICD_CPENDSGIR_END: {
         if (_ctlr.affinity_routing())
             return true; /* WI */
