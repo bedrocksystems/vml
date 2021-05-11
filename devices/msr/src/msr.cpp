@@ -24,49 +24,38 @@ Msr::Bus::setup_aarch64_debug(uint64 id_aa64dfr0_el1, uint64 id_aa64dfr1_el1) {
 
     id_aa64dfr0_el1 = AA64DFR0_DEBUG_V8;
     reg = new (nothrow) Msr::Register("ID_AA64DFR0_EL1", ID_AA64DFR0_EL1, false, id_aa64dfr0_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     id_aa64dfr1_el1 = 0ull;
     reg = new (nothrow) Msr::Register("ID_AA64DFR1_EL1", ID_AA64DFR1_EL1, false, id_aa64dfr1_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Register("MDSCR_EL1", MDSCR_EL1, true, 0x0ULL);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     for (uint8 i = 0; i < 16; i++) {
         reg = new (nothrow) Msr::Register("DBGBVR_EL1", DBGBVR_EL1[i], true, 0x0ULL, 0x0ULL);
-        ASSERT(reg);
         if (!register_system_reg(reg))
             return false;
 
         reg = new (nothrow) Msr::Register("DBGBCR_EL1", DBGBCR_EL1[i], true, 0x0ULL, 0x0ULL);
-        ASSERT(reg);
         if (!register_system_reg(reg))
             return false;
 
         reg = new (nothrow) Msr::Register("DBGWVR_EL1", DBGWVR_EL1[i], true, 0x0ULL, 0x0ULL);
-        ASSERT(reg);
         if (!register_system_reg(reg))
             return false;
 
         reg = new (nothrow) Msr::Register("DBGWCR_EL1", DBGWCR_EL1[i], true, 0x0ULL, 0x0ULL);
-        ASSERT(reg);
         if (!register_system_reg(reg))
             return false;
     }
 
     reg = new (nothrow) Msr::Register("MDRAR_EL1", MDRAR_EL1, true, 0x0ULL);
-    ASSERT(reg);
-    if (!register_system_reg(reg))
-        return false;
-
-    return true;
+    return register_system_reg(reg);
 }
 
 bool
@@ -80,16 +69,14 @@ Msr::Bus::setup_aarch32_debug(uint64 id_aa64dfr0_el1, uint32 id_dfr0_el1) {
      */
     id_dfr0_el1 = 0;
     reg = new (nothrow) Msr::Register("ID_DFR0_EL1", ID_DFR0_EL1, false, id_dfr0_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Register("ID_DFR1_EL1", ID_DFR1_EL1, false, 0x0ull);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
-    Msr::Info::Id_aa64dfr0 aa64dfr0(id_aa64dfr0_el1);
+    Msr::Info::IdAa64dfr0 aa64dfr0(id_aa64dfr0_el1);
 
     /*
      * XXX: same reason as above. We don't implement pmu and debug features for now.
@@ -101,11 +88,7 @@ Msr::Bus::setup_aarch32_debug(uint64 id_aa64dfr0_el1, uint32 id_dfr0_el1) {
      */
     uint32 dbgidr = 0;
     reg = new (nothrow) Msr::Register("DBGDIDR", DBGDIDR, false, dbgidr);
-    ASSERT(reg);
-    if (!register_system_reg(reg))
-        return false;
-
-    return true;
+    return register_system_reg(reg);
 }
 
 bool
@@ -113,16 +96,11 @@ Msr::Bus::setup_aarch64_auxiliary() {
     Msr::Register *reg;
 
     reg = new (nothrow) Msr::Register("ACTLR_EL1", ACTLR_EL1, false, 0x0ull);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Register("DBGAUTHSTATUS_EL1", DBGAUTHSTATUS_EL1, false, 0x0ull);
-    ASSERT(reg);
-    if (!register_system_reg(reg))
-        return false;
-
-    return true;
+    return register_system_reg(reg);
 }
 
 bool
@@ -131,26 +109,22 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
                                  uint64 id_aa64zfr0_el1) {
     Msr::Register *reg;
 
-    reg = new (nothrow) Msr::Id_aa64pfr0(id_aa64pfr0_el1);
-    ASSERT(reg);
+    reg = new (nothrow) Msr::IdAa64pfr0(id_aa64pfr0_el1);
     if (!register_system_reg(reg))
         return false;
 
     id_aa64pfr1_el1 = 0ull;
     reg = new (nothrow) Msr::Register("ID_AA64PFR1_EL1", ID_AA64PFR1_EL1, false, id_aa64pfr1_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     id_aa64zfr0_el1 = 0ull;
     reg = new (nothrow) Msr::Register("ID_AA64ZFR0_EL1", ID_AA64ZFR0_EL1, false, id_aa64zfr0_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow)
         Msr::Register("ID_AA64ISAR0_EL1", ID_AA64ISAR0_EL1, false, id_aa64isar0_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
@@ -163,84 +137,64 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
 
     reg = new (nothrow)
         Msr::Register("ID_AA64ISAR1_EL1", ID_AA64ISAR1_EL1, false, id_aa64isar1_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Register("ID_AA64AFR0_EL1", ID_AA64AFR0_EL1, false, 0x0ULL);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
     reg = new (nothrow) Msr::Register("ID_AA64AFR1_EL1", ID_AA64AFR1_EL1, false, 0x0ULL);
-    ASSERT(reg);
-    if (!register_system_reg(reg))
-        return false;
-
-    return true;
+    return register_system_reg(reg);
 }
 
 bool
-Msr::Bus::setup_aarch32_features(uint32 id_pfr0_el1, uint32 id_pfr1_el1, uint32 id_pfr2_el1,
-                                 uint32 id_isar0_el1, uint32 id_isar1_el1, uint32 id_isar2_el1,
-                                 uint32 id_isar3_el1, uint32 id_isar4_el1, uint32 id_isar5_el1,
-                                 uint32 id_isar6_el1) {
+Msr::Bus::setup_aarch32_features(const AA32PlatformInfo &aa32) {
     Msr::Register *reg;
 
-    reg = new (nothrow) Msr::Id_pfr0(id_pfr0_el1);
-    ASSERT(reg);
+    reg = new (nothrow) Msr::IdPfr0(aa32.id_pfr0_el1);
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Id_pfr1(id_pfr1_el1);
-    ASSERT(reg);
+    reg = new (nothrow) Msr::IdPfr1(aa32.id_pfr1_el1);
     if (!register_system_reg(reg))
         return false;
 
-    id_pfr2_el1 = 0x0ul; /* Nothing implemented for ARMv8.0-a */
+    uint32 id_pfr2_el1 = 0x0ul; /* Nothing implemented for ARMv8.0-a */
     reg = new (nothrow) Msr::Register("ID_PFR2_EL1", ID_PFR2_EL1, false, id_pfr2_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Register("ID_ISAR0_EL1", ID_ISAR0_EL1, false, id_isar0_el1);
-    ASSERT(reg);
+    reg = new (nothrow) Msr::Register("ID_ISAR0_EL1", ID_ISAR0_EL1, false, aa32.id_isar0_el1);
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Register("ID_ISAR1_EL1", ID_ISAR1_EL1, false, id_isar1_el1);
-    ASSERT(reg);
+    reg = new (nothrow) Msr::Register("ID_ISAR1_EL1", ID_ISAR1_EL1, false, aa32.id_isar1_el1);
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Register("ID_ISAR2_EL1", ID_ISAR2_EL1, false, id_isar2_el1);
-    ASSERT(reg);
+    reg = new (nothrow) Msr::Register("ID_ISAR2_EL1", ID_ISAR2_EL1, false, aa32.id_isar2_el1);
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Register("ID_ISAR3_EL1", ID_ISAR3_EL1, false, id_isar3_el1);
-    ASSERT(reg);
+    reg = new (nothrow) Msr::Register("ID_ISAR3_EL1", ID_ISAR3_EL1, false, aa32.id_isar3_el1);
     if (!register_system_reg(reg))
         return false;
 
-    id_isar4_el1 &= ~(0xfu << 12); /* SMC has to be zero if we don't support aarch32 el1 */
+    uint32 id_isar4_el1 = aa32.id_isar4_el1
+                          & ~(0xfu << 12); /* SMC has to be zero if we don't support aarch32 el1 */
     reg = new (nothrow) Msr::Register("ID_ISAR4_EL1", ID_ISAR4_EL1, false, id_isar4_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
-    id_isar5_el1 &= 0xffffful; /* Only the bits[19:0] can have a meaning for ARMv8.0-A */
+    uint32 id_isar5_el1
+        = aa32.id_isar5_el1 & 0xffffful; /* Only the bits[19:0] can have a meaning for ARMv8.0-A */
     reg = new (nothrow) Msr::Register("ID_ISAR5_EL1", ID_ISAR5_EL1, false, id_isar5_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
-    id_isar6_el1 = 0ull; /* Read as Zero before ARMv8.2 */
+    uint32 id_isar6_el1 = 0ull; /* Read as Zero before ARMv8.2 */
     reg = new (nothrow) Msr::Register("ID_ISAR6_EL1", ID_ISAR6_EL1, false, id_isar6_el1);
-    ASSERT(reg);
-    if (!register_system_reg(reg))
-        return false;
-
-    return true;
+    return register_system_reg(reg);
 }
 
 bool
@@ -249,9 +203,8 @@ Msr::Bus::setup_aarch64_memory_model(uint64 id_aa64mmfr0_el1, uint64 id_aa64mmfr
     Msr::Register *reg;
 
     id_aa64mmfr0_el1 &= ~(0xfull << 60); /* Enhanced Virt counter is disabled */
-    reg = new (nothrow) Msr::Register("ID_AA64MMFR0_EL1", Msr::Register_id::ID_AA64MMFR0_EL1, false,
+    reg = new (nothrow) Msr::Register("ID_AA64MMFR0_EL1", Msr::RegisterId::ID_AA64MMFR0_EL1, false,
                                       id_aa64mmfr0_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
@@ -259,7 +212,6 @@ Msr::Bus::setup_aarch64_memory_model(uint64 id_aa64mmfr0_el1, uint64 id_aa64mmfr
     id_aa64mmfr1_el1 &= ~(0xfull << 16); /* LORegions not supported */
     reg = new (nothrow)
         Msr::Register("ID_AA64MMFR1_EL1", ID_AA64MMFR1_EL1, false, id_aa64mmfr1_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
@@ -267,11 +219,7 @@ Msr::Bus::setup_aarch64_memory_model(uint64 id_aa64mmfr0_el1, uint64 id_aa64mmfr
     id_aa64mmfr2_el1 &= ~(0xfull << 56); /* Enhanced Virtualization Traps is disabled */
     reg = new (nothrow)
         Msr::Register("ID_AA64MMFR2_EL1", ID_AA64MMFR2_EL1, false, id_aa64mmfr2_el1);
-    ASSERT(reg);
-    if (!register_system_reg(reg))
-        return false;
-
-    return true;
+    return register_system_reg(reg);
 }
 
 bool
@@ -281,37 +229,28 @@ Msr::Bus::setup_aarch32_memory_model(uint32 id_mmfr0_el1, uint32 id_mmfr1_el1, u
     Msr::Register *reg;
 
     reg = new (nothrow) Msr::Register("ID_MMFR0_EL1", ID_MMFR0_EL1, false, id_mmfr0_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Register("ID_MMFR1_EL1", ID_MMFR1_EL1, false, id_mmfr1_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Register("ID_MMFR2_EL1", ID_MMFR2_EL1, false, id_mmfr2_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Register("ID_MMFR3_EL1", ID_MMFR3_EL1, false, id_mmfr3_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     id_mmfr4_el1 = 0u; /* Only contains features that we don't implement */
     reg = new (nothrow) Msr::Register("ID_MMFR4_EL1", ID_MMFR4_EL1, false, id_mmfr4_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Register("ID_MMFR5_EL1", ID_MMFR5_EL1, false, id_mmfr5_el1);
-    ASSERT(reg);
-    if (!register_system_reg(reg))
-        return false;
-
-    return true;
+    return register_system_reg(reg);
 }
 
 bool
@@ -319,48 +258,35 @@ Msr::Bus::setup_aarch64_setway_flushes(Vbus::Bus &vbus) {
     Msr::Register *reg;
 
     reg = new (nothrow) Msr::Set_way_flush_reg("DC ISW", DCISW_A64, vbus);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Set_way_flush_reg("DC CSW", DCCSW_A64, vbus);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Set_way_flush_reg("DC CISW", DCCISW_A64, vbus);
-    ASSERT(reg);
-    if (!register_system_reg(reg))
-        return false;
-
-    return true;
+    return register_system_reg(reg);
 }
 
 bool
-Msr::Bus::setup_aarch64_caching_info(Cache_topo &topo) {
+Msr::Bus::setup_aarch64_caching_info(const CacheTopo &topo) {
     Msr::Register *reg, *csselr_el1;
 
     reg = new (nothrow) Msr::Register("CLIDR_EL1", CLIDR_EL1, false, topo.clidr_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     csselr_el1 = new (nothrow) Msr::Register("CSSELR_EL1", CSSELR_EL1, true, 0x0ULL);
-    ASSERT(csselr_el1);
     if (!register_system_reg(csselr_el1))
         return false;
 
-    reg = new (nothrow) Msr::Register("CTR_EL0", Msr::Register_id::CTR_A64, false, topo.ctr_el0);
-    ASSERT(reg);
+    reg = new (nothrow) Msr::Register("CTR_EL0", Msr::RegisterId::CTR_A64, false, topo.ctr_el0);
     if (!register_system_reg(reg))
         return false;
 
     Msr::Ccsidr *ccsidr = new (nothrow) Msr::Ccsidr(*csselr_el1, topo.clidr_el1, topo.ccsidr_el1);
-    ASSERT(ccsidr);
-    if (!register_system_reg(ccsidr))
-        return false;
-
-    return true;
+    return register_system_reg(ccsidr);
 }
 
 bool
@@ -372,160 +298,128 @@ Msr::Bus::setup_aarch32_media_vfp(uint32 mvfr0_el1, uint32 mvfr1_el1, uint32 mvf
     Msr::Register *reg;
 
     reg = new (nothrow) Msr::Register("FPSID", FPSID, true, fpsid);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Register("ID_MVFR0_EL1", Msr::MVFR0, false, mvfr0_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Register("ID_MVFR1_EL1", Msr::MVFR1, false, mvfr1_el1);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     reg = new (nothrow) Msr::Register("ID_MVFR2_EL1", Msr::MVFR2, false, mvfr2_el1);
-    ASSERT(reg);
-    if (!register_system_reg(reg))
-        return false;
-
-    return true;
+    return register_system_reg(reg);
 }
 
 bool
 Msr::Bus::setup_aarch64_physical_timer(Model::AA64Timer &ptimer) {
     Msr::Register *reg;
 
-    reg = new (nothrow) Msr::Cntp_tval("CNTP_TVAL_EL0", Msr::Register_id::CNTP_TVAL_EL0, ptimer);
-    ASSERT(reg);
+    reg = new (nothrow) Msr::CntpTval("CNTP_TVAL_EL0", Msr::RegisterId::CNTP_TVAL_EL0, ptimer);
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Cntp_ctl("CNTP_CTL_EL0", Msr::Register_id::CNTP_CTL_EL0, ptimer);
-    ASSERT(reg);
+    reg = new (nothrow) Msr::CntpCtl("CNTP_CTL_EL0", Msr::RegisterId::CNTP_CTL_EL0, ptimer);
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Cntp_cval("CNTP_CVAL_EL0", Msr::Register_id::CNTP_CVAL_EL0, ptimer);
-    ASSERT(reg);
+    reg = new (nothrow) Msr::CntpCval("CNTP_CVAL_EL0", Msr::RegisterId::CNTP_CVAL_EL0, ptimer);
     if (!register_system_reg(reg))
         return false;
 
-    Msr::Cntpct_el0 *cntpct = new (nothrow) Msr::Cntpct_el0();
-    ASSERT(cntpct);
-    if (!register_system_reg(cntpct))
-        return false;
-
-    return true;
+    Msr::CntpctEl0 *cntpct = new (nothrow) Msr::CntpctEl0();
+    return register_system_reg(cntpct);
 }
 
 bool
 Msr::Bus::setup_page_table_regs(Vbus::Bus &vbus) {
     bool ok = false;
 
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("TCR_EL1", Msr::Id(TCR_EL1)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("TCR_EL1", Msr::Id(TCR_EL1)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("TTBR0_EL1", Msr::Id(TTBR0_EL1)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("TTBR0_EL1", Msr::Id(TTBR0_EL1)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("TTBR1_EL1", Msr::Id(TTBR1_EL1)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("TTBR1_EL1", Msr::Id(TTBR1_EL1)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Sctlr_el1("SCTLR_EL1", Msr::Id(SCTLR_EL1), vbus));
-    if (!ok)
-        return false;
-
-    return true;
+    return register_system_reg(new (nothrow) SctlrEl1("SCTLR_EL1", Msr::Id(SCTLR_EL1), vbus));
 }
 
 bool
 Msr::Bus::setup_tvm(Vbus::Bus &vbus) {
     bool ok = false;
 
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("AFSR0_EL1", Msr::Id(AFSR0_EL1)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("AFSR0_EL1", Msr::Id(AFSR0_EL1)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("AFSR1_EL1", Msr::Id(AFSR1_EL1)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("AFSR1_EL1", Msr::Id(AFSR1_EL1)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("ESR_EL1", Msr::Id(ESR_EL1)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("ESR_EL1", Msr::Id(ESR_EL1)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("FAR_EL1", Msr::Id(FAR_EL1)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("FAR_EL1", Msr::Id(FAR_EL1)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("MAIR_EL1", Msr::Id(MAIR_EL1)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("MAIR_EL1", Msr::Id(MAIR_EL1)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("MAIR1_A32", Msr::Id(Msr::MAIR1_A32)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("MAIR1_A32", Msr::Id(Msr::MAIR1_A32)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("AMAIR_EL1", Msr::Id(AMAIR_EL1)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("AMAIR_EL1", Msr::Id(AMAIR_EL1)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("DACR", Msr::Id(Msr::DACR)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("DACR", Msr::Id(Msr::DACR)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("IFSR", Msr::Id(Msr::IFSR)));
+    ok = register_system_reg(new (nothrow) WtrappedMsr("IFSR", Msr::Id(Msr::IFSR)));
     if (!ok)
         return false;
-    ok = register_system_reg(new (nothrow) Wtrapped_msr("CONTEXTDIR_EL1", Msr::Id(CONTEXTIDR_EL1)));
-    if (!ok)
-        return false;
-
-    ok = setup_page_table_regs(vbus);
+    ok = register_system_reg(new (nothrow) WtrappedMsr("CONTEXTDIR_EL1", Msr::Id(CONTEXTIDR_EL1)));
     if (!ok)
         return false;
 
-    return true;
+    return setup_page_table_regs(vbus);
 }
 
 bool
 Msr::Bus::setup_gic_registers(Model::Gic_d &gicd) {
-    Msr::Icc_sgi1r_el1 *sgi1r = new (nothrow) Msr::Icc_sgi1r_el1(gicd);
-    ASSERT(sgi1r);
-    if (!register_system_reg(sgi1r))
-        return false;
-    return true;
+    Msr::IccSgi1rEl1 *sgi1r = new (nothrow) Msr::IccSgi1rEl1(gicd);
+    return register_system_reg(sgi1r);
 }
 
 bool
-Msr::Bus::setup_arch_msr(Msr::Bus::Platform_info &info, Vbus::Bus &vbus, Model::Gic_d &gicd) {
-    bool ok;
+Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Model::Gic_d &gicd) {
     Msr::Register *reg;
 
-    ok = setup_aarch64_features(info.id_aa64pfr0_el1, info.id_aa64pfr1_el1, info.id_aa64isar0_el1,
-                                info.id_aa64isar1_el1, info.id_aa64zfr0_el1);
-    if (!ok)
+    if (!setup_aarch64_features(info.aa64.id_aa64pfr0_el1, info.aa64.id_aa64pfr1_el1,
+                                info.aa64.id_aa64isar0_el1, info.aa64.id_aa64isar1_el1,
+                                info.aa64.id_aa64zfr0_el1))
         return false;
 
-    ok = setup_aarch64_memory_model(info.id_aa64mmfr0_el1, info.id_aa64mmfr1_el1,
-                                    info.id_aa64mmfr2_el1);
-    if (!ok)
+    if (!setup_aarch64_memory_model(info.aa64.id_aa64mmfr0_el1, info.aa64.id_aa64mmfr1_el1,
+                                    info.aa64.id_aa64mmfr2_el1))
         return false;
 
-    ok = setup_aarch64_setway_flushes(vbus);
-    if (!ok)
+    if (!setup_aarch64_setway_flushes(vbus))
         return false;
 
-    ok = setup_aarch64_debug(info.id_aa64dfr0_el1, info.id_aa64dfr1_el1);
-    if (!ok)
+    if (!setup_aarch64_debug(info.aa64.id_aa64dfr0_el1, info.aa64.id_aa64dfr1_el1))
         return false;
 
-    ok = setup_tvm(vbus);
-    if (!ok)
+    if (!setup_tvm(vbus))
         return false;
 
     /* ID */
     reg = new (nothrow) Msr::Register("AIDR_EL1", AIDR_EL1, false, 0x0ULL);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
     reg = new (nothrow) Msr::Register("REVIDR_EL1", REVIDR_EL1, false, 0x0ULL);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
@@ -536,80 +430,66 @@ Msr::Bus::setup_arch_msr(Msr::Bus::Platform_info &info, Vbus::Bus &vbus, Model::
      *  could be because certain MSR are not trapped properly with QEMU.
      */
     reg = new (nothrow) Msr::Register("PMUSEREN_EL0", PMUSEREN_EL0, true, 0x0ULL);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     /* Locking */
     reg = new (nothrow) Msr::Register("OSDLR_EL1", OSDLR_EL1, true, 0x0ULL);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
     reg = new (nothrow) Msr::Register("OSLAR_EL1", OSLAR_EL1, true, 0x0ULL);
-    ASSERT(reg);
     if (!register_system_reg(reg))
         return false;
 
     if (gicd.version() == Model::GIC_V3) {
-        ok = setup_gic_registers(gicd);
-        if (!ok)
+        if (!setup_gic_registers(gicd))
             return false;
     }
 
-    Msr::Info::Id_aa64pfr0 aa64pfr0(info.id_aa64pfr0_el1);
+    Msr::Info::IdAa64pfr0 aa64pfr0(info.aa64.id_aa64pfr0_el1);
 
-    if (aa64pfr0.get_supported_mode(Msr::Info::Id_aa64pfr0::EL1_SHIFT)
-            == Msr::Info::Id_aa64pfr0::AA64_AA32
-        || aa64pfr0.get_supported_mode(Msr::Info::Id_aa64pfr0::EL0_SHIFT)
-               == Msr::Info::Id_aa64pfr0::AA64_AA32) {
-        ok = setup_aarch32_features(info.id_pfr0_el1, info.id_pfr1_el1, info.id_pfr2_el1,
-                                    info.id_isar0_el1, info.id_isar1_el1, info.id_isar2_el1,
-                                    info.id_isar3_el1, info.id_isar4_el1, info.id_isar5_el1,
-                                    info.id_isar6_el1);
-        if (!ok)
+    if (aa64pfr0.get_supported_mode(Msr::Info::IdAa64pfr0::EL1_SHIFT)
+            == Msr::Info::IdAa64pfr0::AA64_AA32
+        || aa64pfr0.get_supported_mode(Msr::Info::IdAa64pfr0::EL0_SHIFT)
+               == Msr::Info::IdAa64pfr0::AA64_AA32) {
+        if (!setup_aarch32_features(info.aa32))
             return false;
 
-        ok = setup_aarch32_memory_model(info.id_mmfr0_el1, info.id_mmfr1_el1, info.id_mmfr2_el1,
-                                        info.id_mmfr3_el1, info.id_mmfr4_el1, info.id_mmfr5_el1);
-        if (!ok)
+        if (!setup_aarch32_memory_model(info.aa32.id_mmfr0_el1, info.aa32.id_mmfr1_el1,
+                                        info.aa32.id_mmfr2_el1, info.aa32.id_mmfr3_el1,
+                                        info.aa32.id_mmfr4_el1, info.aa32.id_mmfr5_el1))
             return false;
 
-        ok = setup_aarch32_media_vfp(info.mvfr0_el1, info.mvfr1_el1, info.mvfr2_el1, info.midr_el1);
-        if (!ok)
+        if (!setup_aarch32_media_vfp(info.aa32.mvfr0_el1, info.aa32.mvfr1_el1, info.aa32.mvfr2_el1,
+                                     info.aa64.midr_el1))
             return false;
 
-        ok = setup_aarch32_debug(info.id_aa64dfr0_el1, info.id_dfr0_el1);
-        if (!ok)
+        if (!setup_aarch32_debug(info.aa64.id_aa64dfr0_el1, info.aa32.id_dfr0_el1))
             return false;
 
         reg = new (nothrow) Msr::Register("JIDR", JIDR, false, 0x0ull);
-        ASSERT(reg);
         if (!register_system_reg(reg))
             return false;
         reg = new (nothrow) Msr::Register("FCSEIDR", FCSEIDR, true, 0x0ull, 0x0ull);
-        ASSERT(reg);
         if (!register_system_reg(reg))
             return false;
         reg = new (nothrow) Msr::Register("TCMTR", TCMTR, true, 0x0ull, 0x0ull);
-        ASSERT(reg);
         if (!register_system_reg(reg))
             return false;
         reg = new (nothrow) Msr::Register("TLBTR", TLBTR, true, 0x0ull, 0x0ull);
-        ASSERT(reg);
         if (!register_system_reg(reg))
             return false;
         reg = new (nothrow) Msr::Register("ID_AFR0_EL1", ID_AFR0_EL1, false, 0x0ull);
-        ASSERT(reg);
         if (!register_system_reg(reg))
             return false;
     }
 
-    return ok;
+    return true;
 }
 
 Vbus::Err
-Msr::Icc_sgi1r_el1::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::Space, mword,
-                           uint8, uint64 &value) {
+Msr::IccSgi1rEl1::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::Space, mword,
+                         uint8, uint64 &value) {
     if (access != Vbus::WRITE)
         return Vbus::Err::ACCESS_ERR;
 
@@ -644,7 +524,7 @@ Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, Vbus::Bus &vbus, uint64 new_valu
         return;
     }
 
-    Msr::Info::Sctlr_el1 before(vcpu->regs->el1_sctlr()), after(new_value);
+    Msr::Info::SctlrEl1 before(vcpu->regs->el1_sctlr()), after(new_value);
 
     /*
      * This is the counter-part of the Set/Way flushing logic emulation. Every time the
@@ -668,8 +548,8 @@ Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, Vbus::Bus &vbus, uint64 new_valu
 }
 
 Vbus::Err
-Msr::Sctlr_el1::access(Vbus::Access access, const VcpuCtx *vcpu, Vbus::Space, mword, uint8,
-                       uint64 &res) {
+Msr::SctlrEl1::access(Vbus::Access access, const VcpuCtx *vcpu, Vbus::Space, mword, uint8,
+                      uint64 &res) {
     ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
 
     flush_on_cache_toggle(vcpu, *_vbus, res);

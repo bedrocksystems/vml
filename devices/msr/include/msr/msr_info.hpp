@@ -58,7 +58,7 @@ namespace Msr::Info {
 
     constexpr uint64 SPSR_MODE_MASK = 0x1full;
 
-    enum Spsr_flags : uint64 {
+    enum SpsrFlags : uint64 {
         T32 = 1ull << 5,
         AARCH32 = 1ull << 4,
         AARCH64 = 0ull << 4,
@@ -73,7 +73,7 @@ namespace Msr::Info {
         SPSR_SINGLE_STEP = 1ull << 21,
     };
 
-    enum Mdscr_flags {
+    enum MdscrFlags {
         MDSCR_SINGLE_STEP = 0x1ull << 0,
     };
 
@@ -84,17 +84,17 @@ namespace Msr::Info {
         VMRS_SPEC_REG_MVFR2 = 0b0101,
     };
 
-    class Id_aa64pfr0;
-    class Id_aa64dfr0;
+    class IdAa64pfr0;
+    class IdAa64dfr0;
     class Spsr;
     class Ctr;
-    class Sctlr_el1;
-    class Tcr_el1;
+    class SctlrEl1;
+    class TcrEl1;
 };
 
-class Msr::Info::Id_aa64pfr0 {
+class Msr::Info::IdAa64pfr0 {
 public:
-    Id_aa64pfr0(uint64 val) : _value(val) {}
+    explicit IdAa64pfr0(uint64 val) : _value(val) {}
 
     enum Mode { AA64_ONLY = 0b0001ull, AA64_AA32 = 0b0010ull };
     enum Level {
@@ -104,16 +104,16 @@ public:
         EL3_SHIFT = 12ull,
     };
 
-    Mode get_supported_mode(Level l) { return Mode((_value >> l) & MODE_MASK); }
+    Mode get_supported_mode(Level l) const { return Mode((_value >> l) & MODE_MASK); }
 
 private:
     static constexpr uint64 MODE_MASK = 0xf;
-    uint64 _value;
+    const uint64 _value;
 };
 
 class Msr::Info::Spsr {
 public:
-    Spsr(const uint64 val) : _val(val) {}
+    explicit Spsr(const uint64 val) : _val(val) {}
 
     static constexpr uint64 N_MASK = 1ull << 31;
     static constexpr uint64 Z_MASK = 1ull << 30;
@@ -125,10 +125,10 @@ public:
 
     constexpr bool is_t32() const { return _val & T32; }
     constexpr bool is_aa32() const { return _val & M_MASK; }
-    constexpr bool is_N() const { return _val & N_MASK; }
-    constexpr bool is_Z() const { return _val & Z_MASK; }
-    constexpr bool is_C() const { return _val & C_MASK; }
-    constexpr bool is_V() const { return _val & V_MASK; }
+    constexpr bool is_n() const { return _val & N_MASK; }
+    constexpr bool is_z() const { return _val & Z_MASK; }
+    constexpr bool is_c() const { return _val & C_MASK; }
+    constexpr bool is_v() const { return _val & V_MASK; }
     constexpr uint8 el() const { return _val & EL_MASK; }
     constexpr bool spx() const { return _val & SP_MASK; }
 
@@ -136,35 +136,35 @@ private:
     const uint64 _val;
 };
 
-class Msr::Info::Id_aa64dfr0 {
+class Msr::Info::IdAa64dfr0 {
 public:
-    Id_aa64dfr0(uint64 val) : _value(val) {}
+    explicit IdAa64dfr0(uint64 val) : _value(val) {}
 
-    uint8 debug_ver() { return _value & 0xf; }
-    uint8 ctx_cmp() { return (_value >> 28) & 0xf; }
-    uint8 brp() { return (_value >> 12) & 0xf; }
-    uint8 wrp() { return (_value >> 20) & 0xf; }
+    uint8 debug_ver() const { return _value & 0xf; }
+    uint8 ctx_cmp() const { return (_value >> 28) & 0xf; }
+    uint8 brp() const { return (_value >> 12) & 0xf; }
+    uint8 wrp() const { return (_value >> 20) & 0xf; }
 
 private:
-    uint64 _value;
+    const uint64 _value;
 };
 
 class Msr::Info::Ctr {
 public:
-    Ctr(uint64 val) : _value(val) {}
+    explicit Ctr(uint64 val) : _value(val) {}
     Ctr() { asm volatile("mrs %0, ctr_el0" : "=r"(_value) : :); }
 
-    bool dcache_clean_pou_for_itod() { return !(_value & IDC_MASK); }
-    bool icache_clean_pou_for_itod() { return !(_value & DIC_MASK); }
-    uint64 dcache_line_size() { return 4ull << ((_value >> 16ull) & 0xfull); }
-    uint64 icache_line_size() { return 4ull << (_value & 0xfull); }
+    bool dcache_clean_pou_for_itod() const { return !(_value & IDC_MASK); }
+    bool icache_clean_pou_for_itod() const { return !(_value & DIC_MASK); }
+    uint64 dcache_line_size() const { return 4ull << ((_value >> 16ull) & 0xfull); }
+    uint64 icache_line_size() const { return 4ull << (_value & 0xfull); }
 
-    enum Icache_policy { VPIPT = 0b00, AIVIVT = 0b01, VIPT = 0b10, PIPT = 0b11 };
+    enum IcachePolicy { VPIPT = 0b00, AIVIVT = 0b01, VIPT = 0b10, PIPT = 0b11 };
 
-    Icache_policy get_icache_policy() { return Icache_policy(bits_in_range(_value, 14, 15)); }
+    IcachePolicy get_icache_policy() const { return IcachePolicy(bits_in_range(_value, 14, 15)); }
 
-    bool can_invalidate_guest_icache() {
-        Icache_policy icp = get_icache_policy();
+    bool can_invalidate_guest_icache() const {
+        IcachePolicy icp = get_icache_policy();
         return icp == PIPT;
     }
 
@@ -175,9 +175,9 @@ private:
     uint64 _value;
 };
 
-class Msr::Info::Sctlr_el1 {
+class Msr::Info::SctlrEl1 {
 public:
-    Sctlr_el1(uint64 val) : _value(val) {}
+    explicit SctlrEl1(uint64 val) : _value(val) {}
 
     static constexpr uint64 CACHE_MASK = 1ull << 2;
     static constexpr uint64 MMU_MASK = 1ull << 0;
@@ -186,21 +186,21 @@ public:
     bool cache_enabled() const { return ((_value & CACHE_MASK) != 0) && mmu_enabled(); }
 
 private:
-    uint64 _value;
+    const uint64 _value;
 };
 
-class Msr::Info::Tcr_el1 {
+class Msr::Info::TcrEl1 {
 public:
-    Tcr_el1(uint64 val) : _value(val) {}
+    explicit TcrEl1(uint64 val) : _value(val) {}
 
-    enum Granule_size {
+    enum GranuleSize {
         GRANULE_16KB,
         GRANULE_4KB,
         GRANULE_64KB,
         GRANULE_INVALID,
     };
 
-    Granule_size tg1() const {
+    GranuleSize tg1() const {
         uint8 bits = uint8(bits_in_range(_value, 30, 31));
         switch (bits) {
         case 0b01:
@@ -214,7 +214,7 @@ public:
         }
     }
 
-    Granule_size tg0() const {
+    GranuleSize tg0() const {
         uint8 bits = uint8(bits_in_range(_value, 14, 15));
         switch (bits) {
         case 0b10:
@@ -264,5 +264,5 @@ public:
     }
 
 private:
-    uint64 _value;
+    const uint64 _value;
 };
