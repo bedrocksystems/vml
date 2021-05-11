@@ -101,7 +101,7 @@ private:
     uint64 _current_config{0};
 };
 
-class Model::Cpu : private Model::Cpu_irq_interface {
+class Model::Cpu : public Model::Cpu_irq_interface {
 public:
     enum Mode {
         // General mode

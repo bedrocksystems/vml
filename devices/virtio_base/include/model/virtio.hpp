@@ -222,12 +222,12 @@ protected:
 
     void assert_irq() {
         _irq_status = 0x1;
-        _irq_ctlr->assert_spi(_irq);
+        _irq_ctlr->assert_global_line(_irq);
     }
 
     void deassert_irq() {
         _irq_status = 0;
-        _irq_ctlr->deassert_line_spi(_irq);
+        _irq_ctlr->deassert_global_line(_irq);
     }
 
     void update_config_gen() { __atomic_fetch_add(&_config_generation, 1, __ATOMIC_SEQ_CST); }

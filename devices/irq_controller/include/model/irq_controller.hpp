@@ -39,10 +39,11 @@ public:
     virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) = 0;
     virtual bool config_spi(uint32 irq_id, bool hw, uint16 pintid, bool edge) = 0;
     virtual bool assert_ppi(Vcpu_id, uint32) = 0;
-    virtual bool assert_spi(uint32) = 0;
     virtual void deassert_line_ppi(Vcpu_id, uint32) = 0;
-    virtual void deassert_line_spi(uint32) = 0;
     virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id) = 0;
+
+    virtual void deassert_global_line(uint32) = 0;
+    virtual bool assert_global_line(uint32) = 0;
 };
 
 class Model::Local_Irq_controller : public Vbus::Device {
@@ -51,4 +52,8 @@ public:
     virtual ~Local_Irq_controller() {}
 
     virtual bool can_receive_irq() const = 0;
+
+    virtual void assert_vector(uint8 vec, bool edge) = 0;
+    virtual uint8 int_ack() = 0;
+    virtual bool int_pending() = 0;
 };

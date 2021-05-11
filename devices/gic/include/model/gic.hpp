@@ -599,9 +599,9 @@ public:
     virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
     virtual bool config_spi(uint32 vintid, bool hw, uint16 pintid, bool edge) override;
     virtual bool assert_ppi(Vcpu_id, uint32) override;
-    virtual bool assert_spi(uint32) override;
+    virtual bool assert_global_line(uint32) override;
     virtual void deassert_line_ppi(Vcpu_id, uint32) override;
-    virtual void deassert_line_spi(uint32) override;
+    virtual void deassert_global_line(uint32) override;
     virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id) override;
 
     bool any_irq_active(Vcpu_id);
@@ -653,4 +653,12 @@ public:
     virtual Type type() const override { return IRQ_CONTROLLER; }
 
     virtual bool can_receive_irq() const override;
+
+    virtual void assert_vector(uint8 irq_id, bool) override {
+        _gic_d->assert_ppi(_vcpu_id, irq_id);
+    }
+    virtual uint8 int_ack() override {
+        ABORT_WITH("interrupt ACK shouldn't be called on the GICR");
+    }
+    virtual bool int_pending() override { ABORT_WITH("Not implemented yet"); }
 };
