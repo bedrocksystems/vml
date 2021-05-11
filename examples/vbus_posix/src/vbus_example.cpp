@@ -65,7 +65,7 @@ main() {
     ok = ptimer.init_irq(0, 0x12, false, true);
     ASSERT(ok);
 
-    Msr::Bus::Platform_info info;
+    Msr::Bus::PlatformInfo info;
     ok = msr_bus.setup_arch_msr(info, vbus, gicd);
     ASSERT(ok);
     ok = msr_bus.setup_aarch64_physical_timer(ptimer);

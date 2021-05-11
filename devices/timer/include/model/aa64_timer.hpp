@@ -17,9 +17,9 @@ class Model::AA64Timer : public Model::Timer {
 private:
     enum : uint8 { ENABLED_BIT = 0x1, MASKED_BIT = 0x2, STATUS_BIT = 0x4 };
 
-    class Cntv_ctl {
+    class CntvCtl {
     public:
-        Cntv_ctl(uint8 val) : _value(val) {}
+        explicit CntvCtl(uint8 val) : _value(val) {}
 
         constexpr bool enabled() const { return (_value & ENABLED_BIT) != 0; }
         constexpr bool masked() const { return (_value & MASKED_BIT) != 0; }
@@ -95,7 +95,7 @@ public:
     uint8 get_ctl() const { return _cntv_ctl.get(); }
 
     bool will_timeout(uint64 const control) {
-        Cntv_ctl ctl = Cntv_ctl(uint8(control));
+        CntvCtl ctl = CntvCtl(uint8(control));
         return ctl.can_fire();
     }
 
@@ -105,6 +105,6 @@ private:
     virtual void set_irq_status(bool set) override { _cntv_ctl.set_status(set); }
     virtual uint64 get_timeout_abs() const override { return get_cval(); }
 
-    Cntv_ctl _cntv_ctl;
+    CntvCtl _cntv_ctl;
     uint64 _cval;
 };
