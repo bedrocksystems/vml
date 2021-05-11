@@ -551,7 +551,7 @@ Model::GicD::deassert_line_ppi(Vcpu_id const cpu_id, uint32 const irq_id) {
 }
 
 void
-Model::GicD::deassert_line_spi(uint32 const irq_id) {
+Model::GicD::deassert_global_line(uint32 const irq_id) {
     deassert_line(0, irq_id);
 }
 
@@ -921,7 +921,7 @@ Model::GicD::route_spi(Model::GicD::Irq &irq) {
 }
 
 bool
-Model::GicD::assert_spi(uint32 const irq_id) {
+Model::GicD::assert_global_line(uint32 const irq_id) {
     if (irq_id >= MAX_IRQ)
         return false;
     if (irq_id < MAX_SGI + MAX_PPI)

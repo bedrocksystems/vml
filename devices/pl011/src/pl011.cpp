@@ -86,7 +86,7 @@ Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const val
     case UARTICR:
         _ris = _ris & static_cast<uint16>(~(value & 0x7ff));
         if (!(_ris & RXRIS))
-            _irq_ctlr->deassert_line_spi(_irq_id);
+            _irq_ctlr->deassert_global_line(_irq_id);
 
         return true;
     case UARTDMACR:
@@ -128,7 +128,7 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
 
             if (!should_assert_rx_irq()) {
                 _ris &= static_cast<uint16>(~RXRIS);
-                _irq_ctlr->deassert_line_spi(_irq_id);
+                _irq_ctlr->deassert_global_line(_irq_id);
             }
 
             if (was_full)
@@ -243,7 +243,7 @@ Model::Pl011::to_guest(char *buff, uint32 size) {
 
     if (should_assert_rx_irq()) {
         _ris |= RXRIS;
-        _irq_ctlr->assert_spi(_irq_id);
+        _irq_ctlr->assert_global_line(_irq_id);
     }
 
     return size == written;
