@@ -160,17 +160,7 @@ private:
         atomic<uint64> _info;
     };
 
-    struct Irq {
-
-        struct {
-            uint64 value{0};
-            constexpr uint8 aff0() const { return value & 0xff; }
-            constexpr uint8 aff1() const { return (value >> 8) & 0xff; }
-            constexpr uint8 aff2() const { return (value >> 16) & 0xff; }
-            constexpr uint8 aff3() const { return (value >> 32) & 0x1f; }
-            constexpr bool any() const { return (value >> 31) & 0x1; }
-        } _routing;
-
+    class Irq {
         uint16 _id{0};
         uint16 _pintid{0};
         uint8 _prio{0};
@@ -191,7 +181,17 @@ private:
         bool _hw{false};
         bool _active{false};
 
+    public:
         IrqInjectionInfo injection_info{0};
+
+        struct {
+            uint64 value{0};
+            constexpr uint8 aff0() const { return value & 0xff; }
+            constexpr uint8 aff1() const { return (value >> 8) & 0xff; }
+            constexpr uint8 aff2() const { return (value >> 16) & 0xff; }
+            constexpr uint8 aff3() const { return (value >> 32) & 0x1f; }
+            constexpr bool any() const { return (value >> 31) & 0x1; }
+        } routing;
 
         void enable(bool mmio_one = true) {
             if (mmio_one)
@@ -209,11 +209,17 @@ private:
         uint8 prio() const { return _prio; }
         void prio(uint8 const p) { _prio = p; }
 
+        void set_id(uint16 id) { _id = id; }
         uint16 id() const { return _id; }
         bool hw() const { return _hw; }
+        uint16 hw_int_id() const { return _pintid; }
         bool hw_edge() const { return _hw_edge; }
         bool sw_edge() const { return _sw_edge; }
-        void set_hw_edge(bool val) { _hw_edge = val; }
+        void configure_hw(bool hw, uint16 pintid = 0, bool edge = false) {
+            _pintid = pintid;
+            _hw_edge = edge;
+            _hw = hw;
+        }
         uint8 edge_encoded() const { return sw_edge() ? 0b10 : 0; }
         void set_encoded_edge(uint8 encoded_edge) { _sw_edge = encoded_edge & 0x2; }
 
@@ -252,7 +258,7 @@ private:
                 injection_info.set(update);
             }
 
-            _routing.value = 0;
+            routing.value = 0;
         }
 
         void assert_line() { _line_asserted = true; }
@@ -288,7 +294,7 @@ public:
             _lr |= uint64(irq.prio()) << PRIO_SHIFT; /* 8 bit - 48-55 */
 
             if (irq.hw()) {
-                _lr |= uint64(irq._pintid & PIRQ_ID_MASK) << PIRQ_ID_SHIFT; /* 10bit - 32-41 */
+                _lr |= uint64(irq.hw_int_id() & PIRQ_ID_MASK) << PIRQ_ID_SHIFT; /* 10bit - 32-41 */
             } else if (vintid < MAX_SGI) {
                 /*
                  * This can be surprising to read - the data has to go in
@@ -321,18 +327,18 @@ public:
 
 private:
     struct Banked {
-        Irq _sgi[MAX_SGI];
-        Irq _ppi[MAX_PPI];
+        Irq sgi[MAX_SGI];
+        Irq ppi[MAX_PPI];
 
-        Bitset<MAX_IRQ> _pending_irqs;
-        Bitset<MAX_IRQ> _in_injection_irqs;
-        Cpu_irq_interface *_notify{nullptr};
+        Bitset<MAX_IRQ> pending_irqs;
+        Bitset<MAX_IRQ> in_injection_irqs;
+        Cpu_irq_interface *notify{nullptr};
 
         Banked() {
             for (uint8 i = 0; i < MAX_SGI; i++)
-                _sgi[i]._id = i;
+                sgi[i].set_id(i);
             for (uint8 i = 0; i < MAX_PPI; i++)
-                _ppi[i]._id = uint16(i + MAX_SGI);
+                ppi[i].set_id(uint16(i + MAX_SGI));
         }
     };
 
@@ -351,18 +357,18 @@ private:
 
     Irq &irq_object(Banked &cpu, uint64 const id) {
         if (id < MAX_SGI)
-            return cpu._sgi[id];
+            return cpu.sgi[id];
         if (id < MAX_SGI + MAX_PPI)
-            return cpu._ppi[id - MAX_SGI];
+            return cpu.ppi[id - MAX_SGI];
         else
             return _spi[id - MAX_SGI - MAX_PPI];
     }
 
     Irq const &irq_object(Banked const &cpu, uint64 const id) const {
         if (id < MAX_SGI)
-            return cpu._sgi[id];
+            return cpu.sgi[id];
         if (id < MAX_SGI + MAX_PPI)
-            return cpu._ppi[id - MAX_SGI];
+            return cpu.ppi[id - MAX_SGI];
         else
             return _spi[id - MAX_SGI - MAX_PPI];
     }
@@ -507,30 +513,43 @@ private:
         return true;
     }
 
+    struct RegAccess {
+        uint64 offset;
+        uint32 base_reg;
+        uint32 base_max;
+        uint8 bytes;
+    };
+
     template<typename T>
-    bool write_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
-                        uint8 const bytes, uint64 const value, T &result, T fixed_clear = 0,
+    bool write_register(const RegAccess &acc, uint64 const value, T &result, T fixed_clear = 0,
                         T fixed_set = 0) {
         unsigned constexpr TSIZE = sizeof(T);
-        if (!bytes || (bytes > TSIZE) || (offset + bytes > base_max + 1))
+        if (!acc.bytes || (acc.bytes > TSIZE) || (acc.offset + acc.bytes > acc.base_max + 1))
             return false;
 
-        uint64 const base = offset - base_reg;
-        uint64 const mask = (bytes >= TSIZE) ? (T(0) - 1) : ((T(1) << (bytes * 8)) - 1);
+        uint64 const base = acc.offset - acc.base_reg;
+        uint64 const mask = (acc.bytes >= TSIZE) ? (T(0) - 1) : ((T(1) << (acc.bytes * 8)) - 1);
 
-        result &= (bytes >= TSIZE) ? T(0) : ~(T(mask) << (base * 8));
+        result &= (acc.bytes >= TSIZE) ? T(0) : ~(T(mask) << (base * 8));
         result |= T(value & mask) << (base * 8);
         result &= ~fixed_clear;
         result |= fixed_set;
         return true;
     }
 
+    bool write_ctlr(uint64 offset, uint8 bytes, uint64 value);
+    bool write_irouter(Banked &cpu, uint64 offset, uint8 bytes, uint64 value);
+    bool write_sgir(Vcpu_id cpu_id, uint64 offset, uint8 bytes, uint64 value);
     bool read_register(uint64 offset, uint32 base_reg, uint32 base_max, uint8 bytes, uint64 value,
                        uint64 &result) const;
+    bool read_pending(Banked &cpu, IrqMmioAccess &acc, uint32 base_offset, uint64 &value) const;
 
     void send_sgi(Vcpu_id, Vcpu_id, unsigned, bool, bool);
 
     bool mmio_write(Vcpu_id, uint64 offset, uint8 bytes, uint64 value);
+
+    bool mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 value);
+    bool mmio_read_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 &value) const;
     bool mmio_read(Vcpu_id, uint64 offset, uint8 bytes, uint64 &value) const;
 
     bool assert_sgi(Vcpu_id, Vcpu_id, Irq &irq);
@@ -546,6 +565,12 @@ private:
     bool vcpu_can_receive_irq(const Local_Irq_controller *gic_r) const {
         return !_ctlr.affinity_routing() || gic_r->can_receive_irq();
     }
+    void reset_status_bitfields_on_vcpu(uint16 vcpu_idx);
+    uint64 get_typer() const {
+        return 31ULL /* ITLinesNumber */ | (uint64(_num_vcpus - 1) << 5) /* CPU count */
+               | (9ULL << 19)                                            /* id bits */
+               | (1ULL << 24);                                           /* Aff3 supported */
+    }
 
 public:
     GicD(GICVersion const version, uint16 num_vcpus)
@@ -559,7 +584,7 @@ public:
         if (_local == nullptr)
             return false;
         for (uint16 i = 0; i < MAX_SPI; i++)
-            _spi[i]._id = uint16(MAX_PPI + MAX_SGI + i);
+            _spi[i].set_id(uint16(MAX_PPI + MAX_SGI + i));
 
         reset(nullptr); // vctx not used for now
 

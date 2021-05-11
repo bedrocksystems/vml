@@ -148,55 +148,83 @@ Model::GicD::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::Sp
 }
 
 bool
-Model::GicD::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const bytes,
-                        uint64 const value) {
+Model::GicD::write_ctlr(uint64 offset, uint8 bytes, uint64 value) {
+    constexpr uint32 const GICD_GRP0 = 1 << 0;
+    constexpr uint32 const GICD_GRP1 = 1 << 1;
+    constexpr uint32 const GICD_ARE = 1 << 4;
+    constexpr uint32 const ENFORCE_ZERO_V2 = ~(GICD_GRP0 | GICD_GRP1);
+    constexpr uint32 const ENFORCE_ZERO = ~(GICD_ARE | GICD_GRP0 | GICD_GRP1);
+    RegAccess acc;
 
-    if (offset >= GICD_SIZE || bytes > ACCESS_SIZE_32 * 2 || cpu_id >= _num_vcpus)
-        return false;
+    acc.offset = offset;
+    acc.base_reg = GICD_CTLR;
+    acc.base_max = GICD_CTLR_END;
+    acc.bytes = bytes;
 
+    return write_register(acc, value, _ctlr.value,
+                          (_version >= 3) ? ENFORCE_ZERO : ENFORCE_ZERO_V2);
+}
+
+bool
+Model::GicD::write_irouter(Banked &cpu, uint64 offset, uint8 bytes, uint64 value) {
+    if (!_ctlr.affinity_routing())
+        return true; /* WI */
+    if (bytes != 8 || (offset % 8 != 0))
+        return true; /* ignore - spec says this is not supported */
+
+    uint64 const irq_id = MAX_SGI + MAX_PPI + (offset - GICD_IROUTER) / 8;
+    if (irq_id < MAX_SGI + MAX_PPI || irq_id >= MAX_IRQ)
+        return true; /* ignore */
+
+    Irq &irq = irq_object(cpu, irq_id);
+
+    if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
+        INFO("GOS requested IRQ %u to be routed to VCPU " FMTu64, irq.id(), value);
+
+    irq.routing.value = value;
+
+    return true;
+}
+
+bool
+Model::GicD::write_sgir(Vcpu_id cpu_id, uint64 offset, uint8 bytes, uint64 value) {
+    Sgir const sgir(value & 0xfffffffful);
+
+    switch (sgir.filter()) {
+    case Sgir::FILTER_USE_LIST: {
+        for (Vcpu_id tcpu = 0; tcpu < sizeof(sgir.targets()) * 8; tcpu++) {
+            if (!sgir.target(static_cast<uint32>(tcpu)))
+                continue;
+
+            send_sgi(cpu_id, tcpu, sgir.sgi(), true, sgir.group1());
+        }
+        break;
+    }
+    case Sgir::FILTER_ALL_BUT_ME:
+        for (Vcpu_id tcpu = 0; tcpu < Model::GICV2_MAX_CPUS; tcpu++) {
+            if (tcpu == cpu_id)
+                continue;
+
+            send_sgi(cpu_id, tcpu, sgir.sgi(), true, sgir.group1());
+        }
+        break;
+    case Sgir::FILTER_ONLY_ME:
+        send_sgi(cpu_id, cpu_id, sgir.sgi(), true, sgir.group1());
+        break;
+    default:
+        break;
+    }
+
+    return true;
+}
+
+bool
+Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 value) {
     Banked &cpu = _local[cpu_id];
 
-    switch (offset) {
-    case GICD_IROUTER ... GICD_IROUTER_END:
-        if (!_ctlr.affinity_routing())
-            return true; /* WI */
-        if (bytes != 8 || (offset % 8 != 0))
-            return true; /* ignore - spec says this is not supported */
-
-        uint64 const irq_id = MAX_SGI + MAX_PPI + (offset - GICD_IROUTER) / 8;
-        if (irq_id < MAX_SGI + MAX_PPI || irq_id >= MAX_IRQ)
-            return true; /* ignore */
-
-        Irq &irq = irq_object(cpu, irq_id);
-
-        if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
-            INFO("GOS requested IRQ %u to be routed to VCPU " FMTu64, irq.id(), value);
-
-        irq._routing.value = value;
-
-        return true;
-    }
-
-    if (bytes > ACCESS_SIZE_32)
-        return false;
-
-    IrqMmioAccess acc{.base_abs = 0, // Filled by the logic below
-                      .irq_base = 0,
-                      .irq_max = MAX_SGI + MAX_SPI + MAX_PPI,
-                      .offset = offset,
-                      .bytes = bytes,
-                      .irq_per_bytes = 8}; // Work with a bitfield by default
-
-    switch (offset) {
-    case GICD_CTLR ... GICD_CTLR_END: {
-        constexpr uint32 const GICD_GRP0 = 1 << 0;
-        constexpr uint32 const GICD_GRP1 = 1 << 1;
-        constexpr uint32 const GICD_ARE = 1 << 4;
-        constexpr uint32 const ENFORCE_ZERO_V2 = ~(GICD_GRP0 | GICD_GRP1);
-        constexpr uint32 const ENFORCE_ZERO = ~(GICD_ARE | GICD_GRP0 | GICD_GRP1);
-        return write_register(offset, GICD_CTLR, GICD_CTLR_END, bytes, value, _ctlr.value,
-                              (_version >= 3) ? ENFORCE_ZERO : ENFORCE_ZERO_V2);
-    }
+    switch (acc.offset) {
+    case GICD_CTLR ... GICD_CTLR_END:
+        return write_ctlr(acc.offset, acc.bytes, value);
     case GICD_IGROUP ... GICD_IGROUP_END:
         acc.base_abs = GICD_IGROUP;
         return write<bool, &Irq::set_group1>(cpu, acc, value);
@@ -208,14 +236,14 @@ Model::GicD::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const b
         return write<bool, &Irq::disable>(cpu, acc, value);
     case GICD_ISPENDR ... GICD_ISPENDR_END: {
         uint64 reg = value;
-        if (offset == GICD_ISPENDR)
+        if (acc.offset == GICD_ISPENDR)
             reg &= ~((1ULL << MAX_SGI) - 1); /* SGIs are WI */
         acc.base_abs = GICD_ISPENDR;
         return mmio_assert<&GicD::assert_pi>(cpu_id, acc, reg);
     }
     case GICD_ICPENDR ... GICD_ICPENDR_END: {
         uint64 reg = value;
-        if (offset == GICD_ICPENDR)
+        if (acc.offset == GICD_ICPENDR)
             reg &= ~((1ULL << MAX_SGI) - 1); /* SGIs are WI */
         acc.base_abs = GICD_ICPENDR;
         return mmio_assert<&GicD::deassert_pi>(cpu_id, acc, reg);
@@ -240,36 +268,8 @@ Model::GicD::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const b
         acc.base_abs = GICD_ICFGR;
         acc.irq_per_bytes = 4;
         return write<uint8, &Irq::set_encoded_edge>(cpu, acc, value);
-    case GICD_SGIR ... GICD_SGIR_END: {
-        Sgir const sgir(value & 0xfffffffful);
-
-        switch (sgir.filter()) {
-        case Sgir::FILTER_USE_LIST: {
-            for (Vcpu_id tcpu = 0; tcpu < sizeof(sgir.targets()) * 8; tcpu++) {
-                if (!sgir.target(static_cast<uint32>(tcpu)))
-                    continue;
-
-                send_sgi(cpu_id, tcpu, sgir.sgi(), true, sgir.group1());
-            }
-            break;
-        }
-        case Sgir::FILTER_ALL_BUT_ME:
-            for (Vcpu_id tcpu = 0; tcpu < Model::GICV2_MAX_CPUS; tcpu++) {
-                if (tcpu == cpu_id)
-                    continue;
-
-                send_sgi(cpu_id, tcpu, sgir.sgi(), true, sgir.group1());
-            }
-            break;
-        case Sgir::FILTER_ONLY_ME:
-            send_sgi(cpu_id, cpu_id, sgir.sgi(), true, sgir.group1());
-            break;
-        default:
-            break;
-        }
-
-        return true;
-    }
+    case GICD_SGIR ... GICD_SGIR_END:
+        return write_sgir(cpu_id, acc.offset, acc.bytes, value);
     case GICD_CPENDSGIR ... GICD_CPENDSGIR_END: {
         if (_ctlr.affinity_routing())
             return true; /* WI */
@@ -318,30 +318,17 @@ Model::GicD::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const b
 }
 
 bool
-Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const bytes,
-                       uint64 &value) const {
+Model::GicD::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const bytes,
+                        uint64 const value) {
 
-    if (offset >= GICD_SIZE || (bytes > ACCESS_SIZE_32 * 2) || cpu_id >= _num_vcpus)
+    if (offset >= GICD_SIZE || bytes > ACCESS_SIZE_32 * 2 || cpu_id >= _num_vcpus)
         return false;
 
-    Banked const &cpu = _local[cpu_id];
+    Banked &cpu = _local[cpu_id];
 
     switch (offset) {
-    case GICD_IROUTER ... GICD_IROUTER_END: {
-        uint64 const irq_id = MAX_SGI + MAX_PPI + (offset - GICD_IROUTER) / 8;
-        value = 0ULL;
-        if (bytes != 8 || (offset % 8 != 0))
-            return true; /* ignore - spec says this is not supported */
-        if (irq_id < MAX_SGI + MAX_PPI || irq_id >= MAX_IRQ)
-            return true; /* ignore */
-        if (!_ctlr.affinity_routing())
-            return true; /* RAZ */
-
-        Irq const &irq = irq_object(cpu, irq_id);
-        value = irq._routing.value;
-
-        return true;
-    }
+    case GICD_IROUTER ... GICD_IROUTER_END:
+        return write_irouter(cpu, offset, bytes, value);
     }
 
     if (bytes > ACCESS_SIZE_32)
@@ -354,17 +341,34 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
                       .bytes = bytes,
                       .irq_per_bytes = 8}; // Work with a bitfield by default
 
-    switch (offset) {
-    case GICD_CTLR ... GICD_CTLR_END:
-        return read_register(offset, GICD_CTLR, GICD_CTLR_END, bytes, _ctlr.value, value);
-    case GICD_TYPER ... GICD_TYPER_END: {
-        uint64 typer = 31ULL /* ITLinesNumber */ | (uint64(_num_vcpus - 1) << 5) /* CPU count */
-                       | (9ULL << 19)                                            /* id bits */
-                       | (1ULL << 24); /* Aff3 supported */
-        return read_register(offset, GICD_TYPER, GICD_TYPER_END, bytes, typer, value);
+    return mmio_write_32_or_less(cpu_id, acc, value);
+}
+
+bool
+Model::GicD::read_pending(Banked &cpu, IrqMmioAccess &acc, uint32 base_offset,
+                          uint64 &value) const {
+    if (_ctlr.affinity_routing()) {
+        value = 0;
+        return true; /* RAZ */
     }
+
+    acc.irq_per_bytes = 1;
+    acc.irq_max = MAX_SGI;
+    acc.base_abs = base_offset;
+    return read<bool, &Irq::pending>(cpu, acc, value);
+}
+
+bool
+Model::GicD::mmio_read_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 &value) const {
+    Banked &cpu = _local[cpu_id];
+
+    switch (acc.offset) {
+    case GICD_CTLR ... GICD_CTLR_END:
+        return read_register(acc.offset, GICD_CTLR, GICD_CTLR_END, acc.bytes, _ctlr.value, value);
+    case GICD_TYPER ... GICD_TYPER_END:
+        return read_register(acc.offset, GICD_TYPER, GICD_TYPER_END, acc.bytes, get_typer(), value);
     case GICD_IIDR ... GICD_IIDR_END:
-        return read_register(offset, GICD_IIDR, GICD_IIDR_END, bytes, 0x123, value);
+        return read_register(acc.offset, GICD_IIDR, GICD_IIDR_END, acc.bytes, 0x123, value);
     case GICD_IGROUP ... GICD_IGROUP_END:
         acc.base_abs = GICD_IGROUP;
         return read<bool, &Irq::group1>(cpu, acc, value);
@@ -423,6 +427,7 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
     case GICD_PIDR5 ... GICD_PIDR5_END:
     case GICD_PIDR6 ... GICD_PIDR6_END:
     case GICD_PIDR7 ... GICD_PIDR7_END:
+    case GICD_PIDR3 ... GICD_PIDR3_END:
         value = 0x0;
         return true;
     case GICD_PIDR0 ... GICD_PIDR0_END:
@@ -434,32 +439,13 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
     case GICD_PIDR2 ... GICD_PIDR2_END:
         value = (uint64(_version) << 4) | 0xb;
         return true;
-    case GICD_PIDR3 ... GICD_PIDR3_END:
-        value = 0x0;
-        return true;
-    case GICD_IMPLDEF_0 ... GICD_IMPLDEF_0_END: /* impl. defined */
-    case GICD_IMPLDEF_X ... GICD_IMPLDEF_X_END: /* impl. defined */
-    case GICD_SGIR ... GICD_SGIR_END:           /* write - only */
-        return true;
     case GICD_CPENDSGIR ... GICD_CPENDSGIR_END:
-        if (_ctlr.affinity_routing()) {
-            value = 0;
-            return true; /* RAZ */
-        }
-
-        acc.irq_per_bytes = 1;
-        acc.irq_max = MAX_SGI;
-        acc.base_abs = GICD_CPENDSGIR;
-        return read<bool, &Irq::pending>(cpu, acc, value);
+        return read_pending(cpu, acc, GICD_CPENDSGIR, value);
     case GICD_SPENDSGIR ... GICD_SPENDSGIR_END:
-        if (_ctlr.affinity_routing()) {
-            value = 0;
-            return true; /* RAZ */
-        }
-        acc.irq_per_bytes = 1;
-        acc.irq_max = MAX_SGI;
-        acc.base_abs = GICD_SPENDSGIR;
-        return read<bool, &Irq::pending>(cpu, acc, value);
+        return read_pending(cpu, acc, GICD_SPENDSGIR, value);
+    case GICD_IMPLDEF_0 ... GICD_IMPLDEF_0_END:     /* impl. defined */
+    case GICD_IMPLDEF_X ... GICD_IMPLDEF_X_END:     /* impl. defined */
+    case GICD_SGIR ... GICD_SGIR_END:               /* write - only */
     case GICD_RESERVED_0 ... GICD_RESERVED_0_END:   /* RAZ */
     case GICD_STATUSR ... GICD_STATUSR_END:         /* optional - not implemented */
     case GICD_RESERVED_1 ... GICD_RESERVED_1_END:   /* RAZ */
@@ -476,6 +462,46 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
 }
 
 bool
+Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const bytes,
+                       uint64 &value) const {
+
+    if (offset >= GICD_SIZE || (bytes > ACCESS_SIZE_32 * 2) || cpu_id >= _num_vcpus)
+        return false;
+
+    Banked const &cpu = _local[cpu_id];
+
+    switch (offset) {
+    case GICD_IROUTER ... GICD_IROUTER_END: {
+        uint64 const irq_id = MAX_SGI + MAX_PPI + (offset - GICD_IROUTER) / 8;
+        value = 0ULL;
+        if (bytes != 8 || (offset % 8 != 0))
+            return true; /* ignore - spec says this is not supported */
+        if (irq_id < MAX_SGI + MAX_PPI || irq_id >= MAX_IRQ)
+            return true; /* ignore */
+        if (!_ctlr.affinity_routing())
+            return true; /* RAZ */
+
+        Irq const &irq = irq_object(cpu, irq_id);
+        value = irq.routing.value;
+
+        return true;
+    }
+    }
+
+    if (bytes > ACCESS_SIZE_32)
+        return false;
+
+    IrqMmioAccess acc{.base_abs = 0, // Filled by the logic below
+                      .irq_base = 0,
+                      .irq_max = MAX_SGI + MAX_SPI + MAX_PPI,
+                      .offset = offset,
+                      .bytes = bytes,
+                      .irq_per_bytes = 8}; // Work with a bitfield by default
+
+    return mmio_read_32_or_less(cpu_id, acc, value);
+}
+
+bool
 Model::GicD::config_irq(Vcpu_id const cpu_id, uint32 const irq_id, bool const hw,
                         uint16 const pintid, bool edge) {
     if (irq_id >= MAX_IRQ)
@@ -485,10 +511,7 @@ Model::GicD::config_irq(Vcpu_id const cpu_id, uint32 const irq_id, bool const hw
 
     Banked &cpu = _local[cpu_id];
     Irq &irq = irq_object(cpu, irq_id);
-
-    irq._hw = hw;
-    irq._pintid = pintid;
-    irq.set_hw_edge(edge);
+    irq.configure_hw(hw, pintid, edge);
 
     return true;
 }
@@ -537,10 +560,10 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id) {
     Model::GicD::Irq *r = nullptr;
     size_t irq_id = 0;
     Banked &cpu = _local[cpu_id];
-    const Local_Irq_controller *gic_r = _local[cpu_id]._notify->local_irq_ctlr();
+    const Local_Irq_controller *gic_r = _local[cpu_id].notify->local_irq_ctlr();
 
     do {
-        irq_id = cpu._pending_irqs.first_set(irq_id, MAX_IRQ - 1);
+        irq_id = cpu.pending_irqs.first_set(irq_id, MAX_IRQ - 1);
         if (irq_id == Bitset<MAX_IRQ>::NOT_FOUND)
             break;
 
@@ -556,7 +579,7 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id) {
         }
 
         if (((irq.group0() && _ctlr.group0_enabled()) || (irq.group1() && _ctlr.group1_enabled()))
-            && irq.enabled() && !cpu._in_injection_irqs.is_set(irq_id)) {
+            && irq.enabled() && !cpu.in_injection_irqs.is_set(irq_id)) {
 
             if (r == nullptr || irq.prio() > r->prio())
                 r = &irq;
@@ -613,8 +636,8 @@ Model::GicD::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
     Banked &cpu = _local[cpu_id];
     IrqState state = IrqState::PENDING;
 
-    cpu._in_injection_irqs.atomic_set(irq->id());
-    cpu._pending_irqs.atomic_clr(irq->id());
+    cpu.in_injection_irqs.atomic_set(irq->id());
+    cpu.pending_irqs.atomic_clr(irq->id());
 
     /*
      * The spec says that a hypervisor should never set the active and pending state
@@ -648,7 +671,7 @@ Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState sta
     Banked &cpu = _local[cpu_id];
     Irq &irq = irq_object(cpu, irq_id);
 
-    cpu._in_injection_irqs.atomic_clr(irq.id());
+    cpu.in_injection_irqs.atomic_clr(irq.id());
 
     switch (state) {
     case IrqState::INACTIVE: {
@@ -673,7 +696,7 @@ Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState sta
         } while (!irq.injection_info.cas(cur, desired));
 
         if (desired.pending())
-            cpu._pending_irqs.atomic_set(irq.id());
+            cpu.pending_irqs.atomic_set(irq.id());
 
         return;
     }
@@ -704,7 +727,7 @@ Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState sta
         } while (!irq.injection_info.cas(cur, desired));
 
         if (desired.pending())
-            cpu._pending_irqs.atomic_set(irq.id());
+            cpu.pending_irqs.atomic_set(irq.id());
     }
     }
 }
@@ -718,22 +741,22 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
     if (target.is_target_set()) {
         for (uint16 i = 0; i < min<uint16>(_num_vcpus, Model::GICV2_MAX_CPUS); i++) {
             Banked *target_cpu = &_local[i];
-            const Local_Irq_controller *gic_r = target_cpu->_notify->local_irq_ctlr();
+            const Local_Irq_controller *gic_r = target_cpu->notify->local_irq_ctlr();
 
-            target_cpu->_pending_irqs.atomic_set(irq.id());
+            target_cpu->pending_irqs.atomic_set(irq.id());
 
             // Avoid recalling a VCPU that has silenced IRQs
             if (__LIKELY__(vcpu_can_receive_irq(gic_r)))
-                target_cpu->_notify->interrupt_pending();
+                target_cpu->notify->interrupt_pending();
         }
     } else {
         Banked *target_cpu = &_local[target.target()];
-        const Local_Irq_controller *gic_r = target_cpu->_notify->local_irq_ctlr();
+        const Local_Irq_controller *gic_r = target_cpu->notify->local_irq_ctlr();
 
-        target_cpu->_pending_irqs.atomic_set(irq.id());
+        target_cpu->pending_irqs.atomic_set(irq.id());
 
         if (__LIKELY__(vcpu_can_receive_irq(gic_r)))
-            target_cpu->_notify->interrupt_pending();
+            target_cpu->notify->interrupt_pending();
     }
 
     return true;
@@ -816,7 +839,7 @@ bool
 Model::GicD::deassert_pi(Vcpu_id, Irq &irq) {
     ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
 
-    if (irq._hw) {
+    if (irq.hw()) {
         INFO("Hardware interrupts behave as level-triggered. Pending kept on for %u", irq.id());
         return true;
     }
@@ -854,7 +877,7 @@ Model::GicD::route_spi(Model::GicD::Irq &irq) {
         IrqTarget res(IrqTarget::CPU_SET, 0);
 
         for (Vcpu_id i = 0; i < min<uint16>(_num_vcpus, TARGET_MODE_MAX_CPUS); i++) {
-            if (!_local[i]._notify)
+            if (!_local[i].notify)
                 continue;
             if (irq.group0() && !_ctlr.group0_enabled())
                 continue;
@@ -868,9 +891,9 @@ Model::GicD::route_spi(Model::GicD::Irq &irq) {
         return res;
     }
 
-    if (irq._routing.any()) {
+    if (irq.routing.any()) {
         for (Vcpu_id i = 0; i < _num_vcpus; i++) {
-            Cpu_irq_interface *const cpu = _local[i]._notify;
+            Cpu_irq_interface *const cpu = _local[i].notify;
             ASSERT(cpu);
 
             if (irq.group0() && !_ctlr.group0_enabled())
@@ -884,13 +907,13 @@ Model::GicD::route_spi(Model::GicD::Irq &irq) {
                 return IrqTarget(IrqTarget::CPU_ID, i);
         }
     } else {
-        uint32 const cpu_id = static_cast<uint32>(irq._routing.aff3() << 24)
-                              | static_cast<uint32>(irq._routing.aff2() << 16)
-                              | static_cast<uint32>(irq._routing.aff1() << 8)
-                              | static_cast<uint32>(irq._routing.aff0());
+        uint32 const cpu_id = static_cast<uint32>(irq.routing.aff3() << 24)
+                              | static_cast<uint32>(irq.routing.aff2() << 16)
+                              | static_cast<uint32>(irq.routing.aff1() << 8)
+                              | static_cast<uint32>(irq.routing.aff0());
         if (cpu_id >= _num_vcpus)
             return IrqTarget(); // Empty target
-        if (_local[cpu_id]._notify)
+        if (_local[cpu_id].notify)
             return IrqTarget(IrqTarget::CPU_ID, cpu_id);
     }
 
@@ -921,9 +944,9 @@ void
 Model::GicD::enable_cpu(Cpu_irq_interface *cpu, Vcpu_id const cpu_id) {
     ASSERT(cpu_id < _num_vcpus);
     /* for now only once a cpu can register */
-    ASSERT(_local[cpu_id]._notify == nullptr);
+    ASSERT(_local[cpu_id].notify == nullptr);
 
-    _local[cpu_id]._notify = cpu;
+    _local[cpu_id].notify = cpu;
 }
 
 class IccSgi1rEl1 {
@@ -997,7 +1020,7 @@ Model::GicD::send_sgi(Vcpu_id const self, Vcpu_id const cpu, unsigned const sgi,
     ASSERT(cpu < _num_vcpus);
 
     Banked &target_cpu = _local[cpu];
-    Irq &irq = target_cpu._sgi[sgi];
+    Irq &irq = target_cpu.sgi[sgi];
 
     if (both_groups) {
         /* both groups permitted, they must just match, e.g. 0 == 0 or 1 == 1 */
@@ -1015,27 +1038,32 @@ Model::GicD::send_sgi(Vcpu_id const self, Vcpu_id const cpu, unsigned const sgi,
 }
 
 void
+Model::GicD::reset_status_bitfields_on_vcpu(uint16 vcpu_idx) {
+    for (uint32 i = 0; i < MAX_IRQ; i++) {
+        Irq &irq = irq_object(_local[vcpu_idx], i);
+
+        if (irq.hw()) {
+            if (_local[vcpu_idx].in_injection_irqs.is_set(i)) {
+                _local[vcpu_idx].pending_irqs.atomic_set(i);
+            }
+        } else {
+            _local[vcpu_idx].pending_irqs.atomic_clr(i);
+        }
+    }
+
+    _local[vcpu_idx].in_injection_irqs.reset();
+}
+
+void
 Model::GicD::reset(const VcpuCtx *) {
     for (uint16 cpu = 0; cpu < _num_vcpus; cpu++) {
         for (uint8 i = 0; i < MAX_SGI; i++) {
-            _local[cpu]._sgi[i].reset(uint8(1u << cpu));
+            _local[cpu].sgi[i].reset(uint8(1u << cpu));
         }
         for (uint8 i = 0; i < MAX_PPI; i++)
-            _local[cpu]._ppi[i].reset(uint8(1u << cpu));
+            _local[cpu].ppi[i].reset(uint8(1u << cpu));
 
-        for (uint32 i = 0; i < MAX_IRQ; i++) {
-            Irq &irq = irq_object(_local[cpu], i);
-
-            if (irq.hw()) {
-                if (_local[cpu]._in_injection_irqs.is_set(i)) {
-                    _local[cpu]._pending_irqs.atomic_set(i);
-                }
-            } else {
-                _local[cpu]._pending_irqs.atomic_clr(i);
-            }
-        }
-
-        _local[cpu]._in_injection_irqs.reset();
+        reset_status_bitfields_on_vcpu(cpu);
     }
 
     for (uint32 spi = 0; spi < MAX_SPI; spi++) {
