@@ -104,8 +104,11 @@ private:
 class Model::Cpu : private Model::Cpu_irq_interface {
 public:
     enum Mode {
-        AA64,
-        AA32,
+        // General mode
+        BITS_64,
+        BITS_32,
+        BITS_16,
+        // ARM Specific
         T32,
     };
 
@@ -174,7 +177,7 @@ private:
     void roundup_impl();
 
 protected:
-    Mode _start_mode{AA64};
+    Mode _start_mode{BITS_64};
     uint64 _tmr_off{0};
 
     Pcpu_id const _pcpu_id;
@@ -241,6 +244,8 @@ public:
     enum StartErr { SUCCESS = 0, INVALID_PARAMETERS = -2, ALREADY_ON = -4, INVALID_ADDRESS = -9 };
     static StartErr start_cpu(Vcpu_id vcpu_id, Vbus::Bus &vbus, uint64 boot_addr,
                               uint64 boot_args[MAX_BOOT_ARGS], uint64 timer_off, enum Mode);
+    static StartErr reset_cpu(Vcpu_id vcpu_id, uint64 boot_args[MAX_BOOT_ARGS], uint64 boot_addr,
+                              uint64 timer_off, enum Mode);
 
     // VCPU api end
 
