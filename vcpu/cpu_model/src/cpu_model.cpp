@@ -36,7 +36,7 @@ Model::Cpu::init(uint16 config_vcpus) {
 
 bool
 Model::Cpu::is_64bit(Vcpu_id id) {
-    return vcpus[id]->_start_mode == AA64;
+    return vcpus[id]->_start_mode == BITS_64;
 }
 
 uint16
@@ -179,11 +179,6 @@ Model::Cpu::run(Vcpu_id cpu_id) {
 Model::Cpu::StartErr
 Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr,
                       uint64 boot_args[MAX_BOOT_ARGS], uint64 timer_off, enum Mode m) {
-    if (vcpu_id >= configured_vcpus) {
-        WARN("vCPU " FMTu64 " number out of bound", vcpu_id);
-        return INVALID_PARAMETERS;
-    }
-
     if (is_cpu_turned_on_by_guest(vcpu_id)) {
         WARN("Trying to power on VCPU " FMTu64 " but it is already on", vcpu_id);
         return ALREADY_ON;
@@ -198,7 +193,19 @@ Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr,
         return INVALID_ADDRESS;
     }
 
+    return reset_cpu(vcpu_id, boot_args, boot_addr, timer_off, m);
+}
+
+Model::Cpu::StartErr
+Model::Cpu::reset_cpu(Vcpu_id vcpu_id, uint64 boot_args[MAX_BOOT_ARGS], uint64 boot_addr,
+                      uint64 timer_off, enum Mode m) {
+    if (vcpu_id >= configured_vcpus) {
+        WARN("vCPU " FMTu64 " number out of bound", vcpu_id);
+        return INVALID_PARAMETERS;
+    }
+
     Model::Cpu* const vcpu = vcpus[vcpu_id];
+    ASSERT(vcpu);
 
     vcpu->set_reset_parameters(boot_addr, boot_args, timer_off, m);
     Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, vcpu_id, true);

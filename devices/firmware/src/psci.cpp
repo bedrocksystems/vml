@@ -70,10 +70,10 @@ start_cpu(RegAccessor &arch, Vbus::Bus &vbus) {
             mode = Model::Cpu::T32;
             boot_addr = boot_addr & ~0x1ull;
         } else {
-            mode = Model::Cpu::AA32;
+            mode = Model::Cpu::BITS_32;
         }
     } else {
-        mode = Model::Cpu::AA64;
+        mode = Model::Cpu::BITS_64;
     }
 
     Vcpu_id vid = cpu_affinity_to_id(CpuAffinity(decode_cpu_id(arch.gpr(1))));
