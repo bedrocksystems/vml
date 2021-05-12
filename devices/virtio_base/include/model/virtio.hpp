@@ -48,7 +48,7 @@ class Virtio::QueueState {
 private:
     QueueData *_data{nullptr};
     Virtio::Queue _virtqueue;
-    Virtio::DeviceQueue _device_queue{nullptr, 0};
+    Virtio::DeviceQueue _device_queue{&_virtqueue, 1};
     bool _constructed{false};
 
 public:
