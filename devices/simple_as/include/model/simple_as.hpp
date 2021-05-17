@@ -201,25 +201,96 @@ template<typename T>
 class PrimitiveTypeWrapper {
 public:
     PrimitiveTypeWrapper() = delete;
-
     /*
      * We ignore the coding style for this constructor. At the moment, VMI
      * is converting from uint64 to GPA freely. We can address that but it
      * requires a bit of surgery.
      */
     PrimitiveTypeWrapper(T value) : _value(value) {} // NOLINT
+    PrimitiveTypeWrapper(const PrimitiveTypeWrapper &other) : _value(other._value) {}
 
     void set_value(T value) { _value = value; }
     T get_value() const { return _value; }
+    T value() const { return _value; }
 
     // Operator overloading
     bool operator==(const T &value) { return value == _value; }
     bool operator!=(const T &value) { return value != _value; }
     bool operator==(const PrimitiveTypeWrapper &other) { return _value == other._value; }
     bool operator!=(const PrimitiveTypeWrapper &other) { return _value != other._value; }
-    T &operator=(T value) { _value = value; }
+    PrimitiveTypeWrapper &operator=(const T value) {
+        _value = value;
+        return *this;
+    }
+    PrimitiveTypeWrapper &operator=(const PrimitiveTypeWrapper &other) {
+        _value = other._value;
+        return *this;
+    }
     T operator()(void) const { return _value; }
-    explicit operator T &() const { return _value; }
+    explicit operator const T &() const { return _value; }
+
+    PrimitiveTypeWrapper &operator+=(const T &other) {
+        _value += other;
+        return *this;
+    }
+
+    PrimitiveTypeWrapper &operator+=(const PrimitiveTypeWrapper &other) {
+        _value += other._value;
+        return *this;
+    }
+
+    PrimitiveTypeWrapper &operator&=(const T &other) {
+        _value &= other;
+        return *this;
+    }
+
+    PrimitiveTypeWrapper &operator&=(const PrimitiveTypeWrapper &other) {
+        _value &= other._value;
+        return *this;
+    }
+
+    PrimitiveTypeWrapper &operator|=(const T &other) {
+        _value |= other;
+        return *this;
+    }
+
+    PrimitiveTypeWrapper &operator|=(const PrimitiveTypeWrapper &other) {
+        _value |= other._value;
+        return *this;
+    }
+
+    bool operator<=(const PrimitiveTypeWrapper &other) const { return _value <= other._value; }
+    bool operator<=(const T other) const { return _value <= other; }
+    friend bool operator<=(T number, const PrimitiveTypeWrapper &prim) {
+        return number <= prim._value;
+    }
+
+    bool operator>=(const PrimitiveTypeWrapper &other) const { return _value >= other._value; }
+    bool operator>=(const T other) const { return _value >= other; }
+    friend bool operator>=(T number, const PrimitiveTypeWrapper &prim) {
+        return number >= prim._value;
+    }
+
+    bool operator<(const PrimitiveTypeWrapper &other) const { return _value < other._value; }
+    bool operator<(const T other) const { return _value < other; }
+    friend bool operator<(T number, const PrimitiveTypeWrapper &prim) {
+        return number < prim._value;
+    }
+
+    bool operator>(const PrimitiveTypeWrapper &other) const { return _value > other._value; }
+    bool operator>(const T other) const { return _value > other; }
+    friend bool operator>(T number, const PrimitiveTypeWrapper &prim) {
+        return number > prim._value;
+    }
+
+    T operator+(const PrimitiveTypeWrapper<T> &other) const { return _value + other._value; }
+    T operator+(const T value) const { return _value + value; }
+
+    T operator-(const PrimitiveTypeWrapper<T> &other) const { return _value - other._value; }
+    T operator-(const T value) const { return _value - value; }
+
+    T operator&(const PrimitiveTypeWrapper<T> &other) const { return _value & other._value; }
+    T operator&(const T value) const { return _value & value; }
 
 protected:
     T _value;
@@ -230,6 +301,7 @@ protected:
 class GPA : public PrimitiveTypeWrapper<uint64> {
 public:
     static constexpr uint64 INVALID_GPA = ~0ull;
+    static constexpr uint64 INVALID_GFN = ~0ull;
     using PrimitiveTypeWrapper::PrimitiveTypeWrapper;
 
     /**
@@ -255,7 +327,7 @@ public:
  */
 class HVA : public PrimitiveTypeWrapper<mword> {
 public:
-    static constexpr mword INVALID_GVA = ~0ull;
+    static constexpr mword INVALID_HVA = ~0ull;
     using PrimitiveTypeWrapper::PrimitiveTypeWrapper;
 };
 
@@ -353,7 +425,7 @@ public:
      *  \pre Partial ownership of the object. Full ownership of the source buffer.
      *  \post Ownership unchanged. The data is copied from the buffer to the guest AS if the
      * parameters given by the caller are valid. Otherwise, the guest AS is left untouched.
-     *  \param addr start of the write on the guest AS
+     *  \param gpa start of the write on the guest AS
      *  \param size size to write
      *  \param src buffer that contains the data to write
      *  \return ENONE if the operation was a success, error code otherwise
