@@ -81,3 +81,21 @@ Model::SimpleAS::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
     const Model::SimpleAS* tgt = reinterpret_cast<const Model::SimpleAS*>(dev);
     return tgt->gpa_to_vmm_view(addr, sz);
 }
+
+Errno
+Model::SimpleAS::read_bus(const Vbus::Bus& bus, GPA addr, char* dst, size_t sz) {
+    const char* src = gpa_to_vmm_view(bus, addr, sz);
+    if (src == nullptr)
+        return EINVAL;
+    memcpy(dst, src, sz);
+    return ENONE;
+}
+
+Errno
+Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size_t sz) {
+    char* dst = gpa_to_vmm_view(bus, addr, sz);
+    if (src == nullptr)
+        return EINVAL;
+    memcpy(dst, src, sz);
+    return ENONE;
+}
