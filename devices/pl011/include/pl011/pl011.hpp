@@ -12,6 +12,7 @@
  */
 
 #include <platform/atomic.hpp>
+#include <platform/mutex.hpp>
 #include <platform/signal.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
@@ -152,7 +153,7 @@ private:
 
     static constexpr uint8 RX_FIFO_MAX_SIZE = 16;
     uint8 _rx_fifo_size{1};            /*!< Maximum configured size */
-    atomic<uint8> _rx_fifo_chars{0};   /*!< Current number of chars in the FIFO */
+    uint8 _rx_fifo_chars{0};           /*!< Current number of chars in the FIFO */
     uint8 _rx_fifo_ridx{0};            /*!< Read index in the FIFO */
     uint8 _rx_fifo_widx{0};            /*!< Write index in the FIFO */
     uint16 _rx_fifo[RX_FIFO_MAX_SIZE]; /*!< Receive FIFO */
@@ -172,6 +173,24 @@ private:
     uint16 _irq_id;            /*!< IRQ id when sending an interrupt to the controller */
     Platform::Signal _sig_notify_empty_space; /*!< Synchronize/wait on a buffer that is full */
 
+    /*
+     * Rationale on the locking scheme:
+     * - The concurrency model can be described as: accesses from the guest and accesses from the
+     * outside world that sends characters to the guest.
+     * - We need to synchronize the outside world and the guest. That can be done with atomics but
+     * it complicates the specification of this code.
+     * - Technically, a guest could have several CPUs accessing the pl011 at the same time.
+     * Probably, no sane driver would do that but we can still prevent the device to become
+     * corrupted by using a global state lock.
+     * - Locking should be cheap here, in most cases, only 2 entities will compete for the lock. The
+     * outside world will also just wait if the FIFO is full, leaving the guest alone to take the
+     * lock.
+     * - Overall, performance is not a big concern for virtual UARTs.
+     *
+     * This could be improved in the future if there is a need.
+     */
+    Platform::Mutex _state_lock; /*!< Global state lock */
+
 public:
     /*! \brief Constructor for the PL011
      *  \param gic interrupt object that will receive interrupts from the PL011
@@ -182,6 +201,8 @@ public:
 
     bool init(const Platform_ctx *ctx) {
         if (!_sig_notify_empty_space.init(ctx))
+            return false;
+        if (!_state_lock.init(ctx))
             return false;
         reset(nullptr);
         return true;
@@ -211,6 +232,8 @@ public:
     /*! \brief Reset the PL011 to its initial state
      */
     virtual void reset(const VcpuCtx *) override {
+        Platform::MutexGuard guard(&_state_lock);
+
         _ilpr = 0;
         _ibrd = 0;
         _fbrd = 0;

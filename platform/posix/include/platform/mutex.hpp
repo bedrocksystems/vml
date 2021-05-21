@@ -14,9 +14,10 @@
 
 namespace Platform {
     class Mutex;
+    class MutexGuard;
 }
 
-class Platform::Mutex : private std::mutex {
+class Platform::Mutex : public std::mutex {
 public:
     bool init(const Platform_ctx*) { return true; }
 
@@ -28,4 +29,13 @@ public:
         unlock();
         return true;
     }
+};
+
+class Platform::MutexGuard {
+public:
+    explicit MutexGuard(Platform::Mutex* m) : _m(m) { _m->enter(); }
+    ~MutexGuard() { _m->exit(); }
+
+private:
+    Platform::Mutex* _m;
 };

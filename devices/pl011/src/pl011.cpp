@@ -14,8 +14,8 @@
 Vbus::Err
 Model::Pl011::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset,
                      uint8 const size, uint64 &value) {
-
     bool ok = false;
+    Platform::MutexGuard guard(&_state_lock);
 
     if (access == Vbus::Access::EXEC)
         return Vbus::ACCESS_ERR;
@@ -230,6 +230,8 @@ Model::Pl011::should_assert_rx_irq() const {
 
 bool
 Model::Pl011::to_guest(char *buff, uint32 size) {
+    Platform::MutexGuard guard(&_state_lock);
+
     if (is_fifo_full() || !can_rx())
         return false;
 
