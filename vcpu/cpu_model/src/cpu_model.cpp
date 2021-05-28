@@ -410,15 +410,12 @@ Model::Cpu::switch_state_to_emulating() {
 void
 Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolut) {
     if (!will_timeout)
-        /*
-         * Future, this should be done a in a loop such that:
-         * while (!pending_irq())
-         *    block();
-         * That's an optimization and we are missing a few pieces to get there.
-         */
-        block();
-    else
-        block_timeout(timeout_absolut);
+        while (!_lirq_ctlr->int_pending())
+            block();
+    else {
+        if (!_lirq_ctlr->int_pending())
+            block_timeout(timeout_absolut);
+    }
 }
 
 void

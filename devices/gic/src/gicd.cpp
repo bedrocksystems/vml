@@ -556,7 +556,7 @@ Model::GicD::deassert_global_line(uint32 const irq_id) {
 }
 
 Model::GicD::Irq *
-Model::GicD::highest_irq(Vcpu_id const cpu_id) {
+Model::GicD::highest_irq(Vcpu_id const cpu_id, bool redirect_irq) {
     Model::GicD::Irq *r = nullptr;
     size_t irq_id = 0;
     Banked &cpu = _local[cpu_id];
@@ -569,7 +569,7 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id) {
 
         Irq &irq = irq_object(cpu, irq_id);
 
-        if ((irq_id >= MAX_PPI + MAX_SGI) && !vcpu_can_receive_irq(gic_r)) {
+        if (redirect_irq && (irq_id >= MAX_PPI + MAX_SGI) && !vcpu_can_receive_irq(gic_r)) {
             /*
              * If this interface is not capable of receiving the IRQ anymore,
              * in the GICv3 world (affinity_routing enabled), we have to release
@@ -608,7 +608,7 @@ bool
 Model::GicD::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
     ASSERT(cpu_id < _num_vcpus);
 
-    Irq *irq = highest_irq(cpu_id);
+    Irq *irq = highest_irq(cpu_id, true);
     if (!irq || (min_priority < irq->prio()))
         return false;
     ASSERT(irq->id() < MAX_IRQ);
