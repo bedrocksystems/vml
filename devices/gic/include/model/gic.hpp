@@ -561,7 +561,7 @@ private:
     bool notify_target(Irq &irq, const IrqTarget &target);
     IrqTarget route_spi(Model::GicD::Irq &irq);
     bool redirect_spi(Irq &irq);
-    Irq *highest_irq(Vcpu_id cpu_id);
+    Irq *highest_irq(Vcpu_id cpu_id, bool redirect_irq);
     bool vcpu_can_receive_irq(const Local_Irq_controller *gic_r) const {
         return !_ctlr.affinity_routing() || gic_r->can_receive_irq();
     }
@@ -605,9 +605,9 @@ public:
     virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id) override;
 
     bool any_irq_active(Vcpu_id);
-    bool has_irq_to_inject(Vcpu_id cpu_id) { return highest_irq(cpu_id) != nullptr; }
+    bool has_irq_to_inject(Vcpu_id cpu_id) { return highest_irq(cpu_id, false) != nullptr; }
     uint32 highest_irq_to_inject(Vcpu_id cpu_id, uint8 min_priority = PRIORITY_ANY) {
-        Irq *irq = highest_irq(cpu_id);
+        Irq *irq = highest_irq(cpu_id, false);
         if (irq == nullptr)
             return SPECIAL_INTID_NONE;
         else if (irq->prio() > min_priority)
@@ -660,5 +660,5 @@ public:
     virtual uint8 int_ack() override {
         ABORT_WITH("interrupt ACK shouldn't be called on the GICR");
     }
-    virtual bool int_pending() override { ABORT_WITH("Not implemented yet"); }
+    virtual bool int_pending() override { return _gic_d->has_irq_to_inject(_vcpu_id); }
 };
