@@ -20,6 +20,8 @@ public:
     /*! \brief Will be called when the vuart needs to send chars to the outside
      *  \param c character to send
      *  \return number of characters written - 1 for now
+     *  \pre Valid callback object, valid UMX connection
+     *  \post Valid callback object, c was sent to the outside world (best effort basis)
      */
     virtual uint32 from_guest_sent(const char &c) = 0;
 };
