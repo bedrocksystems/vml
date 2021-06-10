@@ -77,9 +77,9 @@ public:
         if (used_addr == nullptr)
             return destruct();
 
-        _virtqueue.descriptor = reinterpret_cast<Virtio::Descriptor *>(desc_addr);
-        _virtqueue.available = reinterpret_cast<Virtio::Available *>(avail_addr);
-        _virtqueue.used = reinterpret_cast<Virtio::Used *>(used_addr);
+        _virtqueue.descriptor = static_cast<Virtio::Descriptor *>(desc_addr);
+        _virtqueue.available = static_cast<Virtio::Available *>(avail_addr);
+        _virtqueue.used = static_cast<Virtio::Used *>(used_addr);
 
         new (&_device_queue) Virtio::DeviceQueue(&_virtqueue, uint16(_data->num));
 
