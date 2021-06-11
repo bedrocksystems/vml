@@ -32,7 +32,7 @@ private:
     enum { RX = 0, TX = 1 };
     Model::Virtio_console_config _config __attribute__((aligned(8)));
 
-    Semaphore *_sem;
+    Platform::Signal *_sig_notify_event;
     Virtio::Descriptor *_tx_desc{nullptr};
     bool _driver_initialized{false};
     Platform::Signal _sig_notify_empty_space;
@@ -45,9 +45,9 @@ private:
 
 public:
     VirtioMMIO_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
-                       uint16 const queue_entries, Semaphore *sem)
+                       uint16 const queue_entries, Platform::Signal *sig)
         : Virtio::Device(3, bus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries),
-          _sem(sem) {}
+          _sig_notify_event(sig) {}
 
     bool init(const Platform_ctx *ctx) { return _sig_notify_empty_space.init(ctx); }
 

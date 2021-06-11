@@ -11,7 +11,7 @@
 
 void
 Model::VirtioMMIO_console::notify(uint32 const) {
-    _sem->release();
+    _sig_notify_event->sig();
 
     if (_queue[RX].queue().get_free())
         _sig_notify_empty_space.sig();

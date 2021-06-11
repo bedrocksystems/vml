@@ -12,7 +12,7 @@
 void
 Model::Virtio_net::notify(uint32 const) {
     if (_backend_connected) {
-        _sem->release();
+        _sig->sig();
     }
 }
 
