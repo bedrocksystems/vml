@@ -96,7 +96,7 @@ public:
     Virtio::DeviceQueue &queue() { return _device_queue; }
 };
 
-class Virtio::Device {
+class Virtio::Device : public Vbus::Device {
 protected:
     enum { QUEUES = 3 };
 
@@ -388,14 +388,27 @@ protected:
         return true;
     }
 
+    virtual Vbus::Err access(Vbus::Access const access, const VcpuCtx *, Vbus::Space,
+                             mword const offset, uint8 const size, uint64 &value) override {
+
+        bool ok = false;
+
+        if (access == Vbus::Access::WRITE)
+            ok = write(offset, size, value);
+        if (access == Vbus::Access::READ)
+            ok = read(offset, size, value);
+
+        return ok ? Vbus::Err::OK : Vbus::Err::ACCESS_ERR;
+    }
+
     virtual void notify(uint32) = 0;
     virtual void driver_ok() = 0;
 
 public:
-    Device(uint8 const device_id, const Vbus::Bus &bus, Model::Irq_controller &irq_ctlr,
-           void *config_space, uint32 config_size, uint16 const irq, uint16 const queue_num,
-           uint32 const device_feature_lower = 0)
-        : _irq_ctlr(&irq_ctlr), _vbus(&bus),
+    Device(const char *name, uint8 const device_id, const Vbus::Bus &bus,
+           Model::Irq_controller &irq_ctlr, void *config_space, uint32 config_size,
+           uint16 const irq, uint16 const queue_num, uint32 const device_feature_lower = 0)
+        : Vbus::Device(name), _irq_ctlr(&irq_ctlr), _vbus(&bus),
           _config_space(reinterpret_cast<uint64 *>(config_space)), _config_size(config_size),
           _irq(irq), _queue_num_max(queue_num), _device_id(device_id),
           _device_feature_lower(device_feature_lower) {}
@@ -403,9 +416,9 @@ public:
     uint64 drv_feature() const { return (uint64(_drv_feature_upper) << 32) | _drv_feature_lower; }
 };
 
-class Virtio::Virtio_console : public Vbus::Device {
+class Virtio::Virtio_console {
 public:
-    Virtio_console() : Vbus::Device("virtio console") {}
+    Virtio_console() {}
 
     virtual bool to_guest(const char *, uint32) = 0;
     virtual void wait_for_available_buffer() = 0;

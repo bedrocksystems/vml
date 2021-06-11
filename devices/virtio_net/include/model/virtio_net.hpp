@@ -61,7 +61,7 @@ public:
     virtual void device_reset(const VcpuCtx *ctx) = 0;
 };
 
-class Model::Virtio_net : public Vbus::Device, public Virtio::Device {
+class Model::Virtio_net : public Virtio::Device {
 
 private:
     enum { RX = 0, TX = 1 };
@@ -70,9 +70,6 @@ private:
     Virtio_net_config _config __attribute__((aligned(8)));
     Platform::Signal *_sig;
     bool _backend_connected{false};
-
-    bool mmio_write(Vcpu_id, uint64, uint8, uint64);
-    bool mmio_read(Vcpu_id, uint64, uint8, uint64 &) const;
 
     void notify(uint32) override;
     void driver_ok() override;
@@ -87,9 +84,8 @@ public:
 
     Virtio_net(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 irq,
                uint16 const queue_entries, const UserConfig &config, Platform::Signal *sig)
-        : Vbus::Device("virtio network"), Virtio::Device(1, vbus, irq_ctlr, &_config,
-                                                         sizeof(_config), irq, queue_entries,
-                                                         config.device_feature),
+        : Virtio::Device("virtio network", 1, vbus, irq_ctlr, &_config, sizeof(_config), irq,
+                         queue_entries, config.device_feature),
           _sig(sig) {
         _config.mtu = config.mtu;
         memcpy(&_config.mac, &config.mac, 6);
@@ -108,9 +104,6 @@ public:
     void signal();
 
     virtual void reset(const VcpuCtx *) override;
-
-    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
-                             uint64 &) override;
 
     Virtio::QueueData const &queue_data_rx() const { return _data[RX]; }
     Virtio::QueueData const &queue_data_tx() const { return _data[TX]; }
