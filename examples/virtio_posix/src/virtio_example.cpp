@@ -144,8 +144,8 @@ main() {
 
     Dummy_vcpu vcpu(gicd);
 
-    Semaphore sem;
-    ok = sem.init(&ctx);
+    Platform::Signal sig;
+    ok = sig.init(&ctx);
     ASSERT(ok);
 
     ok = vcpu.setup(&ctx);
@@ -159,7 +159,7 @@ main() {
     ok = bus.register_device(&sas, VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);
     ASSERT(ok);
 
-    Model::VirtioMMIO_console virtio_console(gicd, bus, 0x13, 10, &sem);
+    Model::VirtioMMIO_console virtio_console(gicd, bus, 0x13, 10, &sig);
 
     Dummy_Virtio_Interface virtio_interface;
     virtio_console.register_callback(&virtio_interface);
@@ -192,7 +192,7 @@ main() {
     ok = vbus.access(Vbus::WRITE, vctx, VIRTIO_BASE + 0x50, 4, val);
     ASSERT(ok == Vbus::OK);
 
-    sem.acquire();
+    sig.wait();
     INFO("Virtio console received kick");
 
     return 0;

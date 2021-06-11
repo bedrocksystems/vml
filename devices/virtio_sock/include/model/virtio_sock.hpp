@@ -9,7 +9,7 @@
 #pragma once
 
 #include <model/virtio.hpp>
-#include <platform/semaphore.hpp>
+#include <platform/signal.hpp>
 #include <platform/string.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
@@ -37,7 +37,7 @@ private:
     Virtio::Callback *_callback{nullptr};
     Model::Virtio_sock_callback *_virtio_sock_callback{nullptr};
     Virtio_sock_config _config;
-    Semaphore *_sem;
+    Platform::Signal *_sig;
     bool _backend_connected{false};
 
     bool mmio_write(Vcpu_id, uint64, uint8, uint64);
@@ -48,10 +48,10 @@ private:
 
 public:
     Virtio_sock(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
-                uint16 const queue_entries, uint64 cid, Semaphore *sem)
+                uint16 const queue_entries, uint64 cid, Platform::Signal *sig)
         : Vbus::Device("virtio socket"), Virtio::Device(19, bus, irq_ctlr, &_config,
                                                         sizeof(_config), irq, queue_entries),
-          _sem(sem) {
+          _sig(sig) {
         _config.guest_cid = cid;
     }
 

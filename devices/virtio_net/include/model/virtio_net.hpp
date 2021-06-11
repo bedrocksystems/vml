@@ -9,7 +9,7 @@
 #pragma once
 
 #include <model/virtio.hpp>
-#include <platform/semaphore.hpp>
+#include <platform/signal.hpp>
 #include <platform/string.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
@@ -68,7 +68,7 @@ private:
     Virtio::Callback *_callback{nullptr};
     Model::Virtio_net_callback *_virtio_net_callback{nullptr};
     Virtio_net_config _config __attribute__((aligned(8)));
-    Semaphore *_sem;
+    Platform::Signal *_sig;
     bool _backend_connected{false};
 
     bool mmio_write(Vcpu_id, uint64, uint8, uint64);
@@ -86,11 +86,11 @@ public:
     };
 
     Virtio_net(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 irq,
-               uint16 const queue_entries, const UserConfig &config, Semaphore *sem)
+               uint16 const queue_entries, const UserConfig &config, Platform::Signal *sig)
         : Vbus::Device("virtio network"), Virtio::Device(1, vbus, irq_ctlr, &_config,
                                                          sizeof(_config), irq, queue_entries,
                                                          config.device_feature),
-          _sem(sem) {
+          _sig(sig) {
         _config.mtu = config.mtu;
         memcpy(&_config.mac, &config.mac, 6);
     }
