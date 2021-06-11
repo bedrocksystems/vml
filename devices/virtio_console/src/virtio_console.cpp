@@ -92,29 +92,3 @@ Model::VirtioMMIO_console::release_buffer() {
     _queue[TX].queue().send(_tx_desc);
     assert_irq();
 }
-
-Vbus::Err
-Model::VirtioMMIO_console::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::Space,
-                                  mword const offset, uint8 const size, uint64 &value) {
-
-    bool ok = false;
-
-    if (access == Vbus::Access::WRITE)
-        ok = mmio_write(vcpu_ctx->vcpu_id, offset, size, value);
-    if (access == Vbus::Access::READ)
-        ok = mmio_read(vcpu_ctx->vcpu_id, offset, size, value);
-
-    return ok ? Vbus::Err::OK : Vbus::Err::ACCESS_ERR;
-}
-
-bool
-Model::VirtioMMIO_console::mmio_write(Vcpu_id const, uint64 const offset, uint8 const access_size,
-                                      uint64 const value) {
-    return write(offset, access_size, value);
-}
-
-bool
-Model::VirtioMMIO_console::mmio_read(Vcpu_id const, uint64 const offset, uint8 const access_size,
-                                     uint64 &value) const {
-    return read(offset, access_size, value);
-}

@@ -35,29 +35,3 @@ Model::Virtio_net::reset(const VcpuCtx *ctx) {
 
     reset_virtio();
 }
-
-Vbus::Err
-Model::Virtio_net::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::Space,
-                          mword const offset, uint8 const size, uint64 &value) {
-
-    bool ok = false;
-
-    if (access == Vbus::Access::WRITE)
-        ok = mmio_write(vcpu_ctx->vcpu_id, offset, size, value);
-    if (access == Vbus::Access::READ)
-        ok = mmio_read(vcpu_ctx->vcpu_id, offset, size, value);
-
-    return ok ? Vbus::Err::OK : Vbus::Err::ACCESS_ERR;
-}
-
-bool
-Model::Virtio_net::mmio_write(Vcpu_id const, uint64 const offset, uint8 const access_size,
-                              uint64 const value) {
-    return write(offset, access_size, value);
-}
-
-bool
-Model::Virtio_net::mmio_read(Vcpu_id const, uint64 const offset, uint8 const access_size,
-                             uint64 &value) const {
-    return read(offset, access_size, value);
-}
