@@ -50,6 +50,12 @@ Model::Cpu::get_pcpu(Vcpu_id id) {
     return vcpus[id]->_pcpu_id;
 }
 
+const char*
+Model::Cpu::cpu_state_string(Vcpu_id id) {
+    ASSERT(id < configured_vcpus);
+    return state_printable_name[vcpus[id]->_state];
+}
+
 void
 Model::Cpu::roundup_impl() {
     bool emulating = switch_state_to_roundedup();
