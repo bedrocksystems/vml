@@ -15,6 +15,7 @@
 #include <platform/bitset.hpp>
 #include <platform/compiler.hpp>
 #include <platform/log.hpp>
+#include <platform/new.hpp>
 #include <vbus/vbus.hpp>
 
 namespace Model {
@@ -580,7 +581,7 @@ public:
         if (_version == GIC_V2 && _num_vcpus > GICV2_MAX_CPUS)
             return false;
 
-        _local = new Banked[_num_vcpus];
+        _local = new (nothrow) Banked[_num_vcpus];
         if (_local == nullptr)
             return false;
         for (uint16 i = 0; i < MAX_SPI; i++)
