@@ -206,6 +206,9 @@ public:
     static bool is_64bit(Vcpu_id);
     static Errno run(Vcpu_id);
 
+    // Debugging/Info purposes: describe the current status of the VCPU
+    static const char *cpu_state_string(Vcpu_id);
+
     typedef void (*ctrl_feature_cb)(Model::Cpu *, bool, Request::Requestor, Reg_selection);
     typedef bool (*requested_feature_cb)(Model::Cpu *, Request::Requestor);
 
