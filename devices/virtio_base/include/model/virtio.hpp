@@ -9,7 +9,7 @@
 #pragma once
 
 #include <model/irq_controller.hpp>
-#include <model/simple_as.hpp>
+#include <model/virtio_common.hpp>
 #include <platform/log.hpp>
 #include <platform/new.hpp>
 #include <platform/types.hpp>
@@ -18,88 +18,11 @@
 namespace Virtio {
     class Console;
     class Device;
-    class QueueState;
-    struct QueueData;
-    class Callback;
     class Virtio_console;
-};
-
-class Virtio::Callback {
-public:
-    virtual void driver_ok() = 0;
-};
-
-struct Virtio::QueueData {
-    uint32 descr_low{0};
-    uint32 descr_high{0};
-    uint32 driver_low{0};
-    uint32 driver_high{0};
-    uint32 device_low{0};
-    uint32 device_high{0};
-    uint32 num{0};
-    uint32 ready{0};
-
-    uint64 descr() const { return (uint64(descr_high) << 32) | descr_low; }
-    uint64 driver() const { return (uint64(driver_high) << 32) | driver_low; }
-    uint64 device() const { return (uint64(device_high) << 32) | device_low; }
-};
-
-class Virtio::QueueState {
-private:
-    QueueData *_data{nullptr};
-    Virtio::Queue _virtqueue;
-    Virtio::DeviceQueue _device_queue{&_virtqueue, 1};
-    bool _constructed{false};
-
-public:
-    void construct(QueueData &data, Vbus::Bus const &bus) {
-        _data = &data;
-
-        /* don't accept queues with zero elements */
-        if (_data->num == 0)
-            return destruct();
-
-        void *desc_addr = nullptr;
-        desc_addr = Model::SimpleAS::gpa_to_vmm_view(bus, GPA(data.descr()),
-                                                     Virtio::Descriptor::size(_data->num));
-        if (desc_addr == nullptr)
-            return destruct();
-
-        void *avail_addr = nullptr;
-        avail_addr = Model::SimpleAS::gpa_to_vmm_view(bus, GPA(data.driver()),
-                                                      Virtio::Available::size(_data->num));
-        if (avail_addr == nullptr)
-            return destruct();
-
-        void *used_addr = nullptr;
-        used_addr = Model::SimpleAS::gpa_to_vmm_view(bus, GPA(data.device()),
-                                                     Virtio::Used::size(_data->num));
-        if (used_addr == nullptr)
-            return destruct();
-
-        _virtqueue.descriptor = static_cast<Virtio::Descriptor *>(desc_addr);
-        _virtqueue.available = static_cast<Virtio::Available *>(avail_addr);
-        _virtqueue.used = static_cast<Virtio::Used *>(used_addr);
-
-        new (&_device_queue) Virtio::DeviceQueue(&_virtqueue, uint16(_data->num));
-
-        _constructed = true;
-    }
-
-    void destruct() {
-        _data = nullptr;
-        _constructed = false;
-    }
-
-    bool constructed() const { return _constructed; }
-
-    Virtio::DeviceQueue &queue() { return _device_queue; }
 };
 
 class Virtio::Device : public Vbus::Device {
 protected:
-    enum { QUEUES = 3 };
-
     Model::Irq_controller *const _irq_ctlr;
     Vbus::Bus const *const _vbus;
     uint64 *_config_space{nullptr};
@@ -120,8 +43,8 @@ protected:
     uint32 _drv_feature_lower{0};
     uint32 _config_generation{0};
 
-    QueueData _data[QUEUES];
-    QueueState _queue[QUEUES];
+    QueueData _data[static_cast<uint8>(Virtio::Queues::MAX)];
+    QueueState _queue[static_cast<uint8>(Virtio::Queues::MAX)];
 
     enum {
         RO_MAGIC = 0x0,
@@ -183,16 +106,6 @@ protected:
         RW_CONFIG_END = 0x163,
     };
 
-    enum DeviceStatus {
-        DEVICE_RESET = 0,
-        ACKNOWLEDGE = 1,
-        DRIVER = 2,
-        FAILED = 128,
-        FEATURES_OK = 8,
-        DRIVER_OK = 4,
-        DEVICE_NEEDS_RESET = 64,
-    };
-
     QueueData const &queue_data() const { return _data[_sel_queue]; }
     QueueData &queue_data() { return _data[_sel_queue]; }
 
@@ -207,7 +120,7 @@ protected:
     }
 
     void reset_virtio() {
-        for (int i = 0; i < QUEUES; i++) {
+        for (int i = 0; i < static_cast<uint8>(Virtio::Queues::MAX); i++) {
             _queue[i].destruct();
             _data[i] = {};
         }
@@ -301,7 +214,7 @@ protected:
             return write_register(offset, RW_DRIVER_FEATURE_SEL, RW_DRIVER_FEATURE_SEL_END, bytes,
                                   value, _drv_feature_sel);
         case WO_QUEUE_SEL ... WO_QUEUE_SEL_END:
-            if (value >= QUEUES)
+            if (value >= static_cast<uint8>(Virtio::Queues::MAX))
                 return true; /* ignore out of bound */
             return write_register(offset, WO_QUEUE_SEL, WO_QUEUE_SEL_END, bytes, value, _sel_queue);
         case WO_QUEUE_NUM ... WO_QUEUE_NUM_END:
@@ -319,9 +232,9 @@ protected:
         case WO_IRQ_ACK ... WO_IRQ_ACK_END:
             return true;
         case RW_STATUS ... RW_STATUS_END:
-            if (value == DEVICE_RESET)
+            if (value == static_cast<uint32>(Virtio::DeviceStatus::DEVICE_RESET))
                 reset_virtio();
-            else if (value & DRIVER_OK)
+            else if (value & static_cast<uint32>(Virtio::DeviceStatus::DRIVER_OK))
                 driver_ok();
             return write_register(offset, RW_STATUS, RW_STATUS_END, bytes, value, _status);
         case WO_QUEUE_NOTIFY:
@@ -351,41 +264,6 @@ protected:
                                   _config_space[(offset & ~(8ULL - 1)) - RW_CONFIG]);
         }
         return false;
-    }
-
-    bool read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
-                       uint8 const bytes, uint64 const value, uint64 &result) const {
-        if (!bytes || (bytes > 8) || (offset + bytes > base_max + 1)) {
-            WARN("Register read failure: off " FMTx64 " - base_reg 0x%u - base_max 0x%u - bytes "
-
-                 "0x%u",
-                 offset, base_reg, base_max, bytes);
-            return false;
-        }
-
-        uint64 const base = offset - base_reg;
-        uint64 const mask = (bytes >= 8) ? (0ULL - 1) : ((1ULL << (bytes * 8)) - 1);
-        result = (value >> (base * 8)) & mask;
-        return true;
-    }
-
-    template<typename T>
-    bool write_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
-                        uint8 const bytes, uint64 const value, T &result) {
-        unsigned constexpr TSIZE = sizeof(T);
-        if (!bytes || (bytes > TSIZE) || (offset + bytes > base_max + 1)) {
-            WARN("Register write failure: off " FMTx64 " - base_reg 0x%u - base_max 0x%u - bytes "
-                 "0x%u - tsize 0x%u",
-                 offset, base_reg, base_max, bytes, TSIZE);
-            return false;
-        }
-
-        uint64 const base = offset - base_reg;
-        uint64 const mask = (bytes >= TSIZE) ? (T(0) - 1) : ((T(1) << (bytes * 8)) - 1);
-
-        result &= (bytes >= TSIZE) ? T(0) : ~(T(mask) << (base * 8));
-        result |= T(value & mask) << (base * 8);
-        return true;
     }
 
     virtual Vbus::Err access(Vbus::Access const access, const VcpuCtx *, Vbus::Space,
