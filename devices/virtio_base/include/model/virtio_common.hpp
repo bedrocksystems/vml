@@ -108,7 +108,73 @@ public:
 
     bool constructed() const { return _constructed; }
 
-    Virtio::DeviceQueue &queue() { return _device_queue; }
+    Virtio::DeviceQueue &device_queue() { return _device_queue; }
+};
+
+struct Virtio::DeviceState {
+    explicit DeviceState(uint16 const num_max, uint32 vendor, uint32 id, uint32 const feature_lower,
+                         void *config, uint32 config_sz)
+        : queue_num_max(num_max), vendor_id(vendor), device_id(id),
+          device_feature_lower(feature_lower), config_space(static_cast<uint64 *>(config)),
+          config_size(config_sz) {}
+
+    QueueData const &selected_queue_data() const { return data[sel_queue]; }
+    QueueData &selected_queue_data() { return data[sel_queue]; }
+
+    void construct_selected(Vbus::Bus const &bus) {
+        if (!queue[sel_queue].constructed()) {
+            queue[sel_queue].construct(selected_queue_data(), bus);
+        }
+    }
+
+    void destruct_selected() {
+        if (queue[sel_queue].constructed()) {
+            queue[sel_queue].destruct();
+        }
+    }
+
+    void reset() {
+        for (int i = 0; i < static_cast<uint8>(Virtio::Queues::MAX); i++) {
+            queue[i].destruct();
+            data[i] = {};
+        }
+
+        status = 0;
+        irq_status = 0;
+        drv_device_sel = 0;
+        drv_feature_sel = 0;
+        drv_feature_upper = 0;
+        drv_feature_lower = 0;
+    }
+
+    uint32 get_config_gen() const { return __atomic_load_n(&config_generation, __ATOMIC_SEQ_CST); }
+    void update_config_gen() { __atomic_fetch_add(&config_generation, 1, __ATOMIC_SEQ_CST); }
+
+    bool status_changed{false};
+    bool construct_queue{false};
+
+    bool notify{false};
+    uint32 notify_val{0};
+
+    uint16 const queue_num_max; /* spec says: must be power of 2, max 32768 */
+    uint32 const vendor_id;
+    uint32 const device_id;
+    uint32 const device_feature_lower;
+
+    uint64 *config_space;
+    uint32 config_size;
+
+    uint32 sel_queue{0};
+    uint32 irq_status{0};
+    uint32 status{0};
+    uint32 drv_device_sel{0};
+    uint32 drv_feature_sel{0};
+    uint32 drv_feature_upper{0};
+    uint32 drv_feature_lower{0};
+    uint32 config_generation{0};
+
+    QueueData data[static_cast<uint8>(Virtio::Queues::MAX)];
+    QueueState queue[static_cast<uint8>(Virtio::Queues::MAX)];
 };
 
 inline bool

@@ -60,6 +60,6 @@ public:
         reset_virtio();
     }
 
-    Virtio::QueueData const &queue_data_rx() const { return _data[RX]; }
-    Virtio::QueueData const &queue_data_tx() const { return _data[TX]; }
+    Virtio::QueueData const &queue_data_rx() const { return queue_data(RX); }
+    Virtio::QueueData const &queue_data_tx() const { return queue_data(TX); }
 };

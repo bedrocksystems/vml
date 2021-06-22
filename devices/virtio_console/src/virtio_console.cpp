@@ -13,7 +13,7 @@ void
 Model::VirtioMMIO_console::notify(uint32 const) {
     _sig_notify_event->sig();
 
-    if (_queue[RX].queue().get_free())
+    if (device_queue(RX).get_free())
         _sig_notify_empty_space.sig();
 }
 
@@ -27,19 +27,19 @@ Model::VirtioMMIO_console::driver_ok() {
 
 bool
 Model::VirtioMMIO_console::to_guest(const char *buff, uint32 size) {
-    if (!_queue[RX].constructed() || (!_driver_initialized))
+    if (!queue(RX).constructed() || (!_driver_initialized))
         return false;
 
     uint32 buf_idx = 0;
     while (size) {
-        auto *desc = _queue[RX].queue().recv();
+        auto *desc = device_queue(RX).recv();
         if (not desc) {
             return false;
         }
 
         char *dst = Model::SimpleAS::gpa_to_vmm_view(*_vbus, GPA(desc->address), desc->length);
         if (dst == nullptr) {
-            _queue[RX].queue().send(desc);
+            device_queue(RX).send(desc);
             return false; /* outside guest physical memory */
         }
 
@@ -51,7 +51,7 @@ Model::VirtioMMIO_console::to_guest(const char *buff, uint32 size) {
 
         desc->length = n_copy;
         desc->flags &= static_cast<uint16>(~VIRTQ_DESC_CONT_NEXT);
-        _queue[RX].queue().send(desc);
+        device_queue(RX).send(desc);
 
         size -= n_copy;
         buf_idx += n_copy;
@@ -63,17 +63,17 @@ Model::VirtioMMIO_console::to_guest(const char *buff, uint32 size) {
 
 const char *
 Model::VirtioMMIO_console::from_guest(uint32 &size) {
-    if (!_queue[TX].constructed() || (!_driver_initialized))
+    if (!queue(TX).constructed() || (!_driver_initialized))
         return nullptr;
 
-    _tx_desc = _queue[TX].queue().recv();
+    _tx_desc = device_queue(TX).recv();
     if (not _tx_desc)
         return nullptr;
 
     char *vmm_addr
         = Model::SimpleAS::gpa_to_vmm_view(*_vbus, GPA(_tx_desc->address), _tx_desc->length);
     if (vmm_addr == nullptr) {
-        _queue[TX].queue().send(_tx_desc);
+        device_queue(TX).send(_tx_desc);
         return nullptr; /* outside guest physical memory */
     }
 
@@ -83,12 +83,12 @@ Model::VirtioMMIO_console::from_guest(uint32 &size) {
 
 void
 Model::VirtioMMIO_console::release_buffer() {
-    if (!_queue[TX].constructed() || (!_driver_initialized))
+    if (!queue(TX).constructed() || (!_driver_initialized))
         return;
 
     if (not _tx_desc)
         return;
 
-    _queue[TX].queue().send(_tx_desc);
+    device_queue(TX).send(_tx_desc);
     assert_irq();
 }
