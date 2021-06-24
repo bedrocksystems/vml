@@ -214,10 +214,10 @@ public:
     T value() const { return _value; }
 
     // Operator overloading
-    bool operator==(const T &value) { return value == _value; }
-    bool operator!=(const T &value) { return value != _value; }
-    bool operator==(const PrimitiveTypeWrapper &other) { return _value == other._value; }
-    bool operator!=(const PrimitiveTypeWrapper &other) { return _value != other._value; }
+    bool operator==(const T &value) const { return value == _value; }
+    bool operator!=(const T &value) const { return value != _value; }
+    bool operator==(const PrimitiveTypeWrapper &other) const { return _value == other._value; }
+    bool operator!=(const PrimitiveTypeWrapper &other) const { return _value != other._value; }
     PrimitiveTypeWrapper &operator=(const T value) {
         _value = value;
         return *this;
@@ -304,10 +304,20 @@ public:
     static constexpr uint64 INVALID_GFN = ~0ull;
     using PrimitiveTypeWrapper::PrimitiveTypeWrapper;
 
+    GPA() : PrimitiveTypeWrapper<uint64>(INVALID_GPA) {}
+
     /**
      * \brief Get the guest frame number.
      */
-    uint64 gfn(void) { return (_value >> PAGE_BITS); }
+    uint64 gfn(void) const { return (_value >> PAGE_BITS); }
+
+    /**
+     * \brief Check whether the GPA is invalid.
+     *
+     * \return true The GPA is invalid.
+     * \return false The GPA is valid.
+     */
+    bool invalid(void) const { return _value == INVALID_GPA; }
 };
 
 /*! \brief Guest Virtual Address
@@ -317,10 +327,20 @@ public:
     static constexpr mword INVALID_GVA = ~0ull;
     using PrimitiveTypeWrapper::PrimitiveTypeWrapper;
 
+    GVA() : PrimitiveTypeWrapper<mword>(INVALID_GVA) {}
+
     /**
      * \brief Get the guest page number (virtual address shifted by page bits)
      */
-    mword gpn(void) { return (_value >> PAGE_BITS); }
+    mword gpn(void) const { return (_value >> PAGE_BITS); }
+
+    /**
+     * \brief Check whether the GVA is invalid.
+     *
+     * \return true The GVA is invalid.
+     * \return false The GVA is valid.
+     */
+    bool invalid(void) const { return _value == INVALID_GVA; }
 };
 
 /*! \brief Host Virtual Address
