@@ -56,7 +56,7 @@ namespace Msr {
         DCISW_A32 = build_msr_id(0b1111, 0b0111, 0b000, 0b0110, 0b010),
         DCISW_A64 = build_msr_id(0b01, 0b0111, 0b000, 0b0110, 0b010),
         DCCSW_A32 = build_msr_id(0b1111, 0b0111, 0b000, 0b1010, 0b010),
-        DCCSW_A64 = build_msr_id(0b1111, 0b0111, 0b000, 0b1010, 0b010),
+        DCCSW_A64 = build_msr_id(0b01, 0b0111, 0b000, 0b1010, 0b010),
         DCCISW_A32 = build_msr_id(0b1111, 0b0111, 0b000, 0b1110, 0b010),
         DCCISW_A64 = build_msr_id(0b01, 0b0111, 0b000, 0b1110, 0b010),
         MVFR0 = build_msr_id(3, 0, 0, 3, 0),
