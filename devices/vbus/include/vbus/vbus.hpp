@@ -132,7 +132,7 @@ public:
      *  \param bytes Range size that device will occupy
      *  \return true if there is no conflict and the device was added. false otherwise.
      */
-    bool register_device(Device* d, mword addr, mword bytes);
+    [[nodiscard]] bool register_device(Device* d, mword addr, mword bytes);
 
     /*! \brief Query for a device that can handle the given range
      *  \pre Fractional ownership of a valid virtual bus.

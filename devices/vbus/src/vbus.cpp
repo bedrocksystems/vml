@@ -60,7 +60,7 @@ Vbus::Bus::get_device_at(mword addr, uint64 size) const {
     return entry->device;
 }
 
-bool
+[[nodiscard]] bool
 Vbus::Bus::register_device(Device* d, mword addr, mword bytes) {
     if (__UNLIKELY__((addr + bytes < addr) || (bytes == 0)))
         return false;
