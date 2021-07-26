@@ -15,6 +15,8 @@
 
 namespace Virtio {
     class Callback;
+    enum class DeviceID : uint16;
+    class Transport;
     enum class DeviceStatus : uint32;
     enum class Queues : uint32;
     class QueueState;
@@ -28,6 +30,38 @@ namespace Virtio {
 class Virtio::Callback {
 public:
     virtual void driver_ok() = 0;
+};
+
+enum class Virtio::DeviceID : uint16 {
+    PLACE_HOLDER = 0,
+    NET = 1,
+    BLOCK = 2,
+    CONSOLE = 3,
+    ENTROPY = 4,
+    BALLOON = 5,
+    SCSI = 8,
+    GPU = 16,
+    INPUT = 18,
+    SOCKET = 19,
+    CRYPTO = 20,
+};
+
+class Virtio::Transport {
+public:
+    virtual bool access(Vbus::Access access, mword offset, uint8 size, uint64 &value,
+                        Virtio::DeviceState &state)
+        = 0;
+
+    virtual void assert_queue_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &) = 0;
+    virtual void deassert_queue_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &)
+        = 0;
+
+    virtual void assert_config_change_interrupt(Model::Irq_controller *, uint16,
+                                                Virtio::DeviceState &)
+        = 0;
+    virtual void deassert_config_change_interrupt(Model::Irq_controller *, uint16,
+                                                  Virtio::DeviceState &)
+        = 0;
 };
 
 enum class Virtio::DeviceStatus : uint32 {

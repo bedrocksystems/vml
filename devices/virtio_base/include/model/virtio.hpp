@@ -10,7 +10,6 @@
 
 #include <model/irq_controller.hpp>
 #include <model/virtio_common.hpp>
-#include <model/virtio_mmio.hpp>
 #include <platform/log.hpp>
 #include <platform/new.hpp>
 #include <platform/types.hpp>
@@ -28,6 +27,7 @@ protected:
     Vbus::Bus const *const _vbus;
     uint16 const _irq;
     Virtio::DeviceState _dev_state;
+    Virtio::Transport *_transport;
 
     Virtio::QueueState &queue(uint8 index) { return _dev_state.queue[index]; }
     Virtio::QueueData const &queue_data(uint8 index) const { return _dev_state.data[index]; }
@@ -36,13 +36,15 @@ protected:
     void reset_virtio() { _dev_state.reset(); }
 
     void assert_irq() {
-        _dev_state.irq_status = 0x1;
-        _irq_ctlr->assert_global_line(_irq);
+        // Currently there is no run-time config change. We'll need to inject config change
+        // interrupts when we start supporting run-time config updates.
+        _transport->assert_queue_interrupt(_irq_ctlr, _irq, _dev_state);
     }
 
     void deassert_irq() {
-        _dev_state.irq_status = 0;
-        _irq_ctlr->deassert_global_line(_irq);
+        // Currently there is no run-time config change. We'll need to handle config change
+        // interrupts when we start supporting run-time config updates.
+        _transport->deassert_queue_interrupt(_irq_ctlr, _irq, _dev_state);
     }
 
     void update_config_gen() { _dev_state.update_config_gen(); }
@@ -68,16 +70,11 @@ protected:
             notify(_dev_state.notify_val);
         }
     }
+
     virtual Vbus::Err access(Vbus::Access const access, const VcpuCtx *, Vbus::Space,
                              mword const offset, uint8 const size, uint64 &value) override {
 
-        bool ok = false;
-
-        if (access == Vbus::Access::WRITE)
-            ok = Virtio::MMIOTransport::write(offset, size, value, _dev_state);
-        if (access == Vbus::Access::READ)
-            ok = Virtio::MMIOTransport::read(offset, size, value, _dev_state);
-
+        bool ok = _transport->access(access, offset, size, value, _dev_state);
         if (ok)
             handle_events();
 
@@ -88,12 +85,14 @@ protected:
     virtual void driver_ok() = 0;
 
 public:
-    Device(const char *name, uint8 const device_id, const Vbus::Bus &bus,
+    Device(const char *name, Virtio::DeviceID device_id, const Vbus::Bus &bus,
            Model::Irq_controller &irq_ctlr, void *config_space, uint32 config_size,
-           uint16 const irq, uint16 const queue_num, uint32 const device_feature_lower = 0)
+           uint16 const irq, uint16 const queue_num, Virtio::Transport *transport,
+           uint32 const device_feature_lower = 0)
         : Vbus::Device(name), _irq_ctlr(&irq_ctlr), _vbus(&bus), _irq(irq),
           _dev_state(queue_num, 0x554d4551ULL, static_cast<uint32>(device_id), device_feature_lower,
-                     config_space, config_size) {}
+                     config_space, config_size),
+          _transport(transport) {}
 
     uint64 drv_feature() const {
         return (uint64(_dev_state.drv_feature_upper) << 32) | _dev_state.drv_feature_lower;

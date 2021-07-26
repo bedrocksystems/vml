@@ -11,6 +11,7 @@
 #include <model/cpu.hpp>
 #include <model/gic.hpp>
 #include <model/virtio_console.hpp>
+#include <model/virtio_mmio.hpp>
 #include <platform/context.hpp>
 #include <platform/log.hpp>
 #include <platform/reg_accessor.hpp>
@@ -159,7 +160,9 @@ main() {
     ok = bus.register_device(&sas, VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);
     ASSERT(ok);
 
-    Model::VirtioMMIO_console virtio_console(gicd, bus, 0x13, 10, &sig);
+    Virtio::MMIOTransport transport;
+
+    Model::VirtioMMIO_console virtio_console(gicd, bus, 0x13, 10, &transport, &sig);
 
     Dummy_Virtio_Interface virtio_interface;
     virtio_console.register_callback(&virtio_interface);

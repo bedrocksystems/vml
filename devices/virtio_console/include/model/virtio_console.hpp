@@ -42,9 +42,10 @@ private:
 
 public:
     VirtioMMIO_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
-                       uint16 const queue_entries, Platform::Signal *sig)
-        : Virtio::Device("virtio console", 3, bus, irq_ctlr, &_config, sizeof(_config), irq,
-                         queue_entries),
+                       uint16 const queue_entries, Virtio::Transport *transport,
+                       Platform::Signal *sig)
+        : Virtio::Device("virtio console", Virtio::DeviceID::CONSOLE, bus, irq_ctlr, &_config,
+                         sizeof(_config), irq, queue_entries, transport),
           _sig_notify_event(sig) {}
 
     bool init(const Platform_ctx *ctx) { return _sig_notify_empty_space.init(ctx); }

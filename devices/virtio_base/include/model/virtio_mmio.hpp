@@ -15,7 +15,7 @@ namespace Virtio {
     class MMIOTransport;
 };
 
-class Virtio::MMIOTransport {
+class Virtio::MMIOTransport final : public Virtio::Transport {
 private:
     enum {
         RO_MAGIC = 0x0,
@@ -78,6 +78,8 @@ private:
     };
 
 public:
+    MMIOTransport() {}
+
     static bool read(uint64 const offset, uint8 const bytes, uint64 &value,
                      const Virtio::DeviceState &state) {
         if (bytes > 4)
@@ -205,5 +207,39 @@ public:
                                           state.config_space[(offset & ~(8ULL - 1)) - RW_CONFIG]);
         }
         return false;
+    }
+
+    virtual bool access(Vbus::Access const access, mword const offset, uint8 const size,
+                        uint64 &value, Virtio::DeviceState &state) override {
+        if (access == Vbus::Access::WRITE)
+            return Virtio::MMIOTransport::write(offset, size, value, state);
+        if (access == Vbus::Access::READ)
+            return Virtio::MMIOTransport::read(offset, size, value, state);
+
+        return false;
+    }
+
+    virtual void assert_queue_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq,
+                                        Virtio::DeviceState &state) override {
+        state.irq_status |= 0x1;
+        irq_ctrlr->assert_global_line(irq);
+    }
+
+    virtual void deassert_queue_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq,
+                                          Virtio::DeviceState &state) override {
+        state.irq_status &= static_cast<uint32>(~0x1);
+        irq_ctrlr->deassert_global_line(irq);
+    }
+
+    virtual void assert_config_change_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq,
+                                                Virtio::DeviceState &state) override {
+        state.irq_status |= 0x2;
+        irq_ctrlr->assert_global_line(irq);
+    }
+
+    virtual void deassert_config_change_interrupt(Model::Irq_controller *const irq_ctrlr,
+                                                  uint16 irq, Virtio::DeviceState &state) override {
+        state.irq_status &= static_cast<uint32>(~0x2);
+        irq_ctrlr->deassert_global_line(irq);
     }
 };
