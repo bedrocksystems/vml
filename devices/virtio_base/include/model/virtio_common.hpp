@@ -79,6 +79,9 @@ enum class Virtio::Queues : uint32 {
 };
 
 struct Virtio::QueueData {
+    QueueData() {}
+    explicit QueueData(uint32 n) : num(n) {}
+
     uint32 descr_low{0};
     uint32 descr_high{0};
     uint32 driver_low{0};
@@ -87,6 +90,10 @@ struct Virtio::QueueData {
     uint32 device_high{0};
     uint32 num{0};
     uint32 ready{0};
+
+    // PCI
+    uint32 msix_vector{0};
+    uint32 notify_off{0};
 
     uint64 descr() const { return (uint64(descr_high) << 32) | descr_low; }
     uint64 driver() const { return (uint64(driver_high) << 32) | driver_low; }
@@ -150,7 +157,11 @@ struct Virtio::DeviceState {
                          void *config, uint32 config_sz)
         : queue_num_max(num_max), vendor_id(vendor), device_id(id),
           device_feature_lower(feature_lower), config_space(static_cast<uint64 *>(config)),
-          config_size(config_sz) {}
+          config_size(config_sz) {
+        for (uint16 i = 0; i < static_cast<uint8>(Virtio::Queues::MAX); i++) {
+            data[i] = QueueData(queue_num_max);
+        }
+    }
 
     QueueData const &selected_queue_data() const { return data[sel_queue]; }
     QueueData &selected_queue_data() { return data[sel_queue]; }
@@ -170,7 +181,7 @@ struct Virtio::DeviceState {
     void reset() {
         for (int i = 0; i < static_cast<uint8>(Virtio::Queues::MAX); i++) {
             queue[i].destruct();
-            data[i] = {};
+            data[i] = QueueData(queue_num_max);
         }
 
         status = 0;
@@ -207,6 +218,10 @@ struct Virtio::DeviceState {
     uint32 drv_feature_lower{0};
     uint32 config_generation{0};
 
+    // PCI
+    // MSIx config vector for device. The value is itself 16 bit.
+    uint32 msix_config{0};
+
     QueueData data[static_cast<uint8>(Virtio::Queues::MAX)];
     QueueState queue[static_cast<uint8>(Virtio::Queues::MAX)];
 };
@@ -241,7 +256,7 @@ Virtio::write_register(uint64 const offset, uint32 const base_reg, uint32 const 
     }
 
     uint64 const base = offset - base_reg;
-    uint64 const mask = (bytes >= TSIZE) ? (T(0) - 1) : ((T(1) << (bytes * 8)) - 1);
+    uint64 const mask = (bytes >= TSIZE) ? (static_cast<T>(T(0) - 1)) : ((T(1) << (bytes * 8)) - 1);
 
     result &= (bytes >= TSIZE) ? T(0) : ~(T(mask) << (base * 8));
     result |= T(value & mask) << (base * 8);
