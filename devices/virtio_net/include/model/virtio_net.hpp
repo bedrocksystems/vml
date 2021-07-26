@@ -76,6 +76,7 @@ private:
 
 public:
     struct UserConfig {
+        Virtio::Transport *transport;
         uint32 device_feature{0};
         uint64 mac{0};
         uint16 mtu{0};
@@ -84,8 +85,9 @@ public:
 
     Virtio_net(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 irq,
                uint16 const queue_entries, const UserConfig &config, Platform::Signal *sig)
-        : Virtio::Device("virtio network", 1, vbus, irq_ctlr, &_config, sizeof(_config), irq,
-                         queue_entries, config.device_feature),
+        : Virtio::Device("virtio network", Virtio::DeviceID::NET, vbus, irq_ctlr, &_config,
+                         sizeof(_config), irq, queue_entries, config.transport,
+                         config.device_feature),
           _sig(sig) {
         _config.mtu = config.mtu;
         memcpy(&_config.mac, &config.mac, 6);
