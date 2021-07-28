@@ -74,11 +74,6 @@ Vbus::Bus::register_device(Device* d, mword addr, mword bytes) {
 }
 
 void
-Vbus::Bus::iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, const VcpuCtx*), const VcpuCtx* arg) {
-    _devices.iter(f, arg);
-}
-
-void
 Vbus::Bus::reset_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg) {
     if (entry->device->type() != Device::IRQ_CONTROLLER)
         entry->device->reset(arg);
@@ -92,6 +87,6 @@ Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg) 
 
 void
 Vbus::Bus::reset(const VcpuCtx& vcpu_ctx) {
-    iter_devices(Vbus::Bus::reset_device_cb, const_cast<VcpuCtx*>(&vcpu_ctx));
-    iter_devices(Vbus::Bus::reset_irq_ctlr_cb, const_cast<VcpuCtx*>(&vcpu_ctx));
+    iter_devices(Vbus::Bus::reset_device_cb, &vcpu_ctx);
+    iter_devices(Vbus::Bus::reset_irq_ctlr_cb, &vcpu_ctx);
 }
