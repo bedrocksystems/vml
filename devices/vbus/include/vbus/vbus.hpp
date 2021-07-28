@@ -194,7 +194,10 @@ public:
      *  \param f The callback function that will be called on all devices
      *  \param arg the argument that will be passed every time the callback is invoked
      */
-    void iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, const VcpuCtx*), const VcpuCtx* arg);
+    template<typename T>
+    void iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, T*), T* arg) {
+        _devices.iter(f, arg);
+    }
 
 private:
     static void reset_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
