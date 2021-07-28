@@ -91,7 +91,7 @@ main() {
     ok = vbus.register_device(&as, reinterpret_cast<mword>(guest_as), 4096);
     ASSERT(ok == true);
 
-    vbus.iter_devices(Model::SimpleAS::flush_callback, nullptr);
+    vbus.iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
 
     RegAccessor regs(ctx, 0);
     VcpuCtx vctx{nullptr, &regs, 0};
