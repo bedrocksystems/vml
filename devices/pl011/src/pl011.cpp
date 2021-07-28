@@ -29,14 +29,15 @@ Model::Pl011::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mw
 }
 
 bool
-Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const value) {
+Model::Pl011::mmio_write(uint64 const offset, uint8 const, uint64 const value) {
     /*
      * All registers are at most 16-bits. Certain are 8-bit according to the spec but
      * unfortunately commonly used OS still generate 32-bit accesses for those so we have
      * to allow this. Note that registers are all 32-bit apart at least.
      */
-    if (size > sizeof(uint32))
-        return false;
+    // if (size > sizeof(uint32))
+    //     WARN("Incorrect size used on acces to the %s: off %llu, size %u, value %llu", name(),
+    //          offset, size, value);
 
     switch (offset) {
     case UARTDR:
@@ -214,15 +215,15 @@ Model::Pl011::should_assert_rx_irq() const {
 
     switch (_ifls) {
     case FIFO_1DIV8_FULL:
-        return chars >= 2;
-    case FIFO_1DIV4_FULL:
         return chars >= 4;
-    case FIFO_1DIV2_FULL:
+    case FIFO_1DIV4_FULL:
         return chars >= 8;
+    case FIFO_1DIV2_FULL:
+        return chars >= 16;
     case FIFO_3DIV4_FULL:
-        return chars >= 12;
+        return chars >= 24;
     case FIFO_7DIV8_FULL:
-        return chars >= 14;
+        return chars >= 28;
     }
 
     return true;

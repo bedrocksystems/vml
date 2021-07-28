@@ -186,11 +186,12 @@ public:
      *  \param f The callback function that will be called on all devices
      *  \param arg the argument that will be passed every time the callback is invoked
      */
-    void iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, void*), void* arg);
+    void iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, const VcpuCtx*), const VcpuCtx* arg);
 
 private:
-    static void reset_device_cb(Vbus::Bus::DeviceEntry* entry, void*);
-    static void reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, void*);
+    static void reset_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
+
+    static void reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
 
     const DeviceEntry* lookup(mword addr, uint64 bytes) const;
 
