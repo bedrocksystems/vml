@@ -134,6 +134,14 @@ public:
      */
     [[nodiscard]] bool register_device(Device* d, mword addr, mword bytes);
 
+    /*! \brief Removes a device from the virtual bus
+     *  \pre Full ownership of a valid virtual bus. Full ownership of a valid Device.
+     *  \post Ownership of the vbus is unchanged. The virtual bus removes this device from its
+     *        internal list if it is present and return its full ownership.
+     *  \param d Device to remove
+     */
+    void unregister_device(Device*) {}
+
     /*! \brief Query for a device that can handle the given range
      *  \pre Fractional ownership of a valid virtual bus.
      *  \post Ownership of the vbus is unchanged. The virtual bus itself is not changed.
