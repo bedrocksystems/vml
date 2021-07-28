@@ -24,6 +24,9 @@ namespace Model {
     class Irq_controller;
 }
 
+// temporary workaround for a cpp2v limitation
+static const char *pl011name = "pl011";
+
 /*! \brief Virtual PL011 UART Device
  *
  * The aim of this implementation is to respect the spec while still keeping
@@ -151,7 +154,7 @@ private:
     uint16 _ris;   /*!< Raw interrupt register */
     uint16 _dmacr; /*!< DMA control register */
 
-    static constexpr uint8 RX_FIFO_MAX_SIZE = 16;
+    static constexpr uint8 RX_FIFO_MAX_SIZE = 32;
     uint8 _rx_fifo_size{1};            /*!< Maximum configured size */
     uint8 _rx_fifo_chars{0};           /*!< Current number of chars in the FIFO */
     uint8 _rx_fifo_ridx{0};            /*!< Read index in the FIFO */
@@ -197,7 +200,7 @@ public:
      *  \param irq IRQ id to use when sending interrupt to the interrupt controller
      */
     Pl011(Irq_controller &irq_ctlr, uint16 const irq)
-        : Vuart::Vuart("pl011"), _irq_ctlr(&irq_ctlr), _irq_id(irq), _sig_notify_empty_space() {}
+        : Vuart::Vuart(pl011name), _irq_ctlr(&irq_ctlr), _irq_id(irq), _sig_notify_empty_space() {}
 
     bool init(const Platform_ctx *ctx) {
         if (!_sig_notify_empty_space.init(ctx))
