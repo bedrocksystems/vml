@@ -97,9 +97,10 @@ public:
     /*! \brief Apply f to all elements of the map
      *  \param f function to call on all elements
      */
-    void iter(void (*f)(RangeNode<T> *, void *), void *arg) {
-        for (auto r : _set)
-            f(r, arg);
+    template<typename U, typename TARG>
+    void iter(void (*f)(U *, TARG), TARG arg) {
+        for (auto *r : _set)
+            f(static_cast<U *>(r), arg);
     }
 
 private:

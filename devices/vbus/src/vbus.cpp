@@ -14,7 +14,7 @@
 
 const Vbus::Bus::DeviceEntry*
 Vbus::Bus::lookup(mword addr, uint64 bytes) const {
-    if (__UNLIKELY__((addr + bytes < addr) || (bytes == 0)))
+    if (__UNLIKELY__((addr + bytes <= addr)))
         return nullptr;
 
     Range<mword> target(addr, bytes);
@@ -62,7 +62,7 @@ Vbus::Bus::get_device_at(mword addr, uint64 size) const {
 
 [[nodiscard]] bool
 Vbus::Bus::register_device(Device* d, mword addr, mword bytes) {
-    if (__UNLIKELY__((addr + bytes < addr) || (bytes == 0)))
+    if (__UNLIKELY__((addr + bytes <= addr)))
         return false;
 
     Range<mword> range(addr, bytes);
@@ -74,20 +74,20 @@ Vbus::Bus::register_device(Device* d, mword addr, mword bytes) {
 }
 
 void
-Vbus::Bus::iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, void*), void* arg) {
-    _devices.iter(reinterpret_cast<void (*)(RangeNode<mword>*, void*)>(f), arg);
+Vbus::Bus::iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, const VcpuCtx*), const VcpuCtx* arg) {
+    _devices.iter(f, arg);
 }
 
 void
-Vbus::Bus::reset_device_cb(Vbus::Bus::DeviceEntry* entry, void* arg) {
+Vbus::Bus::reset_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg) {
     if (entry->device->type() != Device::IRQ_CONTROLLER)
-        entry->device->reset(static_cast<VcpuCtx*>(arg));
+        entry->device->reset(arg);
 }
 
 void
-Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, void* arg) {
+Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg) {
     if (entry->device->type() == Device::IRQ_CONTROLLER)
-        entry->device->reset(static_cast<VcpuCtx*>(arg));
+        entry->device->reset(arg);
 }
 
 void
