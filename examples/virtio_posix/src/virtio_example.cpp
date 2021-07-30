@@ -162,7 +162,7 @@ main() {
 
     Virtio::MMIOTransport transport;
 
-    Model::VirtioMMIO_console virtio_console(gicd, bus, 0x13, 10, &transport, &sig);
+    Model::Virtio_console virtio_console(gicd, bus, 0x13, 10, &transport, &sig);
 
     Dummy_Virtio_Interface virtio_interface;
     virtio_console.register_callback(&virtio_interface);
