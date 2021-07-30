@@ -15,7 +15,7 @@
 #include <vbus/vbus.hpp>
 
 namespace Model {
-    class VirtioMMIO_console;
+    class Virtio_console;
     struct Virtio_console_config;
     class Irq_controller;
 }
@@ -27,7 +27,7 @@ struct Model::Virtio_console_config {
     uint32 emerg_wr;
 };
 
-class Model::VirtioMMIO_console : public Virtio::Virtio_console, public Virtio::Device {
+class Model::Virtio_console : public Virtio::Device {
 private:
     enum { RX = 0, TX = 1 };
     Model::Virtio_console_config _config __attribute__((aligned(8)));
@@ -40,26 +40,29 @@ private:
     void notify(uint32) override;
     void driver_ok() override;
 
+    Virtio::Callback *_callback{nullptr};
+
 public:
-    VirtioMMIO_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
-                       uint16 const queue_entries, Virtio::Transport *transport,
-                       Platform::Signal *sig)
+    Virtio_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
+                   uint16 const queue_entries, Virtio::Transport *transport, Platform::Signal *sig)
         : Virtio::Device("virtio console", Virtio::DeviceID::CONSOLE, bus, irq_ctlr, &_config,
                          sizeof(_config), irq, queue_entries, transport),
           _sig_notify_event(sig) {}
 
     bool init(const Platform_ctx *ctx) { return _sig_notify_empty_space.init(ctx); }
 
-    virtual void release_buffer() override;
+    void release_buffer();
 
-    virtual bool to_guest(const char *buff, uint32 size) override;
-    virtual const char *from_guest(uint32 &size) override;
-    virtual void wait_for_available_buffer() override { _sig_notify_empty_space.wait(); }
+    bool to_guest(const char *buff, uint32 size);
+    virtual const char *from_guest(uint32 &size);
+    void wait_for_available_buffer() { _sig_notify_empty_space.wait(); }
 
-    virtual void reset(const VcpuCtx *) override {
+    void reset(const VcpuCtx *) override {
         _sig_notify_empty_space.sig();
         reset_virtio();
     }
+
+    void register_callback(Virtio::Callback *callback) { _callback = callback; }
 
     Virtio::QueueData const &queue_data_rx() const { return queue_data(RX); }
     Virtio::QueueData const &queue_data_tx() const { return queue_data(TX); }

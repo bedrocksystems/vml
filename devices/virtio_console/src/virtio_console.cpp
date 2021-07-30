@@ -10,7 +10,7 @@
 #include <platform/virtqueue.hpp>
 
 void
-Model::VirtioMMIO_console::notify(uint32 const) {
+Model::Virtio_console::notify(uint32 const) {
     _sig_notify_event->sig();
 
     if (device_queue(RX).get_free())
@@ -18,7 +18,7 @@ Model::VirtioMMIO_console::notify(uint32 const) {
 }
 
 void
-Model::VirtioMMIO_console::driver_ok() {
+Model::Virtio_console::driver_ok() {
     _driver_initialized = true;
 
     if (_callback)
@@ -26,7 +26,7 @@ Model::VirtioMMIO_console::driver_ok() {
 }
 
 bool
-Model::VirtioMMIO_console::to_guest(const char *buff, uint32 size) {
+Model::Virtio_console::to_guest(const char *buff, uint32 size) {
     if (!queue(RX).constructed() || (!_driver_initialized))
         return false;
 
@@ -62,7 +62,7 @@ Model::VirtioMMIO_console::to_guest(const char *buff, uint32 size) {
 }
 
 const char *
-Model::VirtioMMIO_console::from_guest(uint32 &size) {
+Model::Virtio_console::from_guest(uint32 &size) {
     if (!queue(TX).constructed() || (!_driver_initialized))
         return nullptr;
 
@@ -82,7 +82,7 @@ Model::VirtioMMIO_console::from_guest(uint32 &size) {
 }
 
 void
-Model::VirtioMMIO_console::release_buffer() {
+Model::Virtio_console::release_buffer() {
     if (!queue(TX).constructed() || (!_driver_initialized))
         return;
 

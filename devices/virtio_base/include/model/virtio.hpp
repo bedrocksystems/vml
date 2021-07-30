@@ -18,7 +18,6 @@
 namespace Virtio {
     class Console;
     class Device;
-    class Virtio_console;
 };
 
 class Virtio::Device : public Vbus::Device {
@@ -97,20 +96,4 @@ public:
     uint64 drv_feature() const {
         return (uint64(_dev_state.drv_feature_upper) << 32) | _dev_state.drv_feature_lower;
     }
-};
-
-class Virtio::Virtio_console {
-public:
-    Virtio_console() {}
-
-    virtual bool to_guest(const char *, uint32) = 0;
-    virtual void wait_for_available_buffer() = 0;
-
-    virtual const char *from_guest(uint32 &size) = 0;
-    virtual void release_buffer() = 0;
-
-    void register_callback(Virtio::Callback *callback) { _callback = callback; }
-
-protected:
-    Virtio::Callback *_callback{nullptr};
 };
