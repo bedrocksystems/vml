@@ -9,6 +9,7 @@
 #include <arch/barrier.hpp>
 #include <model/irq_controller.hpp>
 #include <pl011/pl011.hpp>
+#include <platform/log.hpp>
 #include <platform/types.hpp>
 
 Vbus::Err
@@ -29,15 +30,15 @@ Model::Pl011::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mw
 }
 
 bool
-Model::Pl011::mmio_write(uint64 const offset, uint8 const, uint64 const value) {
+Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const value) {
     /*
      * All registers are at most 16-bits. Certain are 8-bit according to the spec but
      * unfortunately commonly used OS still generate 32-bit accesses for those so we have
      * to allow this. Note that registers are all 32-bit apart at least.
      */
-    // if (size > sizeof(uint32))
-    //     WARN("Incorrect size used on acces to the %s: off %llu, size %u, value %llu", name(),
-    //          offset, size, value);
+    if (size > sizeof(uint32))
+        WARN("Incorrect size used on write access to the %s: off %llu, size %u, value %llu", name(),
+             offset, size, value);
 
     switch (offset) {
     case UARTDR:
@@ -114,7 +115,8 @@ Model::Pl011::mmio_write(uint64 const offset, uint8 const, uint64 const value) {
 bool
 Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
     if (size > sizeof(uint32))
-        return false;
+        WARN("Incorrect size used on read access to the %s: off %llu, size %u, value %llu", name(),
+             offset, size, value);
 
     switch (offset) {
     case UARTDR:
