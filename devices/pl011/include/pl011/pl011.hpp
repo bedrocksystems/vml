@@ -24,9 +24,6 @@ namespace Model {
     class Irq_controller;
 }
 
-// temporary workaround for a cpp2v limitation
-static const char *pl011name = "pl011";
-
 /*! \brief Virtual PL011 UART Device
  *
  * The aim of this implementation is to respect the spec while still keeping
@@ -43,6 +40,9 @@ static const char *pl011name = "pl011";
  */
 class Model::Pl011 : public Vuart::Vuart {
 private:
+    // temporary workaround for a cpp2v limitation
+    static constexpr char DEVICE_NAME[] = "pl011";
+
     enum {
         UARTDR = 0x00,
         UARTRSR = 0x04,
@@ -200,7 +200,8 @@ public:
      *  \param irq IRQ id to use when sending interrupt to the interrupt controller
      */
     Pl011(Irq_controller &irq_ctlr, uint16 const irq)
-        : Vuart::Vuart(pl011name), _irq_ctlr(&irq_ctlr), _irq_id(irq), _sig_notify_empty_space() {}
+        : Vuart::Vuart(DEVICE_NAME), _irq_ctlr(&irq_ctlr), _irq_id(irq), _sig_notify_empty_space() {
+    }
 
     bool init(const Platform_ctx *ctx) {
         if (!_sig_notify_empty_space.init(ctx))
