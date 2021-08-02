@@ -561,6 +561,7 @@ private:
 
     bool notify_target(Irq &irq, const IrqTarget &target);
     IrqTarget route_spi(Model::GicD::Irq &irq);
+    IrqTarget route_spi_no_affinity(Model::GicD::Irq &irq);
     bool redirect_spi(Irq &irq);
     Irq *highest_irq(Vcpu_id cpu_id, bool redirect_irq);
     bool vcpu_can_receive_irq(const Local_Irq_controller *gic_r) const {
@@ -572,6 +573,8 @@ private:
                | (9ULL << 19)                                            /* id bits */
                | (1ULL << 24);                                           /* Aff3 supported */
     }
+
+    void update_inj_status_inactive(Vcpu_id cpu_id, uint32 irq_id);
 
 public:
     GicD(GICVersion const version, uint16 num_vcpus)
