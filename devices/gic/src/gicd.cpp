@@ -664,45 +664,51 @@ Model::GicD::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
 }
 
 void
+Model::GicD::update_inj_status_inactive(Vcpu_id const cpu_id, uint32 irq_id) {
+    Banked &cpu = _local[cpu_id];
+    Irq &irq = irq_object(cpu, irq_id);
+
+    // Done injecting
+    if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
+        INFO("IRQ %u handled by the guest on VCPU " FMTu64, irq_id, cpu_id);
+
+    IrqInjectionInfoUpdate desired, cur;
+
+    irq.deactivate();
+
+    do {
+        cur = irq.injection_info.read();
+        uint8 sender_id = cur.get_injected_sender_id();
+
+        if (!cur.is_injected(sender_id) || !cur.is_targeting_cpu(cpu_id))
+            return;
+
+        desired = cur;
+        desired.unset_injected(sender_id);
+        desired.unset_pending(sender_id);
+    } while (!irq.injection_info.cas(cur, desired));
+
+    if (desired.pending())
+        cpu.pending_irqs.atomic_set(irq.id());
+}
+
+void
 Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState state) {
     ASSERT(cpu_id < _num_vcpus);
     ASSERT(irq_id < MAX_IRQ);
-
     Banked &cpu = _local[cpu_id];
     Irq &irq = irq_object(cpu, irq_id);
 
     cpu.in_injection_irqs.atomic_clr(irq.id());
 
     switch (state) {
-    case IrqState::INACTIVE: {
-        // Done injecting
-        if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
-            INFO("IRQ %u handled by the guest on VCPU " FMTu64, irq_id, cpu_id);
-
-        IrqInjectionInfoUpdate desired, cur;
-
-        irq.deactivate();
-
-        do {
-            cur = irq.injection_info.read();
-            uint8 sender_id = cur.get_injected_sender_id();
-
-            if (!cur.is_injected(sender_id) || !cur.is_targeting_cpu(cpu_id))
-                return;
-
-            desired = cur;
-            desired.unset_injected(sender_id);
-            desired.unset_pending(sender_id);
-        } while (!irq.injection_info.cas(cur, desired));
-
-        if (desired.pending())
-            cpu.pending_irqs.atomic_set(irq.id());
-
+    case IrqState::INACTIVE:
+        update_inj_status_inactive(cpu_id, irq_id);
         return;
-    }
     case IrqState::ACTIVE:
     case IrqState::ACTIVE_PENDING:
     case IrqState::PENDING: {
+
         if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
             INFO("IRQ %u came back, not yet injected on VCPU " FMTu64, irq_id, cpu_id);
 
@@ -871,25 +877,29 @@ Model::GicD::deassert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
 }
 
 Model::GicD::IrqTarget
-Model::GicD::route_spi(Model::GicD::Irq &irq) {
-    if (!_ctlr.affinity_routing()) {
-        constexpr uint16 TARGET_MODE_MAX_CPUS = 8U;
-        IrqTarget res(IrqTarget::CPU_SET, 0);
+Model::GicD::route_spi_no_affinity(Model::GicD::Irq &irq) {
+    constexpr uint16 TARGET_MODE_MAX_CPUS = 8U;
+    IrqTarget res(IrqTarget::CPU_SET, 0);
 
-        for (Vcpu_id i = 0; i < min<uint16>(_num_vcpus, TARGET_MODE_MAX_CPUS); i++) {
-            if (!_local[i].notify)
-                continue;
-            if (irq.group0() && !_ctlr.group0_enabled())
-                continue;
-            if (irq.group1() && !_ctlr.group1_enabled())
-                continue;
+    for (Vcpu_id i = 0; i < min<uint16>(_num_vcpus, TARGET_MODE_MAX_CPUS); i++) {
+        if (!_local[i].notify)
+            continue;
+        if (irq.group0() && !_ctlr.group0_enabled())
+            continue;
+        if (irq.group1() && !_ctlr.group1_enabled())
+            continue;
 
-            if ((irq.target() & (1u << i)))
-                res.add_target_to_set(i);
-        }
-
-        return res;
+        if ((irq.target() & (1u << i)))
+            res.add_target_to_set(i);
     }
+
+    return res;
+}
+
+Model::GicD::IrqTarget
+Model::GicD::route_spi(Model::GicD::Irq &irq) {
+    if (!_ctlr.affinity_routing())
+        return route_spi_no_affinity(irq);
 
     if (irq.routing.any()) {
         for (Vcpu_id i = 0; i < _num_vcpus; i++) {
