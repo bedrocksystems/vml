@@ -680,6 +680,7 @@ private:
     bool setup_aarch64_debug(uint64 id_aa64dfr0_el1, uint64 id_aa64dfr1_el1);
     bool setup_aarch64_auxiliary();
 
+    bool setup_aarch32_msr(const PlatformInfo& info);
     bool setup_aarch32_features(const AA32PlatformInfo& aa32);
     bool setup_aarch32_memory_model(uint32 id_mmfr0_el1, uint32 id_mmfr1_el1, uint32 id_mmfr2_el1,
                                     uint32 id_mmfr3_el1, uint32 id_mmfr4_el1, uint32 id_mmfr5_el1);
