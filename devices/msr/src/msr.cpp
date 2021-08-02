@@ -394,6 +394,42 @@ Msr::Bus::setup_gic_registers(Model::GicD &gicd) {
 }
 
 bool
+Msr::Bus::setup_aarch32_msr(const PlatformInfo &info) {
+    Msr::Register *reg;
+
+    if (!setup_aarch32_features(info.aa32))
+        return false;
+
+    if (!setup_aarch32_memory_model(info.aa32.id_mmfr0_el1, info.aa32.id_mmfr1_el1,
+                                    info.aa32.id_mmfr2_el1, info.aa32.id_mmfr3_el1,
+                                    info.aa32.id_mmfr4_el1, info.aa32.id_mmfr5_el1))
+        return false;
+
+    if (!setup_aarch32_media_vfp(info.aa32.mvfr0_el1, info.aa32.mvfr1_el1, info.aa32.mvfr2_el1,
+                                 info.aa64.midr_el1))
+        return false;
+
+    if (!setup_aarch32_debug(info.aa64.id_aa64dfr0_el1, info.aa32.id_dfr0_el1))
+        return false;
+
+    reg = new (nothrow) Msr::Register("JIDR", JIDR, false, 0x0ull);
+    if (!register_system_reg(reg))
+        return false;
+    reg = new (nothrow) Msr::Register("FCSEIDR", FCSEIDR, true, 0x0ull, 0x0ull);
+    if (!register_system_reg(reg))
+        return false;
+    reg = new (nothrow) Msr::Register("TCMTR", TCMTR, true, 0x0ull, 0x0ull);
+    if (!register_system_reg(reg))
+        return false;
+    reg = new (nothrow) Msr::Register("TLBTR", TLBTR, true, 0x0ull, 0x0ull);
+    if (!register_system_reg(reg))
+        return false;
+    reg = new (nothrow) Msr::Register("ID_AFR0_EL1", ID_AFR0_EL1, false, 0x0ull);
+
+    return register_system_reg(reg);
+}
+
+bool
 Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Model::GicD &gicd) {
     Msr::Register *reg;
 
@@ -452,36 +488,7 @@ Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Mo
             == Msr::Info::IdAa64pfr0::AA64_AA32
         || aa64pfr0.get_supported_mode(Msr::Info::IdAa64pfr0::EL0_SHIFT)
                == Msr::Info::IdAa64pfr0::AA64_AA32) {
-        if (!setup_aarch32_features(info.aa32))
-            return false;
-
-        if (!setup_aarch32_memory_model(info.aa32.id_mmfr0_el1, info.aa32.id_mmfr1_el1,
-                                        info.aa32.id_mmfr2_el1, info.aa32.id_mmfr3_el1,
-                                        info.aa32.id_mmfr4_el1, info.aa32.id_mmfr5_el1))
-            return false;
-
-        if (!setup_aarch32_media_vfp(info.aa32.mvfr0_el1, info.aa32.mvfr1_el1, info.aa32.mvfr2_el1,
-                                     info.aa64.midr_el1))
-            return false;
-
-        if (!setup_aarch32_debug(info.aa64.id_aa64dfr0_el1, info.aa32.id_dfr0_el1))
-            return false;
-
-        reg = new (nothrow) Msr::Register("JIDR", JIDR, false, 0x0ull);
-        if (!register_system_reg(reg))
-            return false;
-        reg = new (nothrow) Msr::Register("FCSEIDR", FCSEIDR, true, 0x0ull, 0x0ull);
-        if (!register_system_reg(reg))
-            return false;
-        reg = new (nothrow) Msr::Register("TCMTR", TCMTR, true, 0x0ull, 0x0ull);
-        if (!register_system_reg(reg))
-            return false;
-        reg = new (nothrow) Msr::Register("TLBTR", TLBTR, true, 0x0ull, 0x0ull);
-        if (!register_system_reg(reg))
-            return false;
-        reg = new (nothrow) Msr::Register("ID_AFR0_EL1", ID_AFR0_EL1, false, 0x0ull);
-        if (!register_system_reg(reg))
-            return false;
+        return setup_aarch32_msr(info);
     }
 
     return true;
