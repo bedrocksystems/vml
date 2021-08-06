@@ -12,6 +12,7 @@
  */
 
 #include <platform/atomic.hpp>
+#include <platform/bits.hpp>
 #include <platform/mutex.hpp>
 #include <platform/signal.hpp>
 #include <platform/types.hpp>
@@ -108,7 +109,7 @@ private:
     static constexpr uint8 RXIFLSEL = 3;
     static constexpr uint8 TXIFLSEL = 0;
 
-    enum {
+    enum FIFOIRQLevel {
         FIFO_1DIV8_FULL = 0b000,
         FIFO_1DIV4_FULL = 0b001,
         FIFO_1DIV2_FULL = 0b010,
@@ -161,6 +162,13 @@ private:
     uint8 _rx_fifo_widx{0};            /*!< Write index in the FIFO */
     uint16 _rx_fifo[RX_FIFO_MAX_SIZE]; /*!< Receive FIFO */
 
+    FIFOIRQLevel get_tx_irq_level() const {
+        return static_cast<FIFOIRQLevel>(bits_in_range(_ifls, 0, 2));
+    }
+    FIFOIRQLevel get_rx_irq_level() const {
+        return static_cast<FIFOIRQLevel>(bits_in_range(_ifls, 3, 5));
+    }
+
     bool mmio_write(uint64 offset, uint8 access_size, uint64 value);
     bool mmio_read(uint64 offset, uint8 access_size, uint64 &value);
     bool should_assert_rx_irq() const;
@@ -171,6 +179,7 @@ private:
     bool can_tx() const { return (_cr & UARTEN) && (_cr & TXE); }
     bool can_rx() const { return (_cr & UARTEN) && (_cr & RXE); }
     bool is_rx_irq_active() const { return _imsc & RXIM; }
+    bool is_tx_irq_active() const { return _imsc & TXIM; }
 
     Irq_controller *_irq_ctlr; /*!< Interrupt controller that will receive interrupts */
     uint16 _irq_id;            /*!< IRQ id when sending an interrupt to the controller */
