@@ -169,7 +169,7 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
         value = _ris;
         return true;
     case UARTMIS:
-        value = _ris & _imsc;
+        value = _ris & !_imsc;
         return true;
     case UARTICR: // Write only, we can ignore reads
         return true;
@@ -207,15 +207,12 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
 
 bool
 Model::Pl011::should_assert_rx_irq() const {
-    if (!is_rx_irq_active())
-        return false;
-
     if (is_fifo_enabled() && is_fifo_full())
         return true;
 
     uint8 chars = _rx_fifo_chars;
 
-    switch (_ifls) {
+    switch (get_rx_irq_level()) {
     case FIFO_1DIV8_FULL:
         return chars >= 4;
     case FIFO_1DIV4_FULL:
@@ -248,7 +245,8 @@ Model::Pl011::to_guest(char *buff, uint32 size) {
 
     if (should_assert_rx_irq()) {
         _ris |= RXRIS;
-        _irq_ctlr->assert_global_line(_irq_id);
+        if (is_rx_irq_active())
+            _irq_ctlr->assert_global_line(_irq_id);
     }
 
     return size == written;
