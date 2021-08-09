@@ -169,7 +169,8 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
         value = _ris;
         return true;
     case UARTMIS:
-        value = _ris & !_imsc;
+        // An IMSC bit=1 means the corresponding interrupt is enabled (unmasked).
+        value = _ris & _imsc;
         return true;
     case UARTICR: // Write only, we can ignore reads
         return true;
