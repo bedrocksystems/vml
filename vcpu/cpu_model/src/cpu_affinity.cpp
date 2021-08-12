@@ -8,43 +8,24 @@
 
 #include <model/cpu_affinity.hpp>
 #include <platform/compiler.hpp>
+#include <platform/log.hpp>
 #include <platform/new.hpp>
 #include <vbus/vbus.hpp>
 
-/*
- * In this file, we are re-using our beloved vbus. While not necessary, it will avoid
- * having to re-build a tree-like struct from scratch here. It does have limitations but
- * those are acceptable for the current implementaton. For example, a lookup based on aff3
- * alone wouldn't be efficient. Mainly, the implementaiton relies on the fact that the user
- * will provide aff3,aff2,aff1 as a cluster ID. If that's not sufficient in the future, we
- * may have to build a complete tree structure.
- */
-
-class CpuClusterWrapper : public Vbus::Device {
-public:
-    CpuClusterWrapper() : Vbus::Device("CpuCluster") {}
-
-    virtual Vbus::Err access(Vbus::Access, const VcpuCtx*, Vbus::Space, mword, uint8,
-                             uint64&) override {
-        return Vbus::OK;
-    }
-    virtual void reset(const VcpuCtx*) override {}
-
+// should be fine uint32 but current Range implementation does not like this
+typedef uint64 aff_type;
+struct CpuClusterPtr : public RangeNode<aff_type> {
+    explicit CpuClusterPtr(const RangeNode<aff_type>& r) : RangeNode(r) {}
     CpuCluster cluster;
 };
 
-static Vbus::Bus affinity_bus(Vbus::AFFINITY);
+static RangeMap<aff_type> clusters_map;
 
 CpuCluster*
 get_cluster_at(CpuAffinity aff) {
-    Vbus::Device* vdev
-        = affinity_bus.get_device_at(aff.cluster(), CpuCluster::MAX_VCPU_PER_CLUSTER);
-    if (__UNLIKELY__(vdev == nullptr))
-        return nullptr;
-
-    CpuClusterWrapper* ccw = static_cast<CpuClusterWrapper*>(vdev);
-
-    return &ccw->cluster;
+    Range<aff_type> r(aff.cluster(), CpuCluster::MAX_VCPU_PER_CLUSTER);
+    CpuClusterPtr* ptr = static_cast<CpuClusterPtr*>(clusters_map.lookup(&r));
+    return ptr == nullptr ? nullptr : &ptr->cluster;
 }
 
 Vcpu_id
@@ -69,18 +50,21 @@ add_cpu_with_affinity(Vcpu_id id, CpuAffinity aff) {
     if (cluster != nullptr)
         return cluster->add_vcpu_id(aff.aff0(), id);
 
-    CpuClusterWrapper* cluster_wrap = new (nothrow) CpuClusterWrapper;
-    if (cluster_wrap == nullptr)
-        return false;
+    Range<aff_type> r(aff.cluster(), CpuCluster::MAX_VCPU_PER_CLUSTER);
 
-    if (!cluster_wrap->cluster.add_vcpu_id(aff.aff0(), id)) {
-        delete cluster_wrap;
+    CpuClusterPtr* ptr = new (nothrow) CpuClusterPtr(r);
+    if (ptr == nullptr) {
+        WARN("not enough memory for CpuClusterPtr");
         return false;
     }
 
-    if (!affinity_bus.register_device(cluster_wrap, aff.cluster(),
-                                      CpuCluster::MAX_VCPU_PER_CLUSTER)) {
-        delete cluster_wrap;
+    if (!ptr->cluster.add_vcpu_id(aff.aff0(), id)) {
+        delete ptr;
+        return false;
+    }
+
+    if (!clusters_map.insert(ptr)) {
+        delete ptr;
         return false;
     }
 
