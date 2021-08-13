@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2020 BedRock Systems, Inc.
+ * Copyright (C) 2019-2021 BedRock Systems, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
@@ -161,14 +161,6 @@ private:
 
     void set_reset_parameters(uint64 boot_addr, uint64 const boot_arg[MAX_BOOT_ARGS],
                               uint64 tmr_off, enum Mode m);
-
-    virtual void ctrl_tvm(bool enable, Request::Requestor requestor = Request::Requestor::VMM,
-                          Reg_selection regs = 0)
-        = 0;
-    virtual void ctrl_single_step(bool enable,
-                                  Request::Requestor requestor = Request::Requestor::VMM)
-        = 0;
-
     static void roundup(Vcpu_id);
 
     bool block_timeout(uint64 const absolut_timeout) { return _irq_sig.wait(absolut_timeout); }
