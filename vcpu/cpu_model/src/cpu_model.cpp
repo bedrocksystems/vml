@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2020 BedRock Systems, Inc.
+ * Copyright (C) 2019-2021 BedRock Systems, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
@@ -129,13 +129,15 @@ Model::Cpu::is_feature_enabled_on_vcpu(requested_feature_cb cb, Vcpu_id vcpu_id,
 void
 Model::Cpu::ctrl_feature_tvm(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
                              Reg_selection regs) {
-    vcpu->ctrl_tvm(enable, requestor, regs);
+    ASSERT(vcpu != nullptr);
+    vcpu->_tvm.request(enable, requestor, regs);
 }
 
 void
 Model::Cpu::ctrl_feature_single_step(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
                                      Reg_selection) {
-    vcpu->ctrl_single_step(enable, requestor);
+    ASSERT(vcpu != nullptr);
+    vcpu->_singe_step.request(enable, requestor);
 }
 
 bool
