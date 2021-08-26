@@ -230,19 +230,15 @@ Model::Pl011::should_assert_rx_irq() const {
 }
 
 bool
-Model::Pl011::to_guest(char *buff, uint32 size) {
+Model::Pl011::write_to_rx_queue(char c) {
     Platform::MutexGuard guard(&_state_lock);
 
     if (is_fifo_full() || !can_rx())
         return false;
 
-    uint32 written;
-    for (written = 0; written < size && !is_fifo_full(); written++) {
-        _rx_fifo[_rx_fifo_widx++] = static_cast<uint16>(buff[written]);
-        _rx_fifo_widx %= _rx_fifo_size;
-        Barrier::rw_before_rw();
-        _rx_fifo_chars++;
-    }
+    _rx_fifo[_rx_fifo_widx++] = static_cast<uint16>(c);
+    _rx_fifo_widx %= _rx_fifo_size;
+    _rx_fifo_chars++;
 
     if (should_assert_rx_irq()) {
         _ris |= RXRIS;
@@ -250,5 +246,11 @@ Model::Pl011::to_guest(char *buff, uint32 size) {
             _irq_ctlr->assert_global_line(_irq_id);
     }
 
-    return size == written;
+    return true;
+}
+
+void
+Model::Pl011::to_guest(char c) {
+    while (!write_to_rx_queue(c))
+        wait_for_available_buffer();
 }

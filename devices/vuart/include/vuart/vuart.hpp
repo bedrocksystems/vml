@@ -21,25 +21,12 @@ public:
     Vuart() : Vbus::Device("vUART") {}
     explicit Vuart(const char *name) : Vbus::Device(name) {}
 
-    /*! \brief Send characters to the guest
-     *  \param buff Buffer containing the characters
-     *  \param size Number of characters to read from the buffer
-     *  \return true is the whole data could be transmitted, false otherwise
-     *  \pre valid Vuart object, q owernship of the buffer containing n characters
+    /*! \brief Send characters to the guest. May block when the UART internal buffer is full.
+     *  \param c character to send to the guest
+     *  \pre valid Vuart object
      *  \post same as pre - characters have been sent to the guest (could be best effort)
      */
-    virtual bool to_guest(char *, uint32) { return true; }
-
-    /*! \brief Allows the UART to make the external interface wait for available receive space
-     *  \pre valid Vuart object - we know that the device buffer was full at some point
-     *  \post valud Vuart object - we possibly have a space in the device buffer (no hard guarantee)
-     *
-     * It is important to note that this is a best effort from the receiving side. It will do
-     * its best to store incoming characters and wait to not overflow the virtual UART. However,
-     * the interface also maintains a buffer than can overflow. In case of overflow, characters
-     * could be dropped.
-     */
-    virtual void wait_for_available_buffer() { return; }
+    virtual void to_guest(char) { return; }
 
     /*! \brief Register the callback handler to send data outside
      *  \param callback The callback object
