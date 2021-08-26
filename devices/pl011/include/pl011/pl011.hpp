@@ -181,6 +181,13 @@ private:
     bool is_rx_irq_active() const { return _imsc & RXIM; }
     bool is_tx_irq_active() const { return _imsc & TXIM; }
 
+    /*! \brief Send one character to the guest
+     *  \param c character to send
+     *  \return true is the whole data could be transmitted, false otherwise
+     */
+    bool write_to_rx_queue(char c);
+    void wait_for_available_buffer() { _sig_notify_empty_space.wait(); }
+
     Irq_controller *_irq_ctlr; /*!< Interrupt controller that will receive interrupts */
     uint16 _irq_id;            /*!< IRQ id when sending an interrupt to the controller */
     Platform::Signal _sig_notify_empty_space; /*!< Synchronize/wait on a buffer that is full */
@@ -221,14 +228,7 @@ public:
         return true;
     }
 
-    /*! \brief Send characters to the guest
-     *  \param buff Buffer containing the characters
-     *  \param size Number of characters to read from the buffer
-     *  \return true is the whole data could be transmitted, false otherwise
-     */
-    virtual bool to_guest(char *buff, uint32 size) override;
-
-    virtual void wait_for_available_buffer() override { _sig_notify_empty_space.wait(); }
+    virtual void to_guest(char) override;
 
     /*! \brief MMIO access function - adhere to the Virtual bus interface
      *  \param access type of access (R/W/X)
