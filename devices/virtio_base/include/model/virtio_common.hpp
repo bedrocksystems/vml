@@ -48,6 +48,8 @@ enum class Virtio::DeviceID : uint16 {
 
 class Virtio::Transport {
 public:
+    virtual ~Transport() {}
+
     virtual bool access(Vbus::Access access, mword offset, uint8 size, uint64 &value,
                         Virtio::DeviceState &state)
         = 0;
