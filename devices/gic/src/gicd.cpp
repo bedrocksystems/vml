@@ -239,14 +239,14 @@ Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 va
         if (acc.offset == GICD_ISPENDR)
             reg &= ~((1ULL << MAX_SGI) - 1); /* SGIs are WI */
         acc.base_abs = GICD_ISPENDR;
-        return mmio_assert<&GicD::assert_pi>(cpu_id, acc, reg);
+        return mmio_assert<&GicD::assert_pi_sw>(cpu_id, acc, reg);
     }
     case GICD_ICPENDR ... GICD_ICPENDR_END: {
         uint64 reg = value;
         if (acc.offset == GICD_ICPENDR)
             reg &= ~((1ULL << MAX_SGI) - 1); /* SGIs are WI */
         acc.base_abs = GICD_ICPENDR;
-        return mmio_assert<&GicD::deassert_pi>(cpu_id, acc, reg);
+        return mmio_assert<&GicD::deassert_pi_sw>(cpu_id, acc, reg);
     }
     case GICD_ISACTIVER ... GICD_ISACTIVER_END:
         acc.base_abs = GICD_ISACTIVER;
@@ -543,6 +543,14 @@ Model::GicD::deassert_line(Vcpu_id const cpu_id, uint32 const irq_id) {
     Irq &irq = irq_object(cpu, irq_id);
 
     irq.deassert_line();
+
+    /*
+     * Check if the interrupt is configured as level. If it is and the guest
+     * didn't set the pending bit in software, then we have to deassert (clear
+     * the pending bit) the interrupt.
+     */
+    if (!irq.sw_edge() && !irq.sw_asserted())
+        deassert_pi(cpu_id, irq);
 }
 
 void
@@ -688,7 +696,7 @@ Model::GicD::update_inj_status_inactive(Vcpu_id const cpu_id, uint32 irq_id) {
         desired.unset_pending(sender_id);
     } while (!irq.injection_info.cas(cur, desired));
 
-    if (desired.pending())
+    if (irq.pending())
         cpu.pending_irqs.atomic_set(irq.id());
 }
 
@@ -732,7 +740,7 @@ Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState sta
                 desired.unset_pending(sender_id);
         } while (!irq.injection_info.cas(cur, desired));
 
-        if (desired.pending())
+        if (irq.pending())
             cpu.pending_irqs.atomic_set(irq.id());
     }
     }
@@ -792,6 +800,13 @@ Model::GicD::redirect_spi(Irq &irq) {
 }
 
 bool
+Model::GicD::assert_pi_sw(Vcpu_id cpu_id, Irq &irq) {
+    ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
+    irq.assert_sw();
+    return assert_pi(cpu_id, irq);
+}
+
+bool
 Model::GicD::assert_pi(Vcpu_id cpu_id, Irq &irq) {
     IrqTarget target;
 
@@ -839,6 +854,15 @@ Model::GicD::assert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
         INFO("SGI %u sent from " FMTx64 " to " FMTx64, irq.id(), sender, target);
 
     return notify_target(irq, IrqTarget(IrqTarget::CPU_ID, target));
+}
+
+bool
+Model::GicD::deassert_pi_sw(Vcpu_id vcpu_id, Irq &irq) {
+    ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
+
+    irq.deassert_sw();
+
+    return deassert_pi(vcpu_id, irq);
 }
 
 bool

@@ -167,7 +167,17 @@ private:
         uint8 _prio{0};
         uint8 _target{1};
 
-        bool _line_asserted{false};
+        /*
+         * We are maintaining info in three places when it comes to the pending bit.
+         * 1 - We remember if the device line is asserted or not
+         * 2 - We remember if the guest wrote "1" in the pending bit of that IRQ
+         * 3 - We maintain pending info in "injection_info". injection_info is not something
+         * that is directly visible to a guest (although he may read info derived from this value
+         * and the two previous). Its main job is for to keep track of when the interrupt should be
+         * injected inside the guest.
+         */
+        bool _line_asserted{false}; // Asserted by the HW/vDevice
+        bool _sw_asserted{false};   // Asserted in software by the guest
 
         /*
          * HW edge is the underlying virtual HW configuration that cannot be changed
@@ -243,7 +253,15 @@ private:
         }
 
         bool pending() const {
-            return (!sw_edge() && _line_asserted) || injection_info.read().pending();
+            /*
+             * An interrupt is pending if:
+             * - the device line is asserted and the IRQ is configured as level.
+             * - the guest wrote to the pending bit, setting it to 1.
+             * - The injection info is pending meaning that the IRQ was pending previously
+             * asserted due to an edge IRQ firing.
+             */
+            return (!sw_edge() && _line_asserted) || _sw_asserted
+                   || injection_info.read().pending();
         }
 
         void reset(uint8 t) {
@@ -264,6 +282,9 @@ private:
 
         void assert_line() { _line_asserted = true; }
         void deassert_line() { _line_asserted = false; }
+        void assert_sw() { _sw_asserted = true; }
+        void deassert_sw() { _sw_asserted = false; }
+        bool sw_asserted() const { return _sw_asserted; }
     };
 
 public:
@@ -555,7 +576,9 @@ private:
 
     bool assert_sgi(Vcpu_id, Vcpu_id, Irq &irq);
     bool assert_pi(Vcpu_id vcpu_id, Irq &irq);
+    bool assert_pi_sw(Vcpu_id vcpu_id, Irq &irq);
     bool deassert_pi(Vcpu_id vcpu_id, Irq &irq);
+    bool deassert_pi_sw(Vcpu_id vcpu_id, Irq &irq);
     bool deassert_sgi(Vcpu_id, Vcpu_id, Irq &irq);
     void deassert_line(Vcpu_id cpu_id, uint32 irq_id);
 

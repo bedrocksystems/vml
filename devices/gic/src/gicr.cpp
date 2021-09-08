@@ -141,12 +141,12 @@ Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const val
         if (!gic.is_affinity_routing_enabled())
             return false;
         acc.base_abs = GICR_ISPENDR0;
-        return gic.mmio_assert<&GicD::assert_pi>(_vcpu_id, acc, value);
+        return gic.mmio_assert<&GicD::assert_pi_sw>(_vcpu_id, acc, value);
     case GICR_ICPENDR0 ... GICR_ICPENDR0_END:
         if (!gic.is_affinity_routing_enabled())
             return false;
         acc.base_abs = GICR_ICPENDR0;
-        return gic.mmio_assert<&GicD::deassert_pi>(_vcpu_id, acc, value);
+        return gic.mmio_assert<&GicD::deassert_pi_sw>(_vcpu_id, acc, value);
     case GICR_ICFGR0 ... GICR_ICFGR0_END:
         acc.base_abs = GICR_ICFGR0;
         acc.irq_max = MAX_SGI;
