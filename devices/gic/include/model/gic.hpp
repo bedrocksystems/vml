@@ -688,4 +688,9 @@ public:
         ABORT_WITH("interrupt ACK shouldn't be called on the GICR");
     }
     virtual bool int_pending() override { return _gic_d->has_irq_to_inject(_vcpu_id); }
+
+    virtual void nmi_ack() override { ABORT_WITH("NMI ACK shouldn't be called on the GICR"); }
+    virtual bool nmi_pending() override {
+        return false; // no NMI on ARM
+    }
 };

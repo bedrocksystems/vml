@@ -56,4 +56,7 @@ public:
     virtual void assert_vector(uint8 vec, bool edge) = 0;
     virtual uint8 int_ack() = 0;
     virtual bool int_pending() = 0;
+
+    virtual void nmi_ack() = 0;
+    virtual bool nmi_pending() = 0;
 };
