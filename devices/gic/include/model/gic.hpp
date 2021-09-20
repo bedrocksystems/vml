@@ -631,6 +631,9 @@ public:
     virtual void deassert_global_line(uint32) override;
     virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id) override;
 
+    virtual bool signal_eoi(uint8) override { return false; }
+    virtual bool wait_for_eoi(uint8) override { return false; }
+
     bool any_irq_active(Vcpu_id);
     bool has_irq_to_inject(Vcpu_id cpu_id) { return highest_irq(cpu_id, false) != nullptr; }
     uint32 highest_irq_to_inject(Vcpu_id cpu_id, uint8 min_priority = PRIORITY_ANY) {

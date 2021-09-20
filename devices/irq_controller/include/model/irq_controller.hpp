@@ -44,6 +44,9 @@ public:
 
     virtual void deassert_global_line(uint32) = 0;
     virtual bool assert_global_line(uint32) = 0;
+
+    virtual bool signal_eoi(uint8 vector) = 0;
+    virtual bool wait_for_eoi(uint8 line) = 0;
 };
 
 class Model::Local_Irq_controller : public Vbus::Device {
