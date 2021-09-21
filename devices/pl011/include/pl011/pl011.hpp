@@ -11,6 +11,7 @@
  *  \brief Model for a PL011 device
  */
 
+#include <debug_switches.hpp>
 #include <platform/atomic.hpp>
 #include <platform/bits.hpp>
 #include <platform/mutex.hpp>
@@ -256,6 +257,15 @@ public:
         _ris = 0;
         _ifls = FIFO_1DIV2_FULL << RXIFLSEL | FIFO_1DIV2_FULL << TXIFLSEL;
         _dmacr = 0;
+
+        /*
+         * UARTEN is not set by default according to the spec of the pl011.
+         * However, some OSes will assume that it was already enabled before they start
+         * running (by a bootloader potentially). To be able to get printing and
+         * debugging info in this case, we enable the UART when debug is set.
+         */
+        if (Debug::current_level > Debug::NONE)
+            _cr |= UARTEN;
 
         for (uint8 i = 0; i < RX_FIFO_MAX_SIZE; i++)
             _rx_fifo[i] = 0; // Reset error status to zero

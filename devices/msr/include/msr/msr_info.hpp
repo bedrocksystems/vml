@@ -200,14 +200,22 @@ public:
         GRANULE_INVALID,
     };
 
+    enum Tg1GranuleSize : uint64 {
+        TG1_GRANULE_16KB = 0b01,
+        TG1_GRANULE_4KB = 0b10,
+        TG1_GRANULE_64KB = 0b11
+    };
+
+    static constexpr uint8 TG1_SHIFT = 30;
+
     GranuleSize tg1() const {
-        uint8 bits = uint8(bits_in_range(_value, 30, 31));
+        uint8 bits = uint8(bits_in_range(_value, TG1_SHIFT, 31));
         switch (bits) {
-        case 0b01:
+        case TG1_GRANULE_16KB:
             return GRANULE_16KB;
-        case 0b10:
+        case TG1_GRANULE_4KB:
             return GRANULE_4KB;
-        case 0b11:
+        case TG1_GRANULE_64KB:
             return GRANULE_64KB;
         default:
             return GRANULE_INVALID;
@@ -231,32 +239,59 @@ public:
     bool tbi0() const { return bits_in_range(_value, 38, 38); }
     bool tbi1() const { return bits_in_range(_value, 37, 37); }
 
-    bool epd0() const { return bits_in_range(_value, 7, 7); }
-    bool epd1() const { return bits_in_range(_value, 23, 23); }
+    static constexpr uint8 EPD1_BIT = 23;
+    static constexpr uint64 EPD1_VAL = 1ull << EPD1_BIT;
+    static constexpr uint8 EPD0_BIT = 7;
+    static constexpr uint64 EPD0_VAL = 1ull << EPD0_BIT;
 
-    uint8 t0sz() const { return uint8(bits_in_range(_value, 0, 5)); }
-    uint8 t1sz() const { return uint8(bits_in_range(_value, 16, 21)); }
+    bool epd0() const { return bits_in_range(_value, EPD0_BIT, EPD0_BIT); }
+    bool epd1() const { return bits_in_range(_value, EPD1_BIT, EPD1_BIT); }
+
+    static constexpr uint8 T0SZ_SHIFT = 0;
+    static constexpr uint8 T1SZ_SHIFT = 16;
+
+    uint8 t0sz() const { return uint8(bits_in_range(_value, T0SZ_SHIFT, 5)); }
+    uint8 t1sz() const { return uint8(bits_in_range(_value, T1SZ_SHIFT, 21)); }
 
     bool eae() const { return bits_in_range(_value, 31, 31); }
 
     static constexpr uint8 INVALID_IPS = 0xff;
 
+    enum IpsSize : uint64 {
+        IPS_32B = 0b000,
+        IPS_36B = 0b001,
+        IPS_40B = 0b010,
+        IPS_42B = 0b011,
+        IPS_44B = 0b100,
+        IPS_48B = 0b101,
+        IPS_52B = 0b110
+    };
+
+    static constexpr uint8 IPS_SHIFT = 32;
+    static constexpr uint8 ORGN1_SHIFT = 24;
+    static constexpr uint8 IRGN1_SHIFT = 26;
+    static constexpr uint8 SH1_SHIFT = 28;
+
+    enum Shareability { NON_SHAREABLE = 0b00, OUTER_SHAREABLE = 0b10, INNER_SHAREABLE = 0b11 };
+
+    static constexpr uint8 NORMAL_MEM_WB_RWALLOC_CACHE = 0b01;
+
     uint8 ips() const {
-        uint8 ips_bits = uint8(bits_in_range(_value, 32, 34));
+        uint8 ips_bits = uint8(bits_in_range(_value, IPS_SHIFT, 34));
         switch (ips_bits) {
-        case 0b000:
+        case IPS_32B:
             return 32;
-        case 0b001:
+        case IPS_36B:
             return 36;
-        case 0b010:
+        case IPS_40B:
             return 40;
-        case 0b011:
+        case IPS_42B:
             return 42;
-        case 0b100:
+        case IPS_44B:
             return 44;
-        case 0b101:
+        case IPS_48B:
             return 48;
-        case 0b110:
+        case IPS_52B:
             return 52;
         default:
             return INVALID_IPS;

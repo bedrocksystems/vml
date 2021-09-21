@@ -17,8 +17,29 @@ class RegAccessor;
 
 static constexpr Vcpu_id INVALID_VCPU_ID = ~0x0ull;
 
+enum class CtxInfo {
+    VMEXIT = 0, /*!< Default, we are handling a vmexit */
+    TRANSLATE,  /*!< VCPU is performing a software page table walk */
+    EMULATE,    /*!< VCPU is currently emulating instructions */
+};
+
 struct VcpuCtx {
     const Platform_ctx* ctx;
     RegAccessor* regs;
     Vcpu_id vcpu_id;
+    CtxInfo info{CtxInfo::VMEXIT};
+};
+
+class CtxInfoGuard {
+public:
+    CtxInfoGuard(const VcpuCtx& ctx, CtxInfo newctx)
+        : _vctx(const_cast<VcpuCtx*>(&ctx)), _prev_info(ctx.info) {
+        _vctx->info = newctx;
+    }
+
+    ~CtxInfoGuard() { _vctx->info = _prev_info; }
+
+private:
+    VcpuCtx* _vctx;
+    const CtxInfo _prev_info;
 };
