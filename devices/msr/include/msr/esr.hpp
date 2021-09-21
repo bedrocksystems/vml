@@ -13,6 +13,7 @@
 
 namespace Esr {
     class Common;
+    class Hvc;
     class MsrMrs;
     class McrMrc;
     class McrrMrrc;
@@ -41,6 +42,15 @@ private:
 
 protected:
     uint64 const _esr;
+};
+
+class Esr::Hvc : public Esr::Common {
+public:
+    explicit Hvc(uint64 const esr) : Common(esr) {}
+
+    static constexpr uint16 BED_MAGIC_HVC = 0xbedull;
+
+    constexpr uint16 imm() const { return static_cast<uint16>(bits_in_range(_esr, 0, 15)); }
 };
 
 class Esr::MsrMrs : public Esr::Common {
