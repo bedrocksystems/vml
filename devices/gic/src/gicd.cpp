@@ -314,7 +314,8 @@ Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 va
         return true;
     }
 
-    return false;
+    WARN("GICD: ignored write @ %#llx", acc.offset);
+    return true;
 }
 
 bool
@@ -396,7 +397,6 @@ Model::GicD::mmio_read_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 &va
         return read<uint8, &Irq::prio>(cpu, acc, value);
     case GICD_ITARGETSR0 ... GICD_ITARGETSR0_END:
         acc.irq_per_bytes = 1;
-        acc.irq_base = 0;
         acc.irq_max = MAX_SGI + MAX_PPI;
         acc.base_abs = GICD_ITARGETSR0;
         return read<uint8, &Irq::target>(cpu, acc, value);
@@ -443,22 +443,23 @@ Model::GicD::mmio_read_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 &va
         return read_pending(cpu, acc, GICD_CPENDSGIR, value);
     case GICD_SPENDSGIR ... GICD_SPENDSGIR_END:
         return read_pending(cpu, acc, GICD_SPENDSGIR, value);
-    case GICD_IMPLDEF_0 ... GICD_IMPLDEF_0_END:     /* impl. defined */
-    case GICD_IMPLDEF_X ... GICD_IMPLDEF_X_END:     /* impl. defined */
-    case GICD_SGIR ... GICD_SGIR_END:               /* write - only */
-    case GICD_RESERVED_0 ... GICD_RESERVED_0_END:   /* RAZ */
-    case GICD_STATUSR ... GICD_STATUSR_END:         /* optional - not implemented */
-    case GICD_RESERVED_1 ... GICD_RESERVED_1_END:   /* RAZ */
-    case GICD_RESERVED_2 ... GICD_RESERVED_2_END:   /* RAZ */
-    case GICD_RESERVED_3 ... GICD_RESERVED_3_END:   /* RAZ */
-    case GICD_RESERVED_4 ... GICD_RESERVED_4_END:   /* RAZ */
-    case GICD_RESERVED_19 ... GICD_RESERVED_19_END: /* RAZ */
-    case GICD_RESERVED_20 ... GICD_RESERVED_20_END: /* RAZ */
+    default:
+        /* GICD_IMPLDEF_0 ... GICD_IMPLDEF_0_END: impl. defined
+         * GICD_IMPLDEF_X ... GICD_IMPLDEF_X_END: impl. defined
+         * GICD_SGIR ... GICD_SGIR_END: write - only
+         * GICD_RESERVED_0 ... GICD_RESERVED_0_END: RAZ
+         * GICD_STATUSR ... GICD_STATUSR_END: optional - not implemented
+         * GICD_RESERVED_1 ... GICD_RESERVED_1_END: RAZ
+         * GICD_RESERVED_2 ... GICD_RESERVED_2_END: RAZ
+         * GICD_RESERVED_3 ... GICD_RESERVED_3_END: RAZ
+         * GICD_RESERVED_4 ... GICD_RESERVED_4_END: RAZ
+         * GICD_RESERVED_19 ... GICD_RESERVED_19_END: RAZ
+         * GICD_RESERVED_20 ... GICD_RESERVED_20_END: RAZ */
         value = 0;
+        WARN("GICD: ignored read @ %#llx", acc.offset);
         return true;
     }
-
-    return false;
+    __UNREACHED__;
 }
 
 bool
