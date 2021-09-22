@@ -160,7 +160,8 @@ Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const val
         return gic.write<uint8, &GicD::Irq::set_encoded_edge>(cpu, acc, value);
     }
 
-    return false;
+    WARN("GICR: ignored write @ %#llx", offset);
+    return true;
 }
 
 bool
@@ -247,5 +248,7 @@ Model::GicR::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) co
         acc.irq_per_bytes = 1;
         return gic.read<uint8, &GicD::Irq::prio>(cpu, acc, value);
     }
-    return false;
+
+    WARN("GICR: ignored read @ %#llx", offset);
+    return true;
 }
