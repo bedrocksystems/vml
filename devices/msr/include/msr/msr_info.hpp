@@ -90,6 +90,7 @@ namespace Msr::Info {
     class Ctr;
     class SctlrEl1;
     class TcrEl1;
+    class TcrEl2;
 };
 
 class Msr::Info::IdAa64pfr0 {
@@ -298,6 +299,35 @@ public:
         }
     }
 
-private:
+protected:
     const uint64 _value;
+};
+
+/*
+ * Note that TCR_EL1 and TCR_EL2 do not share all the same fields..
+ * However, some fields are the same so we can leverage that by inheriting
+ * TCR_EL1 privately and only expose what makes sense.
+ */
+class Msr::Info::TcrEl2 : private Msr::Info::TcrEl1 {
+public:
+    explicit TcrEl2(uint64 val) : TcrEl1(val) {}
+
+    uint8 t0sz() const { return TcrEl1::t0sz(); }
+    GranuleSize tg0() const { return TcrEl1::tg0(); }
+    uint8 start_level() const {
+        uint8 level = static_cast<uint8>(bits_in_range(_value, 6, 7));
+
+        switch (level) {
+        case 0b00:
+            return 2;
+        case 0b01:
+            return 1;
+        case 0b10:
+            return 0;
+        case 0b11:
+            return 3;
+        default:
+            __UNREACHED__;
+        }
+    }
 };
