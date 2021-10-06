@@ -208,6 +208,7 @@ public:
     };
 
     static constexpr uint8 TG1_SHIFT = 30;
+    static constexpr uint64 TG1_MASK = 0x3ull << TG1_SHIFT;
 
     GranuleSize tg1() const {
         uint8 bits = uint8(bits_in_range(_value, TG1_SHIFT, 31));
@@ -249,7 +250,9 @@ public:
     bool epd1() const { return bits_in_range(_value, EPD1_BIT, EPD1_BIT); }
 
     static constexpr uint8 T0SZ_SHIFT = 0;
+    static constexpr uint64 T0SZ_MASK = 0x3full << T0SZ_SHIFT;
     static constexpr uint8 T1SZ_SHIFT = 16;
+    static constexpr uint64 T1SZ_MASK = 0x3full << T1SZ_SHIFT;
 
     uint8 t0sz() const { return uint8(bits_in_range(_value, T0SZ_SHIFT, 5)); }
     uint8 t1sz() const { return uint8(bits_in_range(_value, T1SZ_SHIFT, 21)); }
@@ -269,9 +272,13 @@ public:
     };
 
     static constexpr uint8 IPS_SHIFT = 32;
+    static constexpr uint64 IPS_MASK = 0x7ull << IPS_SHIFT;
     static constexpr uint8 ORGN1_SHIFT = 24;
+    static constexpr uint64 ORGN1_MASK = 0x3ull << ORGN1_SHIFT;
     static constexpr uint8 IRGN1_SHIFT = 26;
+    static constexpr uint64 IRGN1_MASK = 0x3ull << IRGN1_SHIFT;
     static constexpr uint8 SH1_SHIFT = 28;
+    static constexpr uint64 SH1_MASK = 0x3full << SH1_SHIFT;
 
     enum Shareability { NON_SHAREABLE = 0b00, OUTER_SHAREABLE = 0b10, INNER_SHAREABLE = 0b11 };
 
