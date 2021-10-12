@@ -68,8 +68,8 @@ Model::SimpleAS::gpa_to_vmm_view(GPA addr, size_t sz) const {
     return _vmm_view + off;
 }
 
-char*
-Model::SimpleAS::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
+static const Model::SimpleAS*
+get_as_device_at(const Vbus::Bus& bus, GPA addr, size_t sz) {
     const Vbus::Device* dev = bus.get_device_at(addr.get_value(), sz);
 
     if (__UNLIKELY__(dev == nullptr
@@ -78,24 +78,32 @@ Model::SimpleAS::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
         return nullptr;
     }
 
-    const Model::SimpleAS* tgt = reinterpret_cast<const Model::SimpleAS*>(dev);
+    return static_cast<const Model::SimpleAS*>(dev);
+}
+
+char*
+Model::SimpleAS::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
+    const Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
+    if (tgt == nullptr)
+        return nullptr;
+
     return tgt->gpa_to_vmm_view(addr, sz);
 }
 
 Errno
 Model::SimpleAS::read_bus(const Vbus::Bus& bus, GPA addr, char* dst, size_t sz) {
-    const char* src = gpa_to_vmm_view(bus, addr, sz);
-    if (src == nullptr)
+    const Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
+    if (tgt == nullptr)
         return EINVAL;
-    memcpy(dst, src, sz);
-    return ENONE;
+
+    return tgt->read(dst, sz, addr);
 }
 
 Errno
 Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size_t sz) {
-    char* dst = gpa_to_vmm_view(bus, addr, sz);
-    if (src == nullptr)
+    const Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
+    if (tgt == nullptr)
         return EINVAL;
-    memcpy(dst, src, sz);
-    return ENONE;
+
+    return tgt->write(addr, sz, src);
 }
