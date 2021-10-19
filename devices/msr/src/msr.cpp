@@ -529,6 +529,7 @@ Msr::Set_way_flush_reg::flush(const VcpuCtx *vctx, const uint8, const uint32) co
 
 void
 Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, Vbus::Bus &vbus, uint64 new_value) {
+    static unsigned id = 0;
     if (!Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vcpu->vcpu_id)) {
         // Another requestor needed TVM - no action to take on our side
         return;
@@ -546,15 +547,27 @@ Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, Vbus::Bus &vbus, uint64 new_valu
      */
 
     if (before.cache_enabled() != after.cache_enabled()) {
-        INFO("Cache setting toggled - flushing the guest AS");
+        INFO("%u : Cache setting toggled - flushing the guest AS", id);
 
         vbus.iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
     }
 
     if (after.cache_enabled()) {
-        INFO("Cache enabled - stop TVM trapping");
+        INFO("%u : Cache enabled - stop TVM trapping", id);
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vcpu->vcpu_id, false);
+
+        if (id == 8) {
+            //    Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_single_step,
+            //    vcpu->vcpu_id,
+            //                                     true);
+
+            static constexpr uint32 HVC_0 = 0xd4000002u;
+            const char *bytecode = reinterpret_cast<const char *>(&HVC_0);
+            Errno err = Model::SimpleAS::write_bus(vbus, 0x9ff8c200, bytecode, sizeof(HVC_0));
+            ASSERT(err == ENONE);
+        }
     }
+    id++;
 }
 
 Vbus::Err

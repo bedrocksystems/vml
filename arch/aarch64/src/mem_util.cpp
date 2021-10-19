@@ -15,7 +15,7 @@
 static inline void
 dcache_clean_line_poc(mword va) {
     /* Clean (not invalidate) the data cache for the VA to PoC. */
-    asm volatile("dc cvac, %0" : : "r"(va) : "memory");
+    asm volatile("dc civac, %0" : : "r"(va) : "memory");
 }
 
 static inline void

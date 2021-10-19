@@ -364,7 +364,8 @@ public:
      *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    explicit SimpleAS(bool read_only) : Vbus::Device("SimpleAS"), _read_only(read_only) {}
+    explicit SimpleAS(bool read_only, bool flushable = true)
+        : Vbus::Device("SimpleAS"), _flushable(flushable), _read_only(read_only) {}
 
     /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
@@ -372,7 +373,8 @@ public:
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    SimpleAS(const char *name, bool read_only) : Vbus::Device(name), _read_only(read_only) {}
+    SimpleAS(const char *name, bool read_only, bool flushable = true)
+        : Vbus::Device(name), _flushable(flushable), _read_only(read_only) {}
 
     /*! \brief Get the size of this AS
      *  \pre Partial ownership of this object
@@ -501,13 +503,14 @@ public:
     static Errno read_bus(const Vbus::Bus &bus, GPA addr, char *dst, size_t sz);
     static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz);
 
-protected:
     /*! \brief Iterate over this AS and make sure that all data made it to physical RAM
      *  \pre Partial ownership of this device
      *  \post Ownership unchanged
      */
     void flush_guest_as() const;
 
+protected:
+    const bool _flushable;
     const bool _read_only;    /*!< Is the AS read-only from the guest point of view? */
     char *_vmm_view{nullptr}; /*!< base host mapping of base gpa. */
     Range<mword> _as;         /*!< Range(gpa RAM base, guest RAM size) */

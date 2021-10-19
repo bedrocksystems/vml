@@ -16,6 +16,8 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
         return EINVAL;
     mword offset = addr.get_value() - get_guest_view().get_value();
     memcpy(dst, get_vmm_view() + offset, size);
+    dcache_clean_range(get_vmm_view() + offset, size);
+    icache_invalidate_range(get_vmm_view() + offset, size);
     return ENONE;
 }
 
@@ -40,7 +42,8 @@ Model::SimpleAS::write(GPA& gpa, size_t size, const char* src) const {
 
 void
 Model::SimpleAS::flush_guest_as() const {
-    if (!_read_only) {
+    if (_flushable) {
+        INFO("Flushing @ 0x%llx", get_guest_view().get_value());
         dcache_clean_range(_vmm_view, _as.size());
         icache_invalidate_range(_vmm_view, _as.size());
     }
