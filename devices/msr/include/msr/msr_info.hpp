@@ -42,7 +42,7 @@ namespace Msr::Info {
     constexpr uint64 HCR_EL2_DEFAULT_VALUE
         = HCR_EL2_VM | HCR_EL2_SWIO | HCR_EL2_PTW | HCR_EL2_FMO | HCR_EL2_IMO | HCR_EL2_AMO
           | HCR_EL2_FB | HCR_EL2_BSU_INNER | HCR_EL2_TWI | HCR_EL2_TWE | HCR_EL2_TID0 | HCR_EL2_TID1
-          | HCR_EL2_TID3 | HCR_EL2_TSC | HCR_EL2_TIDCP | HCR_EL2_TACR;
+          | HCR_EL2_TID3 | HCR_EL2_TSC | HCR_EL2_TIDCP | HCR_EL2_TACR | HCR_EL2_TSW;
 
     enum : uint64 {
         SCLTR_EL1_DZE = 1ull << 14,
