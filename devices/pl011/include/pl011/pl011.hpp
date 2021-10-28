@@ -18,6 +18,7 @@
 #include <platform/signal.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
+#include <vuart/seq_queue.hpp>
 #include <vuart/vuart.hpp>
 #include <vuart/vuart_callback.hpp>
 
@@ -156,12 +157,7 @@ private:
     uint16 _ris;   /*!< Raw interrupt register */
     uint16 _dmacr; /*!< DMA control register */
 
-    static constexpr uint8 RX_FIFO_MAX_SIZE = 32;
-    uint8 _rx_fifo_size{1};            /*!< Maximum configured size */
-    uint8 _rx_fifo_chars{0};           /*!< Current number of chars in the FIFO */
-    uint8 _rx_fifo_ridx{0};            /*!< Read index in the FIFO */
-    uint8 _rx_fifo_widx{0};            /*!< Write index in the FIFO */
-    uint16 _rx_fifo[RX_FIFO_MAX_SIZE]; /*!< Receive FIFO */
+    SeqQueue<uint16, 32> _rx_fifo;
 
     FIFOIRQLevel get_tx_irq_level() const {
         return static_cast<FIFOIRQLevel>(bits_in_range(_ifls, 0, 2));
@@ -172,15 +168,16 @@ private:
 
     bool mmio_write(uint64 offset, uint8 access_size, uint64 value);
     bool mmio_read(uint64 offset, uint8 access_size, uint64 &value);
-    bool should_assert_rx_irq() const;
+    bool rx_irq_cond() const; // rename it to watermark? asserting rx irq needs many more checks
 
     bool is_fifo_enabled() const { return FEN & _lcrh; }
-    bool is_fifo_empty() const { return _rx_fifo_chars == 0; }
-    bool is_fifo_full() const { return _rx_fifo_chars == _rx_fifo_size; }
+    bool is_fifo_empty() const { return _rx_fifo.is_empty(); }
+    bool is_fifo_full() const { return _rx_fifo.is_full(); }
     bool can_tx() const { return (_cr & UARTEN) && (_cr & TXE); }
     bool can_rx() const { return (_cr & UARTEN) && (_cr & RXE); }
     bool is_rx_irq_active() const { return _imsc & RXIM; }
     bool is_tx_irq_active() const { return _imsc & TXIM; }
+    bool should_assert_on_rx_cond() const;
 
     /*! \brief Send one character to the guest
      *  \param c character to send
@@ -267,13 +264,7 @@ public:
         if (Debug::current_level > Debug::NONE)
             _cr |= UARTEN;
 
-        for (uint8 i = 0; i < RX_FIFO_MAX_SIZE; i++)
-            _rx_fifo[i] = 0; // Reset error status to zero
-
-        _rx_fifo_size = 1;
-        _rx_fifo_chars = 0;
-        _rx_fifo_ridx = 0;
-        _rx_fifo_widx = 0;
+        _rx_fifo.reset(1);
         _sig_notify_empty_space.sig();
     }
 };

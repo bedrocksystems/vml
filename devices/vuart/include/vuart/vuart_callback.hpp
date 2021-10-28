@@ -23,5 +23,5 @@ public:
      *  \pre Valid callback object, valid UMX connection
      *  \post Valid callback object, c was sent to the outside world (best effort basis)
      */
-    virtual uint32 from_guest_sent(const char &c) = 0;
+    virtual uint32 from_guest_sent(char c) = 0;
 };

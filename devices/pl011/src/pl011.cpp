@@ -63,12 +63,9 @@ Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const val
         _lcrh = static_cast<uint8>(value);
 
         if (is_fifo_enabled()) {
-            _rx_fifo_size = RX_FIFO_MAX_SIZE;
+            _rx_fifo.reset_maximize_capacity();
         } else {
-            _rx_fifo_size = 1;
-            _rx_fifo_chars = _rx_fifo_chars == 0 ? 0 : 1;
-            _rx_fifo_ridx = 0;
-            _rx_fifo_widx = 0;
+            _rx_fifo.reset(1);
         }
 
         return true;
@@ -109,7 +106,7 @@ Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const val
         return true;
     }
 
-    return false;
+    return true;
 }
 
 bool
@@ -123,13 +120,10 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
         if (is_fifo_empty() || !can_rx())
             value = 0; // This is an undefined behavior (not specified) returning 0 is fine
         else {
-            bool was_full = is_fifo_full();
-            value = _rx_fifo[_rx_fifo_ridx++];
-            _rx_fifo_ridx %= _rx_fifo_size;
-            Barrier::r_before_rw();
-            _rx_fifo_chars--;
+            bool was_full = _rx_fifo.is_full();
+            value = _rx_fifo.dequeue();
 
-            if (!should_assert_rx_irq()) {
+            if (!rx_irq_cond()) {
                 _ris &= static_cast<uint16>(~RXRIS);
                 _irq_ctlr->deassert_global_line(_irq_id);
             }
@@ -207,11 +201,11 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
 }
 
 bool
-Model::Pl011::should_assert_rx_irq() const {
+Model::Pl011::rx_irq_cond() const {
     if (is_fifo_enabled() && is_fifo_full())
         return true;
 
-    uint8 chars = _rx_fifo_chars;
+    uint32 chars = _rx_fifo.cur_size();
 
     switch (get_rx_irq_level()) {
     case FIFO_1DIV8_FULL:
@@ -230,19 +224,27 @@ Model::Pl011::should_assert_rx_irq() const {
 }
 
 bool
+Model::Pl011::should_assert_on_rx_cond() const {
+    bool oldrxris = _ris & RXRIS;
+    bool rxenabled = is_rx_irq_active();
+    bool txenabled = is_tx_irq_active();
+    return (rxenabled && (!txenabled) && (!oldrxris));
+}
+
+bool
 Model::Pl011::write_to_rx_queue(char c) {
     Platform::MutexGuard guard(&_state_lock);
 
     if (is_fifo_full() || !can_rx())
         return false;
 
-    _rx_fifo[_rx_fifo_widx++] = static_cast<uint16>(c);
-    _rx_fifo_widx %= _rx_fifo_size;
-    _rx_fifo_chars++;
+    _rx_fifo.enqueue(static_cast<uint16>(c));
 
-    if (should_assert_rx_irq()) {
+    if (rx_irq_cond()) { // TODO: if the device is configured with edge, should the interrupt be
+                         // sent again?
+        bool assert = should_assert_on_rx_cond();
         _ris |= RXRIS;
-        if (is_rx_irq_active())
+        if (assert)
             _irq_ctlr->assert_global_line(_irq_id);
     }
 
