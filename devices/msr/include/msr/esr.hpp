@@ -22,6 +22,7 @@ namespace Esr {
     class InstructionAbort;
     class SoftStep;
     class Breakpoint;
+    class Smc;
 
     constexpr uint8 ZERO_REG = 31;
 }
@@ -230,5 +231,12 @@ public:
     explicit Breakpoint(uint64 const esr) : Common(esr) {}
 
     bool is_thumb() const { return !il(); }
+    uint16 id() const { return static_cast<uint16>(_esr); }
+};
+
+class Esr::Smc : public Common {
+public:
+    explicit Smc(uint64 const esr) : Common(esr) {}
+
     uint16 id() const { return static_cast<uint16>(_esr); }
 };
