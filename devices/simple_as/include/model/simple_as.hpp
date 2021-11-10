@@ -10,6 +10,7 @@
 /*! \file Basic Address Space representation of the guest memory
  */
 
+#include <platform/context.hpp>
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/memory.hpp>
@@ -509,9 +510,16 @@ public:
      */
     void flush_guest_as() const;
 
+    Errno vmm_mmap(const Platform_ctx *ctx, GPA start, uint64 size, bool will_write,
+                   bool map) const;
+
 protected:
     const bool _flushable;
     const bool _read_only;    /*!< Is the AS read-only from the guest point of view? */
     char *_vmm_view{nullptr}; /*!< base host mapping of base gpa. */
     Range<mword> _as;         /*!< Range(gpa RAM base, guest RAM size) */
+
+private:
+    Errno read_mapped(char *dst, size_t size, const GPA &addr) const;
+    Errno write_mapped(GPA &gpa, size_t size, const char *src) const;
 };

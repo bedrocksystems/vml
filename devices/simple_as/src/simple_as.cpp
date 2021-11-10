@@ -9,11 +9,13 @@
 #include <arch/mem_util.hpp>
 #include <model/simple_as.hpp>
 #include <platform/string.hpp>
+#include <zeta/ec.hpp>
 
 Errno
-Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
+Model::SimpleAS::read_mapped(char* dst, size_t size, const GPA& addr) const {
     if (!is_gpa_valid(addr, size))
         return EINVAL;
+
     mword offset = addr.get_value() - get_guest_view().get_value();
     memcpy(dst, get_vmm_view() + offset, size);
     dcache_clean_range(get_vmm_view() + offset, size);
@@ -22,7 +24,47 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
 }
 
 Errno
+Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
+    if (!is_gpa_valid(addr, size))
+        return EINVAL;
+
+    Errno err = vmm_mmap(Zeta::Ec::ctx(), addr, size, false, true);
+    if (err != ENONE)
+        return err;
+
+    err = Model::SimpleAS::read_mapped(dst, size, addr);
+    if (err != ENONE)
+        return err;
+
+    err = vmm_mmap(Zeta::Ec::ctx(), addr, size, false, false);
+    if (err != ENONE)
+        return err;
+
+    return ENONE;
+}
+
+Errno
 Model::SimpleAS::write(GPA& gpa, size_t size, const char* src) const {
+    if (!is_gpa_valid(gpa, size))
+        return EINVAL;
+
+    Errno err = vmm_mmap(Zeta::Ec::ctx(), gpa, size, true, true);
+    if (err != ENONE)
+        return err;
+
+    err = Model::SimpleAS::write_mapped(gpa, size, src);
+    if (err != ENONE)
+        return err;
+
+    err = vmm_mmap(Zeta::Ec::ctx(), gpa, size, false, false);
+    if (err != ENONE)
+        return err;
+
+    return ENONE;
+}
+
+Errno
+Model::SimpleAS::write_mapped(GPA& gpa, size_t size, const char* src) const {
     mword offset;
     void* hva = nullptr;
 
@@ -109,4 +151,44 @@ Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size
         return EINVAL;
 
     return tgt->write(addr, sz, src);
+}
+
+Errno
+Model::SimpleAS::vmm_mmap(const Zeta::Zeta_ctx* ctx, GPA start, uint64 size, bool will_write,
+                          bool map) const {
+    GPA first_page(align_dn(start.get_value(), PAGE_SIZE));
+    uint64 size_roundedup
+        = align_up(size + (first_page.get_value() - start.get_value()), PAGE_SIZE);
+    Range<mword> perm_range(first_page.get_value(), max<mword>(PAGE_SIZE, size_roundedup));
+
+    char* first_vmm_page = gpa_to_vmm_view(GPA(perm_range.begin()), perm_range.size());
+    if (__UNLIKELY__(first_vmm_page == nullptr)) {
+        WARN("Invalid range [0x%lx:0x%lx] - cannot update permissions", perm_range.begin(),
+             perm_range.last());
+        return EINVAL;
+    }
+
+    bool read, write;
+    if (map) {
+        read = true;
+        write = will_write;
+    } else {
+        ASSERT(!will_write);
+        read = false;
+        write = false;
+    }
+
+    // INFO("Permissions at [0x%lx:0x%lx] updated to R:%u W:%u", perm_range.begin(),
+    // perm_range.last(),
+    //     read, write);
+    Nova::MemCred cred(read, write, false);
+    Errno err
+        = Zeta::mmap_update(ctx, first_vmm_page, perm_range.size(), cred, Nova::Table::CPU_HST);
+    if (err != ENONE) {
+        WARN("mmap update failure with %u @ [0x%lx:0x%lx] - cannot update permissions", err,
+             perm_range.begin(), perm_range.last());
+        return err;
+    }
+
+    return ENONE;
 }
