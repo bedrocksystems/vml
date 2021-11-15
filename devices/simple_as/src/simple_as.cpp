@@ -156,6 +156,8 @@ Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size
 Errno
 Model::SimpleAS::vmm_mmap(const Zeta::Zeta_ctx* ctx, GPA start, uint64 size, bool will_write,
                           bool map) const {
+
+    return ENONE;
     GPA first_page(align_dn(start.get_value(), PAGE_SIZE));
     uint64 size_roundedup
         = align_up(size + (first_page.get_value() - start.get_value()), PAGE_SIZE);
