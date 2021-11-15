@@ -755,6 +755,8 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
     if (target.is_target_set()) {
         for (uint16 i = 0; i < min<uint16>(_num_vcpus, Model::GICV2_MAX_CPUS); i++) {
             Banked *target_cpu = &_local[i];
+            ASSERT(target_cpu != nullptr);
+            ASSERT(target_cpu->notify != nullptr);
             const Local_Irq_controller *gic_r = target_cpu->notify->local_irq_ctlr();
 
             target_cpu->pending_irqs.atomic_set(irq.id());
@@ -764,6 +766,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
                 target_cpu->notify->interrupt_pending();
         }
     } else {
+        ASSERT(target.target() < _num_vcpus);
         Banked *target_cpu = &_local[target.target()];
         const Local_Irq_controller *gic_r = target_cpu->notify->local_irq_ctlr();
 
