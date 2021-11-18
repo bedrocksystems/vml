@@ -266,6 +266,7 @@ Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 va
         return change_target(cpu, acc, value);
     case GICD_ICFGR ... GICD_ICFGR_END:
         acc.base_abs = GICD_ICFGR;
+        acc.irq_base = MAX_SGI + MAX_PPI;
         acc.irq_per_bytes = 4;
         return write<uint8, &Irq::set_encoded_edge>(cpu, acc, value);
     case GICD_SGIR ... GICD_SGIR_END:
@@ -403,7 +404,6 @@ Model::GicD::mmio_read_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 &va
     case GICD_ITARGETSR8 ... GICD_ITARGETSR8_END:
         acc.irq_per_bytes = 1;
         acc.irq_base = MAX_SGI + MAX_PPI;
-        acc.irq_max = MAX_SPI;
         acc.base_abs = GICD_ITARGETSR8;
         return read<uint8, &Irq::target>(cpu, acc, value);
     case GICD_ICFGR0 ... GICD_ICFGR0_END:
@@ -413,12 +413,13 @@ Model::GicD::mmio_read_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 &va
         return read<uint8, &Irq::edge_encoded>(cpu, acc, value);
     case GICD_ICFGR1 ... GICD_ICFGR1_END:
         acc.irq_per_bytes = 4;
-        acc.irq_base = MAX_SGI + MAX_PPI;
-        acc.irq_max = MAX_PPI;
+        acc.irq_base = MAX_SGI;
+        acc.irq_max = MAX_PPI + MAX_SGI;
         acc.base_abs = GICD_ICFGR1;
         return read<uint8, &Irq::edge_encoded>(cpu, acc, value);
     case GICD_ICFGR ... GICD_ICFGR_END:
         acc.irq_per_bytes = 4;
+        acc.irq_base = MAX_SGI + MAX_PPI;
         acc.base_abs = GICD_ICFGR;
         return read<uint8, &Irq::edge_encoded>(cpu, acc, value);
     case GICD_PIDR4 ... GICD_PIDR4_END:
