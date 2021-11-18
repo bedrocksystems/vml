@@ -267,8 +267,10 @@ private:
              * - the guest wrote to the pending bit, setting it to 1.
              * - The injection info is pending meaning that the IRQ was pending previously
              * asserted due to an edge IRQ firing.
+             *  Line assertion flag is valid only for emulated devices. We do not know interrupt
+             * line status of a real device.
              */
-            return (!sw_edge() && _line_asserted) || _sw_asserted
+            return (!sw_edge() && _line_asserted && !_hw) || _sw_asserted
                    || injection_info.read().pending();
         }
 
