@@ -150,6 +150,11 @@ Model::Cpu::requested_feature_single_step(Model::Cpu* vcpu, Request::Requestor r
     return vcpu->_singe_step.is_requested_by(requestor);
 }
 
+bool
+Model::Cpu::requested_feature_hypercall(Model::Cpu* vcpu, Request::Requestor requestor) {
+    return vcpu->_hypercall.is_requested_by(requestor);
+}
+
 void
 Model::Cpu::ctrl_feature_off(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
                              Reg_selection) {
@@ -175,6 +180,12 @@ void
 Model::Cpu::ctrl_feature_icache_invalidate(Model::Cpu* vcpu, bool enable,
                                            Request::Requestor requestor, Reg_selection) {
     vcpu->_icache_invalidate.request(enable, requestor);
+}
+
+void
+Model::Cpu::ctrl_feature_hypercall(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
+                                   Reg_selection) {
+    vcpu->_hypercall.request(enable, requestor);
 }
 
 Errno
