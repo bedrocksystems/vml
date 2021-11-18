@@ -159,7 +159,7 @@ Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const val
         return gic.write<uint8, &GicD::Irq::set_encoded_edge>(cpu, acc, value);
     }
 
-    WARN("GICR: ignored write @ %#llx", offset);
+    // WARN("GICR: ignored write @ %#llx", offset);
     return true;
 }
 
