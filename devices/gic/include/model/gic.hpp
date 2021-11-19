@@ -210,6 +210,12 @@ private:
 
                 INFO("Enable INT:0x%x (id) pintid:0x%x as sw_edge: %d hw_edge: %d", _id, _pintid,
                      _sw_edge, _hw_edge);
+
+                if (_hw && (_id >= 0x20) && (_sw_edge != _hw_edge)) {
+                    ERROR("Interrupt type mismatch for IRQ 0x%x(SPI id = 0x%x). Guest expects "
+                          "type(FDT flags) 0x%x  while FDT contains 0x%x.",
+                          _id, _id - 0x20, _sw_edge ? 0x1 : 0x4, _hw_edge ? 0x1 : 0x4);
+                }
             }
         }
         void disable(bool mmio_one = true) {
