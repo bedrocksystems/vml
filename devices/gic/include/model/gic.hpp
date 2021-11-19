@@ -208,8 +208,8 @@ private:
             if (mmio_one) {
                 _enable = true;
 
-                INFO("Enable INT:0x%x (id) pintid:0x%x as sw_edge: %d hw_edge: %d", _id, _pintid,
-                     _sw_edge, _hw_edge);
+                // INFO("Enable INT:0x%x (id) pintid:0x%x as sw_edge: %d hw_edge: %d", _id, _pintid,
+                //     _sw_edge, _hw_edge);
 
                 if (_id >= 0x20) {
                     if (_hw && (_sw_edge != _hw_edge)) {
