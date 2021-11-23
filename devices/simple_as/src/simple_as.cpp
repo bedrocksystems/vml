@@ -24,10 +24,11 @@ Model::SimpleAS::read_mapped(char* dst, size_t size, const GPA& addr) const {
 }
 
 Errno
-Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
+Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) {
     if (!is_gpa_valid(addr, size))
         return EINVAL;
 
+    Platform::MutexGuard guard(&_mapping_lock);
     Errno err = vmm_mmap(Zeta::Ec::ctx(), addr, size, false, true);
     if (err != ENONE)
         return err;
@@ -44,10 +45,11 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
 }
 
 Errno
-Model::SimpleAS::write(GPA& gpa, size_t size, const char* src) const {
+Model::SimpleAS::write(GPA& gpa, size_t size, const char* src) {
     if (!is_gpa_valid(gpa, size))
         return EINVAL;
 
+    Platform::MutexGuard guard(&_mapping_lock);
     Errno err = vmm_mmap(Zeta::Ec::ctx(), gpa, size, true, true);
     if (err != ENONE)
         return err;
@@ -113,9 +115,9 @@ Model::SimpleAS::gpa_to_vmm_view(GPA addr, size_t sz) const {
     return _vmm_view + off;
 }
 
-static const Model::SimpleAS*
+static Model::SimpleAS*
 get_as_device_at(const Vbus::Bus& bus, GPA addr, size_t sz) {
-    const Vbus::Device* dev = bus.get_device_at(addr.get_value(), sz);
+    Vbus::Device* dev = bus.get_device_at(addr.get_value(), sz);
 
     if (__UNLIKELY__(dev == nullptr
                      || (dev->type() != Vbus::Device::GUEST_PHYSICAL_DYNAMIC_MEMORY
@@ -123,7 +125,7 @@ get_as_device_at(const Vbus::Bus& bus, GPA addr, size_t sz) {
         return nullptr;
     }
 
-    return static_cast<const Model::SimpleAS*>(dev);
+    return static_cast<Model::SimpleAS*>(dev);
 }
 
 char*
@@ -137,7 +139,7 @@ Model::SimpleAS::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
 
 Errno
 Model::SimpleAS::read_bus(const Vbus::Bus& bus, GPA addr, char* dst, size_t sz) {
-    const Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
+    Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
     if (tgt == nullptr)
         return EINVAL;
 
@@ -146,7 +148,7 @@ Model::SimpleAS::read_bus(const Vbus::Bus& bus, GPA addr, char* dst, size_t sz) 
 
 Errno
 Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size_t sz) {
-    const Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
+    Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
     if (tgt == nullptr)
         return EINVAL;
 
@@ -156,6 +158,8 @@ Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size
 Errno
 Model::SimpleAS::vmm_mmap(const Zeta::Zeta_ctx* ctx, GPA start, uint64 size, bool will_write,
                           bool map) const {
+    if (get_guest_view().get_value() == 0x17e2c0000) // Keep hypervisor pagetables mapped for now
+        return ENONE;
 
     GPA first_page(align_dn(start.get_value(), PAGE_SIZE));
     uint64 size_roundedup

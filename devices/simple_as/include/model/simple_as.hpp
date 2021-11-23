@@ -14,9 +14,11 @@
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/memory.hpp>
+#include <platform/mutex.hpp>
 #include <platform/rangemap.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
+#include <zeta/ec.hpp>
 
 namespace Model {
     class SimpleAS;
@@ -366,7 +368,10 @@ public:
      *  \param read_only is the AS read-only from the guest point of view?
      */
     explicit SimpleAS(bool read_only, bool flushable = true)
-        : Vbus::Device("SimpleAS"), _flushable(flushable), _read_only(read_only) {}
+        : Vbus::Device("SimpleAS"), _flushable(flushable), _read_only(read_only) {
+        bool ret = _mapping_lock.init(Zeta::Ec::ctx());
+        ASSERT(ret);
+    }
 
     /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
@@ -375,7 +380,10 @@ public:
      *  \param read_only is the AS read-only from the guest point of view?
      */
     SimpleAS(const char *name, bool read_only, bool flushable = true)
-        : Vbus::Device(name), _flushable(flushable), _read_only(read_only) {}
+        : Vbus::Device(name), _flushable(flushable), _read_only(read_only) {
+        bool ret = _mapping_lock.init(Zeta::Ec::ctx());
+        ASSERT(ret);
+    }
 
     /*! \brief Get the size of this AS
      *  \pre Partial ownership of this object
@@ -442,7 +450,7 @@ public:
      *  \param addr start of the read on the guest AS
      *  \return ENONE if the operation was a success, error code otherwise
      */
-    Errno read(char *dst, size_t size, const GPA &addr) const;
+    Errno read(char *dst, size_t size, const GPA &addr);
 
     /*! \brief Write data to the guest AS
      *  \pre Partial ownership of the object. Full ownership of the source buffer.
@@ -453,7 +461,7 @@ public:
      *  \param src buffer that contains the data to write
      *  \return ENONE if the operation was a success, error code otherwise
      */
-    Errno write(GPA &gpa, size_t size, const char *src) const;
+    Errno write(GPA &gpa, size_t size, const char *src);
 
     /*! \brief Callback that can be used to iterate over flushable AS in a virtual Bus
      *  \pre Nothing
@@ -520,6 +528,7 @@ protected:
     Range<mword> _as;         /*!< Range(gpa RAM base, guest RAM size) */
 
 private:
+    Platform::Mutex _mapping_lock; /*!< Global state lock */
     Errno read_mapped(char *dst, size_t size, const GPA &addr) const;
     Errno write_mapped(GPA &gpa, size_t size, const char *src) const;
 };
