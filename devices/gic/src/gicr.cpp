@@ -149,13 +149,12 @@ Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const val
         return gic.mmio_assert<&GicD::deassert_pi_sw>(_vcpu_id, acc, value);
     case GICR_ICFGR0 ... GICR_ICFGR0_END:
         acc.base_abs = GICR_ICFGR0;
-        acc.irq_max = MAX_SGI;
+        acc.configure_access(GicD::AccessType::SGI);
         acc.irq_per_bytes = 4;
         return gic.write<uint8, &GicD::Irq::set_encoded_edge>(cpu, acc, value);
     case GICR_ICFGR1 ... GICR_ICFGR1_END:
         acc.base_abs = GICR_ICFGR1;
-        acc.irq_base = MAX_SGI;
-        acc.irq_max = MAX_PPI;
+        acc.configure_access(GicD::AccessType::PPI);
         acc.irq_per_bytes = 4;
         return gic.write<uint8, &GicD::Irq::set_encoded_edge>(cpu, acc, value);
     }
@@ -234,13 +233,12 @@ Model::GicR::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) co
         return gic.read<bool, &GicD::Irq::group1>(cpu, acc, value);
     case GICR_ICFGR0 ... GICR_ICFGR0_END:
         acc.base_abs = GICR_ICFGR0;
-        acc.irq_max = MAX_SGI;
+        acc.configure_access(GicD::AccessType::SGI);
         acc.irq_per_bytes = 4;
         return gic.read<uint8, &GicD::Irq::edge_encoded>(cpu, acc, value);
     case GICR_ICFGR1 ... GICR_ICFGR1_END:
         acc.base_abs = GICR_ICFGR1;
-        acc.irq_base = MAX_SGI;
-        acc.irq_max = MAX_PPI;
+        acc.configure_access(GicD::AccessType::PPI);
         acc.irq_per_bytes = 4;
         return gic.read<uint8, &GicD::Irq::edge_encoded>(cpu, acc, value);
     case GICR_IPRIORITYR0 ... GICR_IPRIORITYR0_END:
