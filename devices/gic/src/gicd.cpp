@@ -260,14 +260,13 @@ Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 va
         return write<uint8, &Irq::prio>(cpu, acc, value);
     case GICD_ITARGETSR8 ... GICD_ITARGETSR8_END:
         acc.irq_per_bytes = 1;
-        acc.irq_base = MAX_SGI + MAX_PPI;
-        acc.irq_max = MAX_SPI;
         acc.base_abs = GICD_ITARGETSR8;
+        acc.configure_access(AccessType::SPI);
         return change_target(cpu, acc, value);
     case GICD_ICFGR ... GICD_ICFGR_END:
         acc.base_abs = GICD_ICFGR;
-        acc.irq_base = MAX_SGI + MAX_PPI;
         acc.irq_per_bytes = 4;
+        acc.configure_access(AccessType::SPI);
         return write<uint8, &Irq::set_encoded_edge>(cpu, acc, value);
     case GICD_SGIR ... GICD_SGIR_END:
         return write_sgir(cpu_id, value);
@@ -277,7 +276,7 @@ Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 va
 
         acc.irq_per_bytes = 1;
         acc.base_abs = GICD_CPENDSGIR;
-        acc.irq_max = MAX_SGI;
+        acc.configure_access(AccessType::SGI);
         return mmio_assert_sgi<&GicD::deassert_sgi>(cpu_id, acc, value);
     }
     case GICD_SPENDSGIR ... GICD_SPENDSGIR_END: {
@@ -286,7 +285,7 @@ Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 va
 
         acc.irq_per_bytes = 1;
         acc.base_abs = GICD_SPENDSGIR;
-        acc.irq_max = MAX_SGI;
+        acc.configure_access(AccessType::SGI);
         return mmio_assert_sgi<&GicD::assert_sgi>(cpu_id, acc, value);
     }
     case GICD_TYPER ... GICD_TYPER_END:             /* RO */
@@ -398,29 +397,28 @@ Model::GicD::mmio_read_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 &va
         return read<uint8, &Irq::prio>(cpu, acc, value);
     case GICD_ITARGETSR0 ... GICD_ITARGETSR0_END:
         acc.irq_per_bytes = 1;
-        acc.irq_max = MAX_SGI + MAX_PPI;
         acc.base_abs = GICD_ITARGETSR0;
+        acc.configure_access(AccessType::PRIVATE_ONLY);
         return read<uint8, &Irq::target>(cpu, acc, value);
     case GICD_ITARGETSR8 ... GICD_ITARGETSR8_END:
         acc.irq_per_bytes = 1;
-        acc.irq_base = MAX_SGI + MAX_PPI;
         acc.base_abs = GICD_ITARGETSR8;
+        acc.configure_access(AccessType::SPI);
         return read<uint8, &Irq::target>(cpu, acc, value);
     case GICD_ICFGR0 ... GICD_ICFGR0_END:
         acc.irq_per_bytes = 4;
-        acc.irq_max = MAX_SGI;
         acc.base_abs = GICD_ICFGR0;
+        acc.configure_access(AccessType::SGI);
         return read<uint8, &Irq::edge_encoded>(cpu, acc, value);
     case GICD_ICFGR1 ... GICD_ICFGR1_END:
         acc.irq_per_bytes = 4;
-        acc.irq_base = MAX_SGI;
-        acc.irq_max = MAX_PPI + MAX_SGI;
         acc.base_abs = GICD_ICFGR1;
+        acc.configure_access(AccessType::PPI);
         return read<uint8, &Irq::edge_encoded>(cpu, acc, value);
     case GICD_ICFGR ... GICD_ICFGR_END:
         acc.irq_per_bytes = 4;
-        acc.irq_base = MAX_SGI + MAX_PPI;
         acc.base_abs = GICD_ICFGR;
+        acc.configure_access(AccessType::SPI);
         return read<uint8, &Irq::edge_encoded>(cpu, acc, value);
     case GICD_PIDR4 ... GICD_PIDR4_END:
         value = 0x44;

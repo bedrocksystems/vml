@@ -18,8 +18,11 @@ namespace Model {
 
     // Likely we will need to change this for x86
     enum Irqs {
+        SGI_BASE = 0,
         MAX_SGI = 16,
+        PPI_BASE = MAX_SGI,
         MAX_PPI = 16,
+        SPI_BASE = PPI_BASE + MAX_PPI,
         MAX_SPI = 992,
         MAX_IRQ = 1024 - 4,
     };

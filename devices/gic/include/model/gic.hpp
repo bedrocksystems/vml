@@ -395,6 +395,14 @@ private:
             return _spi[id - MAX_SGI - MAX_PPI];
     }
 
+    enum AccessType {
+        SGI,
+        PPI,
+        PRIVATE_ONLY,
+        SPI,
+        ALL,
+    };
+
     struct IrqMmioAccess {
         uint64 base_abs;
         uint16 irq_base;
@@ -415,6 +423,30 @@ private:
                 > Model::MAX_SGI + Model::MAX_PPI + Model::MAX_SPI)
                 return false;
             return true;
+        }
+        void configure_access(AccessType type) {
+            switch (type) {
+            case ALL:
+                irq_base = 0;
+                irq_max = MAX_SGI + MAX_PPI + MAX_SPI;
+                break;
+            case SGI:
+                irq_base = SGI_BASE;
+                irq_max = SGI_BASE + MAX_SGI;
+                break;
+            case PPI:
+                irq_base = PPI_BASE;
+                irq_max = PPI_BASE + MAX_PPI;
+                break;
+            case SPI:
+                irq_base = SPI_BASE;
+                irq_max = SPI_BASE + MAX_SPI;
+                break;
+            case PRIVATE_ONLY:
+                irq_base = 0;
+                irq_max = MAX_SGI + MAX_PPI;
+                break;
+            }
         }
     };
 
