@@ -184,8 +184,8 @@ Model::Cpu::ctrl_feature_icache_invalidate(Model::Cpu* vcpu, bool enable,
 
 void
 Model::Cpu::ctrl_feature_hypercall(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
-                                   Reg_selection) {
-    vcpu->_hypercall.request(enable, requestor);
+                                   Reg_selection regs) {
+    vcpu->_hypercall.request(enable, requestor, regs);
 }
 
 Errno
