@@ -27,8 +27,8 @@ enum FunctionId : uint32 {
     SMCCC_ARCH_FEATURES = 0x80000001u,
     VERSION = 0x84000000u,
     FEATURES = 0x8400000au,
-    CPU_SUSPEND_32 = 0x8400000eu,
-    CPU_SUSPEND_64 = 0xc400000eu,
+    CPU_SUSPEND_32 = 0x84000001u,
+    CPU_SUSPEND_64 = 0xc4000001u,
     CPU_OFF = 0x84000002u,
     AFFINITY_INFO_32 = 0x84000004u,
     AFFINITY_INFO_64 = 0xc4000004u,
@@ -37,6 +37,8 @@ enum FunctionId : uint32 {
     CPU_ON_64 = 0xC4000003u,
     SYSTEM_OFF = 0x84000008,
     SYSTEM_RESET = 0x84000009,
+    SYSTEM_SUSPEND_32 = 0x8400000eu,
+    SYSTEM_SUSPEND_64 = 0xc400000eu,
 };
 
 enum Result : int32 {
@@ -168,6 +170,11 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, 0, true);
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, 0, false);
 
+        return true;
+    case SYSTEM_SUSPEND_32:
+    case SYSTEM_SUSPEND_64:
+        DEBUG("PSCI SYSTEM_SUSPEND requested, but is not supported.");
+        res = static_cast<uint64>(NOT_SUPPORTED);
         return true;
     }
     }
