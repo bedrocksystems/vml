@@ -196,6 +196,7 @@ namespace Msr {
         PMUSEREN_EL0 = build_msr_id(3, 9, 3, 14, 0),
         OSDLR_EL1 = build_msr_id(2, 1, 0, 3, 4),
         OSLAR_EL1 = build_msr_id(2, 1, 0, 0, 4),
+        OSLSR_EL1 = build_msr_id(2, 1, 0, 1, 4),
         ID_AFR0_EL1 = build_msr_id(3, 0, 0, 1, 3),
 
         ICC_PMR_EL1 = build_msr_id(3, 4, 0, 6, 0),
