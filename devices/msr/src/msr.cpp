@@ -476,6 +476,9 @@ Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Mo
     reg = new (nothrow) Msr::Register("OSLAR_EL1", OSLAR_EL1, true, 0x0ULL);
     if (!register_system_reg(reg))
         return false;
+    reg = new (nothrow) Msr::Register("OSLSR_EL1", OSLSR_EL1, true, 0x0ULL);
+    if (!register_system_reg(reg))
+        return false;
 
     if (gicd.version() == Model::GIC_V3) {
         if (!setup_gic_registers(gicd))
