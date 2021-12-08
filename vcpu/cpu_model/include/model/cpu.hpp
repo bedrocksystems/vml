@@ -264,6 +264,7 @@ public:
 
     void wait_for_resume() { _resume_sig.wait(); }
     void wait_for_interrupt(bool will_timeout, uint64 timeout_absolut);
+    static void wait_for_interrupt(Vcpu_id, uint64 control, uint64 const timeout_absolute);
     void interrupt_pending() override;
 
     virtual Model::Local_Irq_controller *local_irq_ctlr() override { return _lirq_ctlr; }

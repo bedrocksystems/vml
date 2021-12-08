@@ -438,6 +438,14 @@ Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolut) 
 }
 
 void
+Model::Cpu::wait_for_interrupt(Vcpu_id vcpu_id, uint64 control, uint64 const timeout_absolut) {
+    ASSERT(vcpu_id < configured_vcpus);
+
+    Model::Cpu* vcpu = vcpus[vcpu_id];
+    vcpu->wait_for_interrupt(control, timeout_absolut);
+}
+
+void
 Model::Cpu::interrupt_pending() {
     recall(false);
     unblock();
