@@ -21,6 +21,9 @@ namespace Virtio {
 };
 
 class Virtio::Device : public Vbus::Device {
+private:
+    static constexpr uint32 VENDOR_ID = 0x20564842ULL; // little-endian "BHV "
+
 protected:
     Model::Irq_controller *const _irq_ctlr;
     Vbus::Bus const *const _vbus;
@@ -89,7 +92,7 @@ public:
            uint16 const irq, uint16 const queue_num, Virtio::Transport *transport,
            uint32 const device_feature_lower = 0)
         : Vbus::Device(name), _irq_ctlr(&irq_ctlr), _vbus(&bus), _irq(irq),
-          _dev_state(queue_num, 0x554d4551ULL, static_cast<uint32>(device_id), device_feature_lower,
+          _dev_state(queue_num, VENDOR_ID, static_cast<uint32>(device_id), device_feature_lower,
                      config_space, config_size),
           _transport(transport) {}
 
