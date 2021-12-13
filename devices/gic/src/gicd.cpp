@@ -994,7 +994,7 @@ public:
 
     uint16 targets() const { return _value & 0xffff; }
     uint8 intid() const { return (_value >> 24) & 0xf; }
-    uint8 irm() const { return (_value >> 30) & 0x1; }
+    uint8 irm() const { return (_value >> 40) & 0x1; }
 
     uint32 cluster_affinity() const {
         return (uint32(aff1()) << 8u) | (uint32(aff2()) << 16u) | (uint32(aff3()) << 24u);
