@@ -158,6 +158,8 @@ Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size
 Errno
 Model::SimpleAS::vmm_mmap(const Zeta::Zeta_ctx* ctx, GPA start, uint64 size, bool will_write,
                           bool map) const {
+    if (!_is_nested)
+        return Errno::ENONE;
     if (get_guest_view().get_value() == 0x17e2c0000) // Keep hypervisor pagetables mapped for now
         return ENONE;
 

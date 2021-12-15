@@ -367,8 +367,9 @@ public:
      *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    explicit SimpleAS(bool read_only, bool flushable = true)
-        : Vbus::Device("SimpleAS"), _flushable(flushable), _read_only(read_only) {
+    explicit SimpleAS(bool read_only, bool flushable = true, bool nested = false)
+        : Vbus::Device("SimpleAS"), _flushable(flushable), _read_only(read_only),
+          _is_nested(nested) {
         bool ret = _mapping_lock.init(Zeta::Ec::ctx());
         ASSERT(ret);
     }
@@ -379,8 +380,8 @@ public:
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    SimpleAS(const char *name, bool read_only, bool flushable = true)
-        : Vbus::Device(name), _flushable(flushable), _read_only(read_only) {
+    SimpleAS(const char *name, bool read_only, bool flushable = true, bool nested = false)
+        : Vbus::Device(name), _flushable(flushable), _read_only(read_only), _is_nested(nested) {
         bool ret = _mapping_lock.init(Zeta::Ec::ctx());
         ASSERT(ret);
     }
@@ -523,7 +524,8 @@ public:
 
 protected:
     const bool _flushable;
-    const bool _read_only;    /*!< Is the AS read-only from the guest point of view? */
+    const bool _read_only; /*!< Is the AS read-only from the guest point of view? */
+    const bool _is_nested;
     char *_vmm_view{nullptr}; /*!< base host mapping of base gpa. */
     Range<mword> _as;         /*!< Range(gpa RAM base, guest RAM size) */
 
