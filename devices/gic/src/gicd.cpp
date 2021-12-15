@@ -941,14 +941,22 @@ Model::GicD::route_spi(Model::GicD::Irq &irq) {
                 return IrqTarget(IrqTarget::CPU_ID, i);
         }
     } else {
-        uint32 const cpu_id = static_cast<uint32>(irq.routing.aff3() << 24)
-                              | static_cast<uint32>(irq.routing.aff2() << 16)
-                              | static_cast<uint32>(irq.routing.aff1() << 8)
-                              | static_cast<uint32>(irq.routing.aff0());
-        if (cpu_id >= _num_vcpus)
+        const CpuAffinity cpu_aff = CpuAffinity(static_cast<uint32>(irq.routing.aff3() << 24)
+                                                | static_cast<uint32>(irq.routing.aff2() << 16)
+                                                | static_cast<uint32>(irq.routing.aff1() << 8)
+                                                | static_cast<uint32>(irq.routing.aff0()));
+        const CpuCluster *cluster = cpu_affinity_to_cluster(cpu_aff);
+        if (__UNLIKELY__(cluster == nullptr)) {
+            WARN("Cluster with affinity %u does not exist", cpu_aff.affinity());
             return IrqTarget(); // Empty target
-        if (_local[cpu_id].notify)
-            return IrqTarget(IrqTarget::CPU_ID, cpu_id);
+        }
+
+        Vcpu_id vcpu_id = cluster->vcpu_id(cpu_aff.aff0());
+
+        if (vcpu_id >= _num_vcpus)
+            return IrqTarget(); // Empty target
+        if (_local[vcpu_id].notify)
+            return IrqTarget(IrqTarget::CPU_ID, vcpu_id);
     }
 
     return IrqTarget(); // Empty target
