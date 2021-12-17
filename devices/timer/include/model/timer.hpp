@@ -46,7 +46,7 @@ public:
         : _irq_ctlr(&irq_ctlr), _vcpu(vcpu_id), _irq(irq) {}
 
     bool init_irq(Vcpu_id const vcpu_id, uint16 const pirq, bool hw, bool edge = true) {
-        return _irq_ctlr->config_irq(vcpu_id, _irq, hw, pirq, edge);
+        return _irq_ctlr->config_irq(vcpu_id, _irq, hw, pirq, edge, nullptr);
     }
 
     bool assert_irq() { return _irq_ctlr->assert_ppi(_vcpu, _irq); }

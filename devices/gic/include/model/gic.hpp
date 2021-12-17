@@ -192,6 +192,9 @@ private:
         bool _hw{false};
         bool _active{false};
 
+        bool _hw_enabled{false};
+        Platform::Signal *_hw_enable_sig{nullptr};
+
     public:
         IrqInjectionInfo injection_info{0};
 
@@ -210,6 +213,12 @@ private:
 
                 // INFO("Enable INT:0x%x (id) pintid:0x%x as sw_edge: %d hw_edge: %d", _id, _pintid,
                 //     _sw_edge, _hw_edge);
+
+                if (_hw && !_hw_enabled) {
+                    _hw_enabled = true;
+                    if (_hw_enable_sig != nullptr) /* optional */
+                        _hw_enable_sig->sig();
+                }
 
                 if (_id >= 0x20) {
                     if (_hw && (_sw_edge != _hw_edge)) {
@@ -244,10 +253,12 @@ private:
         uint16 hw_int_id() const { return _pintid; }
         bool hw_edge() const { return _hw_edge; }
         bool sw_edge() const { return _sw_edge; }
-        void configure_hw(bool hw, uint16 pintid = 0, bool edge = false) {
+        void configure_hw(bool hw, uint16 pintid = 0, bool edge = false,
+                          Platform::Signal *hw_enable_sig = nullptr) {
             _pintid = pintid;
             _hw_edge = edge;
             _hw = hw;
+            _hw_enable_sig = hw_enable_sig;
         }
         uint8 edge_encoded() const { return sw_edge() ? 0b10 : 0; }
         void set_encoded_edge(uint8 encoded_edge) {
@@ -679,8 +690,10 @@ public:
     virtual void reset(const VcpuCtx *) override;
     virtual Type type() const override { return IRQ_CONTROLLER; }
 
-    virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
-    virtual bool config_spi(uint32 vintid, bool hw, uint16 pintid, bool edge) override;
+    virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge,
+                            Platform::Signal *hw_enable_sig) override;
+    virtual bool config_spi(uint32 vintid, bool hw, uint16 pintid, bool edge,
+                            Platform::Signal *hw_enable_sig) override;
     virtual bool assert_ppi(Vcpu_id, uint32) override;
     virtual bool assert_global_line(uint32) override;
     virtual void deassert_line_ppi(Vcpu_id, uint32) override;

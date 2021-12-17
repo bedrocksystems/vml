@@ -8,6 +8,7 @@
 #pragma once
 
 #include <model/vcpu_types.hpp>
+#include <platform/signal.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
@@ -39,8 +40,12 @@ public:
     explicit Irq_controller(const char *name) : Vbus::Device(name) {}
     virtual ~Irq_controller() {}
 
-    virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) = 0;
-    virtual bool config_spi(uint32 irq_id, bool hw, uint16 pintid, bool edge) = 0;
+    virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge,
+                            Platform::Signal *hw_enable_sig)
+        = 0;
+    virtual bool config_spi(uint32 irq_id, bool hw, uint16 pintid, bool edge,
+                            Platform::Signal *hw_enable_sig)
+        = 0;
     virtual bool assert_ppi(Vcpu_id, uint32) = 0;
     virtual void deassert_line_ppi(Vcpu_id, uint32) = 0;
     virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id) = 0;

@@ -503,7 +503,7 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
 
 bool
 Model::GicD::config_irq(Vcpu_id const cpu_id, uint32 const irq_id, bool const hw,
-                        uint16 const pintid, bool edge) {
+                        uint16 const pintid, bool edge, Platform::Signal *hw_enable_sig) {
     if (irq_id >= MAX_IRQ)
         return false;
     if (cpu_id >= _num_vcpus)
@@ -511,7 +511,7 @@ Model::GicD::config_irq(Vcpu_id const cpu_id, uint32 const irq_id, bool const hw
 
     Banked &cpu = _local[cpu_id];
     Irq &irq = irq_object(cpu, irq_id);
-    irq.configure_hw(hw, pintid, edge);
+    irq.configure_hw(hw, pintid, edge, hw_enable_sig);
 
     return true;
 }
@@ -981,8 +981,9 @@ Model::GicD::assert_global_line(uint32 const irq_id) {
 }
 
 bool
-Model::GicD::config_spi(uint32 const vintid, bool const hw, uint16 const pintid, bool edge) {
-    return config_irq(0, vintid, hw, pintid, edge);
+Model::GicD::config_spi(uint32 const vintid, bool const hw, uint16 const pintid, bool edge,
+                        Platform::Signal *hw_enable_sig) {
+    return config_irq(0, vintid, hw, pintid, edge, hw_enable_sig);
 }
 
 void
