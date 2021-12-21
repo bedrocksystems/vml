@@ -172,8 +172,8 @@ Model::GicD::write_irouter(Banked &cpu, uint64 offset, uint8 bytes, uint64 value
     if (bytes != 8 || (offset % 8 != 0))
         return true; /* ignore - spec says this is not supported */
 
-    uint64 const irq_id = MAX_SGI + MAX_PPI + (offset - GICD_IROUTER) / 8;
-    if (irq_id < MAX_SGI + MAX_PPI || irq_id >= MAX_IRQ)
+    uint64 const irq_id = SPI_BASE + (offset - GICD_IROUTER) / 8;
+    if (irq_id < SPI_BASE || irq_id >= MAX_IRQ)
         return true; /* ignore */
 
     Irq &irq = irq_object(cpu, irq_id);
@@ -472,11 +472,11 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
 
     switch (offset) {
     case GICD_IROUTER ... GICD_IROUTER_END: {
-        uint64 const irq_id = MAX_SGI + MAX_PPI + (offset - GICD_IROUTER) / 8;
+        uint64 const irq_id = SPI_BASE + (offset - GICD_IROUTER) / 8;
         value = 0ULL;
         if (bytes != 8 || (offset % 8 != 0))
             return true; /* ignore - spec says this is not supported */
-        if (irq_id < MAX_SGI + MAX_PPI || irq_id >= MAX_IRQ)
+        if (irq_id < SPI_BASE || irq_id >= MAX_IRQ)
             return true; /* ignore */
         if (!_ctlr.affinity_routing())
             return true; /* RAZ */
@@ -520,7 +520,7 @@ bool
 Model::GicD::assert_ppi(Vcpu_id const cpu_id, uint32 const irq_id) {
     if (cpu_id >= _num_vcpus)
         return false;
-    if (irq_id >= MAX_SGI + MAX_PPI)
+    if (irq_id >= SPI_BASE)
         return false;
 
     Banked &cpu = _local[cpu_id];
@@ -536,7 +536,7 @@ void
 Model::GicD::deassert_line(Vcpu_id const cpu_id, uint32 const irq_id) {
     if (cpu_id >= _num_vcpus)
         return;
-    if (irq_id >= MAX_SGI + MAX_PPI)
+    if (irq_id >= SPI_BASE)
         return;
 
     Banked &cpu = _local[cpu_id];
@@ -577,7 +577,7 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id, bool redirect_irq) {
 
         Irq &irq = irq_object(cpu, irq_id);
 
-        if (redirect_irq && (irq_id >= MAX_PPI + MAX_SGI) && !vcpu_can_receive_irq(gic_r)) {
+        if (redirect_irq && (irq_id >= SPI_BASE) && !vcpu_can_receive_irq(gic_r)) {
             /*
              * If this interface is not capable of receiving the IRQ anymore,
              * in the GICv3 world (affinity_routing enabled), we have to release
@@ -634,7 +634,7 @@ Model::GicD::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
 
         sender_id = cur.get_pending_sender_id();
 
-        if (irq->id() >= MAX_SGI || _ctlr.affinity_routing())
+        if (irq->id() >= PPI_BASE || _ctlr.affinity_routing())
             ASSERT(sender_id == 0);
 
         desired = cur;
@@ -778,7 +778,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
 
 bool
 Model::GicD::redirect_spi(Irq &irq) {
-    ASSERT(irq.id() >= MAX_PPI + MAX_SGI);
+    ASSERT(irq.id() >= SPI_BASE);
 
     IrqTarget target = route_spi(irq);
 
@@ -801,7 +801,7 @@ Model::GicD::redirect_spi(Irq &irq) {
 
 bool
 Model::GicD::assert_pi_sw(Vcpu_id cpu_id, Irq &irq) {
-    ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
+    ASSERT(irq.id() >= PPI_BASE || _ctlr.affinity_routing());
     irq.assert_sw();
     return assert_pi(cpu_id, irq);
 }
@@ -810,9 +810,9 @@ bool
 Model::GicD::assert_pi(Vcpu_id cpu_id, Irq &irq) {
     IrqTarget target;
 
-    ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
+    ASSERT(irq.id() >= PPI_BASE || _ctlr.affinity_routing());
 
-    if (irq.id() > MAX_PPI + MAX_SGI) {
+    if (irq.id() >= SPI_BASE) {
         target = route_spi(irq);
 
         if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
@@ -858,7 +858,7 @@ Model::GicD::assert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
 
 bool
 Model::GicD::deassert_pi_sw(Vcpu_id vcpu_id, Irq &irq) {
-    ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
+    ASSERT(irq.id() >= PPI_BASE || _ctlr.affinity_routing());
 
     irq.deassert_sw();
 
@@ -867,7 +867,7 @@ Model::GicD::deassert_pi_sw(Vcpu_id vcpu_id, Irq &irq) {
 
 bool
 Model::GicD::deassert_pi(Vcpu_id, Irq &irq) {
-    ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
+    ASSERT(irq.id() >= PPI_BASE || _ctlr.affinity_routing());
 
     if (irq.hw()) {
         INFO("Hardware interrupts behave as level-triggered. Pending kept on for %u", irq.id());
@@ -966,10 +966,10 @@ bool
 Model::GicD::assert_global_line(uint32 const irq_id) {
     if (irq_id >= MAX_IRQ)
         return false;
-    if (irq_id < MAX_SGI + MAX_PPI)
+    if (irq_id < SPI_BASE)
         return false;
 
-    Irq &irq = _spi[irq_id - MAX_SGI - MAX_PPI];
+    Irq &irq = _spi[irq_id - SPI_BASE];
 
     if (!irq.hw_edge())
         irq.assert_line();
@@ -1024,7 +1024,7 @@ void
 Model::GicD::icc_sgi1r_el1(uint64 const value, Vcpu_id const self) {
     IccSgi1rEl1 const sysreg(value);
 
-    if (sysreg.intid() >= MAX_SGI)
+    if (sysreg.intid() >= PPI_BASE)
         return;
 
     if (sysreg.irm()) {
