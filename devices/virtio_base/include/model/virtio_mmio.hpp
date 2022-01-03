@@ -129,9 +129,9 @@ public:
 
         // Config space access can be byte aligned.
         case RW_CONFIG ... RW_CONFIG_END:
-            return Virtio::read_register(
-                offset, RW_CONFIG, (RW_CONFIG + state.config_size - 1), bytes,
-                state.config_space[(offset & ~(8ULL - 1)) - RW_CONFIG], value);
+            return Virtio::read_register(offset, RW_CONFIG, (RW_CONFIG + state.config_size - 1),
+                                         bytes, state.config_space[(offset - RW_CONFIG) / 8],
+                                         value);
         }
         return false;
     }
@@ -204,7 +204,7 @@ public:
         case RW_CONFIG ... RW_CONFIG_END:
             return Virtio::write_register(offset, RW_CONFIG, (RW_CONFIG + state.config_size - 1),
                                           bytes, value,
-                                          state.config_space[(offset & ~(8ULL - 1)) - RW_CONFIG]);
+                                          state.config_space[(offset - RW_CONFIG) / 8]);
         }
         return false;
     }
