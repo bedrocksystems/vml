@@ -9,6 +9,7 @@
 #pragma once
 
 #include <model/simple_as.hpp>
+#include <platform/atomic.hpp>
 #include <platform/new.hpp>
 #include <platform/types.hpp>
 #include <platform/virtqueue.hpp>
@@ -199,6 +200,7 @@ struct Virtio::DeviceState {
 
     bool status_changed{false};
     bool construct_queue{false};
+    bool irq_acknowledged{false};
 
     bool notify{false};
     uint32 notify_val{0};
@@ -212,7 +214,7 @@ struct Virtio::DeviceState {
     uint32 config_size;
 
     uint32 sel_queue{0};
-    uint32 irq_status{0};
+    atomic<uint32> irq_status{0};
     uint32 status{0};
     uint32 drv_device_sel{0};
     uint32 drv_feature_sel{0};

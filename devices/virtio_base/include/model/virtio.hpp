@@ -67,6 +67,11 @@ protected:
             }
         }
 
+        if (_dev_state.irq_acknowledged) {
+            _dev_state.irq_acknowledged = false;
+            deassert_irq();
+        }
+
         if (_dev_state.notify) {
             _dev_state.notify = false;
             notify(_dev_state.notify_val);
