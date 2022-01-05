@@ -239,6 +239,16 @@ public:
         return *this;
     }
 
+    PrimitiveTypeWrapper &operator-=(const T &other) {
+        _value -= other;
+        return *this;
+    }
+
+    PrimitiveTypeWrapper &operator-=(const PrimitiveTypeWrapper &other) {
+        _value -= other._value;
+        return *this;
+    }
+
     PrimitiveTypeWrapper &operator&=(const T &other) {
         _value &= other;
         return *this;
@@ -291,6 +301,9 @@ public:
 
     T operator&(const PrimitiveTypeWrapper<T> &other) const { return _value & other._value; }
     T operator&(const T value) const { return _value & value; }
+
+    T operator%(const PrimitiveTypeWrapper<T> &other) const { return _value % other._value; }
+    T operator%(const T value) const { return _value % value; }
 
 protected:
     T _value;
