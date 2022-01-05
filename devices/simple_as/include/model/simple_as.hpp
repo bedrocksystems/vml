@@ -331,6 +331,14 @@ public:
      * \return false The GPA is valid.
      */
     bool invalid(void) const { return _value == INVALID_GPA; }
+
+    /**
+     * \brief Convert a GFN to a GPA.
+     *
+     * \param gfn The GFN to convert.
+     * \return GPA The resulting GPA.
+     */
+    static GPA gfn_to_gpa(uint64 gfn) { return GPA(gfn << PAGE_BITS); }
 };
 
 /*! \brief Guest Virtual Address
@@ -354,6 +362,14 @@ public:
      * \return false The GVA is valid.
      */
     bool invalid(void) const { return _value == INVALID_GVA; }
+
+    /**
+     * \brief Convert a GPN to a GVA.
+     *
+     * \param gpn The gpn to convert to a GVA.
+     * \return GVA The resulting GVA.
+     */
+    static GVA gpn_to_gva(mword gpn) { return GVA(gpn << PAGE_BITS); }
 };
 
 /*! \brief Host Virtual Address
@@ -463,7 +479,7 @@ public:
      *  \param src buffer that contains the data to write
      *  \return ENONE if the operation was a success, error code otherwise
      */
-    Errno write(GPA &gpa, size_t size, const char *src) const;
+    Errno write(const GPA &gpa, size_t size, const char *src) const;
 
     /*! \brief Callback that can be used to iterate over flushable AS in a virtual Bus
      *  \pre Nothing

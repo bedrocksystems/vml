@@ -20,7 +20,7 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
 }
 
 Errno
-Model::SimpleAS::write(GPA& gpa, size_t size, const char* src) const {
+Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
     mword offset;
     void* hva = nullptr;
 
