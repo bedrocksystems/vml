@@ -873,7 +873,7 @@ Model::GicD::deassert_pi(Vcpu_id, Irq &irq) {
     ASSERT(irq.id() >= MAX_SGI || _ctlr.affinity_routing());
 
     if (irq.hw()) {
-        INFO("Hardware interrupts behave as level-triggered. Pending kept on for %u", irq.id());
+        DEBUG("Hardware interrupts behave as level-triggered. Pending kept on for %u", irq.id());
         return true;
     }
 

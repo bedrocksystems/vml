@@ -42,8 +42,11 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
                 return err;
         }
 
-        DEBUG("%s @ 0x%lx:%u %s " FMTx64, entry->device->name(), addr, bytes,
-              access == EXEC ? "X" : (access == WRITE ? "W" : "R"), val);
+        if (strcmp("SMMU", entry->device->name()))
+            return err;
+
+        INFO("%s @ 0x%lx:%u %s " FMTx64, entry->device->name(), addr, bytes,
+             access == EXEC ? "X" : (access == WRITE ? "W" : "R"), val);
         _num_accesses = 0;
         _last_access = entry;
     }
