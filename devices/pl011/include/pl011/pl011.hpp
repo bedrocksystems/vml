@@ -156,8 +156,11 @@ private:
     uint16 _ifls;  /*!< Interrupt FIFO Level select register */
     uint16 _ris;   /*!< Raw interrupt register */
     uint16 _dmacr; /*!< DMA control register */
+    bool _rx_irq_disabled_by_icr;
+    bool _tx_irq_disabled_by_icr;
 
     SeqQueue<uint16, 32> _rx_fifo;
+    SeqQueue<uint16, 32> _tx_fifo;
 
     FIFOIRQLevel get_tx_irq_level() const {
         return static_cast<FIFOIRQLevel>(bits_in_range(_ifls, 0, 2));
@@ -168,22 +171,54 @@ private:
 
     bool mmio_write(uint64 offset, uint8 access_size, uint64 value);
     bool mmio_read(uint64 offset, uint8 access_size, uint64 &value);
-    bool rx_irq_cond() const; // rename it to watermark? asserting rx irq needs many more checks
+    bool rx_irq_cond() const;
+    bool tx_irq_cond() const;
+
+    void set_lvl_to_gicd(bool asserted);
+    void updated_irq_lvl_to_gicd_if_needed(bool old_irq_lvl) {
+        bool new_irq_lvl = is_irq_asserted();
+        if (old_irq_lvl != new_irq_lvl)
+            set_lvl_to_gicd(new_irq_lvl);
+    }
 
     bool is_fifo_enabled() const { return FEN & _lcrh; }
-    bool is_fifo_empty() const { return _rx_fifo.is_empty(); }
-    bool is_fifo_full() const { return _rx_fifo.is_full(); }
     bool can_tx() const { return (_cr & UARTEN) && (_cr & TXE); }
     bool can_rx() const { return (_cr & UARTEN) && (_cr & RXE); }
     bool is_rx_irq_active() const { return _imsc & RXIM; }
     bool is_tx_irq_active() const { return _imsc & TXIM; }
-    bool should_assert_on_rx_cond() const;
+    bool is_rx_irq_asserted() const { return is_rx_irq_active() && (_ris & RXRIS); }
+    bool is_tx_irq_asserted() const { return is_tx_irq_active() && (_ris & TXRIS); }
+    bool is_irq_asserted() const { return is_rx_irq_asserted() || is_tx_irq_asserted(); }
+    void set_rxris(bool b) {
+        if (b)
+            _ris |= RXRIS;
+        else {
+            _ris &= static_cast<uint16>(~RXRIS);
+            _rx_irq_disabled_by_icr = false;
+        }
+    }
+
+    void set_txris(bool b) {
+        if (b)
+            _ris |= TXRIS;
+        else {
+            _ris &= static_cast<uint16>(~TXRIS);
+            _tx_irq_disabled_by_icr = false;
+        }
+    }
+
+    bool compute_rxris() { return rx_irq_cond() && !_rx_irq_disabled_by_icr; }
+
+    bool compute_txris() { return rx_irq_cond() && !_rx_irq_disabled_by_icr; }
 
     /*! \brief Send one character to the guest
      *  \param c character to send
      *  \return true is the whole data could be transmitted, false otherwise
      */
     bool write_to_rx_queue(char c);
+    bool mmio_write_cr(uint64 value);
+    bool mmio_write_ifls(uint64 value);
+
     void wait_for_available_buffer() { _sig_notify_empty_space.wait(); }
 
     Irq_controller *_irq_ctlr; /*!< Interrupt controller that will receive interrupts */
@@ -215,6 +250,11 @@ public:
      */
     Pl011(Irq_controller &irq_ctlr, uint16 const irq)
         : Vuart::Vuart(DEVICE_NAME), _irq_ctlr(&irq_ctlr), _irq_id(irq), _sig_notify_empty_space() {
+    }
+
+    // needed for a proof, will be removed soon.
+    /*__UNUSED__*/ void delete_fm_register_in_vbus(Vbus::Bus *vb) {
+        static_cast<void>(vb->register_device(this, 0, 10));
     }
 
     bool init(const Platform_ctx *ctx) {
