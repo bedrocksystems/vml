@@ -12,6 +12,14 @@
 #include <platform/log.hpp>
 #include <platform/types.hpp>
 
+void
+Model::Pl011::set_lvl_to_gicd(bool asserted) {
+    if (asserted)
+        _irq_ctlr->assert_global_line(_irq_id);
+    else
+        _irq_ctlr->deassert_global_line(_irq_id);
+}
+
 Vbus::Err
 Model::Pl011::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset,
                      uint8 const size, uint64 &value) {
@@ -29,65 +37,127 @@ Model::Pl011::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mw
     return ok ? Vbus::Err::OK : Vbus::Err::ACCESS_ERR;
 }
 
-bool
-Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const value) {
+void
+warn_bad_access(const char *name, uint64 const offset, uint8 const size, uint64 const value) {
     /*
      * All registers are at most 16-bits. Certain are 8-bit according to the spec but
      * unfortunately commonly used OS still generate 32-bit accesses for those so we have
      * to allow this. Note that registers are all 32-bit apart at least.
      */
     if (size > sizeof(uint32))
-        WARN("Incorrect size used on write access to the %s: off %llu, size %u, value %llu", name(),
+        WARN("Incorrect size used on write access to the %s: off %llu, size %u, value %llu", name,
              offset, size, value);
+}
+
+bool
+Model::Pl011::mmio_write_cr(uint64 const value) {
+    bool old_irq = is_irq_asserted();
+    bool could_rx = can_rx();
+    bool could_tx = can_tx();
+    bool old_tx_cond = tx_irq_cond();
+    _cr = static_cast<uint16>(value);
+    if (!could_rx && can_rx()) // also check if rx queue not full
+        _sig_notify_empty_space.sig();
+    if (!could_tx && can_tx()) // also check if rx queue not full
+    {
+        uint32 num_queued = _tx_fifo.cur_size();
+        for (uint32 i = 0; i < num_queued; i++) {
+            uint16 val = _tx_fifo.dequeue();
+            _callback->from_guest_sent(static_cast<char>(val));
+        }
+        if (!old_tx_cond) { // TX interrupt condition is true regardless of the watermark level
+                            // because the queue is empty
+            set_rxris(true);
+        }
+    }
+    updated_irq_lvl_to_gicd_if_needed(old_irq);
+    return true;
+}
+
+bool
+Model::Pl011::mmio_write_ifls(uint64 const value) {
+    bool old_irq = is_irq_asserted();
+    bool old_tx_cond = tx_irq_cond();
+    bool old_rx_cond = tx_irq_cond();
+    _ifls = static_cast<uint16>(value);
+    bool new_rx_cond = rx_irq_cond();
+    bool new_tx_cond = tx_irq_cond();
+    if (!new_tx_cond)
+        set_txris(false);
+    else if (!old_tx_cond)
+        set_txris(true);
+    if (!new_rx_cond)
+        set_rxris(false);
+    else if (!old_rx_cond)
+        set_rxris(true);
+    updated_irq_lvl_to_gicd_if_needed(old_irq);
+    return true;
+}
+
+bool
+Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const value) {
+    warn_bad_access(name(), offset, size, value);
 
     switch (offset) {
     case UARTDR:
-        if (_callback != nullptr && can_tx()) {
-            const char cval = static_cast<char>(value);
-            _callback->from_guest_sent(cval);
+        ASSERT(_callback != nullptr);
+        if (can_tx())
+            _callback->from_guest_sent(
+                static_cast<char>(value)); // queue length remains same (0), so no interrupt change.
+        // one can argue that queue length becomes 1 transiently, but 1 and 0 are equiv upto
+        // watermark conditions
+        else {
+            bool old_irq = is_irq_asserted();
+            _tx_fifo.enqueue(static_cast<char>(value));
+            set_txris(tx_irq_cond()); // if this changes the txris bit, it would only clear it
+            updated_irq_lvl_to_gicd_if_needed(old_irq);
         }
 
         return true;
-    case UARTRSR: // We don't emulate errors so nothing to do here
+    case UARTRSR: // READ only register
         return true;
     case UARTILPR:
         _ilpr = static_cast<uint8>(value);
         return true;
     case UARTIBRD:
-        _ibrd = static_cast<uint16>(value);
+        _ibrd = static_cast<uint16>(value); // change the model: the emulated model will store the
+                                            // baud rate, but always transmit at a constant
         return true;
     case UARTFBRD:
-        _fbrd = static_cast<uint8>(value);
+        _fbrd = static_cast<uint8>(value); // also baud rate
         return true;
     case UARTLCR_H:
         _lcrh = static_cast<uint8>(value);
 
+        // add this to the model
         if (is_fifo_enabled()) {
             _rx_fifo.reset_maximize_capacity();
+            _tx_fifo.reset_maximize_capacity();
         } else {
             _rx_fifo.reset(1);
+            _tx_fifo.reset(1);
         }
+        // recheck for interrupts?
 
         return true;
-    case UARTCR: {
-        bool could_rx = can_rx();
-        _cr = static_cast<uint16>(value);
-        if (!could_rx && can_rx())
-            _sig_notify_empty_space.sig();
+    case UARTCR:
+        return mmio_write_cr(value);
+    case UARTIFLS:
+        return mmio_write_ifls(value);
+    case UARTIMSC: {
+        bool old_irq = is_irq_asserted();
+        _imsc = static_cast<uint16>(value); // check again for interrupts
+        updated_irq_lvl_to_gicd_if_needed(old_irq);
         return true;
     }
-    case UARTIFLS:
-        _ifls = static_cast<uint16>(value);
-        return true;
-    case UARTIMSC:
-        _imsc = static_cast<uint16>(value);
-        return true;
-    case UARTICR:
-        _ris = _ris & static_cast<uint16>(~(value & 0x7ff));
-        if (!(_ris & RXRIS))
-            _irq_ctlr->deassert_global_line(_irq_id);
 
+    case UARTICR: {
+        bool old_irq = is_irq_asserted();
+        _ris = _ris & static_cast<uint16>(~(value & 0x7ff));
+        updated_irq_lvl_to_gicd_if_needed(old_irq);
         return true;
+    }
+
     case UARTDMACR:
         _dmacr = static_cast<uint16>(value);
         return true;
@@ -117,26 +187,28 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
 
     switch (offset) {
     case UARTDR:
-        if (is_fifo_empty() || !can_rx())
+        if (_rx_fifo.is_empty() || !can_rx()) // drop can_rx()? do litmus test. fill up RX fifo then
+                                              // disable RXE then read
             value = 0; // This is an undefined behavior (not specified) returning 0 is fine
         else {
             bool was_full = _rx_fifo.is_full();
+            bool prev_rx_cond = rx_irq_cond();
             value = _rx_fifo.dequeue();
 
-            if (!rx_irq_cond()) {
-                _ris &= static_cast<uint16>(~RXRIS);
+            if (prev_rx_cond && !rx_irq_cond()) { // and if the rx_irq condition was true before
+                set_rxris(false);
                 _irq_ctlr->deassert_global_line(_irq_id);
             }
 
             if (was_full)
-                _sig_notify_empty_space.sig(); // FIFO is not full anymore, signal the waiter
+                _sig_notify_empty_space.sig(); // FIFO is not full anymore, signal the waiter (umux)
         }
         return true;
     case UARTRSR: // We don't emulate errors so nothing to do here
         value = 0;
         return true;
     case UARTFR:
-        value = (is_fifo_empty() ? RXFE : 0) | (is_fifo_full() ? RXFF : 0) | TXFE;
+        value = (_rx_fifo.is_empty() ? RXFE : 0) | (_rx_fifo.is_full() ? RXFF : 0) | TXFE;
         return true;
     case UARTILPR:
         value = _ilpr;
@@ -202,9 +274,6 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
 
 bool
 Model::Pl011::rx_irq_cond() const {
-    if (is_fifo_enabled() && is_fifo_full())
-        return true;
-
     uint32 chars = _rx_fifo.cur_size();
 
     switch (get_rx_irq_level()) {
@@ -224,28 +293,38 @@ Model::Pl011::rx_irq_cond() const {
 }
 
 bool
-Model::Pl011::should_assert_on_rx_cond() const {
-    bool oldrxris = _ris & RXRIS;
-    bool rxenabled = is_rx_irq_active();
-    bool txenabled = is_tx_irq_active();
-    return (rxenabled && (!txenabled) && (!oldrxris));
+Model::Pl011::tx_irq_cond() const {
+    uint32 chars = _tx_fifo.cur_size();
+
+    switch (get_tx_irq_level()) {
+    case FIFO_1DIV8_FULL:
+        return chars >= 4;
+    case FIFO_1DIV4_FULL:
+        return chars >= 8;
+    case FIFO_1DIV2_FULL:
+        return chars >= 16;
+    case FIFO_3DIV4_FULL:
+        return chars >= 24;
+    case FIFO_7DIV8_FULL:
+        return chars >= 28;
+    }
+
+    return true;
 }
 
 bool
 Model::Pl011::write_to_rx_queue(char c) {
     Platform::MutexGuard guard(&_state_lock);
 
-    if (is_fifo_full() || !can_rx())
+    if (_rx_fifo.is_full() || !can_rx())
         return false;
 
+    bool old_irq = is_irq_asserted();
     _rx_fifo.enqueue(static_cast<uint16>(c));
 
-    if (rx_irq_cond()) { // TODO: if the device is configured with edge, should the interrupt be
-                         // sent again?
-        bool assert = should_assert_on_rx_cond();
-        _ris |= RXRIS;
-        if (assert)
-            _irq_ctlr->assert_global_line(_irq_id);
+    if (compute_rxris()) {
+        set_rxris(true);
+        updated_irq_lvl_to_gicd_if_needed(old_irq);
     }
 
     return true;
