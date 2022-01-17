@@ -13,9 +13,11 @@
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/memory.hpp>
+#include <platform/mutex.hpp>
 #include <platform/rangemap.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
+#include <zeta/ec.hpp>
 
 namespace Model {
     class SimpleAS;
@@ -393,7 +395,11 @@ public:
      *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    explicit SimpleAS(bool read_only) : Vbus::Device("SimpleAS"), _read_only(read_only) {}
+    explicit SimpleAS(BHV::Sel mobj, bool read_only) : Vbus::Device("SimpleAS"), _read_only(read_only),
+        _mobject(mobj) {
+        bool ret = _mapping_lock.init(Zeta::Ec::ctx());
+        ASSERT(ret);
+    }
 
     /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
@@ -401,7 +407,11 @@ public:
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    SimpleAS(const char *name, bool read_only) : Vbus::Device(name), _read_only(read_only) {}
+    SimpleAS(const char *name, BHV::Sel mobj, bool read_only) : Vbus::Device(name),
+        _read_only(read_only), _mobject(mobj) {
+        bool ret = _mapping_lock.init(Zeta::Ec::ctx());
+        ASSERT(ret);
+    }
 
     /*! \brief Get the size of this AS
      *  \pre Partial ownership of this object
@@ -409,6 +419,13 @@ public:
      *  \return the size of the AS
      */
     uint64 get_size() const { return _as.size(); }
+
+    /*! \brief Get BHV selector for a memory object for this AS
+     *  \pre Partial ownership of this object
+     *  \post Ownership unchanged. Selector of memory object is returned.
+     *  \return the selector of memory object
+     */
+    BHV::Sel get_bhv_sel() const { return _mobject; }
 
     /*! \brief Set the parameters of the AS (size, mapping, base guest address)
      *  \pre Full ownership of the object.
@@ -542,4 +559,9 @@ protected:
     const bool _read_only;    /*!< Is the AS read-only from the guest point of view? */
     char *_vmm_view{nullptr}; /*!< base host mapping of base gpa. */
     Range<mword> _as;         /*!< Range(gpa RAM base, guest RAM size) */
+
+    BHV::Sel _mobject; /*!< BHV Memory Range object behind this guest range */
+
+private:
+    Platform::Mutex _mapping_lock; /*!< Global state lock */
 };
