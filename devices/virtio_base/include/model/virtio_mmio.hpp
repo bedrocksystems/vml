@@ -173,6 +173,7 @@ public:
             return true;
         }
         case WO_IRQ_ACK ... WO_IRQ_ACK_END:
+            state.irq_acknowledged = true;
             return true;
         case RW_STATUS ... RW_STATUS_END:
             state.status_changed = true;
@@ -221,25 +222,37 @@ public:
 
     virtual void assert_queue_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq,
                                         Virtio::DeviceState &state) override {
-        state.irq_status |= 0x1;
+        /* At this point, the guest has not yet acknowledged the exisiting interrupt OR
+           deassert_queue_interrupt is being executed from other context. In both cases, the guest
+           still needs to process the queues once it returns from vmexit and it is safe to skip
+           injecting a new interrupt. */
+        if (state.irq_status & 0x1)
+            return;
+
+        // The interrupt has been deasserted/acknowledged at this point (happens once) so we need to
+        // inject a new one.
+        state.irq_status.or_fetch(0x1);
         irq_ctrlr->assert_global_line(irq);
     }
 
     virtual void deassert_queue_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq,
                                           Virtio::DeviceState &state) override {
-        state.irq_status &= static_cast<uint32>(~0x1);
         irq_ctrlr->deassert_global_line(irq);
+        state.irq_status.and_fetch(static_cast<uint32>(~0x1));
     }
 
     virtual void assert_config_change_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq,
                                                 Virtio::DeviceState &state) override {
-        state.irq_status |= 0x2;
+        if (state.irq_status & 0x2)
+            return;
+
+        state.irq_status.or_fetch(0x2);
         irq_ctrlr->assert_global_line(irq);
     }
 
     virtual void deassert_config_change_interrupt(Model::Irq_controller *const irq_ctrlr,
                                                   uint16 irq, Virtio::DeviceState &state) override {
-        state.irq_status &= static_cast<uint32>(~0x2);
         irq_ctrlr->deassert_global_line(irq);
+        state.irq_status.and_fetch(static_cast<uint32>(~0x2));
     }
 };
