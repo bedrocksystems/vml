@@ -553,8 +553,8 @@ protected:
      *  \pre Partial ownership of this device
      *  \post Ownership unchanged
      */
-    void flush_guest_as() const;
-    Errno clean_invalidate(GPA addr, size_t sz) const;
+    void flush_guest_as();
+    Errno clean_invalidate(GPA gpa, size_t size) const;
 
     const bool _read_only;    /*!< Is the AS read-only from the guest point of view? */
     char *_vmm_view{nullptr}; /*!< base host mapping of base gpa. */
