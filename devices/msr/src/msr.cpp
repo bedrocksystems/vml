@@ -517,19 +517,17 @@ Msr::Set_way_flush_reg::flush(const VcpuCtx *vctx, const uint8, const uint32) co
      * caches. The ARM manual specifies that other usages are bad practice/undefined.
      *
      * We enable TVM to catch toggling of the cache by the guest. When the cache is toggled
-     * we then proceed to flushing the guest AS again. Semantically, that should be what the
+     * we then proceed to flushing the guest AS. Semantically, that should be what the
      * guest OS wants to achieve.
      */
     if (!Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vctx->vcpu_id)) {
-        _vbus->iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
-        INFO("Use of Set/way flush detected - flushing guest AS and enable TVM");
+        INFO("Use of Set/way flush detected. Enable caching bit tracking");
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vctx->vcpu_id, true);
     }
 }
 
 void
 Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, Vbus::Bus &vbus, uint64 new_value) {
-    static unsigned id = 0;
     if (!Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vcpu->vcpu_id)) {
         // Another requestor needed TVM - no action to take on our side
         return;
@@ -547,27 +545,15 @@ Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, Vbus::Bus &vbus, uint64 new_valu
      */
 
     if (before.cache_enabled() != after.cache_enabled()) {
-        INFO("%u : Cache setting toggled - flushing the guest AS", id);
+        INFO("Cache setting toggled - flushing the guest AS. EL1_SCTLR = %#llx",
+             vcpu->regs->el1_sctlr());
 
         vbus.iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
     }
-
     if (after.cache_enabled()) {
-        INFO("%u : Cache enabled - stop TVM trapping", id);
+        INFO("Cache enabled - stop TVM trapping");
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vcpu->vcpu_id, false);
-
-        if (id == 8) {
-            //    Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_single_step,
-            //    vcpu->vcpu_id,
-            //                                     true);
-
-            static constexpr uint32 HVC_0 = 0xd4000002u;
-            const char *bytecode = reinterpret_cast<const char *>(&HVC_0);
-            Errno err = Model::SimpleAS::write_bus(vbus, 0x9ff8c200, bytecode, sizeof(HVC_0));
-            ASSERT(err == ENONE);
-        }
     }
-    id++;
 }
 
 Vbus::Err

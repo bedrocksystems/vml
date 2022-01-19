@@ -25,7 +25,7 @@ namespace Barrier {
 
     static inline void w_before_w(void) { asm volatile("dsb ishst" : : : "memory"); }
 
-    static inline void rw_before_rw(void) { asm volatile("dsb ish" : : : "memory"); }
+    static inline void rw_before_rw(void) { asm volatile("dsb sy" : : : "memory"); }
 
     static inline void instruction(void) { asm volatile("isb" : : : "memory"); }
 

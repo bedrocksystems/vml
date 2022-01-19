@@ -517,7 +517,7 @@ public:
      *  \pre Partial ownership of this device
      *  \post Ownership unchanged
      */
-    void flush_guest_as() const;
+    void flush_guest_as();
 
     Errno vmm_mmap(const Platform_ctx *ctx, GPA start, uint64 size, bool will_write,
                    bool map) const;

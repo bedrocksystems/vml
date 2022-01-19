@@ -85,11 +85,24 @@ Model::SimpleAS::write_mapped(GPA& gpa, size_t size, const char* src) const {
 }
 
 void
-Model::SimpleAS::flush_guest_as() const {
+Model::SimpleAS::flush_guest_as() {
     if (_flushable) {
+        Platform::MutexGuard guard(&_mapping_lock);
+
         INFO("Flushing @ 0x%llx", get_guest_view().get_value());
-        dcache_clean_range(_vmm_view, _as.size());
-        icache_invalidate_range(_vmm_view, _as.size());
+        for (uint64 i = 0; i < (get_size() / PAGE_SIZE); i++) {
+            if ((get_guest_view() + i * PAGE_SIZE) < 0x90000000)
+                continue;
+
+            Errno err = vmm_mmap(Zeta::Ec::ctx(), get_guest_view() + i * PAGE_SIZE, PAGE_SIZE, true,
+                                 true);
+            ASSERT(err == ENONE);
+            dcache_clean_range(_vmm_view + i * PAGE_SIZE, PAGE_SIZE);
+            icache_sync_range(_vmm_view + i * PAGE_SIZE, PAGE_SIZE);
+            err = vmm_mmap(Zeta::Ec::ctx(), get_guest_view() + i * PAGE_SIZE, PAGE_SIZE, false,
+                           false);
+            ASSERT(err == ENONE);
+        }
     }
 }
 
