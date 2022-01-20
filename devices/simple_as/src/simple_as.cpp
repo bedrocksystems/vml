@@ -75,6 +75,25 @@ Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
 }
 
 Errno
+Model::SimpleAS::map_view(void* dst, mword offset, size_t size, bool write) const {
+    if (_read_only && write)
+        return EINVAL;
+
+    auto map_area = Range<mword>{reinterpret_cast<mword>(dst), size}.aligned_expand(PAGE_BITS);
+
+    Errno errno = BHV::MemRange::map(Zeta::Ec::ctx(), _mobject, map_area.begin() >> PAGE_BITS,
+                                     map_area.size() >> PAGE_BITS, offset >> PAGE_BITS,
+                                     BHV::MemRange::READ | (write ? BHV::MemRange::WRITE : 0),
+                                     Nova::Table::CPU_HST);
+    if (errno != ENONE)
+        ABORT_WITH("Unable to map view of the guest dst:0x%llx region:0x%llx offset:0x%llx "
+                   "size:0x%llx: err:%d",
+                   dst, get_guest_view().get_value(), offset, size, errno);
+
+    return errno;
+}
+
+Errno
 Model::SimpleAS::clean_invalidate(GPA gpa, size_t size) const {
     if (!is_gpa_valid(gpa, size))
         return EINVAL;
@@ -102,7 +121,6 @@ Model::SimpleAS::clean_invalidate(GPA gpa, size_t size) const {
 
     return ENONE;
 }
-
 
 void
 Model::SimpleAS::flush_guest_as() {

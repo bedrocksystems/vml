@@ -540,6 +540,8 @@ public:
      */
     char *gpa_to_vmm_view(GPA addr, size_t sz) const;
 
+    Errno map_view(void *dst, mword offset, size_t sz, bool write) const;
+
     bool is_read_only() const { return _read_only; }
 
     static char *gpa_to_vmm_view(const Vbus::Bus &bus, GPA addr, size_t sz);
