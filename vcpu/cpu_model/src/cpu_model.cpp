@@ -108,6 +108,16 @@ Model::Cpu::ctrl_feature_on_all_but_vcpu(ctrl_feature_cb cb, Vcpu_id id, bool en
 }
 
 void
+Model::Cpu::ctrl_register_trap_on_vcpu(ctrl_feature_ex_cb cb, Vcpu_id vcpu_id, bool enabled,
+                                       Request::Requestor requestor, uint64 trap_id,
+                                       Reg_selection regs) {
+    ASSERT(vcpu_id < configured_vcpus);
+
+    Model::Cpu* vcpu = vcpus[vcpu_id];
+    cb(vcpu, enabled, requestor, trap_id, regs);
+}
+
+void
 Model::Cpu::ctrl_feature_on_all_vcpus(ctrl_feature_cb cb, bool enabled,
                                       Request::Requestor requestor, Reg_selection regs) {
     for (Vcpu_id i = 0; i < configured_vcpus; ++i) {
@@ -186,6 +196,12 @@ void
 Model::Cpu::ctrl_feature_hypercall(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
                                    Reg_selection regs) {
     vcpu->_hypercall.request(enable, requestor, regs);
+}
+
+void
+Model::Cpu::ctrl_register_trap_cb(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
+                                  uint64 trap_id, Reg_selection regs) {
+    vcpu->ctrl_register_trap(enable, requestor, trap_id, regs);
 }
 
 Errno
