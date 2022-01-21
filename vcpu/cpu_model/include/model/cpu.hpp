@@ -203,11 +203,15 @@ public:
     static const char *cpu_state_string(Vcpu_id);
 
     typedef void (*ctrl_feature_cb)(Model::Cpu *, bool, Request::Requestor, Reg_selection);
+    typedef void (*ctrl_feature_ex_cb)(Model::Cpu *, bool, Request::Requestor, uint64,
+                                       Reg_selection);
     typedef bool (*requested_feature_cb)(Model::Cpu *, Request::Requestor);
 
     static void ctrl_feature_on_vcpu(ctrl_feature_cb cb, Vcpu_id, bool,
                                      Request::Requestor requestor = Request::Requestor::VMM,
                                      Reg_selection regs = 0);
+    static void ctrl_register_trap_on_vcpu(ctrl_feature_ex_cb cb, Vcpu_id, bool, Request::Requestor,
+                                           uint64, Reg_selection regs);
     static void ctrl_feature_on_all_but_vcpu(ctrl_feature_cb cb, Vcpu_id, bool,
                                              Request::Requestor requestor = Request::Requestor::VMM,
                                              Reg_selection regs = 0);
@@ -232,6 +236,9 @@ public:
     static bool requested_feature_tvm(Model::Cpu *vcpu, Request::Requestor requestor);
     static bool requested_feature_single_step(Model::Cpu *vcpu, Request::Requestor requestor);
     static bool requested_feature_hypercall(Model::Cpu *vcpu, Request::Requestor requestor);
+
+    static void ctrl_register_trap_cb(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
+                                      uint64 trap_id, Reg_selection regs);
 
     static uint16 get_num_vcpus();
     static Pcpu_id get_pcpu(Vcpu_id);
@@ -267,4 +274,6 @@ public:
     void interrupt_pending() override;
 
     virtual Model::Local_Irq_controller *local_irq_ctlr() override { return _lirq_ctlr; }
+
+    virtual void ctrl_register_trap(bool, Request::Requestor, uint64, Reg_selection) {}
 };
