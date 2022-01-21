@@ -34,7 +34,7 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
     if (_trace && entry != nullptr) {
         if (_last_access != entry) {
             if (_fold && _num_accesses > 1) {
-                DEBUG("%s accessed %lu times", _last_access->device->name(), _num_accesses);
+                INFO("%s accessed %lu times", _last_access->device->name(), _num_accesses);
             }
         } else {
             _num_accesses++;
@@ -42,8 +42,8 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
                 return err;
         }
 
-        DEBUG("%s @ 0x%lx:%u %s " FMTx64, entry->device->name(), addr, bytes,
-              access == EXEC ? "X" : (access == WRITE ? "W" : "R"), val);
+        INFO("%s @ 0x%lx:%u %s " FMTx64, entry->device->name(), addr, bytes,
+             access == EXEC ? "X" : (access == WRITE ? "W" : "R"), val);
         _num_accesses = 0;
         _last_access = entry;
     }
