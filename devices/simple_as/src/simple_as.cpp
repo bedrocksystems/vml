@@ -216,3 +216,55 @@ Model::SimpleAS::clean_invalidate_bus(const Vbus::Bus& bus, GPA addr, size_t sz)
 
     return tgt->clean_invalidate(addr, sz);
 }
+
+char*
+Model::SimpleAS::map_guest_mem(const Vbus::Bus& bus, GPA gpa, size_t sz, bool write) {
+    Model::SimpleAS* tgt = get_as_device_at(bus, gpa, sz);
+    if (tgt == nullptr) {
+        WARN("Cannot map guest memory pa:0x%llx size:0x%llx. Memory range doesn't exist",
+             gpa.get_value(), sz);
+        return nullptr;
+    }
+
+    if (write && tgt->is_read_only()) {
+        WARN("Cannot map read-only guest memory for write pa:0x%llx size:0x%llx", gpa.get_value(),
+             sz);
+        return nullptr;
+    }
+
+    /* allocate memory */
+    auto map_area = Range<mword>{static_cast<mword>(gpa.get_value()), sz}.aligned_expand(PAGE_BITS);
+    char* dst = reinterpret_cast<char*>(Vmap::pagealloc(numpages(map_area.size())));
+    if (dst == nullptr) {
+        ABORT_WITH("Unable to allocate memory ");
+        return nullptr;
+    }
+
+    mword offset = map_area.begin() - tgt->get_guest_view().get_value();
+    INFO("map_guest_mem pa:0x%llx size:0x%llx write:%d to 0x%llx (+0x%lx) offset:0x%lx "
+         "area_size:0x%lx",
+         gpa.get_value(), sz, write, dst, (gpa.get_value() & ~PAGE_MASK), offset, map_area.size());
+    Errno err = tgt->map_view(dst, offset, map_area.size(), write);
+    if (err != ENONE) {
+        Vmap::free(dst, map_area.size());
+        WARN("Unable to map a chunk pa:%llx size:0x%llx", gpa.get_value(), sz);
+        return nullptr;
+    }
+
+    /* keep track of mapped areas. add to RangeMap */
+    return dst + (gpa.get_value() & ~PAGE_MASK);
+}
+
+void
+Model::SimpleAS::unmap_guest_mem(const void* mem, size_t sz) {
+    /* unmap memory */
+    INFO("unmap_guest_mem mem:0x%llx size:0x%llx", mem, sz);
+    auto map_area = Range<mword>{reinterpret_cast<mword>(mem), sz}.aligned_expand(PAGE_BITS);
+    Errno err = Zeta::munmap(Zeta::Ec::ctx(), reinterpret_cast<void*>(map_area.begin()),
+                             map_area.size(), Nova::Table::CPU_HST);
+    if (err != ENONE) {
+        ABORT_WITH("Unable to unmap guest memory mem:0x%llx size:0x%llx err:%d", mem, sz, err);
+    }
+    /* XXX: free memory range form range map if we track mapped regions */
+    Vmap::free(const_cast<void*>(mem), sz);
+}

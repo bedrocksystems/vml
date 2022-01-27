@@ -545,6 +545,8 @@ public:
     bool is_read_only() const { return _read_only; }
 
     static char *gpa_to_vmm_view(const Vbus::Bus &bus, GPA addr, size_t sz);
+    static char *map_guest_mem(const Vbus::Bus &bus, GPA gpa, size_t sz, bool write);
+    static void unmap_guest_mem(const void *mem, size_t sz);
 
     static Errno read_bus(const Vbus::Bus &bus, GPA addr, char *dst, size_t sz);
     static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz);
