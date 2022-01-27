@@ -37,16 +37,11 @@ Model::Virtio_console::to_guest(const char *buff, uint32 size) {
             return false;
         }
 
-        char *dst = Model::SimpleAS::gpa_to_vmm_view(*_vbus, GPA(desc->address), desc->length);
-        if (dst == nullptr) {
+        uint32 n_copy = size <= desc->length ? size : desc->length;
+        Errno err = Model::SimpleAS::write_bus(*_vbus, GPA(desc->address), buff + buf_idx, n_copy);
+        if (err != ENONE) {
             device_queue(RX).send(desc);
             return false; /* outside guest physical memory */
-        }
-
-        uint32 n_copy = size <= desc->length ? size : desc->length;
-
-        for (unsigned i = 0; i < n_copy; i++) {
-            dst[i] = buff[buf_idx + i];
         }
 
         desc->length = n_copy;
