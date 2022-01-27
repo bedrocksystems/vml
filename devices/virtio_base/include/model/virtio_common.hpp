@@ -11,6 +11,7 @@
 #include <model/simple_as.hpp>
 #include <platform/atomic.hpp>
 #include <platform/new.hpp>
+#include <platform/string.hpp>
 #include <platform/types.hpp>
 #include <platform/virtqueue.hpp>
 
@@ -26,6 +27,8 @@ namespace Virtio {
     bool read_register(uint64, uint32, uint32, uint8, uint64, uint64 &);
     template<typename T>
     bool write_register(uint64, uint32, uint32, uint8, uint64, T &);
+
+    class DescrAccessor;
 };
 
 class Virtio::Callback {
@@ -280,3 +283,56 @@ Virtio::write_register(uint64 const offset, uint32 const base_reg, uint32 const 
     result |= T(value & mask) << (base * 8);
     return true;
 }
+
+class Virtio::DescrAccessor {
+public:
+    ~DescrAccessor() { destruct(); }
+
+    bool construct(const Vbus::Bus *vbus, Virtio::Descriptor *desc) {
+        _guest_data = Model::SimpleAS::map_guest_mem(*vbus, GPA(desc->address), desc->length, true);
+        if (_guest_data == nullptr) {
+            return false;
+        }
+        _desc = desc;
+        _data_size = desc->length;
+        _read_ptr = 0;
+        _write_ptr = 0;
+        return true;
+    }
+
+    void destruct() {
+        if (_guest_data != nullptr) {
+            Model::SimpleAS::unmap_guest_mem(_guest_data, _data_size);
+            _guest_data = nullptr;
+        }
+    }
+
+    size_t write(const char *buf, size_t size) {
+        if (_write_ptr >= _data_size)
+            return 0;
+        size_t to_write = (size + _write_ptr >= _data_size) ? (_data_size - _write_ptr) : size;
+        memcpy(_guest_data + _write_ptr, buf, to_write);
+        _write_ptr += to_write;
+        return to_write;
+    }
+
+    size_t read(char *buf, size_t size) {
+        if (_read_ptr >= _data_size)
+            return 0;
+        size_t to_read = (size + _read_ptr >= _data_size) ? (_data_size - _read_ptr) : size;
+        memcpy(buf, _guest_data + _read_ptr, to_read);
+        _read_ptr += to_read;
+        return to_read;
+    }
+
+    size_t size() const { return _data_size; }
+    bool is_valid() const { return (_guest_data != nullptr); }
+    Virtio::Descriptor *desc() const { return _desc; }
+
+private:
+    Virtio::Descriptor *_desc{nullptr};
+    char *_guest_data{nullptr};
+    size_t _data_size{0};
+    size_t _read_ptr{0};
+    size_t _write_ptr{0};
+};
