@@ -110,6 +110,10 @@ private:
     Virtio::DeviceQueue _device_queue{&_virtqueue, 1};
     bool _constructed{false};
 
+    void *_desc_addr{nullptr};
+    void *_avail_addr{nullptr};
+    void *_used_addr{nullptr};
+
 public:
     void construct(QueueData &data, Vbus::Bus const &bus) {
         _data = &data;
@@ -118,27 +122,24 @@ public:
         if (_data->num == 0)
             return destruct();
 
-        void *desc_addr = nullptr;
-        desc_addr = Model::SimpleAS::gpa_to_vmm_view(bus, GPA(data.descr()),
-                                                     Virtio::Descriptor::size(_data->num));
-        if (desc_addr == nullptr)
+        _desc_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.descr()),
+                                                    Virtio::Descriptor::size(_data->num), true);
+        if (_desc_addr == nullptr)
             return destruct();
 
-        void *avail_addr = nullptr;
-        avail_addr = Model::SimpleAS::gpa_to_vmm_view(bus, GPA(data.driver()),
-                                                      Virtio::Available::size(_data->num));
-        if (avail_addr == nullptr)
+        _avail_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.driver()),
+                                                     Virtio::Available::size(_data->num), true);
+        if (_avail_addr == nullptr)
             return destruct();
 
-        void *used_addr = nullptr;
-        used_addr = Model::SimpleAS::gpa_to_vmm_view(bus, GPA(data.device()),
-                                                     Virtio::Used::size(_data->num));
-        if (used_addr == nullptr)
+        _used_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.device()),
+                                                    Virtio::Used::size(_data->num), true);
+        if (_used_addr == nullptr)
             return destruct();
 
-        _virtqueue.descriptor = static_cast<Virtio::Descriptor *>(desc_addr);
-        _virtqueue.available = static_cast<Virtio::Available *>(avail_addr);
-        _virtqueue.used = static_cast<Virtio::Used *>(used_addr);
+        _virtqueue.descriptor = static_cast<Virtio::Descriptor *>(_desc_addr);
+        _virtqueue.available = static_cast<Virtio::Available *>(_avail_addr);
+        _virtqueue.used = static_cast<Virtio::Used *>(_used_addr);
 
         new (&_device_queue) Virtio::DeviceQueue(&_virtqueue, uint16(_data->num));
 
@@ -146,6 +147,19 @@ public:
     }
 
     void destruct() {
+
+        if (_desc_addr) {
+            Model::SimpleAS::unmap_guest_mem(_desc_addr, Virtio::Descriptor::size(_data->num));
+            _desc_addr = nullptr;
+        }
+        if (_avail_addr) {
+            Model::SimpleAS::unmap_guest_mem(_avail_addr, Virtio::Available::size(_data->num));
+            _avail_addr = nullptr;
+        }
+        if (_used_addr) {
+            Model::SimpleAS::unmap_guest_mem(_used_addr, Virtio::Used::size(_data->num));
+            _used_addr = nullptr;
+        }
         _data = nullptr;
         _constructed = false;
     }
