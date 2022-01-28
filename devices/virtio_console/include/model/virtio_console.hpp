@@ -42,6 +42,8 @@ private:
 
     Virtio::Callback *_callback{nullptr};
 
+    Virtio::DescrAccessor _cur_tx;
+
 public:
     Virtio_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
                    uint16 const queue_entries, Virtio::Transport *transport, Platform::Signal *sig)
@@ -54,16 +56,13 @@ public:
     void release_buffer();
 
     bool to_guest(const char *buff, uint32 size);
-    virtual const char *from_guest(uint32 &size);
+    virtual size_t from_guest(char *out_buf, size_t sz);
     void wait_for_available_buffer() { _sig_notify_empty_space.wait(); }
-
     void reset(const VcpuCtx *) override {
+        _cur_tx.destruct();
         _sig_notify_empty_space.sig();
         reset_virtio();
     }
 
     void register_callback(Virtio::Callback *callback) { _callback = callback; }
-
-    Virtio::QueueData const &queue_data_rx() const { return queue_data(RX); }
-    Virtio::QueueData const &queue_data_tx() const { return queue_data(TX); }
 };

@@ -56,24 +56,38 @@ Model::Virtio_console::to_guest(const char *buff, uint32 size) {
     return true;
 }
 
-const char *
-Model::Virtio_console::from_guest(uint32 &size) {
+size_t
+Model::Virtio_console::from_guest(char *out_buf, size_t sz) {
     if (!queue(TX).constructed() || (!_driver_initialized))
-        return nullptr;
+        return 0;
 
-    _tx_desc = device_queue(TX).recv();
-    if (not _tx_desc)
-        return nullptr;
+    size_t was_read = 0;
 
-    char *vmm_addr
-        = Model::SimpleAS::gpa_to_vmm_view(*_vbus, GPA(_tx_desc->address), _tx_desc->length);
-    if (vmm_addr == nullptr) {
-        device_queue(TX).send(_tx_desc);
-        return nullptr; /* outside guest physical memory */
+    while (sz != 0) {
+        if (!_cur_tx.is_valid()) {
+            /* get the next packet */
+            Virtio::Descriptor *tx_desc = device_queue(TX).recv();
+            if (tx_desc == nullptr)
+                break;
+            bool b = _cur_tx.construct(_vbus, tx_desc);
+            if (!b) {
+                device_queue(TX).send(tx_desc);
+                break;
+            }
+        }
+
+        size_t wr = _cur_tx.read(out_buf + was_read, sz);
+        if (wr == 0) {
+            device_queue(TX).send(_cur_tx.desc());
+            _cur_tx.destruct();
+            assert_irq();
+        } else {
+            sz -= wr;
+            was_read += wr;
+        }
     }
 
-    size = _tx_desc->length;
-    return vmm_addr;
+    return was_read;
 }
 
 void
