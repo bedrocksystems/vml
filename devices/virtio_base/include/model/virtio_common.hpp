@@ -328,6 +328,7 @@ public:
     size_t size() const { return _data_size; }
     bool is_valid() const { return (_guest_data != nullptr); }
     Virtio::Descriptor *desc() const { return _desc; }
+    char *data() const { return _guest_data; }
 
 private:
     Virtio::Descriptor *_desc{nullptr};
