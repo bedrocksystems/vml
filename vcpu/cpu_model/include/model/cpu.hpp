@@ -256,7 +256,7 @@ public:
     // VCPU api end
 
     // Functions that should be provided by the implementation
-    virtual bool recall(bool strong) = 0;
+    virtual void recall(bool strong) = 0;
     virtual Errno run() = 0;
 
     // Functions that are implemented

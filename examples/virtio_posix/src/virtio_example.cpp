@@ -39,7 +39,7 @@ class Dummy_vcpu : public Model::Cpu {
 public:
     Dummy_vcpu(Model::GicD &gic) : Model::Cpu(&gic, 0, 0) {}
 
-    virtual bool recall(bool) override { return true; }
+    virtual void recall(bool) override {}
     virtual Errno run() override { return ENONE; }
 };
 
