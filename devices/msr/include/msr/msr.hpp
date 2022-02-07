@@ -219,6 +219,16 @@ namespace Msr {
         CNTHP_TVAL_EL2 = build_msr_id(3, 14, 4, 2, 0),
         CNTHP_CTL_EL2 = build_msr_id(3, 14, 4, 2, 1),
         CNTHP_CVAL_EL2 = build_msr_id(3, 14, 4, 2, 2),
+        VMPIDR_EL2 = build_msr_id(0b11, 0b0000, 0b100, 0b0000, 0b101),
+        ESR_EL2 = build_msr_id(0b11, 0b0101, 0b100, 0b0010, 0b000),
+        ELR_EL2 = build_msr_id(0b11, 0b0100, 0b100, 0b0000, 0b001),
+        ELR_EL1 = build_msr_id(0b11, 0b0100, 0b000, 0b0000, 0b001),
+        FAR_EL2 = build_msr_id(0b11, 0b0110, 0b100, 0b0000, 0b000),
+        SPSR_EL2 = build_msr_id(0b11, 0b0100, 0b100, 0b0000, 0b000),
+        HCR_EL2 = build_msr_id(0b11, 0b0001, 0b100, 0b0001, 0b000),
+        SCTLR_EL2 = build_msr_id(0b11, 0b0001, 0b100, 0b0000, 0b000),
+        DAIF = build_msr_id(0b11, 0b0100, 0b011, 0b0010, 0b001),
+        SP_EL0 = build_msr_id(0b11, 0b0100, 0b000, 0b0001, 0b000),
 
         /*
          * Below, we define a namespace for registers that do no exist in AA64.
