@@ -84,6 +84,27 @@ namespace Msr::Info {
         VMRS_SPEC_REG_MVFR2 = 0b0101,
     };
 
+    enum ExceptionClass : uint64 {
+        SAME_EL_SP0 = 0x0,
+        SAME_EL_SPX = 0x200,
+        LOWER_EL_AA64 = 0x400,
+        LOWER_EL_AA32 = 0x600
+    };
+
+    enum ExceptionClass32 {
+        A32_RESET = 0x0,         // SVC mode
+        A32_UNDEF = 0x04,        // UNDEF mode
+        A32_SW_IRQ = 0x08,       // SVC mode
+        A32_PREFETCH_ABT = 0x0c, // ABRT mode
+        A32_DATA_ABT = 0x10,     // ABRT mode
+        A32_IRQ = 0x18,          // IRQ mode
+        A32_FIQ = 0x1c,          // FIQ mode
+    };
+
+    enum ExceptionType : uint64 { SYNC = 0x0, IRQ = 0x80, FIQ = 0x100, SERR = 0x180 };
+    enum ExceptionType32 : uint32 { A32_DEBUG = 0b00010 };
+    enum ExceptionType32Eae : uint32 { A32_EAE_DEBUG = 0b100010 };
+
     class IdAa64pfr0;
     class IdAa64dfr0;
     class Spsr;
