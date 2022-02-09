@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 BedRock Systems, Inc.
+ * Copyright (C) 2020-2022 BedRock Systems, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
@@ -529,6 +529,7 @@ public:
 
     static Errno read_bus(const Vbus::Bus &bus, GPA addr, char *dst, size_t sz);
     static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz);
+    static Errno clean_invalidate_bus(const Vbus::Bus &bus, GPA addr, size_t sz);
 
 protected:
     /*! \brief Iterate over this AS and make sure that all data made it to physical RAM
@@ -536,6 +537,7 @@ protected:
      *  \post Ownership unchanged
      */
     void flush_guest_as() const;
+    Errno clean_invalidate(GPA addr, size_t sz) const;
 
     const bool _read_only;    /*!< Is the AS read-only from the guest point of view? */
     char *_vmm_view{nullptr}; /*!< base host mapping of base gpa. */
