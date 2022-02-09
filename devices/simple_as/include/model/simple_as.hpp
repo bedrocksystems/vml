@@ -395,11 +395,8 @@ public:
      *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    explicit SimpleAS(BHV::Sel mobj, bool read_only) : Vbus::Device("SimpleAS"), _read_only(read_only),
-        _mobject(mobj) {
-        bool ret = _mapping_lock.init(Zeta::Ec::ctx());
-        ASSERT(ret);
-    }
+    explicit SimpleAS(mword mobj, bool read_only)
+        : Vbus::Device("SimpleAS"), _read_only(read_only), _mobject(mobj), _mapped{false} {}
 
     /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
@@ -407,11 +404,11 @@ public:
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    SimpleAS(const char *name, BHV::Sel mobj, bool read_only) : Vbus::Device(name),
-        _read_only(read_only), _mobject(mobj) {
-        bool ret = _mapping_lock.init(Zeta::Ec::ctx());
-        ASSERT(ret);
-    }
+    SimpleAS(const char *name, mword mobj, bool read_only)
+        : Vbus::Device(name), _read_only(read_only), _mobject(mobj), _mapped{false} {}
+
+    bool construct(GPA guest_base, size_t size, bool map);
+    bool destruct();
 
     /*! \brief Get the size of this AS
      *  \pre Partial ownership of this object
@@ -435,20 +432,9 @@ public:
      *  \param vmm_off Offset between guest_base and the vmm mapping of the guest AS
      */
     void set_guest_as(const mword guest_base, const mword size, const mword vmm_off = mword(0)) {
+#warning "Remove this method. use construct instead"
         _as = Range<mword>(guest_base, size);
         _vmm_view = reinterpret_cast<char *>(guest_base + vmm_off);
-    }
-
-    /*! \brief Set the parameters of the AS (size, mapping, base guest address)
-     *  \pre Full ownership of the object.
-     *  \post Ownership unchanged. The AS info are stored in the object
-     *  \param guest_base Address of the mapping from the guest point (guest physical)
-     *  \param size Size of the address space
-     *  \param addr Address where the guest AS is mapped for the current process
-     */
-    void set_guest_as(const mword guest_base, const mword size, char *addr) {
-        _as = Range<mword>(guest_base, size);
-        _vmm_view = addr;
     }
 
     /*! \brief Is the given GPA valid in this AS?
@@ -474,7 +460,12 @@ public:
      *  \post Ownership unchanged.
      *  \return Address representing the beginning of the mapping of the guest AS
      */
-    char *get_vmm_view() const { return _vmm_view; };
+    char *get_vmm_view() const {
+        if (_mapped)
+            return _vmm_view;
+        else
+            return nullptr;
+    };
 
     /*! \brief Read data from the guest AS
      *  \pre Partial ownership of the object. Full ownership of the destination buffer.
@@ -565,6 +556,7 @@ protected:
     Range<mword> _as;         /*!< Range(gpa RAM base, guest RAM size) */
 
     BHV::Sel _mobject; /*!< BHV Memory Range object behind this guest range */
+    bool _mapped{false};
 
 private:
     Platform::Mutex _mapping_lock; /*!< Global state lock */

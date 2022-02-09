@@ -22,23 +22,26 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
     mword offset = addr.get_value() - get_guest_view().get_value();
     char* src = get_vmm_view() + offset;
 
+    Errno err;
     auto map_area = Range<mword>{reinterpret_cast<mword>(src), size}.aligned_expand(PAGE_BITS);
 
-    Errno errno = BHV::MemRange::map(Zeta::Ec::ctx(), _mobject, map_area.begin() >> PAGE_BITS,
-                                     map_area.size() >> PAGE_BITS, offset >> PAGE_BITS,
-                                     BHV::MemRange::READ, Nova::Table::CPU_HST);
-
-    if (errno != ENONE)
-        return errno;
+    if (!_mapped) {
+        err = BHV::MemRange::map(Zeta::Ec::ctx(), _mobject, map_area.begin() >> PAGE_BITS,
+                                 map_area.size() >> PAGE_BITS, offset >> PAGE_BITS,
+                                 BHV::MemRange::READ, Nova::Table::CPU_HST);
+        if (err != ENONE)
+            return err;
+    }
 
     memcpy(dst, src, size);
 
     /* unmap */
-    errno = Zeta::munmap(Zeta::Ec::ctx(), reinterpret_cast<void*>(map_area.begin()),
-                         map_area.size(), Nova::Table::CPU_HST);
-    if (errno != ENONE)
-        ABORT_WITH("Unable to unmap region");
-
+    if (!_mapped) {
+        err = Zeta::munmap(Zeta::Ec::ctx(), reinterpret_cast<void*>(map_area.begin()),
+                           map_area.size(), Nova::Table::CPU_HST);
+        if (err != ENONE)
+            ABORT_WITH("Unable to unmap region: %d", err);
+    }
     return ENONE;
 }
 
@@ -52,24 +55,29 @@ Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
     mword offset = gpa.get_value() - get_guest_view().get_value();
     char* hva = get_vmm_view() + offset;
 
+    Errno err;
     auto map_area = Range<mword>{reinterpret_cast<mword>(hva), size}.aligned_expand(PAGE_BITS);
 
-    Errno errno = BHV::MemRange::map(Zeta::Ec::ctx(), _mobject, map_area.begin() >> PAGE_BITS,
-                                     map_area.size() >> PAGE_BITS, offset >> PAGE_BITS,
-                                     BHV::MemRange::WRITE, Nova::Table::CPU_HST);
-    if (errno != ENONE)
-        return errno;
+    if (!_mapped) {
+        err = BHV::MemRange::map(Zeta::Ec::ctx(), _mobject, map_area.begin() >> PAGE_BITS,
+                                 map_area.size() >> PAGE_BITS, offset >> PAGE_BITS,
+                                 BHV::MemRange::WRITE, Nova::Table::CPU_HST);
+        if (err != ENONE)
+            return err;
+    }
 
     memcpy(hva, src, size);
     dcache_clean_range(hva, size);
     /* XXX: it will call Model::Cpu::ctrl_feature_on_all_vcpus */
     icache_invalidate_range(hva, size);
 
-    /* unmap */
-    errno = Zeta::munmap(Zeta::Ec::ctx(), reinterpret_cast<void*>(map_area.begin()),
-                         map_area.size(), Nova::Table::CPU_HST);
-    if (errno != ENONE)
-        ABORT_WITH("Unable to unmap region");
+    if (!_mapped) {
+        /* unmap */
+        err = Zeta::munmap(Zeta::Ec::ctx(), reinterpret_cast<void*>(map_area.begin()),
+                           map_area.size(), Nova::Table::CPU_HST);
+        if (err != ENONE)
+            ABORT_WITH("Unable to unmap region: %d", err);
+    }
 
     return ENONE;
 }
@@ -128,22 +136,28 @@ Model::SimpleAS::flush_guest_as() {
         return;
     Platform::MutexGuard guard(&_mapping_lock);
 
+    Errno err;
     auto map_area
         = Range<mword>{reinterpret_cast<mword>(_vmm_view), _as.size()}.aligned_expand(PAGE_BITS);
-    Errno errno = BHV::MemRange::map(Zeta::Ec::ctx(), _mobject, map_area.begin() >> PAGE_BITS,
-                                     map_area.size() >> PAGE_BITS, 0, BHV::MemRange::WRITE,
-                                     Nova::Table::CPU_HST);
-    if (errno != ENONE)
-        ABORT_WITH("Unable to map guest region %llx", get_guest_view().get_value());
+
+    if (!_mapped) {
+        err = BHV::MemRange::map(Zeta::Ec::ctx(), _mobject, map_area.begin() >> PAGE_BITS,
+                                 map_area.size() >> PAGE_BITS, 0, BHV::MemRange::WRITE,
+                                 Nova::Table::CPU_HST);
+        if (err != ENONE)
+            ABORT_WITH("Unable to map guest region %llx", get_guest_view().get_value());
+    }
 
     dcache_clean_range(_vmm_view, _as.size());
     icache_invalidate_range(_vmm_view, _as.size());
 
-    /* unmap */
-    errno = Zeta::munmap(Zeta::Ec::ctx(), reinterpret_cast<void*>(map_area.begin()),
-                         map_area.size(), Nova::Table::CPU_HST);
-    if (errno != ENONE)
-        ABORT_WITH("Unable to unmap region");
+    if (!_mapped) {
+        /* unmap */
+        err = Zeta::munmap(Zeta::Ec::ctx(), reinterpret_cast<void*>(map_area.begin()),
+                           map_area.size(), Nova::Table::CPU_HST);
+        if (err != ENONE)
+            ABORT_WITH("Unable to unmap region %d", err);
+    }
 }
 
 void
@@ -161,6 +175,9 @@ Model::SimpleAS::flush_callback(Vbus::Bus::DeviceEntry* de, const VcpuCtx*) {
 char*
 Model::SimpleAS::gpa_to_vmm_view(GPA addr, size_t sz) const {
     if (!is_gpa_valid(addr, sz))
+        return nullptr;
+
+    if (!_mapped)
         return nullptr;
 
     mword off = addr.get_value() - _as.begin();
@@ -215,6 +232,47 @@ Model::SimpleAS::clean_invalidate_bus(const Vbus::Bus& bus, GPA addr, size_t sz)
         return EINVAL;
 
     return tgt->clean_invalidate(addr, sz);
+}
+
+bool
+Model::SimpleAS::construct(mword guest_base, const mword size, bool map) {
+    _as = Range<mword>(guest_base, size);
+    _vmm_view = reinterpret_cast<char*>(Vmap::pagealloc(numpages(size)));
+    if (_vmm_view == nullptr) {
+        return false;
+    }
+
+    if (!map) {
+        return true;
+    }
+
+    Errno err = BHV::MemRange::map(
+        Zeta::Ec::ctx(), _mobject, reinterpret_cast<mword>(_vmm_view) >> PAGE_BITS, numpages(size),
+        0, BHV::MemRange::READ | BHV::MemRange::WRITE, Nova::Table::CPU_GST);
+    if (err != Errno::ENONE) {
+        Vmap::free(_vmm_view, size);
+        _vmm_view = nullptr;
+        return false;
+    }
+    _mapped = true;
+    return true;
+}
+
+bool
+Model::SimpleAS::destruct() {
+    if (_mapped) {
+        Errno err = Zeta::munmap(Zeta::Ec::ctx(), reinterpret_cast<void*>(_vmm_view), _as.size(),
+                                 Nova::Table::CPU_HST);
+        if (err != Errno::ENONE) {
+            return false;
+        }
+    }
+
+    if (_vmm_view != nullptr) {
+        Vmap::free(_vmm_view, _as.size());
+        _vmm_view = nullptr;
+    }
+    return true;
 }
 
 char*
