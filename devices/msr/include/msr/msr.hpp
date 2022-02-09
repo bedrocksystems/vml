@@ -93,6 +93,13 @@ namespace Msr {
         ID_AA64DFR1_EL1 = build_msr_id(3, 0, 0, 5, 1),
         MDSCR_EL1 = build_msr_id(2, 0, 0, 2, 2),
 
+        DCIVAC = build_msr_id(1, 7, 0, 6, 1),
+        DCCVAC = build_msr_id(1, 7, 3, 10, 1),
+        DCCVAU = build_msr_id(1, 7, 3, 11, 1),
+        DCCVAP = build_msr_id(1, 7, 3, 12, 1),
+        DCCIVAC = build_msr_id(1, 7, 3, 14, 1),
+        DCZVA = build_msr_id(1, 7, 0, 4, 1),
+
         DBGBVR0_EL1 = build_msr_id(2, 0, 0, 0, 4),
         DBGBVR1_EL1 = build_msr_id(2, 0, 0, 1, 4),
         DBGBVR2_EL1 = build_msr_id(2, 0, 0, 2, 4),
