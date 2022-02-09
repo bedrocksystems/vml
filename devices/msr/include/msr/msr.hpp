@@ -272,7 +272,7 @@ namespace Msr {
            DBGWCR6_EL1,  DBGWCR7_EL1,  DBGWCR8_EL1,  DBGWCR9_EL1, DBGWCR10_EL1, DBGWCR11_EL1,
            DBGWCR12_EL1, DBGWCR13_EL1, DBGWCR14_EL1, DBGWCR15_EL1};
 
-    void flush_on_cache_toggle(const VcpuCtx* vcpu, Vbus::Bus& vbus, uint64 new_value);
+    void flush_on_cache_toggle(const VcpuCtx* vcpu, uint64 new_value);
 }
 
 namespace Model {
@@ -384,8 +384,12 @@ public:
 
 class Msr::Set_way_flush_reg : public Msr::Register {
 public:
-    Set_way_flush_reg(const char* name, Id const reg_id, Vbus::Bus& vbus)
-        : Register(name, reg_id, true, 0x0, 0x00000000fffffffeull), _vbus(&vbus) {}
+    Set_way_flush_reg(const char* name, Id const reg_id, Vbus::Bus& b)
+        : Register(name, reg_id, true, 0x0, 0x00000000fffffffeull) {
+        if (vbus == nullptr)
+            vbus = &b;
+    }
+
     virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vctx, Vbus::Space sp, mword off,
                              uint8 bytes, uint64& value) override {
         Vbus::Err ret = Register::access(access, vctx, sp, off, bytes, value);
@@ -397,10 +401,12 @@ public:
         return ret;
     }
 
+    static Vbus::Bus* get_associated_bus() { return vbus; }
+
 protected:
     void flush(const VcpuCtx*, uint8, uint32) const;
 
-    Vbus::Bus* _vbus;
+    static Vbus::Bus* vbus;
 };
 
 class Msr::IdAa64pfr0 : public Register {
@@ -618,15 +624,11 @@ public:
 
 class Msr::SctlrEl1 : public Msr::RegisterBase {
 public:
-    SctlrEl1(const char* name, Msr::Id reg_id, Vbus::Bus& vbus)
-        : Msr::RegisterBase(name, reg_id), _vbus(&vbus) {}
+    SctlrEl1(const char* name, Msr::Id reg_id) : Msr::RegisterBase(name, reg_id) {}
 
     virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu, Vbus::Space, mword, uint8,
                              uint64& res) override;
     virtual void reset(const VcpuCtx*) override {}
-
-private:
-    Vbus::Bus* _vbus;
 };
 
 /*
@@ -699,8 +701,8 @@ private:
                                  uint64 midr_el1);
     bool setup_aarch32_debug(uint64 id_aa64dfr0_el1, uint32 id_dfr0_el1);
 
-    virtual bool setup_page_table_regs(Vbus::Bus&);
-    bool setup_tvm(Vbus::Bus&);
+    virtual bool setup_page_table_regs();
+    bool setup_tvm();
     bool setup_gic_registers(Model::GicD&);
 
 protected:
