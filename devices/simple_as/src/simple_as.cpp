@@ -67,19 +67,34 @@ Model::SimpleAS::write(GPA& gpa, size_t size, const char* src) {
 
 Errno
 Model::SimpleAS::write_mapped(GPA& gpa, size_t size, const char* src) const {
-    mword offset;
-    void* hva = nullptr;
-
-    if (!is_gpa_valid(gpa, size))
+    void* hva = gpa_to_vmm_view(gpa, size);
+    if (hva == nullptr)
         return EINVAL;
-
-    offset = gpa.get_value() - get_guest_view().get_value();
-    hva = get_vmm_view() + offset;
 
     memcpy(hva, src, size);
 
     dcache_clean_range(hva, size);
     icache_invalidate_range(hva, size);
+
+    return ENONE;
+}
+
+Errno
+Model::SimpleAS::clean_invalidate(GPA addr, size_t sz) {
+    void* hva = gpa_to_vmm_view(addr, sz);
+    if (hva == nullptr)
+        return EINVAL;
+
+    Platform::MutexGuard guard(&_mapping_lock);
+    Errno err = vmm_mmap(Zeta::Ec::ctx(), addr, sz, true, true);
+    if (err != ENONE)
+        return err;
+
+    dcache_clean_invalidate_range(hva, sz);
+
+    err = vmm_mmap(Zeta::Ec::ctx(), addr, sz, false, false);
+    if (err != ENONE)
+        return err;
 
     return ENONE;
 }
@@ -211,4 +226,13 @@ Model::SimpleAS::vmm_mmap(const Zeta::Zeta_ctx* ctx, GPA start, uint64 size, boo
     }
 
     return ENONE;
+}
+
+Errno
+Model::SimpleAS::clean_invalidate_bus(const Vbus::Bus& bus, GPA addr, size_t sz) {
+    Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
+    if (tgt == nullptr)
+        return EINVAL;
+
+    return tgt->clean_invalidate(addr, sz);
 }

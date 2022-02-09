@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 BedRock Systems, Inc.
+ * Copyright (C) 2020-2022 BedRock Systems, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
@@ -512,12 +512,14 @@ public:
 
     static Errno read_bus(const Vbus::Bus &bus, GPA addr, char *dst, size_t sz);
     static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz);
+    static Errno clean_invalidate_bus(const Vbus::Bus &bus, GPA addr, size_t sz);
 
     /*! \brief Iterate over this AS and make sure that all data made it to physical RAM
      *  \pre Partial ownership of this device
      *  \post Ownership unchanged
      */
     void flush_guest_as();
+    Errno clean_invalidate(GPA addr, size_t sz);
 
     Errno vmm_mmap(const Platform_ctx *ctx, GPA start, uint64 size, bool will_write,
                    bool map) const;

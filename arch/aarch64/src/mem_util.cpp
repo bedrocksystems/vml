@@ -19,6 +19,12 @@ dcache_clean_line_poc(mword va) {
 }
 
 static inline void
+dcache_clean_invalidate_line_poc(mword va) {
+    /* Clean (not invalidate) the data cache for the VA to PoC. */
+    asm volatile("dc civac, %0" : : "r"(va) : "memory");
+}
+
+static inline void
 dcache_clean_line_pou(mword va) {
     /* Clean (not invalidate) the data cache for the VA to PoU. */
     asm volatile("dc cvau, %0" : : "r"(va) : "memory");
@@ -53,6 +59,11 @@ dcache_op_range(void* va_start, size_t size) {
 void
 dcache_clean_range(void* va_start, size_t size) {
     dcache_op_range<dcache_clean_line_poc>(va_start, size);
+}
+
+void
+dcache_clean_invalidate_range(void* va_start, size_t size) {
+    dcache_op_range<dcache_clean_invalidate_line_poc>(va_start, size);
 }
 
 void
