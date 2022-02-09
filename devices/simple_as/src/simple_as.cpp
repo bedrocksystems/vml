@@ -20,15 +20,21 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
 }
 
 Errno
-Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
-    mword offset;
-    void* hva = nullptr;
-
-    if (!is_gpa_valid(gpa, size))
+Model::SimpleAS::clean_invalidate(GPA addr, size_t sz) const {
+    void* hva = gpa_to_vmm_view(addr, sz);
+    if (hva == nullptr)
         return EINVAL;
 
-    offset = gpa.get_value() - get_guest_view().get_value();
-    hva = get_vmm_view() + offset;
+    dcache_clean_invalidate_range(hva, sz);
+
+    return ENONE;
+}
+
+Errno
+Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
+    void* hva = gpa_to_vmm_view(gpa, size);
+    if (hva == nullptr)
+        return EINVAL;
 
     memcpy(hva, src, size);
 
@@ -106,4 +112,13 @@ Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size
         return EINVAL;
 
     return tgt->write(addr, sz, src);
+}
+
+Errno
+Model::SimpleAS::clean_invalidate_bus(const Vbus::Bus& bus, GPA addr, size_t sz) {
+    const Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
+    if (tgt == nullptr)
+        return EINVAL;
+
+    return tgt->clean_invalidate(addr, sz);
 }

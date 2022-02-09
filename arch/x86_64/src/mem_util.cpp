@@ -21,6 +21,11 @@ dcache_clean_range(void* start, size_t size) {
 }
 
 void
+dcache_clean_invalidate_range(void* va_start, size_t size) {
+    return dcache_clean_range(va_start, size);
+}
+
+void
 icache_invalidate_range(void*, size_t) {
     return;
 }
