@@ -17,6 +17,7 @@
 #include <platform/types.hpp>
 
 static constexpr uint64 AA64DFR0_DEBUG_V8 = 0x6ull;
+Vbus::Bus *Msr::Set_way_flush_reg::vbus = nullptr;
 
 bool
 Msr::Bus::setup_aarch64_debug(uint64 id_aa64dfr0_el1, uint64 id_aa64dfr1_el1) {
@@ -334,7 +335,7 @@ Msr::Bus::setup_aarch64_physical_timer(Model::AA64Timer &ptimer) {
 }
 
 bool
-Msr::Bus::setup_page_table_regs(Vbus::Bus &vbus) {
+Msr::Bus::setup_page_table_regs() {
     bool ok = false;
 
     ok = register_system_reg(new (nothrow) WtrappedMsr("TCR_EL1", Msr::Id(TCR_EL1)));
@@ -346,11 +347,11 @@ Msr::Bus::setup_page_table_regs(Vbus::Bus &vbus) {
     ok = register_system_reg(new (nothrow) WtrappedMsr("TTBR1_EL1", Msr::Id(TTBR1_EL1)));
     if (!ok)
         return false;
-    return register_system_reg(new (nothrow) SctlrEl1("SCTLR_EL1", Msr::Id(SCTLR_EL1), vbus));
+    return register_system_reg(new (nothrow) SctlrEl1("SCTLR_EL1", Msr::Id(SCTLR_EL1)));
 }
 
 bool
-Msr::Bus::setup_tvm(Vbus::Bus &vbus) {
+Msr::Bus::setup_tvm() {
     bool ok = false;
 
     ok = register_system_reg(new (nothrow) WtrappedMsr("AFSR0_EL1", Msr::Id(AFSR0_EL1)));
@@ -384,7 +385,7 @@ Msr::Bus::setup_tvm(Vbus::Bus &vbus) {
     if (!ok)
         return false;
 
-    return setup_page_table_regs(vbus);
+    return setup_page_table_regs();
 }
 
 bool
@@ -448,7 +449,7 @@ Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Mo
     if (!setup_aarch64_debug(info.aa64.id_aa64dfr0_el1, info.aa64.id_aa64dfr1_el1))
         return false;
 
-    if (!setup_tvm(vbus))
+    if (!setup_tvm())
         return false;
 
     /* ID */
@@ -521,14 +522,14 @@ Msr::Set_way_flush_reg::flush(const VcpuCtx *vctx, const uint8, const uint32) co
      * guest OS wants to achieve.
      */
     if (!Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vctx->vcpu_id)) {
-        _vbus->iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
+        vbus->iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
         INFO("Use of Set/way flush detected - flushing guest AS and enable TVM");
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vctx->vcpu_id, true);
     }
 }
 
 void
-Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, Vbus::Bus &vbus, uint64 new_value) {
+Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, uint64 new_value) {
     if (!Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vcpu->vcpu_id)) {
         // Another requestor needed TVM - no action to take on our side
         return;
@@ -548,7 +549,9 @@ Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, Vbus::Bus &vbus, uint64 new_valu
     if (before.cache_enabled() != after.cache_enabled()) {
         INFO("Cache setting toggled - flushing the guest AS");
 
-        vbus.iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
+        Vbus::Bus *bus = Msr::Set_way_flush_reg::get_associated_bus();
+        ASSERT(bus != nullptr);
+        bus->iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
     }
 
     if (after.cache_enabled()) {
@@ -562,7 +565,7 @@ Msr::SctlrEl1::access(Vbus::Access access, const VcpuCtx *vcpu, Vbus::Space, mwo
                       uint64 &res) {
     ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
 
-    flush_on_cache_toggle(vcpu, *_vbus, res);
+    flush_on_cache_toggle(vcpu, res);
     return Vbus::Err::UPDATE_REGISTER; // Tell the VCPU to update the relevant physical
                                        // register
 }
