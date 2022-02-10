@@ -8,6 +8,7 @@
 #pragma once
 
 #include <mutex>
+#include <platform/context.hpp>
 
 /*! \file Define a mutex class
  */
