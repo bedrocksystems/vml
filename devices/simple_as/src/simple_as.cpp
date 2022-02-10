@@ -143,8 +143,8 @@ Model::SimpleAS::gpa_to_vmm_view(GPA addr, size_t sz) const {
     return _vmm_view + off;
 }
 
-static Model::SimpleAS*
-get_as_device_at(const Vbus::Bus& bus, GPA addr, size_t sz) {
+Model::SimpleAS*
+Model::SimpleAS::get_as_device_at(const Vbus::Bus& bus, GPA addr, size_t sz) {
     Vbus::Device* dev = bus.get_device_at(addr.get_value(), sz);
 
     if (__UNLIKELY__(dev == nullptr
