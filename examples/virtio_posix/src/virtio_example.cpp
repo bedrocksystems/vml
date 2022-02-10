@@ -6,6 +6,8 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 
+#include <cstring>
+#include <fcntl.h>
 #include <thread>
 
 #include <model/cpu.hpp>
@@ -19,9 +21,8 @@
 #include <vbus/vbus.hpp>
 
 static const constexpr uint32 VIRTIO_RAM_SIZE = 0x10000;
-static uint8 vRAM[VIRTIO_RAM_SIZE];
 static const constexpr uint64 VIRTIO_BASE = 0x44000;
-static const uint64 VIRTIO_GUEST_BASE = reinterpret_cast<uint64>(vRAM);
+static const uint64 VIRTIO_GUEST_BASE = 0x10000000;
 
 static const uint64 Q0_DESC = VIRTIO_GUEST_BASE;
 static const uint64 Q0_DRIVER = VIRTIO_GUEST_BASE + 0x1000;
@@ -151,10 +152,16 @@ main() {
     ASSERT(ok);
 
     Vbus::Bus bus;
-    Model::SimpleAS sas(false);
+    char fname[32];
+    strncpy(fname, "/tmp/bhv-XXXXXX", 32);
+    int fd = mkstemp(fname);
+    unlink(fname);
+    int rc = fallocate(fd, 0, 0, VIRTIO_RAM_SIZE);
+    ASSERT(rc == 0);
 
-    sas.set_guest_as(VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);
-
+    Model::SimpleAS sas(fd, false);
+    ok = sas.construct(GPA(VIRTIO_GUEST_BASE), VIRTIO_RAM_SIZE, false);
+    ASSERT(ok);
     ok = bus.register_device(&sas, VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);
     ASSERT(ok);
 
@@ -195,6 +202,6 @@ main() {
 
     sig.wait();
     INFO("Virtio console received kick");
-
+    close(fd);
     return 0;
 }
