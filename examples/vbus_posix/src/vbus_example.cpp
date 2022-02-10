@@ -6,6 +6,8 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 
+#include <cstring>
+#include <fcntl.h>
 #include <thread>
 
 #include <model/aa64_timer.hpp>
@@ -41,7 +43,6 @@ main() {
     Platform_ctx ctx;
     Vbus::Bus vbus;
     Model::GicD gicd(Model::GIC_V2, 1);
-    Model::SimpleAS as(false);
     Msr::Bus msr_bus;
 
     bool ok = gicd.init();
@@ -83,9 +84,19 @@ main() {
     ok = vbus.register_device(&gicd, 0x43000, 0x1000);
     ASSERT(ok == true);
 
-    char *guest_as = new char[4096];
-    as.set_guest_as(reinterpret_cast<mword>(guest_as), 4096);
-    ok = vbus.register_device(&as, reinterpret_cast<mword>(guest_as), 4096);
+    size_t file_size = 4096;
+    char fname[32];
+    strncpy(fname, "/tmp/bhv-XXXXXX", 32);
+    int fd = mkstemp(fname);
+    unlink(fname);
+    int rc = fallocate(fd, 0, 0, file_size);
+    ASSERT(rc == 0);
+
+    Model::SimpleAS as(fd, false);
+    GPA gpa(0x10000000);
+    ok = as.construct(gpa, file_size, false);
+    ASSERT(ok == true);
+    ok = vbus.register_device(&as, gpa.get_value(), file_size);
     ASSERT(ok == true);
 
     vbus.iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
@@ -112,5 +123,6 @@ main() {
 
     INFO("Done");
 
+    close(fd);
     return 0;
 }
