@@ -13,11 +13,9 @@
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/memory.hpp>
-#include <platform/mutex.hpp>
 #include <platform/rangemap.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
-#include <zeta/ec.hpp>
 
 namespace Model {
     class SimpleAS;
@@ -422,7 +420,7 @@ public:
      *  \post Ownership unchanged. Selector of memory object is returned.
      *  \return the selector of memory object
      */
-    BHV::Sel get_bhv_sel() const { return _mobject; }
+    mword get_mem_fd() const { return _mobject; }
 
     /*! \brief Set the parameters of the AS (size, mapping, base guest address)
      *  \pre Full ownership of the object.
@@ -531,7 +529,7 @@ public:
      */
     char *gpa_to_vmm_view(GPA addr, size_t sz) const;
 
-    Errno map_view(void *dst, mword offset, size_t sz, bool write) const;
+    void *map_view(mword offset, size_t size, bool write) const;
 
     bool is_read_only() const { return _read_only; }
 
@@ -555,9 +553,6 @@ protected:
     char *_vmm_view{nullptr}; /*!< base host mapping of base gpa. */
     Range<mword> _as;         /*!< Range(gpa RAM base, guest RAM size) */
 
-    BHV::Sel _mobject; /*!< BHV Memory Range object behind this guest range */
+    mword _mobject; /*!< BHV Memory Range object behind this guest range */
     bool _mapped{false};
-
-private:
-    Platform::Mutex _mapping_lock; /*!< Global state lock */
 };
