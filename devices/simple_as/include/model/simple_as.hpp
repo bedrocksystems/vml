@@ -422,19 +422,6 @@ public:
      */
     mword get_mem_fd() const { return _mobject; }
 
-    /*! \brief Set the parameters of the AS (size, mapping, base guest address)
-     *  \pre Full ownership of the object.
-     *  \post Ownership unchanged. The AS info are stored in the object
-     *  \param guest_base Address of the mapping from the guest point (guest physical)
-     *  \param size Size of the address space
-     *  \param vmm_off Offset between guest_base and the vmm mapping of the guest AS
-     */
-    void set_guest_as(const mword guest_base, const mword size, const mword vmm_off = mword(0)) {
-#warning "Remove this method. use construct instead"
-        _as = Range<mword>(guest_base, size);
-        _vmm_view = reinterpret_cast<char *>(guest_base + vmm_off);
-    }
-
     /*! \brief Is the given GPA valid in this AS?
      *  \pre Partial ownership of the object.
      *  \post Ownership unchanged. true if the address belongs to this AS, false otherwise.
