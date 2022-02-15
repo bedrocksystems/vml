@@ -49,7 +49,7 @@ public:
     explicit Hvc(uint64 const esr) : Common(esr) {}
 
     static constexpr uint16 BED_MAGIC_HVC = 0xbedull;
-    static constexpr uint16 BED_VAS_OP_HVC = 0x539ull;
+    static constexpr uint16 BED_VAS_HVC = 0x539ull;
 
     constexpr uint16 imm() const { return static_cast<uint16>(bits_in_range(_esr, 0, 15)); }
 };
