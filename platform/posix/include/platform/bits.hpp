@@ -23,3 +23,17 @@ inline constexpr uint64_t
 bits_in_range(uint64_t val, uint8_t start, uint8_t end) {
     return bits(val, static_cast<uint8>(end - start + 1), start);
 }
+
+// NOTE: [align] must be a power of two
+inline constexpr uint64_t
+align_dn(uint64_t addr, uint64_t align) {
+    addr &= ~(align - 1);
+    return addr;
+}
+
+// NOTE: [align] must be a power of two
+inline constexpr uint64_t
+align_up(uint64_t addr, uint64_t align) {
+    addr += (align - 1);
+    return align_dn(addr, align);
+}

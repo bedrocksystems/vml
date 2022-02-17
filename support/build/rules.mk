@@ -14,7 +14,8 @@
 
 # Define the set of default variables to build LibVMM
 
-ARCH ?= x86_64
+
+
 PLATFORM ?= posix
 LLVM ?= 1
 CXX ?= clang++
@@ -35,10 +36,6 @@ WFLAGS = -Wall -Wextra -Wcast-align -Wcast-qual -Wconversion \
 XFLAGS = -fno-exceptions -fno-rtti -fno-threadsafe-statics
 
 ifeq ($(ARCH), aarch64)
-ifeq ($(LLVM), 1)
-TARGET_FLAG = --target=$(ARCH)-none-elf
-endif
-
 AFLAGS ?= -march=armv8-a -mgeneral-regs-only -mstrict-align
 endif
 

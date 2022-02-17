@@ -12,9 +12,19 @@ BRS_ROOT ?= ../../zeta/
 DOXYGEN ?= doxygen
 CMDGOAL = $(if $(strip $(MAKECMDGOALS)),$(MAKECMDGOALS),all)
 export PLATFORM ?= posix
-export TARGET ?= x86_64
+UNAME_M = $(shell uname -m)
 
-SUBDIRS = devices/vbus devices/pl011 devices/gic arch/$(TARGET)
+ifeq ($(UNAME_M),arm64)
+ARCH ?= aarch64
+else ifeq ($(UNAME_M),x86_64)
+ARCH ?= x86_64
+else
+$(error Unsupported architecture $(UNAME_S))
+endif
+
+export ARCH
+
+SUBDIRS = devices/vbus devices/pl011 devices/gic arch/$(ARCH)
 SUBDIRS += devices/timer devices/virtio_console devices/virtio_net devices/msr
 SUBDIRS += devices/simple_as devices/firmware vcpu/vcpu_roundup vcpu/cpu_model
 SUBDIRS += devices/virtio_sock
@@ -33,7 +43,7 @@ doc:
 else
 ifeq ($(PLATFORM), posix)
 
-export BLDDIR ?= $(CURDIR)/build-$(PLATFORM)-$(TARGET)/
+export BLDDIR ?= $(CURDIR)/build-$(PLATFORM)-$(ARCH)/
 
 EXAMPLES = examples/vbus_posix examples/virtio_posix
 
