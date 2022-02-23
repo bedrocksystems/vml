@@ -101,7 +101,7 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
     mword offset = addr.get_value() - get_guest_view().get_value();
     void* src;
 
-    if (!_mapped) {
+    if (!mapped()) {
         src = Platform::Mem::map_mem(_mobject, offset, size, Platform::Mem::READ);
         if (src == nullptr)
             return ENOMEM;
@@ -112,7 +112,7 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
     memcpy(dst, src, size);
 
     /* unmap */
-    if (!_mapped) {
+    if (!mapped()) {
         bool b = Platform::Mem::unmap_mem(src, size);
         if (!b)
             ABORT_WITH("Unable to unmap region");
@@ -128,7 +128,7 @@ Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
     mword offset = gpa.get_value() - get_guest_view().get_value();
     void* dst;
 
-    if (!_mapped) {
+    if (!mapped()) {
         dst = Platform::Mem::map_mem(_mobject, offset, size,
                                      Platform::Mem::READ | Platform::Mem::WRITE);
         if (dst == nullptr)
@@ -141,7 +141,7 @@ Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
     dcache_clean_range(dst, size);
     icache_invalidate_range(dst, size);
 
-    if (!_mapped) {
+    if (!mapped()) {
         bool b = Platform::Mem::unmap_mem(dst, size);
         if (!b)
             ABORT_WITH("Unable to unmap region");
@@ -173,7 +173,7 @@ Model::SimpleAS::clean_invalidate(GPA gpa, size_t size) const {
     mword offset = gpa.get_value() - get_guest_view().get_value();
     void* dst;
 
-    if (!_mapped) {
+    if (!mapped()) {
         dst = Platform::Mem::map_mem(_mobject, offset, size,
                                      Platform::Mem::READ | Platform::Mem::WRITE);
         if (dst == nullptr)
@@ -184,7 +184,7 @@ Model::SimpleAS::clean_invalidate(GPA gpa, size_t size) const {
 
     dcache_clean_invalidate_range(dst, size);
 
-    if (!_mapped) {
+    if (!mapped()) {
         bool b = Platform::Mem::unmap_mem(dst, size);
         if (!b)
             ABORT_WITH("Unable to unmap region");
@@ -198,7 +198,7 @@ Model::SimpleAS::flush_guest_as() {
         return;
 
     void* mapped_area;
-    if (!_mapped) {
+    if (!mapped()) {
         mapped_area = Platform::Mem::map_mem(_mobject, 0, _as.size(),
                                              Platform::Mem::READ | Platform::Mem::WRITE);
         if (mapped_area == nullptr)
@@ -210,7 +210,7 @@ Model::SimpleAS::flush_guest_as() {
     dcache_clean_range(mapped_area, _as.size());
     icache_invalidate_range(mapped_area, _as.size());
 
-    if (!_mapped) {
+    if (!mapped()) {
         bool b = Platform::Mem::unmap_mem(mapped_area, _as.size());
         if (!b)
             ABORT_WITH("Unable to unmap region");
@@ -234,7 +234,7 @@ Model::SimpleAS::gpa_to_vmm_view(GPA addr, size_t sz) const {
     if (!is_gpa_valid(addr, sz))
         return nullptr;
 
-    if (!_mapped)
+    if (!mapped())
         return nullptr;
 
     mword off = addr.get_value() - _as.begin();
@@ -300,19 +300,13 @@ Model::SimpleAS::construct(GPA guest_base, const mword size, bool map) {
 
     _vmm_view = reinterpret_cast<char*>(Platform::Mem::map_mem(
         _mobject, 0, size, Platform::Mem::READ | (!_read_only ? Platform::Mem::WRITE : 0)));
-    if (_vmm_view == nullptr) {
-        return false;
-    }
-
-    _mapped = true;
-
-    return true;
+    return (_vmm_view != nullptr);
 }
 
 bool
 Model::SimpleAS::destruct() {
     bool b = true;
-    if (_mapped) {
+    if (mapped()) {
         b = Platform::Mem::unmap_mem(reinterpret_cast<void*>(_vmm_view), _as.size());
         _vmm_view = nullptr;
     }

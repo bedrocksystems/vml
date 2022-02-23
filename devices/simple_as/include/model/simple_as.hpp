@@ -394,7 +394,7 @@ public:
      *  \param read_only is the AS read-only from the guest point of view?
      */
     explicit SimpleAS(mword mobj, bool read_only)
-        : Vbus::Device("SimpleAS"), _read_only(read_only), _mobject(mobj), _mapped{false} {}
+        : Vbus::Device("SimpleAS"), _read_only(read_only), _mobject(mobj) {}
 
     /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
@@ -403,7 +403,7 @@ public:
      *  \param read_only is the AS read-only from the guest point of view?
      */
     SimpleAS(const char *name, mword mobj, bool read_only)
-        : Vbus::Device(name), _read_only(read_only), _mobject(mobj), _mapped{false} {}
+        : Vbus::Device(name), _read_only(read_only), _mobject(mobj) {}
 
     bool construct(GPA guest_base, size_t size, bool map);
     bool destruct();
@@ -445,12 +445,7 @@ public:
      *  \post Ownership unchanged.
      *  \return Address representing the beginning of the mapping of the guest AS
      */
-    char *get_vmm_view() const {
-        if (_mapped)
-            return _vmm_view;
-        else
-            return nullptr;
-    };
+    char *get_vmm_view() const { return _vmm_view; };
 
     /*! \brief Read data from the guest AS
      *  \pre Partial ownership of the object. Full ownership of the destination buffer.
@@ -538,11 +533,11 @@ protected:
      */
     void flush_guest_as();
     Errno clean_invalidate(GPA gpa, size_t size) const;
+    bool mapped() const { return (_vmm_view != nullptr); }
 
     const bool _read_only;    /*!< Is the AS read-only from the guest point of view? */
     char *_vmm_view{nullptr}; /*!< base host mapping of base gpa. */
     Range<mword> _as;         /*!< Range(gpa RAM base, guest RAM size) */
 
     mword _mobject; /*!< BHV Memory Range object behind this guest range */
-    bool _mapped{false};
 };
