@@ -113,6 +113,10 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
 
     /* unmap */
     if (!mapped()) {
+
+        /* Invalidate cache befor unmapping */
+        dcache_clean_invalidate_range(dst, size);
+
         bool b = Platform::Mem::unmap_mem(src, size);
         if (!b)
             ABORT_WITH("Unable to unmap region");
@@ -138,7 +142,7 @@ Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
     }
 
     memcpy(dst, src, size);
-    dcache_clean_range(dst, size);
+    dcache_clean_invalidate_range(dst, size);
     icache_invalidate_range(dst, size);
 
     if (!mapped()) {
@@ -344,6 +348,10 @@ void
 Model::SimpleAS::unmap_guest_mem(const void* mem, size_t sz) {
     /* unmap memory */
     DEBUG("unmap_guest_mem mem:0x%p size:0x%lx", mem, sz);
+
+    /* invalidate guest caches */
+    dcache_clean_invalidate_range(const_cast<void*>(mem), sz);
+
     bool b = Platform::Mem::unmap_mem(mem, sz);
     if (!b)
         ABORT_WITH("Unable to unmap guest memory mem:0x%p size:0x%lx", mem, sz);
