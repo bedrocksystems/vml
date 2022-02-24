@@ -120,7 +120,8 @@ public:
      *  \param sp Space that this VBus represents
      *  \post Full ownership of the vbus
      */
-    explicit Bus(Vbus::Space sp = Space::ALL_MEM) : _space(sp), _devices() {}
+    explicit Bus(Vbus::Space sp = Space::ALL_MEM, bool absolute_access = false)
+        : _space(sp), _devices(), _absolute_access(absolute_access) {}
 
     /*! \brief Add a device to the virtual bus
      *  \pre Full ownership of a valid virtual bus. Full ownership of a valid Device.
@@ -212,4 +213,5 @@ private:
     bool _fold{true};
     const DeviceEntry* _last_access{nullptr};
     size_t _num_accesses{0};
+    bool _absolute_access{false};
 };

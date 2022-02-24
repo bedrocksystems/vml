@@ -215,7 +215,7 @@ Model::SimpleAS::vmm_mmap(const Zeta::Zeta_ctx* ctx, GPA start, uint64 size, boo
 
     // INFO("Permissions at [0x%lx:0x%lx] updated to R:%u W:%u", perm_range.begin(),
     // perm_range.last(),
-    //     read, write);
+    //      read, write);
     Nova::MemCred cred(read, write, false);
     Errno err
         = Zeta::mmap_update(ctx, first_vmm_page, perm_range.size(), cred, Nova::Table::CPU_HST);
