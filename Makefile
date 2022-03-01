@@ -24,7 +24,7 @@ endif
 
 export ARCH
 
-SUBDIRS = devices/vbus devices/pl011 devices/gic arch/$(ARCH)
+SUBDIRS = devices/vbus devices/vpl011 devices/gic arch/$(ARCH)
 SUBDIRS += devices/timer devices/virtio_console devices/virtio_net devices/msr
 SUBDIRS += devices/simple_as devices/firmware vcpu/vcpu_roundup vcpu/cpu_model
 SUBDIRS += devices/virtio_sock
