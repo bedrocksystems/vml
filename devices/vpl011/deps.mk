@@ -4,4 +4,4 @@ ifeq ($(PLATFORM), bedrock)
 LIBS += lang cxx log nova zeta msc pt alloc uuid concurrent
 endif
 
-$(eval $(call dep_hook,pl011,$(LIBS)))
+$(eval $(call dep_hook,vpl011,$(LIBS)))
