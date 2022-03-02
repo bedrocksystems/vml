@@ -9,7 +9,7 @@
 #
 
 PLATFORM ?= bedrock
-BRS_ROOT ?= ../../../../../zeta/
+BHV_ROOT ?= ../../../../..
 LIBNAME = $(shell basename `pwd`)
 
 ifeq ($(PLATFORM), bedrock)
@@ -18,11 +18,11 @@ else
 PLATFORM_PATH ?= ../../platform/
 endif
 
-LIBDIR  = $(BRS_ROOT)lib/  ../ ../../config/ ../../vcpu/ ../../arch/ $(PLATFORM_PATH)
+LIBDIR  = ../ ../../config/ ../../vcpu/ ../../arch/ $(PLATFORM_PATH)
 
 include deps.mk
 
 CC_SRCS =
 OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
-include $(BRS_ROOT)support/build/rules.mk
+include $(BHV_ROOT)/support/build/rules.mk

@@ -56,7 +56,19 @@ else
 ARCH_INC = $(ARCH)
 endif
 
-find_path_to_lib = $(foreach d, $(LIBDIR), $(wildcard $(d)$(1)))
+#
+# We keep things simple in the posix version for now. We just flatten all
+# the libraries and libdir into one namespace. A better version would be too keep
+# track of dependencies and traverse them using the "deps.mk" files.
+# For now, this is not needed, we just want to compile examples.
+#
+
+LIBDIR = $(VMM_ROOT)devices $(VMM_ROOT)arch $(VMM_ROOT)vcpu $(VMM_ROOT)config $(VMM_ROOT)platform
+LIBS  = vbus vpl011 gic irq_controller vuart timer virtio_console virtio_net msr arch_api
+LIBS += simple_as firmware vcpu_roundup cpu_model virtio_sock vmm_debug posix virtio_base
+LIBS += lifecycle
+
+find_path_to_lib = $(foreach d, $(LIBDIR), $(wildcard $(d)/$(1)))
 find_path_to_lib_objs=$(call find_common_path,$(VMM_ROOT),$(realpath $(call find_path_to_lib,$(1))))
 find_path_to_archive=$(BLDDIR)$(call find_path_to_lib_objs,$(1))/lib$(1).a
 INCLS  = $(foreach l, $(LIBS), $(addsuffix /include,$(call find_path_to_lib,$l)))

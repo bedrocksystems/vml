@@ -8,7 +8,7 @@
 # See the LICENSE-BedRock file in the repository root for details.
 #
 
-BRS_ROOT ?= ../../zeta/
+BHV_ROOT ?= ../../..
 DOXYGEN ?= doxygen
 CMDGOAL = $(if $(strip $(MAKECMDGOALS)),$(MAKECMDGOALS),all)
 export PLATFORM ?= posix
@@ -50,7 +50,7 @@ EXAMPLES = examples/vbus_posix examples/virtio_posix
 $(CMDGOAL): $(EXAMPLES)
 
 $(EXAMPLES) $(SUBDIRS):
-		+$(MAKE) -C $@ BRS_ROOT=$(realpath .)/ VMM_ROOT=$(realpath .)/ $(CMDGOAL)
+		+$(MAKE) -C $@ BHV_ROOT=$(realpath .)/ VMM_ROOT=$(realpath .)/ $(CMDGOAL)
 
 $(EXAMPLES): $(SUBDIRS)
 
