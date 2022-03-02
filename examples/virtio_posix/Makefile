@@ -6,10 +6,7 @@
 # See the LICENSE-BedRock file in the repository root for details.
 #
 
-TARGET ?= x86_64
 PLATFORM = posix
-BRS_ROOT ?= ../../../../zeta/
-
 APPNAME  = virtio_example
 
 include deps.mk
@@ -21,4 +18,4 @@ LIBDIR  = ../../devices/  ../../vcpu/ ../../config/ ../../platform/ ../../arch/
 CC_SRCS = virtio_example.cpp
 OBJS = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
-include $(BRS_ROOT)support/build/rules.mk
+include $(BHV_ROOT)support/build/rules.mk
