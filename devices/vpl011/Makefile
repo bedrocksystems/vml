@@ -12,17 +12,9 @@ PLATFORM ?= bedrock
 BHV_ROOT ?= ../../../../../
 LIBNAME = $(shell basename `pwd`)
 
-ifeq ($(PLATFORM), bedrock)
-PLATFORM_PATH ?= ../../../lib/
-else
-PLATFORM_PATH ?= ../../platform/
-endif
-
-LIBDIR  = ../ ../../config/ ../../vcpu/ ../../arch/ $(PLATFORM_PATH)
-
-include deps.mk
-
 CC_SRCS = pl011.cpp
 OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
+
+include deps.mk
 
 include $(BHV_ROOT)/support/build/rules.mk

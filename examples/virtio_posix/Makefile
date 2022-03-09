@@ -6,16 +6,13 @@
 # See the LICENSE-BedRock file in the repository root for details.
 #
 
-PLATFORM = posix
-APPNAME  = virtio_example
+APPNAME  = virtio_posix
 
 include deps.mk
 
 LINKLIBS  = vbus timer gic cpu_model vcpu_roundup virtio_console virtio_net simple_as $(ARCH)
 
-LIBDIR  = ../../devices/  ../../vcpu/ ../../config/ ../../platform/ ../../arch/
-
 CC_SRCS = virtio_example.cpp
 OBJS = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
-include $(BHV_ROOT)support/build/rules.mk
+include $(BHV_ROOT)/support/build/rules.mk
