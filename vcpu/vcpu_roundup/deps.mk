@@ -1,7 +1,3 @@
-LIBS = cpu_model $(PLATFORM) arch_api
-
-ifeq ($(PLATFORM), bedrock)
-LIBS += lang cxx uuid msc zeta nova alloc pt concurrent log
-endif
+LIBS = cpu_model $(PLATFORM) arch_api vmm_debug
 
 $(eval $(call dep_hook,vcpu_roundup,$(LIBS)))

@@ -1,7 +1,3 @@
-LIBS = vbus irq_controller cpu_model $(PLATFORM)
-
-ifeq ($(PLATFORM), bedrock)
-LIBS += lang cxx log zeta nova pt alloc msc uuid concurrent
-endif
+LIBS = irq_controller cpu_model $(PLATFORM)
 
 $(eval $(call dep_hook,timer,$(LIBS)))

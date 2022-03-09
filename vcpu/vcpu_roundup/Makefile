@@ -12,14 +12,6 @@ PLATFORM ?= bedrock
 BHV_ROOT ?= ../../../../..
 LIBNAME = $(shell basename `pwd`)
 
-ifeq ($(PLATFORM), bedrock)
-PLATFORM_PATH ?= ../../../lib/
-else
-PLATFORM_PATH ?= ../../platform/
-endif
-
-LIBDIR  = ../ ../../arch/ $(PLATFORM_PATH)
-
 include deps.mk
 
 CC_SRCS = vcpu_roundup.cpp
