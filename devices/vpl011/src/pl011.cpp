@@ -108,7 +108,7 @@ Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const val
         // watermark conditions
         else {
             bool old_irq = is_irq_asserted();
-            _tx_fifo.enqueue(static_cast<char>(value));
+            _tx_fifo.enqueue(static_cast<unsigned char>(value));
             set_txris(tx_irq_cond()); // if this changes the txris bit, it would only clear it
             updated_irq_lvl_to_gicd_if_needed(old_irq);
         }
