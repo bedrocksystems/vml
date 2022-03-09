@@ -12,6 +12,87 @@
 #include <platform/mem.hpp>
 #include <platform/string.hpp>
 
+// Alignment is ensured by the caller but the compiler does not know this
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
+uint64
+Model::SimpleAS::single_access_read(uint64 off, uint8 size) const {
+    ASSERT(off % size == 0);
+    ASSERT(size <= sizeof(uint64));
+
+    uint64 ret;
+    void* ptr;
+    if (!mapped()) {
+        ptr = map_view(off, size, true);
+    } else {
+        ptr = get_vmm_view() + off;
+    }
+
+    ASSERT(ptr != nullptr);
+
+    switch (size) {
+    case sizeof(uint8):
+        ret = *(reinterpret_cast<uint8*>(ptr));
+        break;
+    case sizeof(uint16):
+        ret = *(reinterpret_cast<uint16*>(ptr));
+        break;
+    case sizeof(uint32):
+        ret = *(reinterpret_cast<uint32*>(ptr));
+        break;
+    case sizeof(uint64):
+        ret = *(reinterpret_cast<uint64*>(ptr));
+        break;
+    default:
+        ABORT_WITH("Read size %u is not supported", size);
+        __UNREACHED__;
+    }
+
+    if (!mapped()) {
+        unmap_guest_mem(ptr, size);
+    }
+    return ret;
+}
+
+void
+Model::SimpleAS::single_access_write(uint64 off, uint8 size, uint64 value) const {
+    ASSERT(off % size == 0);
+    ASSERT(size <= sizeof(uint64));
+
+    void* ptr;
+    if (!mapped()) {
+        ptr = map_view(off, size, true);
+    } else {
+        ptr = get_vmm_view() + off;
+    }
+
+    ASSERT(ptr != nullptr);
+
+    switch (size) {
+    case sizeof(uint8):
+        *(reinterpret_cast<uint8*>(ptr)) = static_cast<uint8>(value);
+        break;
+    case sizeof(uint16):
+        *(reinterpret_cast<uint16*>(ptr)) = static_cast<uint16>(value);
+        break;
+    case sizeof(uint32):
+        *(reinterpret_cast<uint32*>(ptr)) = static_cast<uint32>(value);
+        break;
+    case sizeof(uint64):
+        *(reinterpret_cast<uint64*>(ptr)) = static_cast<uint64>(value);
+        break;
+    default:
+        ABORT_WITH("Write size %u is not supported", size);
+        __UNREACHED__;
+    }
+
+    icache_sync_range(ptr, size);
+    if (!mapped()) {
+        unmap_guest_mem(ptr, size);
+    }
+}
+#pragma GCC diagnostic pop
+
 Errno
 Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
     if (!is_gpa_valid(addr, size))
