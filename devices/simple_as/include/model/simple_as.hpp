@@ -529,6 +529,9 @@ public:
     static Errno clean_invalidate_bus(const Vbus::Bus &bus, GPA addr, size_t sz);
 
 protected:
+    uint64 single_access_read(uint64 off, uint8 size) const;
+    void single_access_write(uint64 off, uint8 size, uint64 value) const;
+
     /*! \brief Iterate over this AS and make sure that all data made it to physical RAM
      *  \pre Partial ownership of this device
      *  \post Ownership unchanged
