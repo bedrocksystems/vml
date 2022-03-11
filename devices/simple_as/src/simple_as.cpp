@@ -298,8 +298,9 @@ Model::SimpleAS::construct(GPA guest_base, const mword size, bool map) {
         return true;
     }
 
-    _vmm_view = reinterpret_cast<char*>(Platform::Mem::map_mem(
-        _mobject, 0, size, Platform::Mem::READ | (!_read_only ? Platform::Mem::WRITE : 0)));
+    /* Ignore _read_only and map it with Platform::Mem::WRITE. This is needed to update ROM */
+    _vmm_view = reinterpret_cast<char*>(
+        Platform::Mem::map_mem(_mobject, 0, size, Platform::Mem::READ | Platform::Mem::WRITE));
     return (_vmm_view != nullptr);
 }
 
