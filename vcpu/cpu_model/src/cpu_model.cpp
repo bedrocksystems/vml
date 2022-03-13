@@ -428,13 +428,10 @@ Model::Cpu::switch_state_to_emulating() {
 
 void
 Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolut) {
-    if (!will_timeout)
-        if (!_lirq_ctlr->int_pending() && !_lirq_ctlr->nmi_pending())
-            block();
-    else {
-        if (!_lirq_ctlr->int_pending())
-            block_timeout(timeout_absolut);
-    }
+    uint64 max_val = tsc() + ms_to_tsc(1000);
+    if (!_lirq_ctlr->int_pending())
+        // block_timeout(timeout_absolut);
+        block_timeout(min<uint64>(timeout_absolut, max_val));
 }
 
 void
@@ -442,7 +439,7 @@ Model::Cpu::wait_for_interrupt(Vcpu_id vcpu_id, uint64 control, uint64 const tim
     ASSERT(vcpu_id < configured_vcpus);
 
     Model::Cpu* vcpu = vcpus[vcpu_id];
-    vcpu->wait_for_interrupt(control, timeout_absolut);
+    vcpu->wait_for_interrupt(true, timeout_absolut);
 }
 
 void
