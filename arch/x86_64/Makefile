@@ -14,7 +14,7 @@ LIBNAME = $(shell basename `pwd`)
 
 include deps.mk
 
-CC_SRCS = mem_util.cpp
+CC_SRCS = mem_util.cpp breakpoint.cpp
 OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
 include $(BHV_ROOT)/support/build/rules.mk
