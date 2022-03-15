@@ -96,7 +96,7 @@ main() {
     GPA gpa(0x10000000);
     ok = as.construct(gpa, size_t(file_size), false);
     ASSERT(ok == true);
-    ok = vbus.register_device(&as, gpa.get_value(), file_size);
+    ok = vbus.register_device(&as, gpa.get_value(), mword(file_size));
     ASSERT(ok == true);
 
     vbus.iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
