@@ -20,7 +20,8 @@ namespace Platform::Mem {
 
 void *
 Platform::Mem::map_mem(mword descr, mword offset, size_t size, int flags) {
-    return mmap(nullptr, size, flags, MAP_SHARED, descr, offset);
+    return mmap(nullptr, size, flags, MAP_SHARED, static_cast<int>(descr),
+                static_cast<long>(offset));
 }
 
 bool
