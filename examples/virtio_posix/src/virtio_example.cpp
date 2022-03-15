@@ -159,7 +159,7 @@ main() {
     int rc = fallocate(fd, 0, 0, VIRTIO_RAM_SIZE);
     ASSERT(rc == 0);
 
-    Model::SimpleAS sas(fd, false);
+    Model::SimpleAS sas(mword(fd), false);
     ok = sas.construct(GPA(VIRTIO_GUEST_BASE), VIRTIO_RAM_SIZE, false);
     ASSERT(ok);
     ok = bus.register_device(&sas, VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);
