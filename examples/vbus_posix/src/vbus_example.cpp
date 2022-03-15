@@ -84,7 +84,7 @@ main() {
     ok = vbus.register_device(&gicd, 0x43000, 0x1000);
     ASSERT(ok == true);
 
-    size_t file_size = 4096;
+    off_t file_size = 4096;
     char fname[32];
     strncpy(fname, "/tmp/bhv-XXXXXX", 32);
     int fd = mkstemp(fname);
@@ -92,9 +92,9 @@ main() {
     int rc = fallocate(fd, 0, 0, file_size);
     ASSERT(rc == 0);
 
-    Model::SimpleAS as(fd, false);
+    Model::SimpleAS as(mword(fd), false);
     GPA gpa(0x10000000);
-    ok = as.construct(gpa, file_size, false);
+    ok = as.construct(gpa, size_t(file_size), false);
     ASSERT(ok == true);
     ok = vbus.register_device(&as, gpa.get_value(), file_size);
     ASSERT(ok == true);
