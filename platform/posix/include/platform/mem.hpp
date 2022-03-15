@@ -27,7 +27,5 @@ Platform::Mem::map_mem(mword descr, mword offset, size_t size, int flags) {
 bool
 Platform::Mem::unmap_mem(const void *addr, size_t length) {
     int r = munmap(const_cast<void *>(addr), length);
-    if (r != 0)
-        return false;
-    return true;
+    return r == 0;
 }
