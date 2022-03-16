@@ -393,8 +393,8 @@ public:
      *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    explicit SimpleAS(mword mobj, bool read_only)
-        : Vbus::Device("SimpleAS"), _read_only(read_only), _mobject(mobj) {}
+    explicit SimpleAS(mword mobj, bool read_only, bool flushable = true)
+        : Vbus::Device("SimpleAS"), _read_only(read_only), _flushable(flushable), _mobject(mobj) {}
 
     /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
@@ -402,8 +402,8 @@ public:
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    SimpleAS(const char *name, mword mobj, bool read_only)
-        : Vbus::Device(name), _read_only(read_only), _mobject(mobj) {}
+    SimpleAS(const char *name, mword mobj, bool read_only, bool flushable = true)
+        : Vbus::Device(name), _read_only(read_only), _flushable(flushable), _mobject(mobj) {}
 
     bool construct(GPA guest_base, size_t size, bool map);
     bool destruct();
@@ -536,6 +536,7 @@ protected:
     bool mapped() const { return (_vmm_view != nullptr); }
 
     const bool _read_only;    /*!< Is the AS read-only from the guest point of view? */
+    const bool _flushable;    /*!< Are full AS flush operations needed/allowed? */
     char *_vmm_view{nullptr}; /*!< base host mapping of base gpa. */
     Range<mword> _as;         /*!< Range(gpa RAM base, guest RAM size) */
 
