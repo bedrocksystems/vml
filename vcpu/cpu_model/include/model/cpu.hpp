@@ -117,8 +117,11 @@ public:
 private:
     Platform::Signal _resume_sig;
     Semaphore _off_sm;
+
+    // Boot configuration
     uint64 _boot_addr{0};
     uint64 _boot_args[MAX_BOOT_ARGS] = {0, 0, 0, 0};
+    Mode _start_mode{BITS_64};
 
     Vcpu_id const _vcpu_id;
 
@@ -169,7 +172,6 @@ private:
     void roundup_impl();
 
 protected:
-    Mode _start_mode{BITS_64};
     uint64 _tmr_off{0};
 
     Pcpu_id const _pcpu_id;
@@ -181,6 +183,7 @@ protected:
     const uint64 *boot_args() const { return _boot_args; }
     void switch_state_to_off();
     uint64 timer_offset() const { return _tmr_off; }
+    Mode start_mode() const { return _start_mode; }
 
     Cpu_feature _reset;
     Cpu_feature _tvm;
