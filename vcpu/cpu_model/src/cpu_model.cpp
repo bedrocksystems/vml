@@ -147,7 +147,7 @@ void
 Model::Cpu::ctrl_feature_single_step(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
                                      Reg_selection) {
     ASSERT(vcpu != nullptr);
-    vcpu->_singe_step.request(enable, requestor);
+    vcpu->_single_step.request(enable, requestor);
 }
 
 bool
@@ -157,7 +157,7 @@ Model::Cpu::requested_feature_tvm(Model::Cpu* vcpu, Request::Requestor requestor
 
 bool
 Model::Cpu::requested_feature_single_step(Model::Cpu* vcpu, Request::Requestor requestor) {
-    return vcpu->_singe_step.is_requested_by(requestor);
+    return vcpu->_single_step.is_requested_by(requestor);
 }
 
 bool
