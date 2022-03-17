@@ -586,12 +586,16 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id, bool redirect_irq) {
             redirect_spi(irq);
         }
 
+        IrqInjectionInfoUpdate cur = irq.injection_info.read();
+
         if (((irq.group0() && _ctlr.group0_enabled()) || (irq.group1() && _ctlr.group1_enabled()))
-            && irq.enabled() && !cpu.in_injection_irqs.is_set(irq_id)) {
+            && cur.is_targeting_cpu(cpu_id) && cur.pending() && irq.enabled()
+            && !cpu.in_injection_irqs.is_set(irq_id)) {
 
             if (r == nullptr || irq.prio() > r->prio())
                 r = &irq;
         }
+
         irq_id++;
     } while (irq_id < MAX_IRQ);
 
