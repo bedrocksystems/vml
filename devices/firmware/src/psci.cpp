@@ -7,6 +7,7 @@
  */
 
 #include <lifecycle.hpp>
+#include <model/aa64_timer.hpp>
 #include <model/cpu.hpp>
 #include <model/cpu_affinity.hpp>
 #include <model/psci.hpp>
@@ -156,7 +157,9 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
             }
 #endif
 
-            Model::Cpu::wait_for_interrupt(vctx.vcpu_id, arch.tmr_cntv_ctl(),
+            Model::AA64Timer::CntvCtl ctl(arch.tmr_cntv_ctl());
+
+            Model::Cpu::wait_for_interrupt(vctx.vcpu_id, ctl.can_fire(),
                                            arch.tmr_cntv_cval() + arch.tmr_cntvoff());
             res = static_cast<uint64>(SUCCESS);
         } else {

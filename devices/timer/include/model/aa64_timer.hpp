@@ -17,6 +17,7 @@ class Model::AA64Timer : public Model::Timer {
 private:
     enum : uint8 { ENABLED_BIT = 0x1, MASKED_BIT = 0x2, STATUS_BIT = 0x4 };
 
+public:
     class CntvCtl {
     public:
         explicit CntvCtl(uint8 val) : _value(val) {}
@@ -39,7 +40,6 @@ private:
         uint8 _value;
     };
 
-public:
     /*! \brief Construct a physical timer
      *  \pre Requires giving up a fractional ownership of the GIC to this class. The caller
      *  will have to provide a valid VCPU id and the physical timer IRQ configuration. Typically,
