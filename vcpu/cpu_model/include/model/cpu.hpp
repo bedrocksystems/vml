@@ -184,7 +184,7 @@ protected:
 
     Cpu_feature _reset;
     Cpu_feature _tvm;
-    Cpu_feature _singe_step;
+    Cpu_feature _single_step;
     Cpu_feature _execution_paused;
     Cpu_feature _icache_invalidate;
     Cpu_feature _hypercall;
