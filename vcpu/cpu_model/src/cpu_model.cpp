@@ -465,7 +465,7 @@ Model::Cpu::set_reset_parameters(uint64 const boot_addr, uint64 const boot_args[
     _boot_addr = boot_addr;
     for (unsigned i = 0; i < MAX_BOOT_ARGS; i++)
         _boot_args[i] = boot_args[i];
-    _tmr_off = tmr_off;
+    _timer_offset = tmr_off;
     _start_mode = m;
     Barrier::rw_before_rw();
 }

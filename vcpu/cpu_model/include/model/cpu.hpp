@@ -121,6 +121,7 @@ private:
     // Boot configuration
     uint64 _boot_addr{0};
     uint64 _boot_args[MAX_BOOT_ARGS] = {0, 0, 0, 0};
+    uint64 _timer_offset{0};
     Mode _start_mode{BITS_64};
 
     Vcpu_id const _vcpu_id;
@@ -172,8 +173,6 @@ private:
     void roundup_impl();
 
 protected:
-    uint64 _tmr_off{0};
-
     Pcpu_id const _pcpu_id;
     Model::Irq_controller *const _girq_ctlr;
     Model::Local_Irq_controller *_lirq_ctlr{nullptr};
@@ -182,8 +181,8 @@ protected:
     uint64 boot_addr() const { return _boot_addr; }
     const uint64 *boot_args() const { return _boot_args; }
     void switch_state_to_off();
-    uint64 timer_offset() const { return _tmr_off; }
     Mode start_mode() const { return _start_mode; }
+    uint64 timer_offset() const { return _timer_offset; }
 
     Cpu_feature _reset;
     Cpu_feature _tvm;
