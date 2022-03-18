@@ -28,6 +28,14 @@ struct VcpuCtx {
     RegAccessor* regs;
     Vcpu_id vcpu_id;
     CtxInfo info{CtxInfo::VMEXIT};
+
+    VcpuCtx(const Platform_ctx* ctxv, RegAccessor* regsv, Vcpu_id vcpu_idv)
+        : ctx(ctxv), regs(regsv), vcpu_id(vcpu_idv) {}
+
+    VcpuCtx(VcpuCtx&&) = delete;
+    VcpuCtx(const VcpuCtx&) = delete;
+    VcpuCtx& operator=(VcpuCtx&&) = delete;
+    VcpuCtx& operator=(const VcpuCtx&) = delete;
 };
 
 class CtxInfoGuard {
