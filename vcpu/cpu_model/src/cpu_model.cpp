@@ -443,18 +443,18 @@ Model::Cpu::switch_state_to_emulating() {
 }
 
 void
-Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolut) {
+Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolute) {
     if (!will_timeout)
         while (!_lirq_ctlr->int_pending() && !_lirq_ctlr->nmi_pending())
             block();
     else {
         if (!_lirq_ctlr->int_pending())
-            block_timeout(timeout_absolut);
+            block_timeout(timeout_absolute);
     }
 }
 
 void
-Model::Cpu::interrupt_pending() {
+Model::Cpu::notify_interrupt_pending() {
     recall(false);
     unblock();
 }

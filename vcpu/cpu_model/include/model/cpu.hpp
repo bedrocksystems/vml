@@ -31,7 +31,7 @@ namespace Vbus {
 
 class Model::Cpu_irq_interface {
 public:
-    virtual void interrupt_pending() = 0;
+    virtual void notify_interrupt_pending() = 0;
     virtual Model::Local_Irq_controller *local_irq_ctlr() = 0;
 };
 
@@ -191,36 +191,41 @@ protected:
 
 public:
     // VCPU api start
-
     static bool init(uint16 vcpus);
     static bool is_cpu_turned_on_by_guest(Vcpu_id);
-    static void roundup_all();
-    static void resume_all();
     static bool is_64bit(Vcpu_id);
     static Errno run(Vcpu_id);
+    static uint16 get_num_vcpus();
+    static Pcpu_id get_pcpu(Vcpu_id);
 
     // Debugging/Info purposes: describe the current status of the VCPU
+    // NOTE: the specification of this function is simply: returns a string
+    //       it isn't meaningful to specify what the string means.
     static const char *cpu_state_string(Vcpu_id);
 
-    typedef void (*ctrl_feature_cb)(Model::Cpu *, bool, Request::Requestor, Reg_selection);
-    typedef void (*ctrl_feature_ex_cb)(Model::Cpu *, bool, Request::Requestor, uint64,
-                                       Reg_selection);
-    typedef bool (*requested_feature_cb)(Model::Cpu *, Request::Requestor);
+    // Machine-level roundup logic
+    static void roundup_all();
+    static void resume_all();
 
+    // Configuration API
+    typedef void (*ctrl_feature_cb)(Model::Cpu *, bool, Request::Requestor, Reg_selection);
+
+    // note that the iterator functions do not access the state of the vcpu's directly, only the
+    // callback functions access it.
     static void ctrl_feature_on_vcpu(ctrl_feature_cb cb, Vcpu_id, bool,
                                      Request::Requestor requestor = Request::Requestor::VMM,
                                      Reg_selection regs = 0);
-    static void ctrl_register_trap_on_vcpu(ctrl_feature_ex_cb cb, Vcpu_id, bool, Request::Requestor,
-                                           uint64, Reg_selection regs);
     static void ctrl_feature_on_all_but_vcpu(ctrl_feature_cb cb, Vcpu_id, bool,
                                              Request::Requestor requestor = Request::Requestor::VMM,
                                              Reg_selection regs = 0);
     static void ctrl_feature_on_all_vcpus(ctrl_feature_cb cb, bool,
                                           Request::Requestor requestor = Request::Requestor::VMM,
                                           Reg_selection regs = 0);
-    static bool is_feature_enabled_on_vcpu(requested_feature_cb cb, Vcpu_id,
-                                           Request::Requestor requestor = Request::Requestor::VMM);
 
+    // these are the functions that are passed to the above functions for:
+    // [ctrl_feature_cb].
+    // there are more of these defined in subclasses, so this is some sort of extensible
+    // enumeration that is represented extensionally.
     static void ctrl_feature_off(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
                                  Reg_selection regs);
     static void ctrl_feature_reset(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
@@ -233,15 +238,28 @@ public:
                                                Request::Requestor requestor, Reg_selection regs);
     static void ctrl_feature_hypercall(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
                                        Reg_selection regs);
-    static bool requested_feature_tvm(Model::Cpu *vcpu, Request::Requestor requestor);
-    static bool requested_feature_single_step(Model::Cpu *vcpu, Request::Requestor requestor);
-    static bool requested_feature_hypercall(Model::Cpu *vcpu, Request::Requestor requestor);
 
+    // this is just like the above but it requires threading an extra argument
+    typedef void (*ctrl_feature_ex_cb)(Model::Cpu *, bool, Request::Requestor, uint64,
+                                       Reg_selection);
+
+    static void ctrl_register_trap_on_vcpu(ctrl_feature_ex_cb cb, Vcpu_id, bool, Request::Requestor,
+                                           uint64, Reg_selection regs);
+
+    // this is a [ctrl_feature_ex_cb]
     static void ctrl_register_trap_cb(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
                                       uint64 trap_id, Reg_selection regs);
 
-    static uint16 get_num_vcpus();
-    static Pcpu_id get_pcpu(Vcpu_id);
+    // Query API
+    typedef bool (*requested_feature_cb)(Model::Cpu *, Request::Requestor);
+
+    static bool is_feature_enabled_on_vcpu(requested_feature_cb cb, Vcpu_id,
+                                           Request::Requestor requestor = Request::Requestor::VMM);
+
+    // these are for the [cb] parameter of [is_feature_enabled_on_vcpu]
+    static bool requested_feature_tvm(Model::Cpu *vcpu, Request::Requestor requestor);
+    static bool requested_feature_single_step(Model::Cpu *vcpu, Request::Requestor requestor);
+    static bool requested_feature_hypercall(Model::Cpu *vcpu, Request::Requestor requestor);
 
     /*
      * Values are chosen to match the PSCI spec for conveniency. This could be changed
@@ -269,9 +287,20 @@ public:
 
     Vcpu_id id() const { return _vcpu_id; }
 
+    // higher level API for CPU emulation
+    bool begin_emulation() {
+        bool roundedup = false;
+        while (!switch_state_to_emulating()) {
+            roundedup = true;
+            wait_for_resume();
+        }
+        return roundedup;
+    }
+    void end_emulation() { switch_state_to_on(); }
+
     void wait_for_resume() { _resume_sig.wait(); }
     void wait_for_interrupt(bool will_timeout, uint64 timeout_absolut);
-    void interrupt_pending() override;
+    void notify_interrupt_pending() override;
 
     virtual Model::Local_Irq_controller *local_irq_ctlr() override { return _lirq_ctlr; }
 
