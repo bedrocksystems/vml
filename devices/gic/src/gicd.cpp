@@ -705,13 +705,17 @@ Model::GicD::update_inj_status_inactive(Vcpu_id const cpu_id, uint32 irq_id) {
 }
 
 void
-Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState state) {
+Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState state,
+                               bool in_injection) {
     ASSERT(cpu_id < _num_vcpus);
     ASSERT(irq_id < MAX_IRQ);
     Banked &cpu = _local[cpu_id];
     Irq &irq = irq_object(cpu, irq_id);
 
-    cpu.in_injection_irqs.atomic_clr(irq.id());
+    if (!in_injection) {
+        ASSERT(state == PENDING or state == INACTIVE);
+        cpu.in_injection_irqs.atomic_clr(irq.id());
+    }
 
     switch (state) {
     case IrqState::INACTIVE:
@@ -739,7 +743,8 @@ Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState sta
                 break;
 
             desired = cur;
-            desired.unset_injected(sender_id);
+            if (!in_injection)
+                desired.unset_injected(sender_id);
             if (state == IrqState::ACTIVE)
                 desired.unset_pending(sender_id);
         } while (!irq.injection_info.cas(cur, desired));

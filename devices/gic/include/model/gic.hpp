@@ -679,7 +679,7 @@ public:
     }
 
     bool pending_irq(Vcpu_id, Lr &, uint8 min_priority = PRIORITY_ANY);
-    void update_inj_status(Vcpu_id cpu_id, uint32 irq_id, IrqState state);
+    void update_inj_status(Vcpu_id cpu_id, uint32 irq_id, IrqState state, bool in_injection);
     void icc_sgi1r_el1(uint64, Vcpu_id);
     bool is_affinity_routing_enabled() const { return _ctlr.affinity_routing(); }
     GICVersion version() const { return _version; }
