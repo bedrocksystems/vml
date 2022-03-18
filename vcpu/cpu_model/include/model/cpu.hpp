@@ -52,38 +52,21 @@ public:
     bool is_requested() const {
         return is_requested_by(Request::VMM) || is_requested_by(Request::VMI);
     }
-    void force_reconfiguration() {
-        uint64 v = _config_count;
-        do {
-            if (__UNLIKELY__(v == UINT64_MAX))
-                return;
-        } while (!_config_count.compare_exchange_weak(v, v + 1));
-    }
-    void set_config_gen() {
-        _current_config = _config_count;
-        /* Force the next round to reconfigure due to possible concurrent updates
-         * to _config_count (leaving the value at UINT64_MAX). This will cause an extra
-         * configuration that is not needed. But, this is okay and will happen very very
-         * unfrequently (probably never?).
-         */
-        if (__UNLIKELY__(_current_config == UINT64_MAX)) {
-            _config_count = 1;
-            _current_config = 0;
-        }
-    }
-    bool needs_reconfiguration() const { return _current_config != _config_count; }
+    void force_reconfiguration() { _dirty = 1; }
+    void set_config_gen() { _dirty = 0; }
+    bool needs_reconfiguration() const { return _dirty; }
 
     static constexpr uint8 ENABLE_SHIFT = 63;
     static constexpr uint64 ENABLE_MASK = 1ull << ENABLE_SHIFT;
 
     void get_current_config(bool &enabled, Reg_selection &regs) {
-        uint64 vmm_conf = _requests[0];
-        uint64 vmi_conf = _requests[1];
+        uint64 conf = _requests[0] | _requests[1];
 
-        enabled = (vmm_conf & ENABLE_MASK) || (vmi_conf & ENABLE_MASK);
-        regs = (vmm_conf & ~ENABLE_MASK) | (vmi_conf & ~ENABLE_MASK);
+        enabled = conf & ENABLE_MASK;
 
-        if (!enabled)
+        if (enabled)
+            regs = conf & ~ENABLE_MASK;
+        else
             regs = 0; // Force no register when the feature is not enabled
     }
 
@@ -91,14 +74,13 @@ public:
     void request(bool enable, Request::Requestor requestor, Reg_selection regs = 0) {
         ASSERT(requestor < Request::MAX_REQUESTORS);
         ASSERT(!(ENABLE_MASK & regs)); // Reg_selection doesn't use the highest bit for now
-        _requests[requestor] = ((enable ? 1ull : 0ull) << ENABLE_SHIFT) | regs;
+        _requests[requestor] = enable ? regs | ENABLE_MASK : 0;
         force_reconfiguration();
     }
 
 private:
     atomic<uint64> _requests[Request::MAX_REQUESTORS] = {0ull, 0ull};
-    atomic<uint64> _config_count{0};
-    uint64 _current_config{0};
+    atomic<uint64> _dirty{0};
 };
 
 class Model::Cpu : public Model::Cpu_irq_interface {
