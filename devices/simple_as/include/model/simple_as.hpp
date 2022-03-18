@@ -393,8 +393,8 @@ public:
      *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    explicit SimpleAS(mword mobj, bool read_only, bool flushable = true)
-        : Vbus::Device("SimpleAS"), _read_only(read_only), _flushable(flushable), _mobject(mobj) {}
+    explicit SimpleAS(const Platform::Mem::MemDescr &descr, bool read_only, bool flushable = true)
+        : Vbus::Device("SimpleAS"), _read_only(read_only), _flushable(flushable), _mobject(descr) {}
 
     /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
@@ -402,8 +402,9 @@ public:
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    SimpleAS(const char *name, mword mobj, bool read_only, bool flushable = true)
-        : Vbus::Device(name), _read_only(read_only), _flushable(flushable), _mobject(mobj) {}
+    SimpleAS(const char *name, const Platform::Mem::MemDescr &descr, bool read_only,
+             bool flushable = true)
+        : Vbus::Device(name), _read_only(read_only), _flushable(flushable), _mobject(descr) {}
 
     bool construct(GPA guest_base, size_t size, bool map);
     bool destruct();
@@ -420,7 +421,7 @@ public:
      *  \post Ownership unchanged. Selector of memory object is returned.
      *  \return the selector of memory object
      */
-    mword get_mem_fd() const { return _mobject; }
+    const Platform::Mem::MemDescr &get_mem_fd() const { return _mobject; }
 
     /*! \brief Is the given GPA valid in this AS?
      *  \pre Partial ownership of the object.
@@ -540,5 +541,5 @@ protected:
     char *_vmm_view{nullptr}; /*!< base host mapping of base gpa. */
     Range<mword> _as;         /*!< Range(gpa RAM base, guest RAM size) */
 
-    mword _mobject; /*!< BHV Memory Range object behind this guest range */
+    Platform::Mem::MemDescr _mobject; /*!< BHV Memory Range object behind this guest range */
 };
