@@ -9,7 +9,6 @@
 #include <arch/mem_util.hpp>
 #include <model/simple_as.hpp>
 
-#include <platform/mem.hpp>
 #include <platform/string.hpp>
 
 // Alignment is ensured by the caller but the compiler does not know this
