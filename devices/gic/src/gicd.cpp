@@ -705,6 +705,40 @@ Model::GicD::update_inj_status_inactive(Vcpu_id const cpu_id, uint32 irq_id) {
 }
 
 void
+Model::GicD::update_inj_status_active_or_pending(Vcpu_id const cpu_id, IrqState state,
+                                                 uint32 irq_id, bool in_injection) {
+    Banked &cpu = _local[cpu_id];
+    Irq &irq = irq_object(cpu, irq_id);
+
+    if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
+        INFO("IRQ %u came back, not yet injected on VCPU " FMTu64, irq_id, cpu_id);
+
+    if (state == IrqState::PENDING) {
+        irq.deactivate();
+    } else {
+        irq.activate();
+    }
+
+    IrqInjectionInfoUpdate desired, cur;
+    do {
+        cur = irq.injection_info.read();
+        uint8 sender_id = cur.get_injected_sender_id();
+
+        if (!cur.is_injected(sender_id) || !cur.is_targeting_cpu(cpu_id))
+            break;
+
+        desired = cur;
+        if (!in_injection)
+            desired.unset_injected(sender_id);
+        if (state == IrqState::ACTIVE)
+            desired.unset_pending(sender_id);
+    } while (!irq.injection_info.cas(cur, desired));
+
+    if (irq.pending())
+        cpu.pending_irqs.atomic_set(irq.id());
+}
+
+void
 Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState state,
                                bool in_injection) {
     ASSERT(cpu_id < _num_vcpus);
@@ -723,35 +757,8 @@ Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState sta
         return;
     case IrqState::ACTIVE:
     case IrqState::ACTIVE_PENDING:
-    case IrqState::PENDING: {
-
-        if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
-            INFO("IRQ %u came back, not yet injected on VCPU " FMTu64, irq_id, cpu_id);
-
-        if (state == IrqState::PENDING) {
-            irq.deactivate();
-        } else {
-            irq.activate();
-        }
-
-        IrqInjectionInfoUpdate desired, cur;
-        do {
-            cur = irq.injection_info.read();
-            uint8 sender_id = cur.get_injected_sender_id();
-
-            if (!cur.is_injected(sender_id) || !cur.is_targeting_cpu(cpu_id))
-                break;
-
-            desired = cur;
-            if (!in_injection)
-                desired.unset_injected(sender_id);
-            if (state == IrqState::ACTIVE)
-                desired.unset_pending(sender_id);
-        } while (!irq.injection_info.cas(cur, desired));
-
-        if (irq.pending())
-            cpu.pending_irqs.atomic_set(irq.id());
-    }
+    case IrqState::PENDING:
+        update_inj_status_active_or_pending(cpu_id, state, irq_id, in_injection);
     }
 }
 
