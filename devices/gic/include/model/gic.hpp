@@ -630,6 +630,8 @@ private:
     }
 
     void update_inj_status_inactive(Vcpu_id cpu_id, uint32 irq_id);
+    void update_inj_status_active_or_pending(Vcpu_id cpu_id, IrqState state, uint32 irq_id,
+                                             bool in_injection);
 
 public:
     GicD(GICVersion const version, uint16 num_vcpus)
