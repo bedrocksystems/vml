@@ -692,7 +692,7 @@ Model::GicD::update_inj_status_inactive(Vcpu_id const cpu_id, uint32 irq_id) {
         uint8 sender_id = cur.get_injected_sender_id();
 
         if (!cur.is_injected(sender_id) || !cur.is_targeting_cpu(cpu_id))
-            return;
+            break;
 
         desired = cur;
         desired.unset_injected(sender_id);
@@ -739,7 +739,7 @@ Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState sta
             uint8 sender_id = cur.get_injected_sender_id();
 
             if (!cur.is_injected(sender_id) || !cur.is_targeting_cpu(cpu_id))
-                return;
+                break;
 
             desired = cur;
             if (!in_injection)
