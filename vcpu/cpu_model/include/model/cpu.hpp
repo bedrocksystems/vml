@@ -112,7 +112,7 @@ public:
         T32,
     };
 
-    static constexpr unsigned MAX_BOOT_ARGS = 4;
+    enum : unsigned { MAX_BOOT_ARGS = 4 };
 
 private:
     Platform::Signal _resume_sig;
