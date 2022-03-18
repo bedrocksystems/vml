@@ -761,7 +761,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
 
             // Avoid recalling a VCPU that has silenced IRQs
             if (__LIKELY__(vcpu_can_receive_irq(gic_r)))
-                target_cpu->notify->interrupt_pending();
+                target_cpu->notify->notify_interrupt_pending();
         }
     } else {
         Banked *target_cpu = &_local[target.target()];
@@ -770,7 +770,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
         target_cpu->pending_irqs.atomic_set(irq.id());
 
         if (__LIKELY__(vcpu_can_receive_irq(gic_r)))
-            target_cpu->notify->interrupt_pending();
+            target_cpu->notify->notify_interrupt_pending();
     }
 
     return true;
