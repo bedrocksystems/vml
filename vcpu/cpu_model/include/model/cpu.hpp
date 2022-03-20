@@ -43,6 +43,11 @@ namespace Request {
     };
 }
 
+/**
+ * Important note:
+ * - Clients that *read* the configuration MUST call `set_config_gen`
+ *   *before* calling `get_current_config`.
+ */
 class Model::Cpu_feature {
 public:
     bool is_requested_by(Request::Requestor requestor) const {
@@ -81,6 +86,8 @@ public:
 private:
     atomic<uint64> _requests[Request::MAX_REQUESTORS] = {0ull, 0ull};
     atomic<uint64> _dirty{0};
+    // The `_dirty` bit could use release writes and acquire reads as a more
+    // performant solution than SEQ_CST.
 };
 
 class Model::Cpu : public Model::Cpu_irq_interface {
