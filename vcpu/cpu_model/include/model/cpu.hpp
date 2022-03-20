@@ -61,9 +61,6 @@ public:
     void set_config_gen() { _dirty = 0; }
     bool needs_reconfiguration() const { return _dirty; }
 
-    static constexpr uint8 ENABLE_SHIFT = 63;
-    static constexpr uint64 ENABLE_MASK = 1ull << ENABLE_SHIFT;
-
     void get_current_config(bool &enabled, Reg_selection &regs) {
         uint64 conf = _requests[0] | _requests[1];
 
@@ -84,6 +81,9 @@ public:
     }
 
 private:
+    static constexpr uint8 ENABLE_SHIFT = 63;
+    static constexpr uint64 ENABLE_MASK = 1ull << ENABLE_SHIFT;
+
     atomic<uint64> _requests[Request::MAX_REQUESTORS] = {0ull, 0ull};
     atomic<uint64> _dirty{0};
     // The `_dirty` bit could use release writes and acquire reads as a more
