@@ -151,7 +151,7 @@ Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
 
 void*
 Model::SimpleAS::map_view(mword offset, size_t size, bool write) const {
-    if (_read_only && write)
+    if (_read_only && write && !_mobject.cred().write())
         return nullptr;
 
     void* dst = Platform::Mem::map_mem(_mobject, offset, size,
