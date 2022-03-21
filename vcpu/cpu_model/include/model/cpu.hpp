@@ -57,8 +57,8 @@ public:
     bool is_requested() const {
         return is_requested_by(Request::VMM) || is_requested_by(Request::VMI);
     }
-    void force_reconfiguration() { _dirty = 1; }
-    void set_config_gen() { _dirty = 0; }
+    void force_reconfiguration() { _dirty = true; }
+    void set_config_gen() { _dirty = false; }
     bool needs_reconfiguration() const { return _dirty; }
 
     void get_current_config(bool &enabled, Reg_selection &regs) {
@@ -85,9 +85,9 @@ private:
     static constexpr uint64 ENABLE_MASK = 1ull << ENABLE_SHIFT;
 
     atomic<uint64> _requests[Request::MAX_REQUESTORS] = {0ull, 0ull};
-    atomic<uint64> _dirty{0};
     // The `_dirty` bit could use release writes and acquire reads as a more
     // performant solution than SEQ_CST.
+    atomic<bool> _dirty{false};
 };
 
 class Model::Cpu : public Model::Cpu_irq_interface {
