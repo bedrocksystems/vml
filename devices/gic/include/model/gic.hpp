@@ -117,7 +117,7 @@ private:
          * In that configuration, SGIs are banked by senders and up to 8 CPUs are supported.
          */
         uint8 get_pending_sender_id() const {
-            int sender_bit_set = ffs(static_cast<uint8>((_info >> PENDING_SHIFT) & 0xf));
+            int sender_bit_set = ffs(static_cast<unsigned int>((_info >> PENDING_SHIFT) & 0xf));
             ASSERT(sender_bit_set > 0);
             ASSERT(sender_bit_set < Model::GICV2_MAX_CPUS);
 
@@ -127,7 +127,7 @@ private:
         static constexpr uint8 NO_INJECTION = 0xff;
 
         uint8 get_injected_sender_id() const {
-            int sender_bit_set = ffs(static_cast<uint8>((_info >> INJECTED_SHIFT) & 0xf));
+            int sender_bit_set = ffs(static_cast<unsigned int>((_info >> INJECTED_SHIFT) & 0xf));
             if (sender_bit_set == 0)
                 return NO_INJECTION;
 
