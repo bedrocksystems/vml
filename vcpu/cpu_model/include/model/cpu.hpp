@@ -61,7 +61,7 @@ public:
     void set_config_gen() { _dirty = false; }
     bool needs_reconfiguration() const { return _dirty; }
 
-    void get_current_config(bool &enabled, Reg_selection &regs) {
+    void get_current_config(bool &enabled, Reg_selection &regs) const {
         uint64 conf = _requests[0] | _requests[1];
 
         enabled = conf & ENABLE_MASK;
