@@ -83,23 +83,23 @@ start_cpu(RegAccessor &arch, Vbus::Bus &vbus) {
     return static_cast<uint64>(err);
 }
 
-bool
+Firmware::Psci::Status
 Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::Bus &vbus,
                                  uint64 const function_id, uint64 &res) {
     switch (static_cast<FunctionId>(function_id)) {
     case SMCCC_VERSION:
         res = static_cast<uint64>(SMCCC_MAJOR_VERSION | SMCCC_MINOR_VERSION);
-        return true;
+        return OK;
     case SMCCC_ARCH_FEATURES:
         res = static_cast<uint64>(NOT_SUPPORTED); /*only version discovery is supported*/
-        return true;
+        return OK;
     case VERSION:
         res = static_cast<uint64>(MAJOR_VERSION | MINOR_VERSION);
-        return true;
+        return OK;
     case FEATURES: {
         uint64 feature = arch.gpr(1);
         if (feature == CPU_SUSPEND_64 || feature == CPU_SUSPEND_32)
-            res = 0; // Function is present but not supported
+            res = 0; /* support "Original Format" of the parameter */
         else if (feature == VERSION || feature == CPU_ON_32 || feature == CPU_ON_64
                  || feature == AFFINITY_INFO_64 || feature == AFFINITY_INFO_32 || feature == CPU_OFF
                  || feature == SYSTEM_OFF || feature == SYSTEM_RESET || feature == SMCCC_VERSION)
@@ -107,21 +107,27 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         else
             res = static_cast<uint64>(NOT_SUPPORTED);
 
-        return true;
+        return OK;
     }
     case MIGRATE_INFO_TYPE:
         res = 2; /* no migration */
-        return true;
+        return OK;
     case CPU_ON_64:
-    case CPU_ON_32: {
+    case CPU_ON_32:
         res = start_cpu(arch, vbus);
-        return true;
-    }
+        return OK;
     case CPU_SUSPEND_32:
     case CPU_SUSPEND_64:
-        DEBUG("Request to suspend to CPU, but, this function is not supported.");
-        res = static_cast<uint64>(NOT_SUPPORTED);
-        return true;
+        /*
+         * From the PSCI specification:
+         * The powerdown request might not complete due, for example, to pending
+         * interrupts. It is also possible that, because of coordination with other cores, the
+         * actual state entered is shallower than the one requested. Because of this it is possible
+         * for an implementation to downgrade the powerdown state request to a standby state.
+         * Therefore, we can simply emulate a WFI as a first correct but sub-optimal implementation.
+         */
+        res = static_cast<uint64>(SUCCESS);
+        return WFI;
     case AFFINITY_INFO_32:
     case AFFINITY_INFO_64: {
         uint32 vcpu_id = decode_cpu_id(arch.gpr(1));
@@ -137,16 +143,15 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         else
             res = 1; // OFF
 
-        return true;
+        return OK;
     }
-    case CPU_OFF: {
+    case CPU_OFF:
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, vctx.vcpu_id, true);
 
         vbus.iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
         INFO("VCPU " FMTu64 " will be switched off", vctx.vcpu_id);
         res = static_cast<uint64>(SUCCESS);
-        return true;
-    }
+        return OK;
     case SYSTEM_OFF:
         Lifecycle::notify_system_off(vctx);
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
@@ -154,8 +159,8 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         Vcpu::Roundup::resume_from_vcpu(vctx.vcpu_id);
 
         INFO("System was halted by the guest.");
-        return true;
-    case SYSTEM_RESET: {
+        return OK;
+    case SYSTEM_RESET:
         INFO("System reset requested by the guest.");
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
         Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_off, true);
@@ -170,13 +175,12 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, 0, true);
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, 0, false);
 
-        return true;
+        return OK;
     case SYSTEM_SUSPEND_32:
     case SYSTEM_SUSPEND_64:
         DEBUG("PSCI SYSTEM_SUSPEND requested, but is not supported.");
         res = static_cast<uint64>(NOT_SUPPORTED);
-        return true;
+        return OK;
     }
-    }
-    return false;
+    return ERROR;
 }

@@ -16,6 +16,13 @@ namespace Vbus {
 }
 
 namespace Firmware::Psci {
-    bool smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::Bus &vbus,
-                          uint64 function_id, uint64 &res);
+    enum Status {
+        OK,
+        ERROR,
+        WFI,
+        /* Future: deeper power saving states could be added */
+    };
+
+    Status smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::Bus &vbus,
+                            uint64 function_id, uint64 &res);
 }
