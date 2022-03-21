@@ -84,116 +84,51 @@ start_cpu(RegAccessor &arch, Vbus::Bus &vbus) {
     return static_cast<uint64>(err);
 }
 
-bool
+Firmware::Psci::Status
 Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::Bus &vbus,
                                  uint64 const function_id, uint64 &res) {
     switch (static_cast<FunctionId>(function_id)) {
     case SMCCC_VERSION:
         res = static_cast<uint64>(SMCCC_MAJOR_VERSION | SMCCC_MINOR_VERSION);
-        return true;
+        return OK;
     case SMCCC_ARCH_FEATURES:
         res = static_cast<uint64>(NOT_SUPPORTED); /*only version discovery is supported*/
-        return true;
+        return OK;
     case VERSION:
         res = static_cast<uint64>(MAJOR_VERSION | MINOR_VERSION);
-        return true;
+        return OK;
     case FEATURES: {
         uint64 feature = arch.gpr(1);
-        if (feature == CPU_SUSPEND_64 || feature == CPU_SUSPEND_32) {
+        if (feature == CPU_SUSPEND_64 || feature == CPU_SUSPEND_32)
             res = 0; /* support "Original Format" of the parameter */
-        } else if (feature == VERSION || feature == CPU_ON_32 || feature == CPU_ON_64
-                   || feature == AFFINITY_INFO_64 || feature == AFFINITY_INFO_32
-                   || feature == CPU_OFF || feature == SYSTEM_OFF || feature == SYSTEM_RESET
-                   || feature == SMCCC_VERSION)
+        else if (feature == VERSION || feature == CPU_ON_32 || feature == CPU_ON_64
+                 || feature == AFFINITY_INFO_64 || feature == AFFINITY_INFO_32 || feature == CPU_OFF
+                 || feature == SYSTEM_OFF || feature == SYSTEM_RESET || feature == SMCCC_VERSION)
             res = 0; // The function is present
         else
             res = static_cast<uint64>(NOT_SUPPORTED);
 
-        return true;
+        return OK;
     }
     case MIGRATE_INFO_TYPE:
         res = 2; /* no migration */
-        return true;
+        return OK;
     case CPU_ON_64:
-    case CPU_ON_32: {
+    case CPU_ON_32:
         res = start_cpu(arch, vbus);
-        return true;
-    }
+        return OK;
     case CPU_SUSPEND_32:
-    case CPU_SUSPEND_64: {
-        uint32 power_state = static_cast<uint32>(arch.gpr(1));
-        uint32 power_level = (power_state >> 24) & 0x3;
-        uint32 state_type = (power_state >> 16) & 0x1;
-        //        DEBUG("Request to suspend VCPU:%llu pwr_state: %x state_type:%d power_level:%d",
-        //              vctx.vcpu_id, power_state, state_type, power_level);
-        /**
-         * level 0 - for core
-         * level 1 - for cluster
-         * level 2 - for system
+    case CPU_SUSPEND_64:
+        /*
+         * From the PSCI specification:
+         * The powerdown request might not complete due, for example, to pending
+         * interrupts. It is also possible that, because of coordination with other cores, the
+         * actual state entered is shallower than the one requested. Because of this it is possible
+         * for an implementation to downgrade the powerdown state request to a standby state.
+         * Therefore, we can simply emulate a WFI as a first correct but sub-optimal implementation.
          */
-        //        if (power_level > 0) {
-        //            DEBUG("Request to suspend the cluster (or the system) VCPU:%llu level %d
-        //            (ignore and "
-        //                  "suspend the core)",
-        //                  vctx.vcpu_id, power_level);
-        //        }
-        /**
-         * uint32 state_id = power_state & 0xffff;
-         * state_id is platform specific. Ignore it.
-         */
-        if (state_type == 0) {
-            /* standby or retention */
-            /**
-             * When returning from a standby state, the caller must observe no change
-             * in core state, other than any timer changes expected because of the time spent
-             * in the state, and changes in the CPU interface because of the wakeup reason.
-             * To the core, a standby state is indistinguishable from the use of a WFI instruction
-             */
-#if 0
-            if (Model::Cpu::is_feature_enabled_on_vcpu(Vcpu::Vcpu::requested_feature_trap_idle,
-                                                       vctx.vcpu_id, Request::Requestor::VMI)) {
-                Vmi::Status status = Outpost::vmi_handle_idle(vctx);
-                ASSERT(status == Vmi::EMULATE && !vctx.regs->cpu_state_changed());
-            }
-#endif
-
-            Model::AA64Timer::CntvCtl ctl(arch.tmr_cntv_ctl());
-
-            Model::Cpu::wait_for_interrupt(vctx.vcpu_id, ctl.can_fire(),
-                                           arch.tmr_cntv_cval() + arch.tmr_cntvoff());
-            res = static_cast<uint64>(SUCCESS);
-        } else {
-            /* Powerdown request */
-            /* Powerdown states generally require a cache clean */
-            uint64 entry_point = arch.gpr(2);
-            uint64 context_id = arch.gpr(3);
-            if (static_cast<FunctionId>(function_id) == CPU_SUSPEND_32) {
-                /* trancate arguments */
-                entry_point &= 0xffffffffull;
-                context_id &= 0xffffffffull;
-            }
-            ERROR(
-                "CPU_SUSPEND powerdown request for VCPU:%llu (not supported yet) entry_point:%llx, "
-                "ctx_id:%llx",
-                vctx.vcpu_id, entry_point, context_id);
-
-            /* Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, vctx.vcpu_id, true);
-             */
-
-            /**
-             *  * wait_for_interrupt - Model::Cpu::wait_for_interrupt(vctx.vcpu_id,
-             * arch.tmr_cntv_ctl(), arch.tmr_cntv_cval() + arch.tmr_cntvoff());
-             *  * Initialize CPU state as after CPU_ON
-             *  * set entry point and x0 = context_id
-             */
-            // entry_point is Intermediate Physical Address (IPA).
-            // arch.el2_elr(entry_point, true); // will the entry point be overwritten higher in the
-            // call stack ? arch.gpr(0, context_id, true);
-
-            res = static_cast<uint64>(NOT_SUPPORTED);
-        }
-        return true;
-    }
+        res = static_cast<uint64>(SUCCESS);
+        return WFI;
     case AFFINITY_INFO_32:
     case AFFINITY_INFO_64: {
         uint32 vcpu_id = decode_cpu_id(arch.gpr(1));
@@ -209,16 +144,15 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         else
             res = 1; // OFF
 
-        return true;
+        return OK;
     }
-    case CPU_OFF: {
+    case CPU_OFF:
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, vctx.vcpu_id, true);
 
         vbus.iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
         INFO("VCPU " FMTu64 " will be switched off", vctx.vcpu_id);
         res = static_cast<uint64>(SUCCESS);
-        return true;
-    }
+        return OK;
     case SYSTEM_OFF:
         Lifecycle::notify_system_off(vctx);
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
@@ -226,8 +160,8 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         Vcpu::Roundup::resume_from_vcpu(vctx.vcpu_id);
 
         INFO("System was halted by the guest.");
-        return true;
-    case SYSTEM_RESET: {
+        return OK;
+    case SYSTEM_RESET:
         INFO("System reset requested by the guest.");
         Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
         Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_off, true);
@@ -242,13 +176,12 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, 0, true);
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, 0, false);
 
-        return true;
+        return OK;
     case SYSTEM_SUSPEND_32:
     case SYSTEM_SUSPEND_64:
         DEBUG("PSCI SYSTEM_SUSPEND requested, but is not supported.");
         res = static_cast<uint64>(NOT_SUPPORTED);
-        return true;
+        return OK;
     }
-    }
-    return false;
+    return ERROR;
 }
