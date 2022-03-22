@@ -25,8 +25,8 @@ enum class CtxInfo {
 
 struct VcpuCtx {
     const Platform_ctx* ctx;
-    RegAccessor* regs;
-    Vcpu_id vcpu_id;
+    RegAccessor* const regs;
+    const Vcpu_id vcpu_id;
     CtxInfo info{CtxInfo::VMEXIT};
 
     VcpuCtx(const Platform_ctx* ctxv, RegAccessor* regsv, Vcpu_id vcpu_idv)
