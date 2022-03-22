@@ -40,8 +40,7 @@ struct VcpuCtx {
 
 class CtxInfoGuard {
 public:
-    CtxInfoGuard(const VcpuCtx& ctx, CtxInfo newctx)
-        : _vctx(const_cast<VcpuCtx*>(&ctx)), _prev_info(ctx.info) {
+    CtxInfoGuard(VcpuCtx& ctx, CtxInfo newctx) : _vctx(&ctx), _prev_info(ctx.info) {
         _vctx->info = newctx;
     }
 
