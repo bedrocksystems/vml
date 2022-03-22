@@ -45,8 +45,8 @@ namespace Request {
 
 /**
  * Important note:
- * - Clients that *read* the configuration MUST call `set_config_gen`
- *   *before* calling `get_current_config`.
+ * - Clients that *read* the configuration MUST call `clean`
+ *   *before* calling `read`.
  */
 class Model::Cpu_feature {
 public:
@@ -58,10 +58,13 @@ public:
         return is_requested_by(Request::VMM) || is_requested_by(Request::VMI);
     }
     void force_reconfiguration() { _dirty = true; }
-    void set_config_gen() { _dirty = false; }
     bool needs_reconfiguration() const { return _dirty; }
 
-    void get_current_config(bool &enabled, Reg_selection &regs) const {
+    /**
+     * \brief Reads at the current configuration without committing to
+     *        act on it.
+     */
+    void read(bool &enabled, Reg_selection &regs) const {
         uint64 conf = _requests[0] | _requests[1];
 
         enabled = conf & ENABLE_MASK;
@@ -69,7 +72,31 @@ public:
         if (enabled)
             regs = conf & ~ENABLE_MASK;
         else
-            regs = 0; // Force no register when the feature is not enabled
+            regs = 0; // Force empty registers when the feature is disabled
+    }
+
+    /**
+     * \brief checks the dirty status and reads if the values are dirty.
+     * This function is provided for convenience.
+     *
+     * This function is marked `nodiscard`, if you do not need the return value,
+     * use `clean_read`.
+     *
+     * \param always if true, read the configuration even if it is not dirty.
+     * \returns true if the configuration has been updated since the last read.
+     */
+    [[nodiscard]] bool check_clean_read(bool &enabled, Reg_selection &regs, bool always = false) {
+        bool dirty = check_clean();
+
+        if (always | dirty)
+            read(enabled, regs);
+
+        return dirty;
+    }
+
+    void clean_read(bool &enabled, Reg_selection &regs) {
+        clean();
+        read(enabled, regs);
     }
 
     // Each requestor is responsible of maintaining the consistency of its config
@@ -77,8 +104,30 @@ public:
         ASSERT(requestor < Request::MAX_REQUESTORS);
         ASSERT(!(ENABLE_MASK & regs)); // Reg_selection doesn't use the highest bit for now
         _requests[requestor] = enable ? regs | ENABLE_MASK : 0;
+        // it is necessary that setting the dirty bits happens after
+        // updating the value.
         force_reconfiguration();
     }
+
+    // Low-level interface
+
+    /**
+     * The read of the configuration (through `peek`) *must* be done
+     * *after* this operation.
+     * For a safer interface, use `clean_read`.
+     */
+    [[nodiscard]] bool check_clean() {
+        bool b = _dirty;
+        if (b)
+            // this test is not necessary, it trades a branch for a memory fence
+            _dirty = false;
+        return b;
+        // alternative implementation:
+        //   return _dirty.fetch_and(0);
+        // on ARM, this is a cas-loop which is less efficient.
+        // on x86, this might be more efficient
+    }
+    void clean() { _dirty = false; }
 
 private:
     static constexpr uint8 ENABLE_SHIFT = 63;
