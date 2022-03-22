@@ -193,7 +193,7 @@ Model::SimpleAS::clean_invalidate(GPA gpa, size_t size) const {
 
 void
 Model::SimpleAS::flush_guest_as() {
-    if (_read_only or not _flushable)
+    if (_read_only or not _flushable or not _mobject.cred().write())
         return;
 
     void* mapped_area;
