@@ -120,6 +120,7 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
             res = 0; /* support "Original Format" of the parameter */
         else if (feature == VERSION || feature == CPU_ON_32 || feature == CPU_ON_64
                  || feature == AFFINITY_INFO_64 || feature == AFFINITY_INFO_32 || feature == CPU_OFF
+                 || feature == SYSTEM_SUSPEND_32 || feature == SYSTEM_SUSPEND_64
                  || feature == SYSTEM_OFF || feature == SYSTEM_RESET || feature == SMCCC_VERSION)
             res = 0; // The function is present
         else
