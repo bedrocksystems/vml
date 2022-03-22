@@ -84,7 +84,7 @@ start_cpu(RegAccessor &arch, Vbus::Bus &vbus) {
     return static_cast<uint64>(err);
 }
 
-Firmware::Psci::Status
+static Firmware::Psci::Status
 system_suspend(const VcpuCtx &vctx, uint64 &res) {
     bool all_others_off = true;
 
