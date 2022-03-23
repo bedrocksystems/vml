@@ -92,7 +92,7 @@ main() {
     int rc = fallocate(fd, 0, 0, file_size);
     ASSERT(rc == 0);
 
-    Model::SimpleAS as(mword(fd), false);
+    Model::SimpleAS as(Platform::Mem::MemDescr(fd), false);
     GPA gpa(0x10000000);
     ok = as.construct(gpa, size_t(file_size), false);
     ASSERT(ok == true);
