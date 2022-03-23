@@ -83,6 +83,23 @@ start_cpu(RegAccessor &arch, Vbus::Bus &vbus) {
     return static_cast<uint64>(err);
 }
 
+static Firmware::Psci::Status
+system_suspend(const VcpuCtx &vctx, uint64 &res) {
+    bool all_others_off = true;
+
+    for (uint64 id = 0; Model::Cpu::get_num_vcpus(); id++)
+        if (id != vctx.vcpu_id)
+            all_others_off = all_others_off && !Model::Cpu::is_cpu_turned_on_by_guest(id);
+
+    if (not all_others_off) {
+        res = static_cast<uint64>(DENIED);
+        return Firmware::Psci::OK;
+    } else {
+        res = static_cast<uint64>(SUCCESS);
+        return Firmware::Psci::WFI;
+    }
+}
+
 Firmware::Psci::Status
 Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::Bus &vbus,
                                  uint64 const function_id, uint64 &res) {
@@ -102,6 +119,7 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
             res = 0; /* support "Original Format" of the parameter */
         else if (feature == VERSION || feature == CPU_ON_32 || feature == CPU_ON_64
                  || feature == AFFINITY_INFO_64 || feature == AFFINITY_INFO_32 || feature == CPU_OFF
+                 || feature == SYSTEM_SUSPEND_32 || feature == SYSTEM_SUSPEND_64
                  || feature == SYSTEM_OFF || feature == SYSTEM_RESET || feature == SMCCC_VERSION)
             res = 0; // The function is present
         else
@@ -133,22 +151,21 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         uint32 vcpu_id = decode_cpu_id(arch.gpr(1));
         uint64 aff_level = arch.gpr(2);
 
-        if (aff_level != 0)
+        if (aff_level != 0) {
             res = static_cast<uint64>(INVALID_PARAMETERS); // No need to implement this with 1.0
-        if (vcpu_id > Model::Cpu::get_num_vcpus())
+        } else if (vcpu_id > Model::Cpu::get_num_vcpus()) {
             res = static_cast<uint64>(INVALID_PARAMETERS);
-
-        if (Model::Cpu::is_cpu_turned_on_by_guest(vcpu_id))
-            res = 0; // ON
-        else
-            res = 1; // OFF
+        } else {
+            if (Model::Cpu::is_cpu_turned_on_by_guest(vcpu_id))
+                res = 0; // ON
+            else
+                res = 1; // OFF
+        }
 
         return OK;
     }
     case CPU_OFF:
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, vctx.vcpu_id, true);
-
-        vbus.iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
         INFO("VCPU " FMTu64 " will be switched off", vctx.vcpu_id);
         res = static_cast<uint64>(SUCCESS);
         return OK;
@@ -178,9 +195,7 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         return OK;
     case SYSTEM_SUSPEND_32:
     case SYSTEM_SUSPEND_64:
-        DEBUG("PSCI SYSTEM_SUSPEND requested, but is not supported.");
-        res = static_cast<uint64>(NOT_SUPPORTED);
-        return OK;
+        return system_suspend(vctx, res);
     }
     return ERROR;
 }
