@@ -197,5 +197,8 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
     case SYSTEM_SUSPEND_64:
         return system_suspend(vctx, res);
     }
-    return ERROR;
+
+    WARN("Unsupported PSCI call %#llx, returning NOT_SUPPORTED to the OS", function_id);
+    res = static_cast<uint64>(NOT_SUPPORTED);
+    return OK;
 }
