@@ -149,6 +149,45 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
 }
 
 bool
+Msr::Bus::setup_aarch64_ras() {
+    Msr::Register *reg;
+
+    reg = new (nothrow) Msr::Register("ERRIDR_EL1", ERRIDR_EL1, false, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("ERRSELR_EL1", ERRSELR_EL1, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("ERXADDR_EL1", ERXADDR_EL1, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("ERXCTLR_EL1", ERXCTLR_EL1, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("ERXFR_EL1", ERXFR_EL1, false, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("ERXSTATUS_EL1", ERXSTATUS_EL1, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("ERXMISC0_EL1", ERXMISC0_EL1, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("ERXMISC1_EL1", ERXMISC1_EL1, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    return true;
+}
+
+bool
 Msr::Bus::setup_aarch32_features(const AA32PlatformInfo &aa32) {
     Msr::Register *reg;
 
@@ -450,6 +489,9 @@ Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Mo
         return false;
 
     if (!setup_tvm())
+        return false;
+
+    if (!setup_aarch64_ras())
         return false;
 
     /* ID */

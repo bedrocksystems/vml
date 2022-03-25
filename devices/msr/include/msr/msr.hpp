@@ -237,6 +237,16 @@ namespace Msr {
         DAIF = build_msr_id(0b11, 0b0100, 0b011, 0b0010, 0b001),
         SP_EL0 = build_msr_id(0b11, 0b0100, 0b000, 0b0001, 0b000),
 
+        // RAS registers
+        ERRIDR_EL1 = build_msr_id(3, 5, 0, 3, 0),
+        ERRSELR_EL1 = build_msr_id(3, 5, 0, 3, 1),
+        ERXADDR_EL1 = build_msr_id(3, 5, 0, 4, 3),
+        ERXCTLR_EL1 = build_msr_id(3, 5, 0, 4, 1),
+        ERXFR_EL1 = build_msr_id(3, 5, 0, 4, 0),
+        ERXMISC0_EL1 = build_msr_id(3, 5, 0, 5, 0),
+        ERXMISC1_EL1 = build_msr_id(3, 5, 0, 5, 1),
+        ERXSTATUS_EL1 = build_msr_id(3, 5, 0, 4, 2),
+
         /*
          * Below, we define a namespace for registers that do no exist in AA64.
          * We know we are not overlapping with AA64 or AA32 there because op0 (or coproc)
@@ -419,7 +429,6 @@ protected:
 class Msr::IdAa64pfr0 : public Register {
 private:
     uint64 _reset_value(uint64 value) const {
-        value &= ~(0xfull << 28); /* ras - not implemented */
         value &= ~(0xfull << 32); /* sve - not implemented */
         value &= ~(0xfull << 40); /* MPAM - not implemented */
         value &= ~(0xfull << 44); /* AMU - not implemented */
@@ -699,6 +708,7 @@ private:
                                     uint64 id_aa64mmfr2_el1);
     bool setup_aarch64_debug(uint64 id_aa64dfr0_el1, uint64 id_aa64dfr1_el1);
     bool setup_aarch64_auxiliary();
+    bool setup_aarch64_ras();
 
     bool setup_aarch32_msr(const PlatformInfo& info);
     bool setup_aarch32_features(const AA32PlatformInfo& aa32);
