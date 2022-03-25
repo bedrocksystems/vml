@@ -200,7 +200,6 @@ namespace Msr {
         CSSELR_EL1 = build_msr_id(3, 0, 2, 0, 0),
         AIDR_EL1 = build_msr_id(3, 0, 1, 0, 7),
         REVIDR_EL1 = build_msr_id(3, 0, 0, 0, 6),
-        PMUSEREN_EL0 = build_msr_id(3, 9, 3, 14, 0),
         OSDLR_EL1 = build_msr_id(2, 1, 0, 3, 4),
         OSLAR_EL1 = build_msr_id(2, 1, 0, 0, 4),
         OSLSR_EL1 = build_msr_id(2, 1, 0, 1, 4),
@@ -256,6 +255,24 @@ namespace Msr {
         PMSIRR_EL1 = build_msr_id(3, 9, 0, 5, 3),
         PMSLATFR_EL1 = build_msr_id(3, 5, 0, 5, 6),
 
+        // PM registers
+        PMCR_EL0 = build_msr_id(3, 9, 3, 12, 0),
+        PMCNTENSET_EL0 = build_msr_id(3, 9, 3, 12, 1),
+        PMCNTENCLR_EL0 = build_msr_id(3, 9, 3, 12, 2),
+        PMOVSCLR_EL0 = build_msr_id(3, 9, 3, 12, 3),
+        PMSWINC_EL0 = build_msr_id(3, 9, 3, 12, 4),
+        PMSELR_EL0 = build_msr_id(3, 9, 3, 12, 5),
+        PMCEID0_EL0 = build_msr_id(3, 9, 3, 12, 6),
+        PMCEID1_EL0 = build_msr_id(3, 9, 3, 12, 7),
+        PMCCNTR_EL0 = build_msr_id(3, 9, 3, 13, 0),
+        PMXEVTYPER_EL0 = build_msr_id(3, 9, 3, 13, 1),
+        PMXEVCNTR_EL0 = build_msr_id(3, 9, 3, 13, 2),
+        PMUSERENR_EL0 = build_msr_id(3, 9, 3, 14, 0),
+        PMOVSSET_EL0 = build_msr_id(3, 9, 3, 14, 3),
+        PMCCFILTR_EL0 = build_msr_id(3, 14, 3, 15, 7),
+        PMINTENSET_EL1 = build_msr_id(3, 9, 0, 14, 1),
+        PMINTENCLR_EL1 = build_msr_id(3, 9, 0, 14, 2),
+
         /*
          * Below, we define a namespace for registers that do no exist in AA64.
          * We know we are not overlapping with AA64 or AA32 there because op0 (or coproc)
@@ -297,6 +314,16 @@ namespace Msr {
         = {DBGWCR0_EL1,  DBGWCR1_EL1,  DBGWCR2_EL1,  DBGWCR3_EL1, DBGWCR4_EL1,  DBGWCR5_EL1,
            DBGWCR6_EL1,  DBGWCR7_EL1,  DBGWCR8_EL1,  DBGWCR9_EL1, DBGWCR10_EL1, DBGWCR11_EL1,
            DBGWCR12_EL1, DBGWCR13_EL1, DBGWCR14_EL1, DBGWCR15_EL1};
+
+    static constexpr uint8 NUM_PMEVCNTR_REGS = 31;
+    static constexpr uint32 pmevcntrn_el0(uint8 id) {
+        return build_msr_id(3, 14, 3, (0b10 << 2) | ((id >> 3) & 0b11), id & 0b111);
+    }
+
+    static constexpr uint8 NUM_PMEVTYPER_REGS = 31;
+    static constexpr uint32 pmevtypern_el0(uint8 id) {
+        return build_msr_id(3, 14, 3, (0b11 << 2) | ((id >> 3) & 0b11), id & 0b111);
+    }
 
     void flush_on_cache_toggle(const VcpuCtx* vcpu, uint64 new_value);
 }
@@ -718,6 +745,7 @@ private:
     bool setup_aarch64_debug(uint64 id_aa64dfr0_el1, uint64 id_aa64dfr1_el1);
     bool setup_aarch64_auxiliary();
     bool setup_aarch64_ras();
+    bool setup_aarch64_pm();
     bool setup_aarch64_pms();
 
     bool setup_aarch32_msr(const PlatformInfo& info);
@@ -735,7 +763,19 @@ private:
 protected:
     bool register_system_reg(RegisterBase* reg) {
         ASSERT(reg != nullptr);
-        return register_device(reg, reg->id(), sizeof(uint64));
+        bool ret;
+
+        ret = register_device(reg, reg->id(), sizeof(uint64));
+        if (!ret) {
+            Msr::RegisterBase* r = get_register_with_id(reg->id());
+            if (r != nullptr) {
+                ABORT_WITH("Trying to register %s, but, ID is used by %s", reg->name(), r->name());
+            } else {
+                ABORT_WITH("Unable to register %s, allocation failure", reg->name());
+            }
+        }
+
+        return true;
     }
 
 public:

@@ -222,6 +222,89 @@ Msr::Bus::setup_aarch64_pms() {
 }
 
 bool
+Msr::Bus::setup_aarch64_pm() {
+    Msr::Register *reg;
+
+    reg = new (nothrow) Msr::Register("PMCR_EL0", PMCR_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMCNTENSET_EL0", PMCNTENSET_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMCNTENCLR_EL0", PMCNTENCLR_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMOVSCLR_EL0", PMOVSCLR_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMSWINC_EL0", PMSWINC_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMSELR_EL0", PMSELR_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMCEID0_EL0", PMCEID0_EL0, false, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMCEID1_EL0", PMCEID1_EL0, false, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMCCNTR_EL0", PMCCNTR_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMXEVTYPER_EL0", PMXEVTYPER_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMXEVCNTR_EL0", PMXEVCNTR_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMUSERENR_EL0", PMUSERENR_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMOVSSET_EL0", PMOVSSET_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMCCFILTR_EL0", PMCCFILTR_EL0, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMINTENSET_EL1", PMINTENSET_EL1, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMINTENCLR_EL1", PMINTENCLR_EL1, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    for (uint8 i = 0; i < NUM_PMEVCNTR_REGS; i++) {
+        reg = new (nothrow) Msr::Register("PMEVCNTRN_EL0", pmevcntrn_el0(i), true, 0);
+        if (!register_system_reg(reg))
+            return false;
+    }
+
+    for (uint8 i = 0; i < NUM_PMEVTYPER_REGS; i++) {
+        reg = new (nothrow) Msr::Register("PMEVTYPERN_EL0", pmevtypern_el0(i), true, 0);
+        if (!register_system_reg(reg))
+            return false;
+    }
+
+    return true;
+}
+
+bool
 Msr::Bus::setup_aarch32_features(const AA32PlatformInfo &aa32) {
     Msr::Register *reg;
 
@@ -528,6 +611,9 @@ Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Mo
     if (!setup_aarch64_ras())
         return false;
 
+    if (!setup_aarch64_pm())
+        return false;
+
     if (!setup_aarch64_pms())
         return false;
 
@@ -536,16 +622,6 @@ Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Mo
     if (!register_system_reg(reg))
         return false;
     reg = new (nothrow) Msr::Register("REVIDR_EL1", REVIDR_EL1, false, 0x0ULL);
-    if (!register_system_reg(reg))
-        return false;
-
-    /*
-     *  Performance monitoring
-     *  Strictly speaking, we shouldn't have to trap these since we don't report PMU
-     *  to be implemented. However, Linux running on QEMU will try to read that. It
-     *  could be because certain MSR are not trapped properly with QEMU.
-     */
-    reg = new (nothrow) Msr::Register("PMUSEREN_EL0", PMUSEREN_EL0, true, 0x0ULL);
     if (!register_system_reg(reg))
         return false;
 
