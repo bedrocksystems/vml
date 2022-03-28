@@ -260,7 +260,6 @@ Model::Cpu::Cpu(Irq_controller* girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id)
     : _vcpu_id(vcpu_id), _pcpu_id(pcpu_id), _girq_ctlr(girq_ctlr) {
     _girq_ctlr->enable_cpu(this, _vcpu_id);
     vcpus[vcpu_id] = this;
-    Barrier::w_before_w();
 }
 
 bool
