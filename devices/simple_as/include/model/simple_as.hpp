@@ -520,6 +520,8 @@ public:
     static char *map_guest_mem(const Vbus::Bus &bus, GPA gpa, size_t sz, bool write);
     static void unmap_guest_mem(const void *mem, size_t sz);
 
+    static Model::SimpleAS *get_as_device_at(const Vbus::Bus &bus, GPA addr, size_t sz);
+
     static Errno read_bus(const Vbus::Bus &bus, GPA addr, char *dst, size_t sz);
     static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz);
     static Errno clean_invalidate_bus(const Vbus::Bus &bus, GPA addr, size_t sz);
