@@ -185,6 +185,37 @@ Msr::Bus::setup_aarch64_ras() {
 }
 
 bool
+Msr::Bus::setup_aarch64_pms() {
+    Msr::Register *reg;
+
+    // Strict minimum when it comes to features implemented
+    uint64 idr = 0b0010 << 16 | 0b0110 << 12 | 0b111;
+    reg = new (nothrow) Msr::Register("PMSIDR_EL1", PMSIDR_EL1, false, idr);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMSCR_EL1", PMSCR_EL1, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    // Ignore writes for this register
+    reg = new (nothrow) Msr::Register("PMSEVFR_EL1", PMSEVFR_EL1, true, 0, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMSICR_EL1", PMSICR_EL1, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMSIRR_EL1", PMSIRR_EL1, true, 0);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("PMSLATFR_EL1", PMSLATFR_EL1, true, 0);
+    return register_system_reg(reg);
+}
+
+bool
 Msr::Bus::setup_aarch32_features(const AA32PlatformInfo &aa32) {
     Msr::Register *reg;
 
@@ -489,6 +520,9 @@ Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Mo
         return false;
 
     if (!setup_aarch64_ras())
+        return false;
+
+    if (!setup_aarch64_pms())
         return false;
 
     /* ID */

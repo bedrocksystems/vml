@@ -247,6 +247,15 @@ namespace Msr {
         ERXMISC1_EL1 = build_msr_id(3, 5, 0, 5, 1),
         ERXSTATUS_EL1 = build_msr_id(3, 5, 0, 4, 2),
 
+        // PMS registers
+        PMSCR_EL1 = build_msr_id(3, 9, 0, 9, 0),
+        PMSEVFR_EL1 = build_msr_id(3, 9, 0, 9, 5),
+        PMSFCR_EL1 = build_msr_id(3, 9, 0, 9, 4),
+        PMSICR_EL1 = build_msr_id(3, 9, 0, 4, 2),
+        PMSIDR_EL1 = build_msr_id(3, 9, 0, 4, 7),
+        PMSIRR_EL1 = build_msr_id(3, 9, 0, 5, 3),
+        PMSLATFR_EL1 = build_msr_id(3, 5, 0, 5, 6),
+
         /*
          * Below, we define a namespace for registers that do no exist in AA64.
          * We know we are not overlapping with AA64 or AA32 there because op0 (or coproc)
@@ -709,6 +718,7 @@ private:
     bool setup_aarch64_debug(uint64 id_aa64dfr0_el1, uint64 id_aa64dfr1_el1);
     bool setup_aarch64_auxiliary();
     bool setup_aarch64_ras();
+    bool setup_aarch64_pms();
 
     bool setup_aarch32_msr(const PlatformInfo& info);
     bool setup_aarch32_features(const AA32PlatformInfo& aa32);
