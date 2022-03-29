@@ -263,8 +263,8 @@ private:
         uint8 edge_encoded() const { return sw_edge() ? 0b10 : 0; }
         void set_encoded_edge(uint8 encoded_edge) {
             _sw_edge = encoded_edge & 0x2;
-            DEBUG("Set INT:0x%x (id) pintid:0x%x as sw_edge: %d hw_edge: %d", _id, _pintid,
-                  _sw_edge, _hw_edge);
+            // DEBUG("Set INT:0x%x (id) pintid:0x%x as sw_edge: %d hw_edge: %d", _id, _pintid,
+            //       _sw_edge, _hw_edge);
         }
 
         uint8 target() const { return _target; }
