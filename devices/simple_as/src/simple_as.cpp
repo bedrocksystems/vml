@@ -18,8 +18,8 @@ Model::SimpleAS::read_mapped(char* dst, size_t size, const GPA& addr) const {
 
     mword offset = addr.get_value() - get_guest_view().get_value();
     memcpy(dst, get_vmm_view() + offset, size);
-    dcache_clean_range(get_vmm_view() + offset, size);
-    icache_invalidate_range(get_vmm_view() + offset, size);
+    // dcache_clean_range(get_vmm_view() + offset, size);
+    // icache_invalidate_range(get_vmm_view() + offset, size);
     return ENONE;
 }
 
