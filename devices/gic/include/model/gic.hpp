@@ -58,9 +58,9 @@ private:
         bool is_valid() const { return _tgt != INVALID_TARGET; }
         uint32 raw() const { return _tgt; }
         uint32 target() const { return _tgt & TARGET_DATA_MASK; }
-        bool is_target_set() const { return _tgt & CPU_SET; }
+        bool is_targeting_a_set() const { return _tgt & CPU_SET; }
         bool is_cpu_targeted(Vcpu_id id) const {
-            if (!is_target_set())
+            if (!is_targeting_a_set())
                 return target() == id;
             else {
                 ASSERT(id < 8);
@@ -69,7 +69,7 @@ private:
         }
 
         void add_target_to_set(Vcpu_id id) {
-            ASSERT(is_target_set());
+            ASSERT(is_targeting_a_set());
             ASSERT(id < 8);
             _tgt |= 1u << id;
         }
