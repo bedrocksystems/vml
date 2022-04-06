@@ -768,7 +768,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
         return false;
     }
 
-    if (target.is_target_set()) {
+    if (target.is_targeting_a_set()) {
         for (uint16 i = 0; i < min<uint16>(_num_vcpus, Model::GICV2_MAX_CPUS); i++) {
             if (!target.is_cpu_targeted(i))
                 continue;
