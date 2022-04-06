@@ -770,6 +770,9 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
 
     if (target.is_target_set()) {
         for (uint16 i = 0; i < min<uint16>(_num_vcpus, Model::GICV2_MAX_CPUS); i++) {
+            if (!target.is_cpu_targeted(i))
+                continue;
+
             Banked *target_cpu = &_local[i];
             const Local_Irq_controller *gic_r = target_cpu->notify->local_irq_ctlr();
 
