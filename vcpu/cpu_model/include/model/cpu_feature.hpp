@@ -17,8 +17,8 @@
 #include <platform/vm_types.hpp>
 
 namespace Model {
-    class Cpu_feature;
-    class Cpu_flag;
+    class CpuFeature;
+    class CpuFlag;
 };
 
 namespace Request {
@@ -29,41 +29,12 @@ namespace Request {
     };
 }
 
-class DirtyFlag {
-public:
-    void force_reconfiguration() { _dirty = true; }
-    bool needs_reconfiguration() const { return _dirty; }
-
-    /**
-     * The read of the configuration (through `peek`) *must* be done
-     * *after* this operation.
-     * For a safer interface, use `clean_read`.
-     */
-    [[nodiscard]] bool check_clean() {
-        bool b = _dirty;
-        if (b)
-            // this test is not necessary, it trades a branch for a memory fence
-            _dirty = false;
-        return b;
-        // alternative implementation:
-        //   return _dirty.fetch_and(0);
-        // on ARM, this is a cas-loop which is less efficient.
-        // on x86, this might be more efficient
-    }
-    void clean() { _dirty = false; }
-
-private:
-    // The `_dirty` bit could use release writes and acquire reads as a more
-    // performant solution than SEQ_CST.
-    atomic<bool> _dirty{false};
-};
-
 /**
  * Important note:
  * - Clients that *read* the configuration MUST call `clean`
  *   *before* calling `read`.
  */
-class Model::Cpu_feature : public DirtyFlag {
+class Model::CpuFeature {
 public:
     bool is_requested_by(Request::Requestor requestor) const {
         ASSERT(requestor < Request::MAX_REQUESTORS);
@@ -122,26 +93,50 @@ public:
         force_reconfiguration();
     }
 
+    void force_reconfiguration() { _dirty = true; }
+    bool needs_reconfiguration() const { return _dirty; }
+
+    /**
+     * The read of the configuration (through `read`) *must* be done
+     * *after* this operation.
+     * For a safer interface, use `clean_read`.
+     */
+    [[nodiscard]] bool check_clean() {
+        bool b = _dirty;
+        if (b)
+            // this test is not necessary, it trades a branch for a memory fence
+            _dirty = false;
+        return b;
+        // alternative implementation:
+        //   return _dirty.fetch_and(0);
+        // on ARM, this is a cas-loop which is less efficient.
+        // on x86, this might be more efficient
+    }
+    void clean() { _dirty = false; }
+
 private:
     static constexpr uint8 ENABLE_SHIFT = 63;
     static constexpr uint64 ENABLE_MASK = 1ull << ENABLE_SHIFT;
 
     atomic<uint64> _requests[Request::MAX_REQUESTORS] = {0ull, 0ull};
+    // The `_dirty` bit could use release writes and acquire reads as a more
+    // performant solution than SEQ_CST.
+    atomic<bool> _dirty{false};
 };
 
-class Model::Cpu_flag : public DirtyFlag {
+class Model::CpuFlag {
 public:
     bool is_requested_by(Request::Requestor requestor) const {
         ASSERT(requestor < Request::MAX_REQUESTORS);
-        return _requests & (1 << requestor);
+        return _requests & requestor_bit(requestor);
     }
-    bool is_requested() const { return _requests; }
+    bool is_requested() const { return _requests & ONLY_DATA; }
 
     /**
      * \brief Reads at the current configuration without committing to
      *        act on it.
      */
-    void read(bool &enabled) const { enabled = _requests; }
+    void read(bool &enabled) const { enabled = _requests & ONLY_DATA; }
 
     /**
      * \brief checks the dirty status and reads if the values are dirty.
@@ -153,36 +148,40 @@ public:
      * \param always if true, read the configuration even if it is not dirty.
      * \returns true if the configuration has been updated since the last read.
      */
-    [[nodiscard]] bool check_clean_read(bool &enabled, bool always = false) {
-        bool dirty = check_clean();
-
-        if (always | dirty)
-            read(enabled);
-
-        return dirty;
+    [[nodiscard]] bool check_clean_read(bool &enabled, bool = false) {
+        auto result = _requests.fetch_and(ONLY_DATA);
+        enabled = result & ONLY_DATA;
+        return result & DIRTY;
     }
 
-    void clean_read(bool &enabled) {
-        clean();
-        read(enabled);
-    }
+    void clean_read(bool &enabled) { enabled = _requests.and_fetch(ONLY_DATA); }
 
     // Each requestor is responsible of maintaining the consistency of its config
     void request(bool enable, Request::Requestor requestor) {
         ASSERT(requestor < Request::MAX_REQUESTORS);
-        bool reconfig;
         if (enable) {
-            auto old = _requests.fetch_or(char(1 << requestor));
-            reconfig = old == 0;
+            _requests.fetch_or(requestor_bit(requestor));
         } else {
-            auto old = _requests.fetch_and(~char(1 << requestor));
-            // the value only changes if the only bit that is set is [requestor]
-            reconfig = old == char(1 << requestor);
+            _requests.fetch_and(~requestor_bit(requestor));
         }
-        if (reconfig)
-            force_reconfiguration();
+        // reconfiguration seems to be necessary even if the configuration did not change.
+        force_reconfiguration();
     }
 
+    void force_reconfiguration() { _requests.or_fetch(DIRTY); }
+    bool needs_reconfiguration() const { return _requests & DIRTY; }
+
+    /**
+     * The read of the configuration (through `read`) *must* be done
+     * *after* this operation.
+     * For a safer interface, use `clean_read`.
+     */
+    [[nodiscard]] bool check_clean() { return _requests.fetch_and(ONLY_DATA) & DIRTY; }
+    void clean() { _requests.and_fetch(ONLY_DATA); }
+
 private:
+    static char requestor_bit(Request::Requestor req) { return char(1 << req); }
+    enum : char { DIRTY = 0x4, ONLY_DATA = 0x3 };
+
     atomic<char> _requests{0};
 };

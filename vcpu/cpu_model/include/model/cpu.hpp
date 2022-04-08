@@ -118,12 +118,12 @@ protected:
     Mode start_mode() const { return _start_mode; }
     uint64 timer_offset() const { return _timer_offset; }
 
-    Cpu_flag _reset;
-    Cpu_feature _tvm;
-    Cpu_flag _single_step;
-    Cpu_flag _execution_paused;
-    Cpu_flag _icache_invalidate;
-    Cpu_feature _hypercall;
+    CpuFeature _tvm;
+    CpuFeature _hypercall;
+    CpuFlag _reset;
+    CpuFlag _single_step;
+    CpuFlag _execution_paused;
+    CpuFlag _icache_invalidate;
 
 public:
     // VCPU api start
