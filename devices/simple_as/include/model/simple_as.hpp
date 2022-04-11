@@ -16,6 +16,7 @@
 #include <platform/rangemap.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
+#include <vector.hpp>
 
 namespace Model {
     class SimpleAS;
@@ -526,7 +527,8 @@ public:
     static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz);
     static Errno clean_invalidate_bus(const Vbus::Bus &bus, GPA addr, size_t sz);
 
-    static Model::SimpleAS *get_as_device_at(const Vbus::Bus &bus, GPA addr, size_t sz);
+    static void lookup_mem_ranges(Vbus::Bus &bus, const Range<uint64> &gpa_range,
+                                  Vector<Model::SimpleAS *> &out);
 
 protected:
     uint64 single_access_read(uint64 off, uint8 size) const;
