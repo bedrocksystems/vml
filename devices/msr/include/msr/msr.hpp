@@ -178,6 +178,7 @@ namespace Msr {
         ID_AA64ZFR0_EL1 = build_msr_id(3, 0, 0, 4, 4),
         ID_AA64ISAR0_EL1 = build_msr_id(3, 0, 0, 6, 0),
         ID_AA64ISAR1_EL1 = build_msr_id(3, 0, 0, 6, 1),
+        ID_AA64ISAR2_EL1 = build_msr_id(3, 0, 0, 6, 2),
         ID_AA64AFR0_EL1 = build_msr_id(3, 0, 0, 5, 4),
         ID_AA64AFR1_EL1 = build_msr_id(3, 0, 0, 5, 5),
         ID_PFR2_EL1 = build_msr_id(3, 0, 0, 3, 4),
@@ -740,7 +741,7 @@ public:
 private:
     bool setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
                                 uint64 id_aa64isar0_el1, uint64 id_aa64isar1_el1,
-                                uint64 id_aa64zfr0_el1);
+                                uint64 id_aa64isar2_el1, uint64 id_aa64zfr0_el1);
     bool setup_aarch64_setway_flushes(Vbus::Bus& vbus);
     bool setup_aarch64_memory_model(uint64 id_aa64mmfr0_el1, uint64 id_aa64mmfr1_el1,
                                     uint64 id_aa64mmfr2_el1);
