@@ -107,7 +107,7 @@ Msr::Bus::setup_aarch64_auxiliary() {
 bool
 Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
                                  uint64 id_aa64isar0_el1, uint64 id_aa64isar1_el1,
-                                 uint64 id_aa64zfr0_el1) {
+                                 uint64 id_aa64isar2_el1, uint64 id_aa64zfr0_el1) {
     Msr::Register *reg;
 
     reg = new (nothrow) Msr::IdAa64pfr0(id_aa64pfr0_el1);
@@ -138,6 +138,11 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
 
     reg = new (nothrow)
         Msr::Register("ID_AA64ISAR1_EL1", ID_AA64ISAR1_EL1, false, id_aa64isar1_el1);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow)
+        Msr::Register("ID_AA64ISAR2_EL1", ID_AA64ISAR2_EL1, false, id_aa64isar2_el1);
     if (!register_system_reg(reg))
         return false;
 
@@ -586,7 +591,7 @@ Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Mo
 
     if (!setup_aarch64_features(info.aa64.id_aa64pfr0_el1, info.aa64.id_aa64pfr1_el1,
                                 info.aa64.id_aa64isar0_el1, info.aa64.id_aa64isar1_el1,
-                                info.aa64.id_aa64zfr0_el1))
+                                info.aa64.id_aa64isar2_el1, info.aa64.id_aa64zfr0_el1))
         return false;
 
     if (!setup_aarch64_memory_model(info.aa64.id_aa64mmfr0_el1, info.aa64.id_aa64mmfr1_el1,
