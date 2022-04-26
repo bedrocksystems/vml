@@ -102,6 +102,6 @@ public:
           _transport(transport) {}
 
     uint64 drv_feature() const {
-        return (uint64(_dev_state.drv_feature_upper) << 32) | _dev_state.drv_feature_lower;
+        return combine_low_high(_dev_state.drv_feature_lower, _dev_state.drv_feature_upper);
     }
 };
