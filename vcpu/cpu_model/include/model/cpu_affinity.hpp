@@ -14,10 +14,10 @@ class CpuAffinity {
 public:
     explicit CpuAffinity(uint32 aff) : _aff(aff) {}
 
-    uint8 aff0() const { return uint8(_aff); }
-    uint8 aff1() const { return uint8(_aff >> 8); }
-    uint8 aff2() const { return uint8(_aff >> 16); }
-    uint8 aff3() const { return uint8(_aff >> 24); }
+    uint8 aff0() const { return static_cast<uint8>(_aff); }
+    uint8 aff1() const { return static_cast<uint8>(_aff >> 8); }
+    uint8 aff2() const { return static_cast<uint8>(_aff >> 16); }
+    uint8 aff3() const { return static_cast<uint8>(_aff >> 24); }
 
     uint32 cluster() const { return _aff & ~(0xFFu); }
 
