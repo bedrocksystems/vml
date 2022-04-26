@@ -43,8 +43,8 @@ enum : uint64 {
     VIRTIO_NET_GUEST_ANNOUNCE = (1 << 21),
     VIRTIO_NET_MQ = (1 << 22),
     VIRTIO_NET_CTRL_MAC_ADDR = (1 << 23),
-    VIRTIO_NET_RSC_EXT = (uint64(1) << 61),
-    VIRTIO_NET_STANDBY = (uint64(1) << 62),
+    VIRTIO_NET_RSC_EXT = 1ull << 61,
+    VIRTIO_NET_STANDBY = 1ull << 62,
 };
 
 #pragma pack(1)

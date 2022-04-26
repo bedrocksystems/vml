@@ -180,7 +180,7 @@ public:
     void clean() { _requests.and_fetch(ONLY_DATA); }
 
 private:
-    static char requestor_bit(Request::Requestor req) { return char(1 << req); }
+    static char requestor_bit(Request::Requestor req) { return static_cast<char>(1 << req); }
     enum : char { DIRTY = 0x4, ONLY_DATA = 0x3 };
 
     atomic<char> _requests{0};

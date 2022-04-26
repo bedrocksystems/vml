@@ -145,7 +145,7 @@ public:
         _virtqueue.available = static_cast<Virtio::Available *>(_avail_addr);
         _virtqueue.used = static_cast<Virtio::Used *>(_used_addr);
 
-        new (&_device_queue) Virtio::DeviceQueue(&_virtqueue, uint16(_data->num));
+        new (&_device_queue) Virtio::DeviceQueue(&_virtqueue, static_cast<uint16>(_data->num));
 
         _constructed = true;
     }
