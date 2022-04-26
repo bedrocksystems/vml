@@ -101,9 +101,9 @@ struct Virtio::QueueData {
     uint32 msix_vector{0};
     uint32 notify_off{0};
 
-    uint64 descr() const { return (uint64(descr_high) << 32) | descr_low; }
-    uint64 driver() const { return (uint64(driver_high) << 32) | driver_low; }
-    uint64 device() const { return (uint64(device_high) << 32) | device_low; }
+    uint64 descr() const { return combine_low_high(descr_low, descr_high); }
+    uint64 driver() const { return combine_low_high(driver_low, driver_high); }
+    uint64 device() const { return combine_low_high(device_low, device_high); }
 };
 
 class Virtio::QueueState {
