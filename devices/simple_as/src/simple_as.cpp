@@ -8,6 +8,7 @@
 
 #include <arch/mem_util.hpp>
 #include <model/simple_as.hpp>
+#include <platform/compiler.hpp>
 
 #include <platform/string.hpp>
 
