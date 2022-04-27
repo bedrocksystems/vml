@@ -89,6 +89,8 @@ private:
 
     atomic<State> _state{OFF};
 
+    bool is_roundup_pending() const { return _state == EMULATE_ROUNDEDUP; }
+
     bool is_turned_on_by_guest() const {
         return !_execution_paused.is_requested_by(Request::Requestor::VMM);
     }
