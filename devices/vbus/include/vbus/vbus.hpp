@@ -37,9 +37,12 @@ namespace Vbus {
     };
 
     enum Access {
-        READ = 0,
-        WRITE = 1,
-        EXEC = 2,
+        READ = 1,
+        WRITE = 2,
+        READ_WRITE = READ | WRITE,
+        EXEC_USER = 4,
+        EXEC_SUPERVISOR = 8,
+        EXEC = EXEC_USER | EXEC_SUPERVISOR,
     };
 
     /*! \brief Special value used by the Vbus caller to specify that the access size is not known
