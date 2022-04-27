@@ -278,10 +278,10 @@ Virtio::write_register(uint64 const offset, uint32 const base_reg, uint32 const 
     }
 
     uint64 const base = offset - base_reg;
-    uint64 const mask = (bytes >= TSIZE) ? (static_cast<T>(T(0) - 1)) : ((T(1) << (bytes * 8)) - 1);
+    uint64 const mask = (bytes >= TSIZE) ? -1ull : ((1ull << (bytes * 8)) - 1u);
 
-    result &= (bytes >= TSIZE) ? T(0) : ~(T(mask) << (base * 8));
-    result |= T(value & mask) << (base * 8);
+    result &= static_cast<T>((bytes >= TSIZE) ? 0u : ~(mask << (base * 8)));
+    result |= static_cast<T>((value & mask) << (base * 8));
     return true;
 }
 
