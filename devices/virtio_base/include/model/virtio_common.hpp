@@ -10,6 +10,7 @@
 
 #include <model/simple_as.hpp>
 #include <platform/atomic.hpp>
+#include <platform/bits.hpp>
 #include <platform/new.hpp>
 #include <platform/string.hpp>
 #include <platform/types.hpp>

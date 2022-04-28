@@ -37,3 +37,8 @@ align_up(uint64_t addr, uint64_t align) {
     addr += (align - 1);
     return align_dn(addr, align);
 }
+
+inline constexpr uint64
+combine_low_high(uint32 low, uint32 high) {
+    return static_cast<uint64>(low) | (static_cast<uint64>(high) << 32);
+}
