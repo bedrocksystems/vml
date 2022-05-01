@@ -49,6 +49,7 @@ enum class Virtio::DeviceID : uint16 {
     INPUT = 18,
     SOCKET = 19,
     CRYPTO = 20,
+    IOMMU = 23,
 };
 
 class Virtio::Transport {
