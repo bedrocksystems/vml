@@ -524,6 +524,8 @@ public:
     static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz);
     static Errno clean_invalidate_bus(const Vbus::Bus &bus, GPA addr, size_t sz);
 
+    static Model::SimpleAS *get_as_device_at(const Vbus::Bus &bus, GPA addr, size_t sz);
+
 protected:
     uint64 single_access_read(uint64 off, uint8 size) const;
     void single_access_write(uint64 off, uint8 size, uint64 value) const;

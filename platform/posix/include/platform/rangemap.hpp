@@ -103,6 +103,19 @@ public:
             f(static_cast<U *>(r), arg);
     }
 
+    RangeNode<T> *remove(Range<T> r) {
+        RangeNode<T> item(r);
+        auto res = _set.find(&item);
+
+        if (res != _set.end()) {
+            RangeNode<T> *ret = *res;
+            _set.erase(res);
+            return ret;
+        }
+
+        return nullptr;
+    }
+
 private:
     std::set<RangeNode<T> *, Range_compare<RangeNode<T> *>> _set;
 };

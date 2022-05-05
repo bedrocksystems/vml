@@ -121,9 +121,11 @@ class Vbus::Bus {
 public:
     /*! \brief Constructs a virtual bus
      *  \param sp Space that this VBus represents
+     *  \param absolute_access Is the address given to the device on access asbolute or relative?
      *  \post Full ownership of the vbus
      */
-    explicit Bus(Vbus::Space sp = Space::ALL_MEM) : _space(sp), _devices() {}
+    explicit Bus(Vbus::Space sp = Space::ALL_MEM, bool absolute_access = false)
+        : _devices(), _space(sp), _absolute_access(absolute_access) {}
 
     /*! \brief Add a device to the virtual bus
      *  \pre Full ownership of a valid virtual bus. Full ownership of a valid Device.
@@ -143,7 +145,7 @@ public:
      *        internal list if it is present and return its full ownership.
      *  \param d Device to remove
      */
-    void unregister_device(Device*) {}
+    void unregister_device(mword addr, mword bytes);
 
     /*! \brief Query for a device that can handle the given range
      *  \pre Fractional ownership of a valid virtual bus.
@@ -209,10 +211,11 @@ private:
 
     const DeviceEntry* lookup(mword addr, uint64 bytes) const;
 
-    Space _space;
     RangeMap<mword> _devices;
+    Space _space;
     bool _trace{false};
     bool _fold{true};
+    const bool _absolute_access{false};
     const DeviceEntry* _last_access{nullptr};
     size_t _num_accesses{0};
 };
