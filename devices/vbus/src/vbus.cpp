@@ -30,7 +30,8 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
     if (entry == nullptr)
         return NO_DEVICE;
 
-    Err err = entry->device->access(access, &vcpu_ctx, _space, addr - entry->begin(), bytes, val);
+    mword off = _absolute_access ? addr : addr - entry->begin();
+    Err err = entry->device->access(access, &vcpu_ctx, _space, off, bytes, val);
     if (_trace && entry != nullptr) {
         if (_last_access != entry) {
             if (_fold && _num_accesses > 1) {
@@ -89,4 +90,15 @@ void
 Vbus::Bus::reset(const VcpuCtx& vcpu_ctx) {
     iter_devices(Vbus::Bus::reset_device_cb, &vcpu_ctx);
     iter_devices(Vbus::Bus::reset_irq_ctlr_cb, &vcpu_ctx);
+}
+
+/*
+ * Warning:
+ * This function assumes that the caller has a locking scheme for the vbus.
+ */
+void
+Vbus::Bus::unregister_device(mword addr, mword bytes) {
+    Range<mword> range(addr, bytes);
+
+    delete _devices.remove(range);
 }
