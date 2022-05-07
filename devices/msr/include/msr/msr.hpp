@@ -98,7 +98,7 @@ namespace Msr {
         DCCVAU = build_msr_id(1, 7, 3, 11, 1),
         DCCVAP = build_msr_id(1, 7, 3, 12, 1),
         DCCIVAC = build_msr_id(1, 7, 3, 14, 1),
-        DCZVA = build_msr_id(1, 7, 0, 4, 1),
+        DCZVA = build_msr_id(1, 7, 3, 4, 1),
 
         DBGBVR0_EL1 = build_msr_id(2, 0, 0, 0, 4),
         DBGBVR1_EL1 = build_msr_id(2, 0, 0, 1, 4),
