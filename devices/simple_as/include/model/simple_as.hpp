@@ -607,3 +607,28 @@ protected:
 
     Platform::Mem::MemDescr _mobject; /*!< BHV Memory Range object behind this guest range */
 };
+
+class MappingGuard {
+public:
+    MappingGuard(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes)
+        : _bus(&bus), _gpa(gpa), _size_bytes(size_bytes), _va(nullptr) {}
+
+    Errno map(void *&va, bool write = false) {
+        Errno err = Model::SimpleAS::demand_map_bus(*_bus, _gpa, _size_bytes, va, write);
+        if (err == ENONE)
+            _va = va;
+        return err;
+    }
+
+    ~MappingGuard() {
+        if (_va) {
+            Model::SimpleAS::demand_unmap_bus(*_bus, _gpa, _size_bytes, _va);
+        }
+    }
+
+private:
+    const Vbus::Bus *_bus;
+    const GPA _gpa;
+    size_t _size_bytes;
+    void *_va;
+};
