@@ -25,7 +25,12 @@ Vbus::Bus::lookup(mword addr, uint64 bytes) const {
 Vbus::Err
 Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 bytes,
                   uint64& val) {
-    const DeviceEntry* entry = lookup(addr, bytes);
+    /*
+     * When the size if unknown, consider that this only touching the first device encountered.
+     * We will replay the instruction as necessary. Still let the device know that the size of the
+     * access is not available at this time.
+     */
+    const DeviceEntry* entry = lookup(addr, bytes == SIZE_UNKNOWN ? 1 : bytes);
 
     if (entry == nullptr)
         return NO_DEVICE;
