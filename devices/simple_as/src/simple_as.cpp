@@ -6,6 +6,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 
+#include <arch/barrier.hpp>
 #include <arch/mem_util.hpp>
 #include <model/simple_as.hpp>
 #include <platform/compiler.hpp>
@@ -199,7 +200,7 @@ Model::SimpleAS::flush_guest_as() {
 
     void* mapped_area;
     if (!mapped()) {
-        mapped_area = Platform::Mem::map_mem(_mobject, 0, _as.size(),
+        mapped_area = Platform::Mem::map_mem(_mobject, 0, get_size(),
                                              Platform::Mem::READ | Platform::Mem::WRITE);
         if (mapped_area == nullptr)
             ABORT_WITH("Unable to map guest region %llx", get_guest_view().get_value());
@@ -207,11 +208,11 @@ Model::SimpleAS::flush_guest_as() {
         mapped_area = _vmm_view;
     }
 
-    dcache_clean_range(mapped_area, _as.size());
-    icache_invalidate_range(mapped_area, _as.size());
+    dcache_clean_invalidate_range(mapped_area, get_size());
+    Barrier::system();
 
     if (!mapped()) {
-        bool b = Platform::Mem::unmap_mem(mapped_area, _as.size());
+        bool b = Platform::Mem::unmap_mem(mapped_area, get_size());
         if (!b)
             ABORT_WITH("Unable to unmap region");
     }

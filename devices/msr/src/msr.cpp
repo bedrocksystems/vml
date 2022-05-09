@@ -676,8 +676,7 @@ Msr::Set_way_flush_reg::flush(const VcpuCtx *vctx, const uint8, const uint32) co
      * guest OS wants to achieve.
      */
     if (!Model::Cpu::is_feature_enabled_on_vcpu(Model::Cpu::requested_feature_tvm, vctx->vcpu_id)) {
-        vbus->iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
-        INFO("Use of Set/way flush detected - flushing guest AS and enable TVM");
+        INFO("Use of Set/way flush detected - enable TVM");
         Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_tvm, vctx->vcpu_id, true);
     }
 }
