@@ -212,6 +212,9 @@ struct Virtio::DeviceState {
         drv_feature_sel = 0;
         drv_feature_upper = 0;
         drv_feature_lower = 0;
+
+        memset(tbl_data, 0, sizeof(tbl_data));
+        memset(pba_data, 0, sizeof(pba_data));
     }
 
     uint32 get_config_gen() const { return __atomic_load_n(&config_generation, __ATOMIC_SEQ_CST); }
@@ -243,7 +246,22 @@ struct Virtio::DeviceState {
 
     // PCI
     // MSIx config vector for device. The value is itself 16 bit.
-    uint32 msix_config{0};
+    uint32 config_msix_vector{0};
+
+    struct PCIMSIXTBL {
+        uint64 msg_addr;
+        uint32 msg_data;
+        uint32 vec_ctrl;
+        PCIMSIXTBL() : msg_addr(0), msg_data(0), vec_ctrl(0) {}
+    };
+
+    struct PCIMSIXPBA {
+        uint64 bits;
+        PCIMSIXPBA() : bits(0) {}
+    };
+
+    PCIMSIXTBL tbl_data[64];
+    PCIMSIXPBA pba_data[64];
 
     QueueData data[static_cast<uint8>(Virtio::Queues::MAX)];
     QueueState queue[static_cast<uint8>(Virtio::Queues::MAX)];
