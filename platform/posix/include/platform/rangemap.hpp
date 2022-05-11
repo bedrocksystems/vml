@@ -98,7 +98,7 @@ public:
      *  \param f function to call on all elements
      */
     template<typename U, typename TARG>
-    void iter(void (*f)(U *, TARG), TARG arg) {
+    void iter(void (*f)(U *, TARG), TARG arg) const {
         for (auto *r : _set)
             f(static_cast<U *>(r), arg);
     }
