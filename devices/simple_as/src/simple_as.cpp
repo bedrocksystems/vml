@@ -349,29 +349,3 @@ Model::SimpleAS::unmap_guest_mem(const void* mem, size_t sz) {
     if (!b)
         ABORT_WITH("Unable to unmap guest memory mem:0x%p size:0x%lx", mem, sz);
 }
-
-struct AsLookupArg {
-    Range<uint64> range;
-    Vector<Model::SimpleAS*>* out;
-};
-
-void
-add_as_range(Vbus::Bus::DeviceEntry* de, AsLookupArg* arg) {
-    if (de->device->type() != Vbus::Device::GUEST_PHYSICAL_STATIC_MEMORY
-        && de->device->type() != Vbus::Device::GUEST_PHYSICAL_DYNAMIC_MEMORY) {
-        return;
-    }
-    Model::SimpleAS* as = reinterpret_cast<Model::SimpleAS*>(de->device);
-    Range<uint64> devr{as->get_guest_view().get_value(), as->get_size()};
-    if (devr.intersect(arg->range))
-        arg->out->insert(as);
-}
-
-void
-Model::SimpleAS::lookup_mem_ranges(Vbus::Bus& bus, const Range<uint64>& gpa_range,
-                                   Vector<Model::SimpleAS*>& out) {
-
-    out.reset();
-    AsLookupArg arg{gpa_range, &out};
-    bus.iter_devices(add_as_range, &arg);
-}
