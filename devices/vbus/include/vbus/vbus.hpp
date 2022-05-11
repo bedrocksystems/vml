@@ -176,7 +176,7 @@ public:
      *  \post Ownership of the vbus is unchanged. All devices must have transitioned from some
      *        state to their initial state.
      */
-    void reset(const VcpuCtx& vcpu_ctx);
+    void reset(const VcpuCtx& vcpu_ctx) const;
 
     /*! \brief Debug only: control the trace of the access to the bus
      *  \param enabled Should accesses be traced?
@@ -200,7 +200,7 @@ public:
      *  \param arg the argument that will be passed every time the callback is invoked
      */
     template<typename T>
-    void iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, T*), T* arg) {
+    void iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, T*), T* arg) const {
         _devices.iter(f, arg);
     }
 

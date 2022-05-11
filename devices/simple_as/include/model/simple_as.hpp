@@ -527,7 +527,7 @@ public:
     static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz);
     static Errno clean_invalidate_bus(const Vbus::Bus &bus, GPA addr, size_t sz);
 
-    static void lookup_mem_ranges(Vbus::Bus &bus, const Range<uint64> &gpa_range,
+    static void lookup_mem_ranges(const Vbus::Bus &bus, const Range<uint64> &gpa_range,
                                   Vector<Model::SimpleAS *> &out);
 
 protected:

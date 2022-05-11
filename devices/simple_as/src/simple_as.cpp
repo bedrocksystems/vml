@@ -368,7 +368,7 @@ add_as_range(Vbus::Bus::DeviceEntry* de, AsLookupArg* arg) {
 }
 
 void
-Model::SimpleAS::lookup_mem_ranges(Vbus::Bus& bus, const Range<uint64>& gpa_range,
+Model::SimpleAS::lookup_mem_ranges(const Vbus::Bus& bus, const Range<uint64>& gpa_range,
                                    Vector<Model::SimpleAS*>& out) {
 
     out.reset();
