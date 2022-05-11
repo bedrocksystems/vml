@@ -87,7 +87,7 @@ Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg) 
 }
 
 void
-Vbus::Bus::reset(const VcpuCtx& vcpu_ctx) {
+Vbus::Bus::reset(const VcpuCtx& vcpu_ctx) const {
     iter_devices(Vbus::Bus::reset_device_cb, &vcpu_ctx);
     iter_devices(Vbus::Bus::reset_irq_ctlr_cb, &vcpu_ctx);
 }
