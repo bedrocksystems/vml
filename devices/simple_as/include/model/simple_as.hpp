@@ -15,8 +15,8 @@
 #include <platform/memory.hpp>
 #include <platform/rangemap.hpp>
 #include <platform/types.hpp>
+#include <platform/vector.hpp>
 #include <vbus/vbus.hpp>
-#include <vector.hpp>
 
 namespace Model {
     class SimpleAS;
