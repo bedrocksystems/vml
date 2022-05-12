@@ -664,6 +664,7 @@ public:
     virtual void deassert_line_ppi(Vcpu_id, uint32) override;
     virtual void deassert_global_line(uint32) override;
     virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id) override;
+    virtual void assert_msi(uint64, uint32) override { ABORT_WITH("GICD: no support for MSI yet"); }
 
     virtual bool signal_eoi(uint8) override { return false; }
     virtual bool wait_for_eoi(uint8) override { return false; }
