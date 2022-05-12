@@ -27,6 +27,8 @@ namespace Barrier {
 
     static inline void rw_before_rw(void) { asm volatile("mfence" : : : "memory"); }
 
+    static inline void system(void) { asm volatile("mfence" : : : "memory"); }
+
     static inline void instruction(void) {}
 
 }
