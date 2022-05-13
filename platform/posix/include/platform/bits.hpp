@@ -9,6 +9,12 @@
 
 #include <platform/types.hpp>
 
+template<typename T>
+static inline constexpr T
+min(T v1, T v2) {
+    return v1 < v2 ? v1 : v2;
+}
+
 inline constexpr uint64_t
 mask(uint8_t order, unsigned offset = 0) {
     return (order >= (sizeof(uint64_t) * 8) ? ~0ull : ((1ull << order) - 1)) << offset;

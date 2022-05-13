@@ -7,7 +7,7 @@
  */
 
 #include <model/virtio_console.hpp>
-#include <platform/virtqueue.hpp>
+#include <model/virtqueue.hpp>
 
 void
 Model::Virtio_console::notify(uint32 const) {
@@ -26,78 +26,74 @@ Model::Virtio_console::driver_ok() {
 }
 
 bool
-Model::Virtio_console::to_guest(const char *buff, uint32 size) {
+Model::Virtio_console::to_guest(const char *buff, size_t size_bytes) {
     if (!queue(RX).constructed() || (!_driver_initialized))
         return false;
 
-    uint32 buf_idx = 0;
-    while (size) {
-        auto *desc = device_queue(RX).recv();
-        if (not desc) {
+    size_t buf_idx = 0;
+    while (size_bytes) {
+        Errno err = _rx_buff.walk_chain(device_queue(RX));
+        if (ENONE != err) {
+            assert_irq();
             return false;
         }
 
-        uint32 n_copy = size <= desc->length ? size : desc->length;
-        Errno err = Model::SimpleAS::write_bus(*_vbus, GPA(desc->address), buff + buf_idx, n_copy);
-        if (err != ENONE) {
-            device_queue(RX).send(desc);
+        size_t n_copy = size_bytes <= _rx_buff.size_bytes() ? size_bytes : _rx_buff.size_bytes();
+
+        // NOTE: [Model::Virtio_console] is a concrete instantiation of
+        // [Virtio::Sg::Buffer::ChainAccessor].
+        err = Virtio::Sg::Buffer::copy(this, _rx_buff, buff + buf_idx, n_copy);
+        _rx_buff.conclude_chain_use(device_queue(RX));
+        assert_irq();
+
+        if (ENONE != err) {
             return false; /* outside guest physical memory */
         }
 
-        desc->length = n_copy;
-        desc->flags &= static_cast<uint16>(~VIRTQ_DESC_CONT_NEXT);
-        device_queue(RX).send(desc);
-
-        size -= n_copy;
+        size_bytes -= n_copy;
         buf_idx += n_copy;
     }
-    assert_irq();
 
     return true;
 }
 
 size_t
-Model::Virtio_console::from_guest(char *out_buf, size_t sz) {
+Model::Virtio_console::from_guest(char *out_buf, size_t size_bytes) {
     if (!queue(TX).constructed() || (!_driver_initialized))
         return 0;
 
     size_t was_read = 0;
+    Errno err;
 
-    while (sz != 0) {
-        if (!_cur_tx.is_valid()) {
-            /* get the next packet */
-            Virtio::Descriptor *tx_desc = device_queue(TX).recv();
-            if (tx_desc == nullptr)
-                break;
-            bool b = _cur_tx.construct(_vbus, tx_desc);
-            if (!b) {
-                device_queue(TX).send(tx_desc);
+    while (size_bytes != 0) {
+        // NOTE: prior to any [walk_chain] - or right after a [conclude_chain_use] - [0 ==
+        // _tx_buff.size_bytes()]
+        if (0 == _tx_buff.size_bytes()) {
+            _tx_buff_progress = 0;
+            err = _tx_buff.walk_chain(device_queue(TX));
+            if (ENONE != err) {
                 break;
             }
         }
 
-        size_t wr = _cur_tx.read(out_buf + was_read, sz);
-        if (wr == 0) {
-            device_queue(TX).send(_cur_tx.desc());
-            _cur_tx.destruct();
+        size_t n_copy = size_bytes <= _tx_buff.size_bytes() ? size_bytes : _tx_buff.size_bytes();
+
+        // NOTE: [Model::Virtio_console] is a concrete instantiation of
+        // [Virtio::Sg::Buffer::ChainAccessor].
+        err = Virtio::Sg::Buffer::copy(this, out_buf + was_read, _tx_buff, n_copy,
+                                       _tx_buff_progress);
+        if (ENONE != err || 0 == n_copy) {
+            _tx_buff.conclude_chain_use(device_queue(TX));
             assert_irq();
+
+            if (ENONE != err)
+                return was_read;
         } else {
-            sz -= wr;
-            was_read += wr;
+            _tx_buff_progress += n_copy;
+            size_bytes -= n_copy;
+            was_read += n_copy;
         }
     }
 
     return was_read;
-}
-
-void
-Model::Virtio_console::release_buffer() {
-    if (!queue(TX).constructed() || (!_driver_initialized))
-        return;
-
-    if (not _tx_desc)
-        return;
-
-    device_queue(TX).send(_tx_desc);
-    assert_irq();
 }
