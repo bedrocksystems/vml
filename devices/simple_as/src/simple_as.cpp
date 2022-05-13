@@ -123,29 +123,69 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
 
 Errno
 Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
-    if (!is_gpa_valid(gpa, size))
-        return EINVAL;
-
-    mword offset = gpa.get_value() - get_guest_view().get_value();
     void* dst;
-
-    if (!mapped()) {
-        dst = Platform::Mem::map_mem(_mobject, offset, size,
-                                     Platform::Mem::READ | Platform::Mem::WRITE);
-        if (dst == nullptr)
-            return ENOMEM;
-    } else {
-        dst = get_vmm_view() + offset;
+    Errno err = demand_map(gpa, size, dst, true);
+    if (ENONE != err) {
+        return err;
     }
 
     memcpy(dst, src, size);
-    dcache_clean_range(dst, size);
-    icache_invalidate_range(dst, size);
+
+    return demand_unmap_clean(gpa, size, dst);
+}
+
+Errno
+Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool write) const {
+    if (!is_gpa_valid(gpa, size_bytes))
+        return EINVAL;
+
+    if (write && is_read_only() && !get_mem_fd().cred().write()) {
+        WARN("Cannot map read-only guest memory for write pa:0x%llx size:0x%lx", gpa.get_value(),
+             size_bytes);
+        return EPERM;
+    }
+
+    mword offset = gpa.get_value() - get_guest_view().get_value();
+    DEBUG("demand_map pa:0x%llx size:0x%lx write:%d (+0x%lx)", gpa.get_value(), size_bytes, write,
+          offset);
+    if (!mapped()) {
+        va = Platform::Mem::map_mem(_mobject, offset, size_bytes,
+                                    Platform::Mem::READ | (write ? Platform::Mem::WRITE : 0));
+        if (va == nullptr) {
+            WARN("Unable to map a chunk pa:%llx size:0x%lx", gpa.get_value(), size_bytes);
+            return ENOMEM;
+        }
+    } else {
+        va = get_vmm_view() + offset;
+    }
+
+    return ENONE;
+}
+
+Errno
+Model::SimpleAS::demand_unmap(const GPA&, size_t size_bytes, void* va) const {
+    DEBUG("demand_unmap mem:0x%p size:0x%lx", va, size_bytes);
 
     if (!mapped()) {
-        bool b = Platform::Mem::unmap_mem(dst, size);
+        bool b = Platform::Mem::unmap_mem(va, size_bytes);
         if (!b)
-            ABORT_WITH("Unable to unmap region");
+            ABORT_WITH("Unable to unmap guest memory mem:0x%p size:0x%lx", va, size_bytes);
+    }
+
+    return ENONE;
+}
+
+Errno
+Model::SimpleAS::demand_unmap_clean(const GPA&, size_t size_bytes, void* va) const {
+    DEBUG("demand_unmap_clean mem:0x%p size:0x%lx", va, size_bytes);
+
+    dcache_clean_range(va, size_bytes);
+    icache_invalidate_range(va, size_bytes);
+
+    if (!mapped()) {
+        bool b = Platform::Mem::unmap_mem(va, size_bytes);
+        if (!b)
+            ABORT_WITH("Unable to unmap guest memory mem:0x%p size:0x%lx", va, size_bytes);
     }
 
     return ENONE;
@@ -272,6 +312,43 @@ Model::SimpleAS::read_bus(const Vbus::Bus& bus, GPA addr, char* dst, size_t sz) 
         return EINVAL;
 
     return tgt->read(dst, sz, addr);
+}
+
+Errno
+Model::SimpleAS::demand_map_bus(const Vbus::Bus& bus, const GPA& gpa, size_t size_bytes, void*& va,
+                                bool write) {
+    Model::SimpleAS* tgt = get_as_device_at(bus, gpa, size_bytes);
+    if (tgt == nullptr)
+        return EINVAL;
+
+    void* temp_va = nullptr;
+    Errno err = tgt->demand_map(gpa, size_bytes, temp_va, write);
+
+    if (ENONE == err) {
+        va = temp_va;
+    }
+
+    return err;
+}
+
+Errno
+Model::SimpleAS::demand_unmap_bus(const Vbus::Bus& bus, const GPA& gpa, size_t size_bytes,
+                                  void* va) {
+    Model::SimpleAS* tgt = get_as_device_at(bus, gpa.value(), size_bytes);
+    if (tgt == nullptr)
+        return EINVAL;
+
+    return tgt->demand_unmap(gpa, size_bytes, va);
+}
+
+Errno
+Model::SimpleAS::demand_unmap_bus_clean(const Vbus::Bus& bus, const GPA& gpa, size_t size_bytes,
+                                        void* va) {
+    Model::SimpleAS* tgt = get_as_device_at(bus, gpa.value(), size_bytes);
+    if (tgt == nullptr)
+        return EINVAL;
+
+    return tgt->demand_unmap_clean(gpa, size_bytes, va);
 }
 
 Errno

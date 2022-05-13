@@ -64,9 +64,8 @@ endif
 #
 
 LIBDIR = $(VMM_ROOT)devices $(VMM_ROOT)arch $(VMM_ROOT)vcpu $(VMM_ROOT)config $(VMM_ROOT)platform
-LIBS  = vbus vpl011 gic irq_controller vuart timer virtio_console virtio_net msr arch_api
-LIBS += simple_as firmware vcpu_roundup cpu_model virtio_sock vmm_debug posix virtio_base
-LIBS += lifecycle
+LIBS  = vbus vpl011 gic irq_controller vuart timer arch_api simple_as virtio_base virtio_console
+LIBS += virtio_net firmware vcpu_roundup cpu_model virtio_sock vmm_debug posix lifecycle msr
 
 find_path_to_lib = $(foreach d, $(LIBDIR), $(wildcard $(d)/$(1)))
 find_path_to_lib_objs=$(call find_common_path,$(VMM_ROOT),$(realpath $(call find_path_to_lib,$(1))))

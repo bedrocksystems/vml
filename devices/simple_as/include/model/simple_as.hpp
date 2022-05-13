@@ -342,6 +342,52 @@ public:
     static GPA gfn_to_gpa(uint64 gfn) { return GPA(gfn << PAGE_BITS); }
 };
 
+/*! \brief Hooks for (effectful) GPA translation and un-translation.
+ *
+ * The intended usage is:
+ * | char *va = nullptr;
+ * | Errno err;
+ * |
+ * | err = translator->gpa_to_va_{write}(addr, sz, va);
+ * | if (Errno::ENONE != err) return err;
+ * |
+ * | // use [va] in a readable XOR writable way
+ * |
+ * | err = translator->gpa_to_va_post_{write}(addr, sz, va);
+ * | if (Errno::ENONE != err) return err;
+ */
+class GuestPhysicalToVirtual {
+public:
+    virtual ~GuestPhysicalToVirtual() {}
+
+    // Address translation for readable and writable chunks of memory might
+    // differ. Therefore, [GuestPhysicalToVirtual] exposes pre-/post-hooks
+    // which are explicitly slated for use in readable and writable translations:
+    // - [gpa_to_va]/[gpa_to_va_post]: pre-/post-hooks for *readable*
+    //   guest-physical ranges.
+    // - [gpa_to_va_write]/[gpa_to_va_post_write]: pre-/post-hooks for *writable*
+    //   guest-physical ranges.
+    //
+    // Libraries shall use the appropriate parity when translating guest-phsyical
+    // addresses using this interface.
+    //
+    // Clients which are indifferent to the read/write parity may simply override
+    // [gpa_to_va] (and [gpa_to_va_post], if necessary).
+    virtual Errno gpa_to_va(const GPA &gpa, size_t byte_size, char *&va) = 0;
+    virtual Errno gpa_to_va_write(const GPA &gpa, size_t byte_size, char *&va) {
+        return gpa_to_va(gpa, byte_size, va);
+    }
+    virtual Errno gpa_to_va_post(const GPA &gpa, size_t byte_size, char *va) {
+        (void)(gpa);
+        (void)(byte_size);
+        (void)(va);
+        return ENONE;
+    }
+    virtual Errno gpa_to_va_post_write(const GPA &gpa, size_t byte_size, char *va) {
+        return gpa_to_va_post(gpa, byte_size, va);
+    }
+};
+
 /*! \brief Guest Virtual Address
  */
 class GVA : public PrimitiveTypeWrapper<mword> {
@@ -460,6 +506,18 @@ public:
      */
     Errno read(char *dst, size_t size, const GPA &addr) const;
 
+    Errno demand_map(const GPA &gpa, size_t size_bytes, void *&va, bool write) const;
+    Errno demand_unmap(const GPA &gpa, size_t size_bytes, void *va) const;
+    Errno demand_unmap_clean(const GPA &gpa, size_t size_bytes, void *va) const;
+
+    static Errno demand_map_bus(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes, void *&va,
+                                bool write);
+    static Errno demand_unmap_bus(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes,
+                                  void *va);
+    static Errno demand_unmap_bus_clean(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes,
+                                        void *va);
+
+public:
     /*! \brief Write data to the guest AS
      *  \pre Partial ownership of the object. Full ownership of the source buffer.
      *  \post Ownership unchanged. The data is copied from the buffer to the guest AS if the

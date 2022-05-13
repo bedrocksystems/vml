@@ -9,18 +9,20 @@
 #pragma once
 
 #include <model/irq_controller.hpp>
+#include <model/simple_as.hpp>
 #include <model/virtio_common.hpp>
+#include <model/virtio_sg.hpp>
+#include <model/virtqueue.hpp>
 #include <platform/log.hpp>
 #include <platform/new.hpp>
 #include <platform/types.hpp>
-#include <platform/virtqueue.hpp>
 
 namespace Virtio {
     class Console;
     class Device;
 };
 
-class Virtio::Device : public Vbus::Device {
+class Virtio::Device : public Vbus::Device, public Virtio::Sg::Buffer::ChainAccessor {
 private:
     static constexpr uint32 VENDOR_ID = 0x20564842ULL; // little-endian "BHV "
 
@@ -103,5 +105,34 @@ public:
 
     uint64 drv_feature() const {
         return combine_low_high(_dev_state.drv_feature_lower, _dev_state.drv_feature_upper);
+    }
+
+    // [GuestPhysicalToVirtual] overrides inherited by [Virtio::Sg::Buffer::ChainAccessor]
+    //
+    // NOTE: mapping depends on whether or not the the va will be used for reads or writes,
+    // but unmapping is done unconditionally.
+    Errno gpa_to_va(const GPA &gpa, size_t size_bytes, char *&va) override {
+        char *mapped_va = Model::SimpleAS::map_guest_mem(*_vbus, gpa, size_bytes, false);
+
+        if (nullptr == mapped_va) {
+            return ENOENT;
+        }
+
+        va = mapped_va;
+        return ENONE;
+    }
+    Errno gpa_to_va_write(const GPA &gpa, size_t size_bytes, char *&va) override {
+        char *mapped_va = Model::SimpleAS::map_guest_mem(*_vbus, gpa, size_bytes, true);
+
+        if (nullptr == mapped_va) {
+            return ENOENT;
+        }
+
+        va = mapped_va;
+        return ENONE;
+    }
+    Errno gpa_to_va_post(const GPA &, size_t size_bytes, char *va) override {
+        Model::SimpleAS::unmap_guest_mem(va, size_bytes);
+        return ENONE;
     }
 };

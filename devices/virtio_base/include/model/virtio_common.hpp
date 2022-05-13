@@ -9,12 +9,12 @@
 #pragma once
 
 #include <model/simple_as.hpp>
+#include <model/virtqueue.hpp>
 #include <platform/atomic.hpp>
 #include <platform/bits.hpp>
 #include <platform/new.hpp>
 #include <platform/string.hpp>
 #include <platform/types.hpp>
-#include <platform/virtqueue.hpp>
 
 namespace Virtio {
     class Callback;
@@ -111,8 +111,7 @@ struct Virtio::QueueData {
 class Virtio::QueueState {
 private:
     QueueData *_data{nullptr};
-    Virtio::Queue _virtqueue;
-    Virtio::DeviceQueue _device_queue{&_virtqueue, 1};
+    Virtio::DeviceQueue _device_queue{Virtio::DeviceQueue()};
     bool _constructed{false};
 
     void *_desc_addr{nullptr};
@@ -127,44 +126,49 @@ public:
         if (_data->num == 0)
             return destruct();
 
-        _desc_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.descr()),
-                                                    Virtio::Descriptor::size(_data->num), true);
+        _desc_addr = Model::SimpleAS::map_guest_mem(
+            bus, GPA(data.descr()), Virtio::Descriptor::region_size_bytes(uint16(_data->num)),
+            true);
         if (_desc_addr == nullptr)
             return destruct();
 
-        _avail_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.driver()),
-                                                     Virtio::Available::size(_data->num), true);
+        _avail_addr = Model::SimpleAS::map_guest_mem(
+            bus, GPA(data.driver()), Virtio::Available::region_size_bytes(uint16(_data->num)),
+            true);
         if (_avail_addr == nullptr)
             return destruct();
 
-        _used_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.device()),
-                                                    Virtio::Used::size(_data->num), true);
+        _used_addr = Model::SimpleAS::map_guest_mem(
+            bus, GPA(data.device()), Virtio::Used::region_size_bytes(uint16(_data->num)), true);
         if (_used_addr == nullptr)
             return destruct();
 
-        _virtqueue.descriptor = static_cast<Virtio::Descriptor *>(_desc_addr);
-        _virtqueue.available = static_cast<Virtio::Available *>(_avail_addr);
-        _virtqueue.used = static_cast<Virtio::Used *>(_used_addr);
-
-        new (&_device_queue) Virtio::DeviceQueue(&_virtqueue, static_cast<uint16>(_data->num));
+        _device_queue = cxx::move(Virtio::DeviceQueue(_desc_addr, _avail_addr, _used_addr,
+                                                      static_cast<uint16>(_data->num)));
 
         _constructed = true;
     }
 
     void destruct() {
 
+        _device_queue = cxx::move(Virtio::DeviceQueue());
+
         if (_desc_addr) {
-            Model::SimpleAS::unmap_guest_mem(_desc_addr, Virtio::Descriptor::size(_data->num));
+            Model::SimpleAS::unmap_guest_mem(
+                _desc_addr, Virtio::Descriptor::region_size_bytes(uint16(_data->num)));
             _desc_addr = nullptr;
         }
         if (_avail_addr) {
-            Model::SimpleAS::unmap_guest_mem(_avail_addr, Virtio::Available::size(_data->num));
+            Model::SimpleAS::unmap_guest_mem(
+                _avail_addr, Virtio::Available::region_size_bytes(uint16(_data->num)));
             _avail_addr = nullptr;
         }
         if (_used_addr) {
-            Model::SimpleAS::unmap_guest_mem(_used_addr, Virtio::Used::size(_data->num));
+            Model::SimpleAS::unmap_guest_mem(_used_addr,
+                                             Virtio::Used::region_size_bytes(uint16(_data->num)));
             _used_addr = nullptr;
         }
+
         _data = nullptr;
         _constructed = false;
     }
@@ -303,57 +307,3 @@ Virtio::write_register(uint64 const offset, uint32 const base_reg, uint32 const 
     result |= static_cast<T>((value & mask) << (base * 8));
     return true;
 }
-
-class Virtio::DescrAccessor {
-public:
-    ~DescrAccessor() { destruct(); }
-
-    bool construct(const Vbus::Bus *vbus, Virtio::Descriptor *desc) {
-        _guest_data = Model::SimpleAS::map_guest_mem(*vbus, GPA(desc->address), desc->length, true);
-        if (_guest_data == nullptr) {
-            return false;
-        }
-        _desc = desc;
-        _data_size = desc->length;
-        _read_ptr = 0;
-        _write_ptr = 0;
-        return true;
-    }
-
-    void destruct() {
-        if (_guest_data != nullptr) {
-            Model::SimpleAS::unmap_guest_mem(_guest_data, _data_size);
-            _guest_data = nullptr;
-        }
-    }
-
-    size_t write(const char *buf, size_t size) {
-        if (_write_ptr >= _data_size)
-            return 0;
-        size_t to_write = (size + _write_ptr >= _data_size) ? (_data_size - _write_ptr) : size;
-        memcpy(_guest_data + _write_ptr, buf, to_write);
-        _write_ptr += to_write;
-        return to_write;
-    }
-
-    size_t read(char *buf, size_t size) {
-        if (_read_ptr >= _data_size)
-            return 0;
-        size_t to_read = (size + _read_ptr >= _data_size) ? (_data_size - _read_ptr) : size;
-        memcpy(buf, _guest_data + _read_ptr, to_read);
-        _read_ptr += to_read;
-        return to_read;
-    }
-
-    size_t size() const { return _data_size; }
-    bool is_valid() const { return (_guest_data != nullptr); }
-    Virtio::Descriptor *desc() const { return _desc; }
-    char *data() const { return _guest_data; }
-
-private:
-    Virtio::Descriptor *_desc{nullptr};
-    char *_guest_data{nullptr};
-    size_t _data_size{0};
-    size_t _read_ptr{0};
-    size_t _write_ptr{0};
-};

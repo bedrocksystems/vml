@@ -24,10 +24,10 @@ endif
 
 export ARCH
 
-SUBDIRS = devices/vbus devices/vpl011 devices/gic arch/$(ARCH)
-SUBDIRS += devices/timer devices/virtio_console devices/virtio_net devices/msr
-SUBDIRS += devices/simple_as devices/firmware vcpu/vcpu_roundup vcpu/cpu_model
-SUBDIRS += devices/virtio_sock
+SUBDIRS = devices/vbus devices/vpl011 devices/gic arch/$(ARCH) devices/timer devices/simple_as
+SUBDIRS += devices/virtio_base devices/virtio_console devices/virtio_net devices/msr
+SUBDIRS += devices/firmware vcpu/vcpu_roundup vcpu/cpu_model devices/virtio_sock
+
 
 ifeq ($(CMDGOAL), doc)
 check_tool=$(if $(shell which $(1)),,$(error "$(1) not found - Consider installing this tool))

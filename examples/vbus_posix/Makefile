@@ -10,7 +10,7 @@ APPNAME  = vbus_posix
 
 include deps.mk
 
-LINKLIBS  = vbus simple_as firmware vpl011 msr timer gic cpu_model vcpu_roundup virtio_console virtio_net simple_as $(ARCH)
+LINKLIBS  = vbus simple_as $(ARCH) firmware vpl011 gic msr timer cpu_model vcpu_roundup virtio_console virtio_net
 
 CC_SRCS = vbus_example.cpp
 OBJS = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
