@@ -190,6 +190,8 @@ public:
         return icp == PIPT;
     }
 
+    uint64 get_value() const { return _value; }
+
 private:
     static constexpr uint64 IDC_MASK = 1ull << 28;
     static constexpr uint64 DIC_MASK = 1ull << 29;
