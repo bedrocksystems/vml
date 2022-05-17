@@ -576,24 +576,23 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id, bool redirect_irq) {
             break;
 
         Irq &irq = irq_object(cpu, irq_id);
+        IrqInjectionInfoUpdate cur = irq.injection_info.read();
 
-        if (redirect_irq && (irq_id >= SPI_BASE) && !vcpu_can_receive_irq(gic_r)) {
+        if (((irq.group0() && _ctlr.group0_enabled()) || (irq.group1() && _ctlr.group1_enabled()))
+            && cur.is_targeting_cpu(cpu_id) && cur.pending() && irq.enabled()
+            && !cpu.in_injection_irqs.is_set(irq_id) && vcpu_can_receive_irq(gic_r)) {
+
+            if (r == nullptr || irq.prio() > r->prio())
+                r = &irq;
+        } else if (redirect_irq && (irq_id >= SPI_BASE) && !vcpu_can_receive_irq(gic_r)) {
+            // or (irq.group0() && !vmcr.group0_enabled() && _ctlr.affinity_routing())
+            // or (irq.group1() && !vmcr.group1_enabled() && _ctlr.affinity_routing()))) {
             /*
              * If this interface is not capable of receiving the IRQ anymore,
              * in the GICv3 world (affinity_routing enabled), we have to release
              * it so that another interface can handle it.
              */
-            redirect_spi(irq);
-        }
-
-        IrqInjectionInfoUpdate cur = irq.injection_info.read();
-
-        if (((irq.group0() && _ctlr.group0_enabled()) || (irq.group1() && _ctlr.group1_enabled()))
-            && cur.is_targeting_cpu(cpu_id) && cur.pending() && irq.enabled()
-            && !cpu.in_injection_irqs.is_set(irq_id)) {
-
-            if (r == nullptr || irq.prio() > r->prio())
-                r = &irq;
+            redirect_spi(irq, cpu_id + 1); // kick it to the next one (modulo will apply)
         }
 
         irq_id++;
@@ -619,7 +618,6 @@ Model::GicD::any_irq_active(Vcpu_id cpu_id) {
 bool
 Model::GicD::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
     ASSERT(cpu_id < _num_vcpus);
-
     Irq *irq = highest_irq(cpu_id, true);
     if (!irq || (min_priority < irq->prio()))
         return false;
@@ -796,10 +794,10 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
 }
 
 bool
-Model::GicD::redirect_spi(Irq &irq) {
+Model::GicD::redirect_spi(Irq &irq, Vcpu_id vcpu_hint_start) {
     ASSERT(irq.id() >= SPI_BASE);
 
-    IrqTarget target = route_spi(irq);
+    IrqTarget target = route_spi(irq, vcpu_hint_start);
 
     if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
         INFO("SPI %u re-routed to VCPU" FMTx32, irq.id(), target.raw());
@@ -832,7 +830,7 @@ Model::GicD::assert_pi(Vcpu_id cpu_id, Irq &irq) {
     ASSERT(irq.id() >= PPI_BASE || _ctlr.affinity_routing());
 
     if (irq.id() >= SPI_BASE) {
-        target = route_spi(irq);
+        target = route_spi(irq, ++_vcpu_global_hint);
 
         if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
             INFO("SPI %u routed to VCPU" FMTx32, irq.id(), target.raw());
@@ -927,10 +925,6 @@ Model::GicD::route_spi_no_affinity(Model::GicD::Irq &irq) {
     for (Vcpu_id i = 0; i < min<uint16>(_num_vcpus, TARGET_MODE_MAX_CPUS); i++) {
         if (!_local[i].notify)
             continue;
-        if (irq.group0() && !_ctlr.group0_enabled())
-            continue;
-        if (irq.group1() && !_ctlr.group1_enabled())
-            continue;
 
         if ((irq.target() & (1u << i)))
             res.add_target_to_set(i);
@@ -940,25 +934,41 @@ Model::GicD::route_spi_no_affinity(Model::GicD::Irq &irq) {
 }
 
 Model::GicD::IrqTarget
-Model::GicD::route_spi(Model::GicD::Irq &irq) {
+Model::GicD::route_spi(Model::GicD::Irq &irq, Vcpu_id vcpu_hint_start) {
+    // XXX: once an interface is enabled, we need to reroute those interrupts....
+
     if (!_ctlr.affinity_routing())
         return route_spi_no_affinity(irq);
 
     if (irq.routing.any()) {
-        for (Vcpu_id i = 0; i < _num_vcpus; i++) {
-            Cpu_irq_interface *const cpu = _local[i].notify;
+        vcpu_hint_start %= _num_vcpus;
+
+        // Ingore group0/1 enabled here - we will do the routing
+        // if ((irq.group0() && !_ctlr.group0_enabled()) or (irq.group1() &&
+        // !_ctlr.group1_enabled()))
+        //     return IrqTarget(); // Empty target;
+
+        uint64 cpus_tried = 0;
+        do {
+            Cpu_irq_interface *const cpu = _local[vcpu_hint_start].notify;
             ASSERT(cpu);
 
-            if (irq.group0() && !_ctlr.group0_enabled())
-                continue;
-            if (irq.group1() && !_ctlr.group1_enabled())
-                continue;
-
             const Local_Irq_controller *gicr = cpu->local_irq_ctlr();
-
             if (gicr->can_receive_irq())
-                return IrqTarget(IrqTarget::CPU_ID, i);
-        }
+                return IrqTarget(IrqTarget::CPU_ID, vcpu_hint_start);
+
+            cpus_tried++;
+            vcpu_hint_start++;
+            vcpu_hint_start %= _num_vcpus;
+        } while (cpus_tried != _num_vcpus);
+
+        /*
+         * Nobody was nice enough to accept that interrupt... It is possible that all
+         * VCPUs are sleeping or disabled. We park the IRQ in the queue of the current
+         * hint as a default. That VCPU will that kick that IRQ again down the road as
+         * appropriate.
+         */
+        return IrqTarget(IrqTarget::CPU_ID, vcpu_hint_start);
     } else {
         const CpuAffinity cpu_aff = CpuAffinity(static_cast<uint32>(irq.routing.aff3() << 24)
                                                 | static_cast<uint32>(irq.routing.aff2() << 16)

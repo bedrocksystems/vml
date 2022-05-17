@@ -377,6 +377,9 @@ private:
     Banked *_local;
     Irq _spi[MAX_SPI];
 
+    // simple way to round-robin IRQs when GICv3 is enabled
+    atomic<uint16> _vcpu_global_hint{0};
+
     Irq &irq_object(Banked &cpu, uint64 const id) {
         if (id < MAX_SGI)
             return cpu.sgi[id];
@@ -507,7 +510,7 @@ private:
             irq.target(val);
 
             if (irq.pending())
-                redirect_spi(irq);
+                redirect_spi(irq, ++_vcpu_global_hint);
         }
         return true;
     }
@@ -615,9 +618,9 @@ private:
     void deassert_line(Vcpu_id cpu_id, uint32 irq_id);
 
     bool notify_target(Irq &irq, const IrqTarget &target);
-    IrqTarget route_spi(Model::GicD::Irq &irq);
+    IrqTarget route_spi(Model::GicD::Irq &irq, Vcpu_id vcpu_hint_start);
     IrqTarget route_spi_no_affinity(Model::GicD::Irq &irq);
-    bool redirect_spi(Irq &irq);
+    bool redirect_spi(Irq &irq, Vcpu_id vcpu_hint_start);
     Irq *highest_irq(Vcpu_id cpu_id, bool redirect_irq);
     bool vcpu_can_receive_irq(const Local_Irq_controller *gic_r) const {
         return !_ctlr.affinity_routing() || gic_r->can_receive_irq();

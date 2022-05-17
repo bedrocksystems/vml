@@ -116,7 +116,11 @@ Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const val
         w.value = static_cast<uint32>(value);
         new_w = (uint32(w.sleeping()) << Waker::CHILDREN_ASLEEP_BIT)
                 | (uint32(w.sleeping()) << Waker::SLEEP_BIT);
-        return gic.write_register<uint32>(reg_acc, new_w, _waker.value, Waker::RESV_ZERO);
+
+        bool ret = gic.write_register<uint32>(reg_acc, new_w, _waker.value, Waker::RESV_ZERO);
+        if (w.sleeping())
+            gic.highest_irq(_vcpu_id, true /* redirect all */);
+        return ret;
     }
     case GICR_IGROUP0 ... GICR_IGROUP0_END:
         acc.base_abs = GICR_IGROUP0;
