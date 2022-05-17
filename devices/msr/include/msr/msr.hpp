@@ -335,13 +335,6 @@ namespace Model {
     class GicD;
 }
 
-static constexpr uint32
-build_msr_id(uint8 const op0, uint8 const crn, uint8 const op1, uint8 const crm, uint8 const op2) {
-    return (((uint32(crm) & 0xf) << 1) | ((uint32(crn) & 0xf) << 10) | ((uint32(op1) & 0x7) << 14)
-            | ((uint32(op2) & 0x7) << 17) | ((uint32(op0) & 0x3) << 20))
-           << 2;
-}
-
 class Msr::Id {
 private:
     uint32 _id;
