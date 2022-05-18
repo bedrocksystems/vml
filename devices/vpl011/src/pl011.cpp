@@ -67,7 +67,7 @@ Model::Pl011::mmio_write_cr(uint64 const value) {
         }
         if (!old_tx_cond) { // TX interrupt condition is true regardless of the watermark level
                             // because the queue is empty
-            set_rxris(true);
+            set_txris(true);
         }
     }
     updated_irq_lvl_to_gicd_if_needed(old_irq);
