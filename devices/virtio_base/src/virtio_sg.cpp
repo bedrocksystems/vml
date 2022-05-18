@@ -296,6 +296,10 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINE
         return EINVAL;
     }
 
+    if (sg.size_bytes() < size_bytes) {
+        return ENOMEM;
+    }
+
     auto default_copier = BulkCopierDefault();
     if (not copier) {
         copier = &default_copier;
@@ -369,6 +373,10 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
                          size_t d_off, size_t s_off, BulkCopier *copier) {
     if (not dst_accessor || not src_accessor) {
         return EINVAL;
+    }
+
+    if (dst.size_bytes() < size_bytes || src.size_bytes() < size_bytes) {
+        return ENOMEM;
     }
 
     auto default_copier = BulkCopierDefault();
