@@ -195,7 +195,7 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
             bool prev_rx_cond = rx_irq_cond();
             value = _rx_fifo.dequeue();
 
-            if (prev_rx_cond && !rx_irq_cond()) { // and if the rx_irq condition was true before
+            if (prev_rx_cond && !rx_irq_cond()) {
                 set_rxris(false);
                 _irq_ctlr->deassert_global_line(_irq_id);
             }
@@ -275,21 +275,29 @@ Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
 bool
 Model::Pl011::rx_irq_cond() const {
     uint32 chars = _rx_fifo.cur_size();
+    return (chars > 0);
 
-    switch (get_rx_irq_level()) {
-    case FIFO_1DIV8_FULL:
-        return chars >= 4;
-    case FIFO_1DIV4_FULL:
-        return chars >= 8;
-    case FIFO_1DIV2_FULL:
-        return chars >= 16;
-    case FIFO_3DIV4_FULL:
-        return chars >= 24;
-    case FIFO_7DIV8_FULL:
-        return chars >= 28;
-    }
+    /* The manual says: the receive timeout interrupt is asserted when the receive FIFO is not
+     * empty, and no further data is received over a 32-bit period. The receive timeout interrupt is
+     * cleared either when the FIFO becomes empty through reading all the data (or by reading the
+     * holding register), or when a 1 is written to the corresponding bit of the UARTICR register.
+     *
+     * Because timing is irrelvant for vmm, we assume that we are already over the 32-bit period.
+     */
+    // switch (get_rx_irq_level()) {
+    // case FIFO_1DIV8_FULL:
+    //     return chars >= 4;
+    // case FIFO_1DIV4_FULL:
+    //     return chars >= 8;
+    // case FIFO_1DIV2_FULL:
+    //     return chars >= 16;
+    // case FIFO_3DIV4_FULL:
+    //     return chars >= 24;
+    // case FIFO_7DIV8_FULL:
+    //     return chars >= 28;
+    // }
 
-    return true;
+    // return true;
 }
 
 bool
@@ -322,7 +330,7 @@ Model::Pl011::write_to_rx_queue(char c) {
     bool old_irq = is_irq_asserted();
     _rx_fifo.enqueue(static_cast<uint16>(c));
 
-    if (compute_rxris()) {
+    if (compute_rxris()) { // we know this would be true. can drop the check
         set_rxris(true);
         updated_irq_lvl_to_gicd_if_needed(old_irq);
     }
