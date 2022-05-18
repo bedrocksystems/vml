@@ -127,19 +127,20 @@ public:
             return destruct();
 
         _desc_addr = Model::SimpleAS::map_guest_mem(
-            bus, GPA(data.descr()), Virtio::Descriptor::region_size_bytes(uint16(_data->num)),
-            true);
+            bus, GPA(data.descr()),
+            Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)), true);
         if (_desc_addr == nullptr)
             return destruct();
 
         _avail_addr = Model::SimpleAS::map_guest_mem(
-            bus, GPA(data.driver()), Virtio::Available::region_size_bytes(uint16(_data->num)),
-            true);
+            bus, GPA(data.driver()),
+            Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)), true);
         if (_avail_addr == nullptr)
             return destruct();
 
         _used_addr = Model::SimpleAS::map_guest_mem(
-            bus, GPA(data.device()), Virtio::Used::region_size_bytes(uint16(_data->num)), true);
+            bus, GPA(data.device()),
+            Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)), true);
         if (_used_addr == nullptr)
             return destruct();
 
@@ -155,17 +156,17 @@ public:
 
         if (_desc_addr) {
             Model::SimpleAS::unmap_guest_mem(
-                _desc_addr, Virtio::Descriptor::region_size_bytes(uint16(_data->num)));
+                _desc_addr, Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)));
             _desc_addr = nullptr;
         }
         if (_avail_addr) {
             Model::SimpleAS::unmap_guest_mem(
-                _avail_addr, Virtio::Available::region_size_bytes(uint16(_data->num)));
+                _avail_addr, Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)));
             _avail_addr = nullptr;
         }
         if (_used_addr) {
-            Model::SimpleAS::unmap_guest_mem(_used_addr,
-                                             Virtio::Used::region_size_bytes(uint16(_data->num)));
+            Model::SimpleAS::unmap_guest_mem(
+                _used_addr, Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)));
             _used_addr = nullptr;
         }
 
