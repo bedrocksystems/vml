@@ -9,6 +9,7 @@
 
 #include <model/vcpu_types.hpp>
 #include <platform/context.hpp>
+#include <platform/errno.hpp>
 #include <platform/types.hpp>
 
 namespace Vcpu::Roundup {
