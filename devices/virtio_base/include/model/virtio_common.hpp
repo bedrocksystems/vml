@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <model/irq_controller.hpp>
 #include <model/simple_as.hpp>
 #include <model/virtqueue.hpp>
 #include <platform/atomic.hpp>
