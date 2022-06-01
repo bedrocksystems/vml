@@ -39,9 +39,9 @@ namespace Msr {
 
     static constexpr uint32 build_msr_id(uint8 const op0, uint8 const crn, uint8 const op1,
                                          uint8 const crm, uint8 const op2) {
-        return (((uint32(crm) & 0xf) << 3) | ((uint32(crn) & 0xf) << 7)
-                | ((uint32(op1) & 0x7) << 10) | ((uint32(op2) & 0x7) << 13)
-                | ((uint32(op0) & 0xff) << 16));
+        return (((uint32(crm) & 0xfu) << 3) | ((uint32(crn) & 0xfu) << 7)
+                | ((uint32(op1) & 0x7u) << 10) | ((uint32(op2) & 0x7u) << 13)
+                | ((uint32(op0) & 0xffu) << 16));
     }
 
     static constexpr uint8 OP0_AARCH32_ONLY_MSR = 0xff;
