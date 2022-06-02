@@ -8,11 +8,18 @@
 #pragma once
 
 #include <math.h>
+#include <platform/types.hpp>
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include <platform/mempage.hpp>
-#include <platform/types.hpp>
+inline long
+__get_page_size() {
+    return sysconf(_SC_PAGESIZE);
+}
+
+#define PAGE_SIZE __get_page_size()
+#define PAGE_MASK (~(PAGE_SIZE - 1))
+#define PAGE_BITS static_cast<mword>(log2(PAGE_SIZE))
 
 namespace Platform::Mem {
 
