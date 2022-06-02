@@ -454,7 +454,10 @@ Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolute)
 
 void
 Model::Cpu::notify_interrupt_pending() {
-    recall(false);
+    if (_state & ON) {
+        recall(false);
+    }
+
     unblock();
 }
 
