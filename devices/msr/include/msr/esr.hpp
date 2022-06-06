@@ -186,6 +186,9 @@ public:
     explicit DataAbort(uint64 const esr) : Abort(esr) {}
 
     bool isv() const { return (_esr >> 24) & 0x1; }
+    bool sse() const { return bits_in_range(_esr, 21, 21); }
+    bool ar() const { return bits_in_range(_esr, 14, 14); }
+    bool sf() const { return bits_in_range(_esr, 15, 15); }
     uint8 reg() const { return (_esr >> 16) & 0x1f; }
     bool write() const { return (_esr >> 6) & 0x1; }
     uint8 access_size_bytes() const { return static_cast<uint8>((1 << access_size()) & 0xff); }
