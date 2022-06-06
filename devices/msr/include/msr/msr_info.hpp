@@ -22,6 +22,7 @@ namespace Msr::Info {
         HCR_EL2_AMO = 1ull << 5,
         HCR_EL2_FB = 1ull << 9,
         HCR_EL2_BSU_INNER = 1ull << 10,
+        HCR_EL2_DC = 1ull << 12,
         HCR_EL2_TWI = 1ull << 13,
         HCR_EL2_TWE = 1ull << 14,
         HCR_EL2_TID0 = 1ull << 15,
