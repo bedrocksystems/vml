@@ -65,13 +65,14 @@ endif
 
 LIBDIR = $(VMM_ROOT)devices $(VMM_ROOT)arch $(VMM_ROOT)vcpu $(VMM_ROOT)config $(VMM_ROOT)platform
 LIBS  = vbus vpl011 gic irq_controller vuart timer arch_api simple_as virtio_base virtio_console
-LIBS += virtio_net firmware vcpu_roundup cpu_model virtio_sock vmm_debug posix lifecycle msr
+LIBS += virtio_net firmware vcpu_roundup cpu_model virtio_sock vmm_debug posix posix_core lifecycle msr
 
 find_path_to_lib = $(foreach d, $(LIBDIR), $(wildcard $(d)/$(1)))
 find_path_to_lib_objs=$(call find_common_path,$(VMM_ROOT),$(realpath $(call find_path_to_lib,$(1))))
 find_path_to_archive=$(BLDDIR)$(call find_path_to_lib_objs,$(1))/lib$(1).a
 INCLS  = $(foreach l, $(LIBS), $(addsuffix /include,$(call find_path_to_lib,$l)))
 INCLS += $(foreach l, $(LIBS), $(addsuffix /include/$(ARCH_INC),$(call find_path_to_lib,$l)))
+
 APPINCL = ./include ./include/$(ARCH_INC)
 IFLAGS = $(addprefix -I, $(APPINCL)) $(addprefix -I, $(INCLS))
 LINKDEPS = $(foreach l,$(LINKLIBS),$(call find_path_to_archive,$l))
