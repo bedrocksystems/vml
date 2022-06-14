@@ -101,12 +101,26 @@ Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const val
     switch (offset) {
     case UARTDR:
         ASSERT(_callback != nullptr);
-        if (can_tx())
+        if (can_tx()) {
+            bool old_irq = is_irq_asserted();
             _callback->from_guest_sent(
                 static_cast<char>(value)); // queue length remains same (0), so no interrupt change.
-        // one can argue that queue length becomes 1 transiently, but 1 and 0 are equiv upto
-        // watermark conditions
-        else {
+            // one can argue that queue length becomes 1 transiently, but 1 and 0 are equiv upto
+            // watermark conditions
+            if (!is_fifo_enabled()) {
+                // "If the FIFOs are disabled (have a depth of one location) and there is no data
+                // present in the transmitters single location, the transmit interrupt is asserted
+                // HIGH. It is cleared by performing a single write to the transmit FIFO, or by
+                // clearing the interrupt."
+                // "Note: The transmit interrupt is based on a transition
+                // through a level, rather than on the level itself. When the interrupt and the UART
+                // is enabled before any data is written to the transmit FIFO the interrupt is not
+                // set. The interrupt is only set once written data leaves the single location of
+                // the transmit FIFO and it becomes empty."
+                set_txris(true);
+                updated_irq_lvl_to_gicd_if_needed(old_irq);
+            }
+        } else {
             bool old_irq = is_irq_asserted();
             _tx_fifo.enqueue(static_cast<unsigned char>(value));
             set_txris(tx_irq_cond()); // if this changes the txris bit, it would only clear it
