@@ -11,6 +11,7 @@
 #include <model/gic.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/algorithm.hpp>
+#include <platform/bits.hpp>
 #include <platform/log.hpp>
 
 enum {
@@ -172,7 +173,7 @@ Model::GicD::write_irouter(Banked &cpu, uint64 offset, uint8 bytes, uint64 value
         return true; /* ignore - spec says this is not supported */
 
     uint64 const irq_id = SPI_BASE + (offset - GICD_IROUTER) / 8;
-    if (irq_id < SPI_BASE || irq_id >= MAX_IRQ)
+    if (irq_id < SPI_BASE || irq_id >= configured_irqs())
         return true; /* ignore */
 
     Irq &irq = irq_object(cpu, irq_id);
@@ -339,7 +340,9 @@ Model::GicD::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const b
                       .irq_max = MAX_SGI + MAX_SPI + MAX_PPI,
                       .offset = offset,
                       .bytes = bytes,
-                      .irq_per_bytes = 8}; // Work with a bitfield by default
+                      .irq_per_bytes = 8, // Work with a bitfield by default
+                      .configured_irqs = configured_irqs()};
+    acc.configure_access(GicD::AccessType::ALL); // default
 
     return mmio_write_32_or_less(cpu_id, acc, value);
 }
@@ -475,7 +478,7 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
         value = 0ULL;
         if (bytes != 8 || (offset % 8 != 0))
             return true; /* ignore - spec says this is not supported */
-        if (irq_id < SPI_BASE || irq_id >= MAX_IRQ)
+        if (irq_id < SPI_BASE || irq_id >= configured_irqs())
             return true; /* ignore */
         if (!_ctlr.affinity_routing())
             return true; /* RAZ */
@@ -495,7 +498,9 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
                       .irq_max = MAX_SGI + MAX_SPI + MAX_PPI,
                       .offset = offset,
                       .bytes = bytes,
-                      .irq_per_bytes = 8}; // Work with a bitfield by default
+                      .irq_per_bytes = 8, // Work with a bitfield by default
+                      .configured_irqs = configured_irqs()};
+    acc.configure_access(GicD::AccessType::ALL); // default
 
     return mmio_read_32_or_less(cpu_id, acc, value);
 }
@@ -503,7 +508,7 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
 bool
 Model::GicD::config_irq(Vcpu_id const cpu_id, uint32 const irq_id, bool const hw,
                         uint16 const pintid, bool edge) {
-    if (irq_id >= MAX_IRQ)
+    if (irq_id >= configured_irqs())
         return false;
     if (cpu_id >= _num_vcpus)
         return false;
@@ -570,7 +575,7 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id, bool redirect_irq) {
     const Local_Irq_controller *gic_r = _local[cpu_id].notify->local_irq_ctlr();
 
     do {
-        irq_id = cpu.pending_irqs.first_set(irq_id, MAX_IRQ - 1);
+        irq_id = cpu.pending_irqs.first_set(irq_id, configured_irqs() - 1);
         if (irq_id == Bitset<MAX_IRQ>::NOT_FOUND)
             break;
 
@@ -595,7 +600,7 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id, bool redirect_irq) {
         }
 
         irq_id++;
-    } while (irq_id < MAX_IRQ);
+    } while (irq_id < configured_irqs());
 
     return r;
 }
@@ -604,7 +609,7 @@ bool
 Model::GicD::any_irq_active(Vcpu_id cpu_id) {
     Banked &cpu = _local[cpu_id];
 
-    for (uint32 i = 0; i < MAX_IRQ; i++) {
+    for (uint32 i = 0; i < configured_irqs(); i++) {
         Irq &irq = irq_object(cpu, i);
 
         if (irq.active())
@@ -620,7 +625,7 @@ Model::GicD::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
     Irq *irq = highest_irq(cpu_id, true);
     if (!irq || (min_priority < irq->prio()))
         return false;
-    ASSERT(irq->id() < MAX_IRQ);
+    ASSERT(irq->id() < configured_irqs());
 
     IrqInjectionInfoUpdate desired, cur;
     uint8 sender_id;
@@ -739,7 +744,7 @@ void
 Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState state,
                                bool in_injection) {
     ASSERT(cpu_id < _num_vcpus);
-    ASSERT(irq_id < MAX_IRQ);
+    ASSERT(irq_id < configured_irqs());
     Banked &cpu = _local[cpu_id];
     Irq &irq = irq_object(cpu, irq_id);
 
@@ -766,7 +771,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
     }
 
     if (target.is_targeting_a_set()) {
-        for (uint16 i = 0; i < min<uint16>(_num_vcpus, Model::GICV2_MAX_CPUS); i++) {
+        for (uint16 i = 0; i < std::min<uint16>(_num_vcpus, Model::GICV2_MAX_CPUS); i++) {
             if (!target.is_cpu_targeted(i))
                 continue;
 
@@ -921,7 +926,7 @@ Model::GicD::route_spi_no_affinity(Model::GicD::Irq &irq) {
     constexpr uint16 TARGET_MODE_MAX_CPUS = 8U;
     IrqTarget res(IrqTarget::CPU_SET, 0);
 
-    for (Vcpu_id i = 0; i < min<uint16>(_num_vcpus, TARGET_MODE_MAX_CPUS); i++) {
+    for (Vcpu_id i = 0; i < std::min<uint16>(_num_vcpus, TARGET_MODE_MAX_CPUS); i++) {
         if (!_local[i].notify)
             continue;
 
@@ -992,7 +997,7 @@ Model::GicD::route_spi(Model::GicD::Irq &irq, Vcpu_id vcpu_hint_start) {
 
 bool
 Model::GicD::assert_global_line(uint32 const irq_id) {
-    if (irq_id >= MAX_IRQ)
+    if (irq_id >= configured_irqs())
         return false;
     if (irq_id < SPI_BASE)
         return false;
@@ -1096,7 +1101,7 @@ Model::GicD::send_sgi(Vcpu_id const from, Vcpu_id const target, uint32 const sgi
 
 void
 Model::GicD::reset_status_bitfields_on_vcpu(uint16 vcpu_idx) {
-    for (uint32 i = 0; i < MAX_IRQ; i++) {
+    for (uint32 i = 0; i < configured_irqs(); i++) {
         Irq &irq = irq_object(_local[vcpu_idx], i);
 
         if (irq.hw()) {
@@ -1130,7 +1135,7 @@ Model::GicD::reset(const VcpuCtx *) {
         reset_status_bitfields_on_vcpu(cpu);
     }
 
-    for (uint32 spi = 0; spi < MAX_SPI; spi++) {
+    for (uint32 spi = 0; spi < configured_spis(); spi++) {
         _spi[spi].reset(1);
     }
     _ctlr.value = 0;

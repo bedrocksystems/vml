@@ -12,7 +12,7 @@
 template<typename T>
 static inline constexpr T
 min(T v1, T v2) {
-    return v1 < v2 ? v1 : v2;
+    return std::min(v1, v2);
 }
 
 inline constexpr uint64_t

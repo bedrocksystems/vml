@@ -97,7 +97,9 @@ Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const val
                             .irq_max = MAX_SGI + MAX_PPI,
                             .offset = offset,
                             .bytes = bytes,
-                            .irq_per_bytes = 8}; // Work with a bitfield by default
+                            .irq_per_bytes = 8, // Work with a bitfield by default
+                            .configured_irqs = gic.configured_irqs()};
+    acc.configure_access(GicD::AccessType::PRIVATE_ONLY); // default
 
     switch (offset) {
     case GICR_CTLR ... GICR_CTLR_END:
@@ -197,7 +199,9 @@ Model::GicR::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) co
                             .irq_max = MAX_SGI + MAX_PPI,
                             .offset = offset,
                             .bytes = bytes,
-                            .irq_per_bytes = 8}; // Work with a bitfield by default
+                            .irq_per_bytes = 8, // Work with a bitfield by default
+                            .configured_irqs = gic.configured_irqs()};
+    acc.configure_access(GicD::AccessType::PRIVATE_ONLY); // default
 
     switch (offset) {
     case GICR_CTLR ... GICR_CTLR_END:

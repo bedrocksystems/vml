@@ -12,6 +12,7 @@
 #include <model/irq_controller.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/atomic.hpp>
+#include <platform/bits.hpp>
 #include <platform/bitset.hpp>
 #include <platform/compiler.hpp>
 #include <platform/log.hpp>
@@ -366,6 +367,7 @@ private:
 
     GICVersion const _version;
     uint16 const _num_vcpus;
+    uint16 const _configured_irqs;
 
     struct {
         uint32 value{0};
@@ -375,7 +377,7 @@ private:
     } _ctlr;
 
     Banked *_local;
-    Irq _spi[MAX_SPI];
+    Irq *_spi;
 
     // simple way to round-robin IRQs when GICv3 is enabled
     atomic<uint16> _vcpu_global_hint{0};
@@ -407,31 +409,54 @@ private:
     };
 
     struct IrqMmioAccess {
-        uint64 base_abs;
-        uint16 irq_base;
-        uint16 irq_max;
-        uint64 offset;
-        uint8 bytes;
-        uint8 irq_per_bytes;
+        uint64 base_abs;        // Base of the access (GIC register)
+        uint16 irq_base;        // First IRQ that can be targeted (SGI or PPI of SPI offset)
+        uint16 irq_max;         // Max IRQ that can be targeted
+        uint64 offset;          // offset from the base_abs register
+        uint8 bytes;            // size of the access
+        uint8 irq_per_bytes;    // number of IRQs covered by one bytes
+        uint16 configured_irqs; // Maximum number of lines/irqs exposed by the GIC
 
+        // First IRQ that will be modified by this access
         uint16 first_irq_accessed() const {
             return static_cast<uint16>(((offset - base_abs) * irq_per_bytes) + irq_base);
         }
-        uint16 num_irqs() const { return static_cast<uint16>(bytes * irq_per_bytes); }
 
+        // Number of IRQ(s) concerned by this access
+        uint16 num_irqs() const {
+            if (first_irq_accessed() >= irq_max)
+                return 0;
+
+            uint16 n = static_cast<uint16>(bytes * irq_per_bytes);
+            uint16 abs = first_irq_accessed() + n;
+            uint16 overflow = 0;
+
+            if (abs > irq_max)
+                overflow = abs - irq_max;
+
+            ASSERT(n >= overflow);
+            return n - overflow;
+        }
+
+        /*
+         * One subtle thing to note: an access will be considered valid if it acceses an IRQ
+         * below 1024 (max from the spec). However, it will be ignored (truncated in the configure
+         * call and num_irqs) if it goes below the configured max IRQ. This is the behavior of a
+         * bare-metal GIC.
+         */
         bool is_valid() const {
-            if (first_irq_accessed() - irq_base + num_irqs() > irq_max)
+            if (first_irq_accessed() - irq_base + num_irqs() > MAX_SPI + MAX_PPI + MAX_SGI)
                 return false;
-            if (first_irq_accessed() + num_irqs()
-                > Model::MAX_SGI + Model::MAX_PPI + Model::MAX_SPI)
+            if (first_irq_accessed() + num_irqs() > MAX_SPI + MAX_PPI + MAX_SGI)
                 return false;
             return true;
         }
+
         void configure_access(AccessType type) {
             switch (type) {
             case ALL:
                 irq_base = 0;
-                irq_max = MAX_SGI + MAX_PPI + MAX_SPI;
+                irq_max = configured_irqs;
                 break;
             case SGI:
                 irq_base = SGI_BASE;
@@ -443,7 +468,7 @@ private:
                 break;
             case SPI:
                 irq_base = SPI_BASE;
-                irq_max = SPI_BASE + MAX_SPI;
+                irq_max = SPI_BASE + configured_irqs - MAX_SGI - MAX_PPI;
                 break;
             case PRIVATE_ONLY:
                 irq_base = 0;
@@ -627,27 +652,44 @@ private:
     }
     void reset_status_bitfields_on_vcpu(uint16 vcpu_idx);
     uint64 get_typer() const {
-        return 31ULL /* ITLinesNumber */ | (uint64(_num_vcpus - 1) << 5) /* CPU count */
-               | (9ULL << 19)                                            /* id bits */
-               | (1ULL << 24);                                           /* Aff3 supported */
+        uint64 itl = configured_irqs() == MAX_IRQ ? 31ull : (configured_irqs() / 32) - 1;
+        return itl | (uint64(_num_vcpus - 1) << 5) /* CPU count */
+               | (9ULL << 19)                      /* id bits */
+               | (1ULL << 24);                     /* Aff3 supported */
     }
 
     void update_inj_status_inactive(Vcpu_id cpu_id, uint32 irq_id);
     void update_inj_status_active_or_pending(Vcpu_id cpu_id, IrqState state, uint32 irq_id,
                                              bool in_injection);
 
+    static uint16 compute_irq_lines(uint16 desired) {
+        return static_cast<uint16>(std::min<uint64>(MAX_IRQ, align_up(desired, 32)));
+    }
+
 public:
-    GicD(GICVersion const version, uint16 num_vcpus)
-        : Irq_controller("GICD"), _version(version), _num_vcpus(num_vcpus) {}
+    GicD(GICVersion const version, uint16 num_vcpus, uint16 conf_irqs = MAX_IRQ)
+        : Irq_controller("GICD"), _version(version), _num_vcpus(num_vcpus),
+          _configured_irqs(compute_irq_lines(conf_irqs)) {}
+
+    uint16 configured_irqs() const { return _configured_irqs; }
+    uint16 configured_spis() const { return _configured_irqs - MAX_PPI - MAX_SGI; }
 
     bool init() {
         if (_version == GIC_V2 && _num_vcpus > GICV2_MAX_CPUS)
             return false;
 
-        _local = new (nothrow) Banked[_num_vcpus];
-        if (_local == nullptr)
+        if (configured_irqs() <= SPI_BASE) {
+            ERROR("GICD configured with only %u IRQs. Not enough room for SPIs", configured_irqs());
             return false;
-        for (uint16 i = 0; i < MAX_SPI; i++)
+        }
+
+        INFO("GICD configured with %u IRQ lines total", configured_irqs());
+
+        _local = new (nothrow) Banked[_num_vcpus];
+        _spi = new (nothrow) Irq[configured_spis()];
+        if (_local == nullptr or _spi == nullptr)
+            return false;
+        for (uint16 i = 0; i < configured_spis(); i++)
             _spi[i].set_id(uint16(MAX_PPI + MAX_SGI + i));
 
         reset(nullptr); // vctx not used for now
