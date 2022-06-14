@@ -110,7 +110,6 @@ public:
     uint8 sgi() const { return _value & 0xf; }
     uint8 targets() const { return (_value >> 16) & 0xff; }
     uint8 filter() const { return (_value >> 24) & 0x3; }
-    bool group1() const { return (_value >> 15) & 0x1; }
 
     bool target(unsigned const cpu) const {
         if (cpu >= sizeof(targets()) * 8)
@@ -196,7 +195,7 @@ Model::GicD::write_sgir(Vcpu_id cpu_id, uint64 value) {
             if (!sgir.target(static_cast<uint32>(tcpu)))
                 continue;
 
-            send_sgi(cpu_id, tcpu, sgir.sgi(), true, sgir.group1());
+            send_sgi(cpu_id, tcpu, sgir.sgi());
         }
         break;
     }
@@ -205,11 +204,11 @@ Model::GicD::write_sgir(Vcpu_id cpu_id, uint64 value) {
             if (tcpu == cpu_id)
                 continue;
 
-            send_sgi(cpu_id, tcpu, sgir.sgi(), true, sgir.group1());
+            send_sgi(cpu_id, tcpu, sgir.sgi());
         }
         break;
     case Sgir::FILTER_ONLY_ME:
-        send_sgi(cpu_id, cpu_id, sgir.sgi(), true, sgir.group1());
+        send_sgi(cpu_id, cpu_id, sgir.sgi());
         break;
     default:
         break;
@@ -1061,7 +1060,7 @@ Model::GicD::icc_sgi1r_el1(uint64 const value, Vcpu_id const self) {
             if (tcpu == self)
                 continue;
 
-            send_sgi(self, tcpu, sysreg.intid(), false, true);
+            send_sgi(self, tcpu, sysreg.intid());
         }
     } else {
         const CpuCluster *cluster = cpu_affinity_to_cluster(CpuAffinity(sysreg.cluster_affinity()));
@@ -1079,33 +1078,20 @@ Model::GicD::icc_sgi1r_el1(uint64 const value, Vcpu_id const self) {
             if (vid == INVALID_VCPU_ID)
                 continue;
 
-            send_sgi(self, vid, sysreg.intid(), false, true);
+            send_sgi(self, vid, sysreg.intid());
         }
     }
 }
 
 void
-Model::GicD::send_sgi(Vcpu_id const self, Vcpu_id const cpu, unsigned const sgi,
-                      bool const both_groups, bool const sgir_group1) {
-    ASSERT(sgi < MAX_SGI);
-    ASSERT(cpu < _num_vcpus);
+Model::GicD::send_sgi(Vcpu_id const from, Vcpu_id const target, uint32 const sgi_id) {
+    ASSERT(sgi_id < MAX_SGI);
+    ASSERT(target < _num_vcpus);
 
-    Banked &target_cpu = _local[cpu];
-    Irq &irq = target_cpu.sgi[sgi];
+    Banked &target_cpu = _local[target];
+    Irq &irq = target_cpu.sgi[sgi_id];
 
-    if (both_groups) {
-        /* both groups permitted, they must just match, e.g. 0 == 0 or 1 == 1 */
-        if (sgir_group1 != irq.group1())
-            return;
-    } else {
-        /* the specified sgir_group must exactly match */
-        if (sgir_group1 && irq.group0())
-            return;
-        if (!sgir_group1 && irq.group1())
-            return;
-    }
-
-    assert_sgi(self, cpu, irq);
+    assert_sgi(from, target, irq);
 }
 
 void
@@ -1130,6 +1116,13 @@ Model::GicD::reset(const VcpuCtx *) {
     for (uint16 cpu = 0; cpu < _num_vcpus; cpu++) {
         for (uint8 i = 0; i < MAX_SGI; i++) {
             _local[cpu].sgi[i].reset(uint8(1u << cpu));
+            /*
+             * The spec says: Whether SGIs are permanently enabled, or can be enabled and disabled
+             * by writes to the GICD_ISENABLERn and GICD_ICENABLERn, is IMPLEMENTATION DEFINED.
+             * Therefore, it is safer to start with SGIs as enabled. Guests may assume they are
+             * already on.
+             */
+            _local[cpu].sgi[i].enable();
         }
         for (uint8 i = 0; i < MAX_PPI; i++)
             _local[cpu].ppi[i].reset(uint8(1u << cpu));

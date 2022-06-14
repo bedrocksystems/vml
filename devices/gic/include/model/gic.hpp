@@ -601,7 +601,7 @@ private:
                        uint64 &result) const;
     bool read_pending(Banked &cpu, IrqMmioAccess &acc, uint32 base_offset, uint64 &value) const;
 
-    void send_sgi(Vcpu_id, Vcpu_id, unsigned, bool, bool);
+    void send_sgi(Vcpu_id from, Vcpu_id target, uint32 sgi_id);
 
     bool mmio_write(Vcpu_id, uint64 offset, uint8 bytes, uint64 value);
 
