@@ -29,6 +29,9 @@ namespace Barrier {
 
     static inline void system(void) { asm volatile("dsb sy" : : : "memory"); }
 
+    static inline void memory_system_write(void) { asm volatile("dmb ld" : : : "memory"); }
+    static inline void memory_system_read(void) { asm volatile("dmb st" : : : "memory"); }
+
     static inline void instruction(void) { asm volatile("isb" : : : "memory"); }
 
 }
