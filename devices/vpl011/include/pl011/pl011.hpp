@@ -89,7 +89,7 @@ private:
         EPS = 1 << 2,
         STP2 = 1 << 3,
         FEN = 1 << 4,
-        WLEN = 1 << 5,
+        WLEN_8 = 0b11 << 5,
         SPS = 1 << 7,
     };
 
@@ -147,15 +147,16 @@ private:
         OERIS = 1 << 10,
     };
 
-    uint8 _ilpr;   /*!< IrDA Low power counter register */
-    uint16 _ibrd;  /*!< Integer Baud Rate register */
-    uint16 _fbrd;  /*!< Fractional Baud Rate register */
-    uint16 _lcrh;  /*!< Line control register */
-    uint16 _imsc;  /*!< Interrupt Mask Set/Clear register */
-    uint16 _cr;    /*!< Control register */
-    uint16 _ifls;  /*!< Interrupt FIFO Level select register */
-    uint16 _ris;   /*!< Raw interrupt register */
-    uint16 _dmacr; /*!< DMA control register */
+    const bool _sbsa_uart; /*!< Initialize the state following the SBSA UART spec */
+    uint8 _ilpr;           /*!< IrDA Low power counter register */
+    uint16 _ibrd;          /*!< Integer Baud Rate register */
+    uint16 _fbrd;          /*!< Fractional Baud Rate register */
+    uint16 _lcrh;          /*!< Line control register */
+    uint16 _imsc;          /*!< Interrupt Mask Set/Clear register */
+    uint16 _cr;            /*!< Control register */
+    uint16 _ifls;          /*!< Interrupt FIFO Level select register */
+    uint16 _ris;           /*!< Raw interrupt register */
+    uint16 _dmacr;         /*!< DMA control register */
     bool _rx_irq_disabled_by_icr;
     bool _tx_irq_disabled_by_icr;
 
@@ -247,10 +248,11 @@ public:
     /*! \brief Constructor for the PL011
      *  \param gic interrupt object that will receive interrupts from the PL011
      *  \param irq IRQ id to use when sending interrupt to the interrupt controller
+     *  \param sbsa_uart Follows the SBSA spec, in particular for the initial state
      */
-    Pl011(Irq_controller &irq_ctlr, uint16 const irq)
-        : Vuart::Vuart(DEVICE_NAME), _irq_ctlr(&irq_ctlr), _irq_id(irq), _sig_notify_empty_space() {
-    }
+    Pl011(Irq_controller &irq_ctlr, uint16 const irq, bool sbsa_uart = true)
+        : Vuart::Vuart(DEVICE_NAME), _sbsa_uart(sbsa_uart), _irq_ctlr(&irq_ctlr), _irq_id(irq),
+          _sig_notify_empty_space() {}
 
     // needed for a proof, will be removed soon.
     /*__UNUSED__*/ void delete_fm_register_in_vbus(Vbus::Bus *vb) {
@@ -296,13 +298,17 @@ public:
         _dmacr = 0;
 
         /*
-         * UARTEN is not set by default according to the spec of the pl011.
-         * However, some OSes will assume that it was already enabled before they start
-         * running (by a bootloader potentially). To be able to get printing and
-         * debugging info in this case, we enable the UART when debug is set.
+         * Control and setup of DEN0029D_SBSA_6.0:
+         * UARTLCR_H.WLEN == b11 // 8-bit word
+         * UARTLCR_H.FEN == b1 // FIFO enabled
+         * UARTCR.RXE == b1 // receive enabled
+         * UARTCR.TXE == b1 // transmit enabled
+         * UARTCR.UARTEN == b1 // UART enabled
          */
-        if (Debug::current_level > Debug::NONE)
+        if (_sbsa_uart) {
             _cr |= UARTEN;
+            _lcrh |= WLEN_8 | FEN;
+        }
 
         _rx_fifo.reset(1);
         _sig_notify_empty_space.sig();
