@@ -210,7 +210,7 @@ private:
 
     bool compute_rxris() { return rx_irq_cond() && !_rx_irq_disabled_by_icr; }
 
-    bool compute_txris() { return rx_irq_cond() && !_rx_irq_disabled_by_icr; }
+    bool compute_txris() { return tx_irq_cond() && !_tx_irq_disabled_by_icr; }
 
     /*! \brief Send one character to the guest
      *  \param c character to send
@@ -219,6 +219,7 @@ private:
     bool write_to_rx_queue(char c);
     bool mmio_write_cr(uint64 value);
     bool mmio_write_ifls(uint64 value);
+    bool mmio_write_icr(uint64 value);
 
     void wait_for_available_buffer() { _sig_notify_empty_space.wait(); }
 

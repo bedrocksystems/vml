@@ -56,10 +56,9 @@ Model::Pl011::mmio_write_cr(uint64 const value) {
     bool could_tx = can_tx();
     bool old_tx_cond = tx_irq_cond();
     _cr = static_cast<uint16>(value);
-    if (!could_rx && can_rx()) // also check if rx queue not full
+    if (!could_rx && can_rx()) // can also check here whether the rx queue has space
         _sig_notify_empty_space.sig();
-    if (!could_tx && can_tx()) // also check if rx queue not full
-    {
+    if (!could_tx && can_tx()) {
         uint32 num_queued = _tx_fifo.cur_size();
         for (uint32 i = 0; i < num_queued; i++) {
             uint16 val = _tx_fifo.dequeue();
@@ -91,6 +90,25 @@ Model::Pl011::mmio_write_ifls(uint64 const value) {
     else if (!old_rx_cond)
         set_rxris(true);
     updated_irq_lvl_to_gicd_if_needed(old_irq);
+    return true;
+}
+
+bool
+Model::Pl011::mmio_write_icr(uint64 const value) {
+    bool old_irq = is_irq_asserted();
+    uint16 oldris = _ris;
+    _ris = _ris & static_cast<uint16>(~(value & 0x7ff));
+    updated_irq_lvl_to_gicd_if_needed(old_irq);
+
+    if ((value & TXRIS) & (oldris & TXRIS)) {
+        // the next time txris is computed, it would be false until the tx interrupt
+        // condition makes the transition from being false to being true. see set_txris(false)
+        // and compute_txris()
+        _tx_irq_disabled_by_icr = true;
+    }
+    if ((value & RXRIS) & (oldris & RXRIS)) {
+        _rx_irq_disabled_by_icr = true;
+    }
     return true;
 }
 
@@ -152,12 +170,8 @@ Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const val
         return true;
     }
 
-    case UARTICR: {
-        bool old_irq = is_irq_asserted();
-        _ris = _ris & static_cast<uint16>(~(value & 0x7ff));
-        updated_irq_lvl_to_gicd_if_needed(old_irq);
-        return true;
-    }
+    case UARTICR:
+        return mmio_write_icr(value);
 
     case UARTDMACR:
         _dmacr = static_cast<uint16>(value);
