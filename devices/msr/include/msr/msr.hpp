@@ -34,6 +34,7 @@ namespace Msr {
     class Set_way_flush_reg;
     class WtrappedMsr;
     class SctlrEl1;
+    class MdscrEl1;
 
     constexpr uint8 CCSIDR_NUM{7};
 
@@ -677,6 +678,27 @@ public:
     virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu, Vbus::Space, mword, uint8,
                              uint64& res) override;
     virtual void reset(const VcpuCtx*) override {}
+};
+
+class Msr::MdscrEl1 : public Msr::Register {
+private:
+    static constexpr uint64 MDSCREL1_SS = 0x1ull;
+    bool mdscr_ss_enabled(uint64 value) const { return (value & MDSCREL1_SS) != 0; }
+
+public:
+    MdscrEl1() : Msr::Register("MDSCR_EL1", MDSCR_EL1, true, 0x0ULL) {}
+
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu, Vbus::Space space, mword off,
+                             uint8 bytes, uint64& value) override {
+
+        if (access == Vbus::WRITE && mdscr_ss_enabled(value)) {
+            if (!mdscr_ss_enabled(_value)) {
+                WARN("Guest as enabled software step control bit which is not supported");
+            }
+        }
+
+        return Msr::Register::access(access, vcpu, space, off, bytes, value);
+    }
 };
 
 /*

@@ -33,8 +33,8 @@ Msr::Bus::setup_aarch64_debug(uint64 id_aa64dfr0_el1, uint64 id_aa64dfr1_el1) {
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Register("MDSCR_EL1", MDSCR_EL1, true, 0x0ULL);
-    if (!register_system_reg(reg))
+    Msr::MdscrEl1 *mdscr_el1 = new (nothrow) Msr::MdscrEl1();
+    if (!register_system_reg(mdscr_el1))
         return false;
 
     for (uint8 i = 0; i < 16; i++) {
