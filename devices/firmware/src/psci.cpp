@@ -78,7 +78,13 @@ start_cpu(RegAccessor &arch, Vbus::Bus &vbus) {
         mode = Model::Cpu::BITS_64;
     }
 
-    Vcpu_id vid = cpu_affinity_to_id(CpuAffinity(decode_cpu_id(arch.gpr(1))));
+    uint32 cpu_id = decode_cpu_id(arch.gpr(1));
+    Vcpu_id vid = cpu_affinity_to_id(CpuAffinity(cpu_id));
+    if (vid == INVALID_VCPU_ID) {
+        WARN("Guest is trying to start VCPU#%u that is not configured by the VMM", cpu_id);
+        return static_cast<uint64>(INVALID_PARAMETERS);
+    }
+
     err = Model::Cpu::start_cpu(vid, vbus, boot_addr, boot_args, arch.tmr_cntvoff(), mode);
     return static_cast<uint64>(err);
 }
