@@ -18,7 +18,7 @@ namespace Debug {
      * Reflect the level of debugging logic desired from the code.
      * Each library is responsible for its own usage of each level.
      */
-    enum Level {
+    enum Level : unsigned int {
         NONE = 0,      /*!< No debugging enabled */
         CONDENSED = 1, /*!< Summarized debugging information/logic */
         DETAILLED = 2, /*!< Non-summarized debugging information/logic */

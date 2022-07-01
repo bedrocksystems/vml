@@ -78,7 +78,7 @@ private:
      * EMULATE_ROUNDEDUP means that the CPU is emulating and a roundup is waiting for
      * it to complete.
      */
-    enum State {
+    enum State : uint8 {
         OFF = 0,
         OFF_ROUNDEDUP = 1,
         ON = 2,
