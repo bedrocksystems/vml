@@ -848,6 +848,9 @@ Model::GicD::assert_pi(Vcpu_id cpu_id, Irq &irq) {
     update.set_pending();
     irq.injection_info.set(update);
 
+    if (Stats::enabled())
+        irq.num_asserted++;
+
     return notify_target(irq, target);
 }
 
@@ -870,6 +873,9 @@ Model::GicD::assert_sgi(Vcpu_id sender, Vcpu_id target, Irq &irq) {
         desired.unset_injected(static_cast<uint8>(sender));
         desired.set_pending(static_cast<uint8>(sender));
     } while (!irq.injection_info.cas(cur, desired));
+
+    if (Stats::enabled())
+        irq.num_asserted++;
 
     if (__UNLIKELY__(Debug::current_level == Debug::FULL))
         INFO("SGI %u sent from " FMTx64 " to " FMTx64, irq.id(), sender, target);

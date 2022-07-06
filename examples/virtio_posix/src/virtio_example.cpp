@@ -33,6 +33,7 @@ static const uint64 Q1_DRIVER = VIRTIO_GUEST_BASE + 0x4000;
 static const uint64 Q1_DEVICE = VIRTIO_GUEST_BASE + 0x5000;
 
 enum Debug::Level Debug::current_level = Debug::NONE;
+bool Stats::requested = false;
 
 static Semaphore wait_sm;
 
@@ -40,7 +41,7 @@ class Dummy_vcpu : public Model::Cpu {
 public:
     Dummy_vcpu(Model::GicD &gic) : Model::Cpu(&gic, 0, 0) {}
 
-    virtual void recall(bool) override {}
+    virtual void recall(bool, RecallReason) override {}
     virtual Errno run() override { return ENONE; }
 };
 

@@ -212,7 +212,13 @@ public:
     // VCPU api end
 
     // Functions that should be provided by the implementation
-    virtual void recall(bool strong) = 0;
+    enum RecallReason : uint8 {
+        IRQ,
+        ROUNDUP,
+        RECONFIG,
+        MAX_REASONS,
+    };
+    virtual void recall(bool strong, RecallReason reason) = 0;
     virtual Errno run() = 0;
 
     // Functions that are implemented

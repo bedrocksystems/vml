@@ -286,6 +286,8 @@ private:
         void assert_sw() { _sw_asserted = true; }
         void deassert_sw() { _sw_asserted = false; }
         bool sw_asserted() const { return _sw_asserted; }
+
+        atomic<uint64> num_asserted{0}; // stats purposes
     };
 
 public:
@@ -731,6 +733,53 @@ public:
     void icc_sgi1r_el1(uint64, Vcpu_id);
     bool is_affinity_routing_enabled() const { return _ctlr.affinity_routing(); }
     GICVersion version() const { return _version; }
+
+    struct IrqInfo {
+        bool active;
+        bool pending;
+        bool enabled;
+        bool in_injection;
+        uint8 priority;
+        uint64 num_asserted;
+    };
+
+    bool get_irq_info(Vcpu_id id, uint16 irq_id, IrqInfo &info) const {
+        if (id >= _num_vcpus)
+            return false;
+        if (irq_id >= configured_irqs())
+            return false;
+
+        const Banked &cpu = _local[id];
+        const Irq &irq = irq_object(cpu, irq_id);
+        info.active = irq.active();
+        info.pending = irq.pending();
+        info.enabled = irq.enabled();
+        info.in_injection = irq.injection_info.read().pending();
+        info.priority = irq.prio();
+        info.num_asserted = irq.num_asserted;
+
+        return true;
+    }
+
+    bool is_irq_in_injection(Vcpu_id id, uint16 irq_id) const {
+        if (id >= _num_vcpus)
+            return false;
+        if (irq_id >= configured_irqs())
+            return false;
+
+        const Banked &cpu = _local[id];
+        return cpu.in_injection_irqs.is_set(irq_id);
+    }
+
+    bool is_irq_in_pending(Vcpu_id id, uint16 irq_id) const {
+        if (id >= _num_vcpus)
+            return false;
+        if (irq_id >= configured_irqs())
+            return false;
+
+        const Banked &cpu = _local[id];
+        return cpu.pending_irqs.is_set(irq_id);
+    }
 };
 
 class Model::GicR : public Model::Local_Irq_controller {

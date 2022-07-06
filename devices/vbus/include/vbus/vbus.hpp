@@ -7,6 +7,7 @@
  */
 #pragma once
 
+#include <platform/atomic.hpp>
 #include <platform/rangemap.hpp>
 #include <platform/types.hpp>
 
@@ -110,9 +111,16 @@ public:
      *  \return The 'DEVICE' type
      */
     virtual Type type() const { return DEVICE; }
+    uint64 num_accesses() const { return _accesses.load(); }
+    uint64 time_spent() const { return _time_spent.load(); }
+
+    void accessed() { _accesses++; }
+    void add_time(uint64 t) { _time_spent += t; }
 
 private:
     const char* _name; /*!< Name of the device - cannot be changed at run-time */
+    atomic<uint64> _accesses{0};
+    atomic<uint64> _time_spent{0};
 };
 
 /*! \brief Virtual Bus: Represents a hardware. Used to access devices plugged to the VM

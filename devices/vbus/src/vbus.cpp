@@ -6,9 +6,11 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 
+#include <debug_switches.hpp>
 #include <platform/log.hpp>
 #include <platform/new.hpp>
 #include <platform/rangemap.hpp>
+#include <platform/time.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
@@ -36,7 +38,17 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
         return NO_DEVICE;
 
     mword off = _absolute_access ? addr : addr - entry->begin();
+    clock_t start = 0;
+    if (Stats::enabled()) {
+        entry->device->accessed();
+        start = clock();
+    }
+
     Err err = entry->device->access(access, &vcpu_ctx, _space, off, bytes, val);
+
+    if (Stats::enabled())
+        entry->device->add_time(clock() - start);
+
     if (_trace && entry != nullptr) {
         if (_last_access != entry) {
             if (_fold && _num_accesses > 1) {

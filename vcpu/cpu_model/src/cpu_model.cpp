@@ -59,7 +59,7 @@ Model::Cpu::cpu_state_string(Vcpu_id id) {
 void
 Model::Cpu::roundup_impl() {
     bool emulating = switch_state_to_roundedup();
-    recall(true);
+    recall(true, ROUNDUP);
     unblock(); // If the VCPU is in WFI, unblock it
     if (!emulating)
         Vcpu::Roundup::vcpu_notify_done_progressing();
@@ -176,7 +176,7 @@ Model::Cpu::ctrl_feature_off(Model::Cpu* vcpu, bool enable, Request::Requestor r
          * recall is a more robust approach as it will guarantee that the VCPU will not
          * progress any more after that call.
          */
-        vcpu->recall(true);
+        vcpu->recall(true, RECONFIG);
     }
 }
 
@@ -455,7 +455,7 @@ Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolute)
 void
 Model::Cpu::notify_interrupt_pending() {
     if (_state & ON) {
-        recall(false);
+        recall(false, IRQ);
     }
 
     unblock();

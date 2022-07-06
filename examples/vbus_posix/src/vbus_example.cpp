@@ -23,6 +23,7 @@
 #include <vbus/vbus.hpp>
 
 enum Debug::Level Debug::current_level = Debug::NONE;
+bool Stats::requested = false;
 
 static Semaphore wait_sm;
 
@@ -30,7 +31,7 @@ class Dummy_vcpu : public Model::Cpu {
 public:
     Dummy_vcpu(Model::GicD &gic) : Model::Cpu(&gic, 0, 0) {}
 
-    virtual void recall(bool) override {
+    virtual void recall(bool, RecallReason) override {
         DEBUG("VCPU recalled - an interrupt is waiting.");
 
         wait_sm.release();

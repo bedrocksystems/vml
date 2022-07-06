@@ -29,3 +29,11 @@ namespace Debug {
      */
     extern enum Level current_level;
 };
+
+namespace Stats {
+    /*! \brief Indicates whether stats should be collected.
+     */
+    extern bool requested;
+
+    inline bool enabled() { return (Debug::current_level > Debug::Level::NONE) or requested; }
+}
