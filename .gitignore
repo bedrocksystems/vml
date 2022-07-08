@@ -1,0 +1,14 @@
+*~
+build/*
+cscope.*
+
+*.glob
+*.aux
+*.vo
+*.vos
+*.vok
+*.cpp2vdeps
+Makefile.coqfast
+*_names.v
+*_hpp.v
+*_cpp.v
