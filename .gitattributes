@@ -1,1 +1,0 @@
-doc/assets/logo.png filter=lfs diff=lfs merge=lfs -text
