@@ -320,24 +320,33 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINE
 
         // Register the read/write to the [sg] buffer (depending on whether it is
         // a copy /from/ or /to/ the buffer).
-        Errno err;
         if constexpr (LINEAR_TO_SG) {
             if (not(node->flags & VIRTQ_DESC_WRITE_ONLY)) {
                 return EPERM;
             }
 
-            err = accessor->copy_to_gpa(copier, node->address + off, l, n_copy);
-            if (ENONE != err) {
-                return err;
+            // NOTE: this function ensures that [copier] is non-null which means
+            // that any non-[ENONE] error code came from the address translation
+            // itself. Clients who need access to the particular translation
+            // which failed can instrument custom tracking within their overload(s)
+            // of [Sg::Buffer::ChainAccessor].
+            if (ENONE != accessor->copy_to_gpa(copier, node->address + off, l, n_copy)) {
+                return EBADR;
             }
 
             node->heuristically_track_written_bytes(off, n_copy);
         } else {
-            // NOTE: Drivers can use this path to copy data out of write-only descriptors. So cannot
-            // perform strict permission checks.
-            err = accessor->copy_from_gpa(copier, l, node->address + off, n_copy);
-            if (ENONE != err) {
-                return err;
+            // TODO (BC-1016): Drivers can use this path to copy data out of write-only
+            // descriptors. So cannot perform strict permission checks, unless we
+            // differentiate between Device- and Driver-copies.
+
+            // NOTE: this function ensures that [copier] is non-null which means
+            // that any non-[ENONE] error code came from the address translation
+            // itself. Clients who need access to the particular translation
+            // which failed can instrument custom tracking within their overload(s)
+            // of [Sg::Buffer::ChainAccessor].
+            if (ENONE != accessor->copy_from_gpa(copier, l, node->address + off, n_copy)) {
+                return EBADR;
             }
         }
 
@@ -402,14 +411,25 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
     while (rem and (d != dst.end()) and (s != src.end())) {
         size_t n_copy = min(rem, min(s->length - s_off, d->length - d_off));
 
+        // TODO (BC-1016): Drivers can use this path to copy data out of write-only
+        // descriptors. So we shouldn't perform strict permission checks, unless we
+        // differentiate between Device- and Driver-copies.
+        //
+        // NOTE (JH): It seems that no existing driver code uses this particular code
+        // path, but we still need to fix it in order for it to be verifiable.
         if (s->flags & VIRTQ_DESC_WRITE_ONLY || not(d->flags & VIRTQ_DESC_WRITE_ONLY)) {
             return EPERM;
         }
 
+        // NOTE: this function ensures that [copier]/[dst_accessor]/[src_accessor]
+        // are non-null which means that any non-[ENONE] error code came from the
+        // address translation itself. Clients who need access to the particular
+        // translation which failed can instrument custom tracking within their
+        // overload(s) of [Sg::Buffer::ChainAccessor].
         Errno err = ChainAccessor::copy_between_gpa(copier, dst_accessor, src_accessor,
                                                     d->address + d_off, s->address + s_off, n_copy);
         if (ENONE != err) {
-            return err;
+            return EBADR;
         }
 
         d->heuristically_track_written_bytes(d_off, n_copy);
