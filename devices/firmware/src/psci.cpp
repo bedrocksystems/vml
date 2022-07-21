@@ -154,7 +154,7 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         return WFI;
     case AFFINITY_INFO_32:
     case AFFINITY_INFO_64: {
-        uint32 vcpu_id = decode_cpu_id(arch.gpr(1));
+        Vcpu_id vcpu_id = cpu_affinity_to_id(CpuAffinity(decode_cpu_id(arch.gpr(1))));
         uint64 aff_level = arch.gpr(2);
 
         if (aff_level != 0) {
