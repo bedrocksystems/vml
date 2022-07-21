@@ -183,6 +183,9 @@ Model::GicD::write_irouter(Banked &cpu, uint64 offset, uint8 bytes, uint64 value
 
     irq.routing.value = value;
 
+    if (irq.pending())
+        redirect_spi(irq, ++_vcpu_global_hint);
+
     return true;
 }
 
