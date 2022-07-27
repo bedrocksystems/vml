@@ -131,20 +131,19 @@ public:
     public:
         virtual ~ChainWalkingCallback() {}
         virtual void chain_walking_cb(Errno err, uint64 address, uint32 length, uint16 flags,
-                                      uint16 next, const uint16 &extra)
+                                      uint16 next, void *extra)
             = 0;
     };
 
     Errno walk_chain(Virtio::Queue &vq);
     Errno walk_chain(Virtio::Queue &vq, Virtio::Descriptor &&root_desc);
-    Errno walk_chain_callback(Virtio::Queue &vq, const uint16 &extra,
-                              ChainWalkingCallback *callback);
+    Errno walk_chain_callback(Virtio::Queue &vq, void *extra, ChainWalkingCallback *callback);
 
     // \pre "[this.reset(_)] has been invoked"
     // \pre "[desc] derived from a [vq->recv] call which returned [ENONE] (i.e. it is the
     //       root of a descriptor chain in [vq])"
-    Errno walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&root_desc,
-                              const uint16 &extra, ChainWalkingCallback *callback);
+    Errno walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&root_desc, void *extra,
+                              ChainWalkingCallback *callback);
 
     void add_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags,
                   uint16 next);
@@ -224,7 +223,7 @@ private:
     public:
         ChainWalkingNop() {}
         ~ChainWalkingNop() override {}
-        void chain_walking_cb(Errno, uint64, uint32, uint16, uint16, const uint16 &) override {}
+        void chain_walking_cb(Errno, uint64, uint32, uint16, uint16, void *) override {}
     };
 
     class BulkCopierDefault : public BulkCopier {
