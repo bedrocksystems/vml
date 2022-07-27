@@ -136,7 +136,15 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
             // observational model (rather than leaving the op-model state
             // unconstrained).
             err = ENOTRECOVERABLE;
-            callback->chain_walking_cb(err, 0, 0, 0, 0, extra);
+
+            // NOTE: The constructor of [Virtio::Queue] ensures that the queue-size is
+            // nonzero and the early-return guarded by the [_max_chain_length < vq.size()]
+            // test ensures that - at this point - [0 < max_chain_length]. This means that
+            // [_nodes[_max_chain_length - 1]] corresponds to the last descriptor
+            // which was walked prior to discovering the loop in the chain.
+            Virtio::Sg::Node &node = _nodes[_max_chain_length - 1];
+            callback->chain_walking_cb(err, node.address, node.length, node.flags, node.next,
+                                       extra);
             conclude_chain_use(vq, true);
             return err;
         }
