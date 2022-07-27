@@ -570,6 +570,14 @@ Model::GicD::deassert_global_line(uint32 const irq_id) {
     deassert_line(0, irq_id);
 }
 
+bool
+Model::GicD::has_irq_in_injection(Vcpu_id const cpu_id) {
+    Banked &cpu = _local[cpu_id];
+    size_t irq_id = cpu.in_injection_irqs.first_set(0, configured_irqs() - 1);
+
+    return irq_id != Bitset<MAX_IRQ>::NOT_FOUND;
+}
+
 Model::GicD::Irq *
 Model::GicD::highest_irq(Vcpu_id const cpu_id, bool redirect_irq) {
     Model::GicD::Irq *r = nullptr;

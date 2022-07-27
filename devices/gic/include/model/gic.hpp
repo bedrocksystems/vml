@@ -719,6 +719,7 @@ public:
 
     bool any_irq_active(Vcpu_id);
     bool has_irq_to_inject(Vcpu_id cpu_id) { return highest_irq(cpu_id, false) != nullptr; }
+    bool has_irq_in_injection(Vcpu_id cpu_id);
     uint32 highest_irq_to_inject(Vcpu_id cpu_id, uint8 min_priority = PRIORITY_ANY) {
         Irq *irq = highest_irq(cpu_id, false);
         if (irq == nullptr)
@@ -820,7 +821,9 @@ public:
     virtual uint8 int_ack() override {
         ABORT_WITH("interrupt ACK shouldn't be called on the GICR");
     }
-    virtual bool int_pending() override { return _gic_d->has_irq_to_inject(_vcpu_id); }
+    virtual bool int_pending() override {
+        return _gic_d->has_irq_in_injection(_vcpu_id) or _gic_d->has_irq_to_inject(_vcpu_id);
+    }
 
     virtual void nmi_ack() override { ABORT_WITH("NMI ACK shouldn't be called on the GICR"); }
     virtual bool nmi_pending() override {
