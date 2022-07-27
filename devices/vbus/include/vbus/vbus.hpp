@@ -27,7 +27,7 @@ namespace Vbus {
 
     /*! \brief The space that the VBus represents (devices can be added to different spaces)
      */
-    enum Space {
+    enum Space : uint32 {
         MMIO,           /*!< Devices only, no regular memory */
         REGULAR_MEMORY, /*!< Regular memory only */
         ALL_MEM,        /*!< Everything that is byte-addressable */
@@ -53,7 +53,8 @@ namespace Vbus {
      * instruction decoding and emulation. This is left to the device for now. A virtual device
      * shouldn't need to worry about this case but it is useful for the virtual RAM.
      */
-    static constexpr uint8 SIZE_UNKNOWN = static_cast<uint8>(~0x0);
+    //    static constexpr uint8 SIZE_UNKNOWN = static_cast<uint8>(~0x0);
+    enum : uint8 { SIZE_UNKNOWN = static_cast<uint8>(~0x0) };
 
     class Device;
     class Bus;

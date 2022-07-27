@@ -27,6 +27,7 @@ Vbus::Bus::lookup(mword addr, uint64 bytes) const {
 Vbus::Err
 Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 bytes,
                   uint64& val) {
+    bool absolute_access = _absolute_access; // silly but currently needed to simplify proof
     /*
      * When the size if unknown, consider that this only touching the first device encountered.
      * We will replay the instruction as necessary. Still let the device know that the size of the
@@ -37,7 +38,7 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
     if (entry == nullptr)
         return NO_DEVICE;
 
-    mword off = _absolute_access ? addr : addr - entry->begin();
+    mword off = absolute_access ? addr : addr - entry->begin();
     clock_t start = 0;
     if (Stats::enabled()) {
         entry->device->accessed();
