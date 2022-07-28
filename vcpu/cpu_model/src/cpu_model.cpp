@@ -171,6 +171,11 @@ Model::Cpu::requested_feature_hypercall(Model::Cpu* vcpu, Request::Requestor req
     return vcpu->_hypercall.is_requested_by(requestor);
 }
 
+bool
+Model::Cpu::requested_feature_regs_dump(Model::Cpu* mcpu, Request::Requestor requestor) {
+    return mcpu->_dump_regs.is_requested_by(requestor);
+}
+
 void
 Model::Cpu::ctrl_feature_off(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
                              Reg_selection) {
@@ -208,6 +213,21 @@ void
 Model::Cpu::ctrl_register_trap_cb(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
                                   uint64 trap_id, Reg_selection regs) {
     vcpu->ctrl_register_trap(enable, requestor, trap_id, regs);
+}
+
+void
+Model::Cpu::ctrl_feature_regs_dump(Model::Cpu* mcpu, bool enable, Request::Requestor requestor,
+                                   Reg_selection) {
+    if (not Stats::enabled())
+        return;
+
+    mcpu->_dump_regs.request(enable, requestor,
+                             0); // last param ignored
+
+    if (enable) {
+        mcpu->unblock();
+        mcpu->recall(false, RECONFIG);
+    }
 }
 
 Errno
@@ -460,10 +480,11 @@ Model::Cpu::set_space_on(Vcpu_id id, RegAccessor& regs, Platform::Mem::MemSel sp
 void
 Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolute) {
     if (!will_timeout)
-        while (!_lirq_ctlr->int_pending() and !_lirq_ctlr->nmi_pending() and !is_roundup_pending())
+        while (!_lirq_ctlr->int_pending() and !_lirq_ctlr->nmi_pending() and !is_roundup_pending()
+               and !_dump_regs.is_requested())
             block();
     else {
-        if (!_lirq_ctlr->int_pending() and !is_roundup_pending())
+        if (!_lirq_ctlr->int_pending() and !is_roundup_pending() and !_dump_regs.is_requested())
             block_timeout(timeout_absolute);
     }
 }
