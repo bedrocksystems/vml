@@ -697,6 +697,9 @@ Model::GicD::update_inj_status_inactive(Vcpu_id const cpu_id, uint32 irq_id) {
     if (__UNLIKELY__(Debug::current_level > Debug::CONDENSED))
         INFO("IRQ %u handled by the guest on VCPU " FMTu64, irq_id, cpu_id);
 
+    if (Stats::enabled())
+        irq.num_acked++;
+
     IrqInjectionInfoUpdate desired, cur;
 
     irq.deactivate();
@@ -913,6 +916,9 @@ Model::GicD::deassert_pi(Vcpu_id, Irq &irq) {
         INFO("Hardware interrupts behave as level-triggered. Pending kept on for %u", irq.id());
         return true;
     }
+
+    if (Stats::enabled() and irq.pending())
+        irq.num_acked++;
 
     IrqInjectionInfoUpdate update(0);
     irq.injection_info.set(update);

@@ -288,7 +288,9 @@ private:
         void deassert_sw() { _sw_asserted = false; }
         bool sw_asserted() const { return _sw_asserted; }
 
-        atomic<uint64> num_asserted{0}; // stats purposes
+        // stats purposes
+        atomic<uint64> num_asserted{0};
+        atomic<uint64> num_acked{0};
     };
 
 public:
@@ -742,7 +744,9 @@ public:
         bool enabled;
         bool in_injection;
         uint8 priority;
+        uint32 target;
         uint64 num_asserted;
+        uint64 num_acked;
     };
 
     bool get_irq_info(Vcpu_id id, uint16 irq_id, IrqInfo &info) const {
@@ -759,6 +763,16 @@ public:
         info.in_injection = irq.injection_info.read().pending();
         info.priority = irq.prio();
         info.num_asserted = irq.num_asserted;
+        info.num_acked = irq.num_acked;
+
+        uint32 aff = irq.routing.aff0() | static_cast<uint32>(irq.routing.aff1() << 8u)
+                     | static_cast<uint32>(irq.routing.aff2() << 16u)
+                     | static_cast<uint32>(irq.routing.aff3() << 24u);
+
+        if (_ctlr.affinity_routing())
+            info.target = irq.routing.any() ? ~0x0u : aff;
+        else
+            info.target = irq.target();
 
         return true;
     }
