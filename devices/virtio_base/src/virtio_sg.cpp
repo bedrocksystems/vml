@@ -71,19 +71,17 @@ Virtio::Sg::Buffer::conclude_chain_use(Virtio::Queue &vq, bool send_incomplete) 
 Errno
 Virtio::Sg::Buffer::walk_chain(Virtio::Queue &vq) {
     ChainWalkingNop callback;
-    const uint16 dummy{0};
-    return walk_chain_callback(vq, dummy, &callback);
+    return walk_chain_callback(vq, nullptr, &callback);
 }
 
 Errno
 Virtio::Sg::Buffer::walk_chain(Virtio::Queue &vq, Virtio::Descriptor &&root_desc) {
     ChainWalkingNop callback;
-    const uint16 dummy{0};
-    return walk_chain_callback(vq, cxx::move(root_desc), dummy, &callback);
+    return walk_chain_callback(vq, cxx::move(root_desc), nullptr, &callback);
 }
 
 Errno
-Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, const uint16 &extra,
+Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, void *extra,
                                         ChainWalkingCallback *callback) {
     Virtio::Descriptor root_desc;
     Errno err = vq.recv(root_desc);
@@ -99,7 +97,7 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, const uint16 &extra,
 //       root of a descriptor chain in [vq])"
 Errno
 Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&root_desc,
-                                        const uint16 &extra, ChainWalkingCallback *callback) {
+                                        void *extra, ChainWalkingCallback *callback) {
     // Use a more meaningful name internally
     Virtio::Descriptor &desc = root_desc;
     // This flag tracks whether a writable buffer has been encountered within this chain already;
@@ -138,7 +136,15 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
             // observational model (rather than leaving the op-model state
             // unconstrained).
             err = ENOTRECOVERABLE;
-            callback->chain_walking_cb(err, 0, 0, 0, 0, extra);
+
+            // NOTE: The constructor of [Virtio::Queue] ensures that the queue-size is
+            // nonzero and the early-return guarded by the [_max_chain_length < vq.size()]
+            // test ensures that - at this point - [0 < max_chain_length]. This means that
+            // [_nodes[_max_chain_length - 1]] corresponds to the last descriptor
+            // which was walked prior to discovering the loop in the chain.
+            Virtio::Sg::Node &node = _nodes[_max_chain_length - 1];
+            callback->chain_walking_cb(err, node.address, node.length, node.flags, node.next,
+                                       extra);
             conclude_chain_use(vq, true);
             return err;
         }
