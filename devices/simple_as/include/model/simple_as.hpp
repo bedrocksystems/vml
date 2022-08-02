@@ -610,20 +610,30 @@ protected:
 
 class MappingGuard {
 public:
-    MappingGuard(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes)
-        : _bus(&bus), _gpa(gpa), _size_bytes(size_bytes), _va(nullptr) {}
+    MappingGuard(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes, bool write = false)
+        : _bus(&bus), _gpa(gpa), _size_bytes(size_bytes), _va(nullptr), _write(write) {}
 
-    Errno map(void *&va, bool write = false) {
-        Errno err = Model::SimpleAS::demand_map_bus(*_bus, _gpa, _size_bytes, va, write);
+    Errno map(void *&va) {
+        ASSERT(_va == nullptr);
+
+        Errno err = Model::SimpleAS::demand_map_bus(*_bus, _gpa, _size_bytes, va, _write);
         if (err == ENONE)
             _va = va;
         return err;
     }
 
-    ~MappingGuard() {
-        if (_va) {
+    void unmap() {
+        if (_write)
+            Model::SimpleAS::demand_unmap_bus_clean(*_bus, _gpa, _size_bytes, _va);
+        else
             Model::SimpleAS::demand_unmap_bus(*_bus, _gpa, _size_bytes, _va);
-        }
+
+        _va = nullptr;
+    }
+
+    ~MappingGuard() {
+        if (_va)
+            unmap();
     }
 
 private:
@@ -631,4 +641,5 @@ private:
     const GPA _gpa;
     size_t _size_bytes;
     void *_va;
+    bool _write;
 };
