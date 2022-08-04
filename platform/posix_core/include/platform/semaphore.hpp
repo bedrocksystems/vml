@@ -30,7 +30,7 @@ public:
      *  \param ctx The platform-specific context
      *  \return true - no failure possible at the moment
      */
-    bool init(const Platform_ctx*, size_t count = 0) {
+    bool init([[maybe_unused]] const Platform_ctx* ctx = nullptr, size_t count = 0) {
         _count = count;
         return true;
     }
