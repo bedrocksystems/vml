@@ -20,7 +20,7 @@ namespace Platform {
 
 class Platform::Mutex : public std::mutex {
 public:
-    bool init(const Platform_ctx*) { return true; }
+    bool init([[maybe_unused]] const Platform_ctx* ctx = nullptr) { return true; }
 
     bool enter() {
         lock();
