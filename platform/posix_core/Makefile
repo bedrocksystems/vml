@@ -8,4 +8,12 @@
 # See the LICENSE-BedRock file in the repository root for details.
 #
 
+BHV_ROOT ?= ../../../../../
+LIBNAME = $(shell basename `pwd`)
+
+include deps.mk
+
+CC_SRCS = compiler.cpp
+OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
+
 include $(BHV_ROOT)/support/build/rules.mk

@@ -35,25 +35,27 @@
 #define FMTu32 "%" PRIu32
 #define FMTd32 "%" PRId32
 
-#define _LOG(_LVL_STR_, _FMT_, ...)                                                                \
-    printf("[%s][%s:%u] " _FMT_ "\n", _LVL_STR_, __FILE__, __LINE__, ##__VA_ARGS__);
-#define DEBUG(_FMT_, ...) _LOG("DBG", _FMT_, ##__VA_ARGS__)
-#define VERBOSE(_FMT_, ...) _LOG("VRB", _FMT_, ##__VA_ARGS__)
-#define INFO(_FMT_, ...) _LOG("INF", _FMT_, ##__VA_ARGS__)
-#define WARN(_FMT_, ...) _LOG("WRN", _FMT_, ##__VA_ARGS__)
-#define ERROR(_FMT_, ...) _LOG("ERR", _FMT_, ##__VA_ARGS__)
-#define FATAL(_FMT_, ...) _LOG("FTL", _FMT_, ##__VA_ARGS__)
+#define _LOG(_FILE_STREAM_, _LVL_STR_, _FMT_, ...)                                                 \
+    fprintf(_FILE_STREAM_, "[%s][%s:%u] " _FMT_ "\n", _LVL_STR_, __FILE__, __LINE__, ##__VA_ARGS__);
+#define DEBUG(_FMT_, ...) _LOG(stdout, "DBG", _FMT_, ##__VA_ARGS__)
+#define VERBOSE(_FMT_, ...) _LOG(stdout, "VRB", _FMT_, ##__VA_ARGS__)
+#define INFO(_FMT_, ...) _LOG(stdout, "INF", _FMT_, ##__VA_ARGS__)
+#define WARN(_FMT_, ...) _LOG(stdout, "WRN", _FMT_, ##__VA_ARGS__)
+#define ERROR(_FMT_, ...) _LOG(stderr, "ERR", _FMT_, ##__VA_ARGS__)
+#define FATAL(_FMT_, ...) _LOG(stderr, "FTL", _FMT_, ##__VA_ARGS__)
 
 #define ASSERT(_expr_)                                                                             \
     do {                                                                                           \
         if (__UNLIKELY__(!(_expr_))) {                                                             \
             FATAL("Assertion failure.");                                                           \
+            __on_abort();                                                                          \
             assert(false);                                                                         \
         }                                                                                          \
-    } while (0);
+    } while (0)
 
 #define ABORT_WITH(_FMT_, ...)                                                                     \
     do {                                                                                           \
         FATAL(_FMT_, ##__VA_ARGS__);                                                               \
+        __on_abort();                                                                              \
         exit(1);                                                                                   \
-    } while (0);
+    } while (0)

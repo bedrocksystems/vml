@@ -24,3 +24,6 @@ static inline int
 ffs(unsigned int val) {
     return __builtin_ffs(static_cast<int>(val));
 }
+
+/* provide interception for ABORT_WITH in log.hpp */
+extern void __on_abort();

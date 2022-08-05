@@ -42,6 +42,7 @@ doc:
 
 else
 ifeq ($(PLATFORM), posix)
+SUBDIRS += platform/posix_core
 
 export BLDDIR ?= $(CURDIR)/build-$(PLATFORM)-$(ARCH)/
 
