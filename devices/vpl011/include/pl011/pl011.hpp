@@ -286,7 +286,7 @@ public:
     /*! \brief Reset the PL011 to its initial state
      */
     virtual void reset(const VcpuCtx *) override {
-        Platform::MutexGuard guard(&_state_lock);
+        Platform::MutexGuard guard(_state_lock);
 
         _ilpr = 0;
         _ibrd = 0;

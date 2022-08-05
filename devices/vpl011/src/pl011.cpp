@@ -24,7 +24,7 @@ Vbus::Err
 Model::Pl011::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset,
                      uint8 const size, uint64 &value) {
     bool ok = false;
-    Platform::MutexGuard guard(&_state_lock);
+    Platform::MutexGuard guard(_state_lock);
 
     if (access == Vbus::Access::EXEC)
         return Vbus::ACCESS_ERR;
@@ -337,7 +337,7 @@ Model::Pl011::tx_irq_cond() const {
 
 bool
 Model::Pl011::write_to_rx_queue(char c) {
-    Platform::MutexGuard guard(&_state_lock);
+    Platform::MutexGuard guard(_state_lock);
 
     if (_rx_fifo.is_full() || !can_rx())
         return false;

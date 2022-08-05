@@ -34,9 +34,14 @@ public:
 
 class Platform::MutexGuard {
 public:
-    explicit MutexGuard(Platform::Mutex* m) : _m(m) { _m->enter(); }
-    ~MutexGuard() { _m->exit(); }
+    explicit MutexGuard(Platform::Mutex& m) : _m(m) { _m.enter(); }
+    MutexGuard(const MutexGuard&) = delete;
+    MutexGuard& operator=(const MutexGuard&) = delete;
+
+    MutexGuard(MutexGuard&&) = delete;
+    MutexGuard& operator=(MutexGuard&&) = delete;
+    ~MutexGuard() { _m.exit(); }
 
 private:
-    Platform::Mutex* _m;
+    Platform::Mutex& _m;
 };
