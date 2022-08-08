@@ -87,11 +87,13 @@ private:
 
         static constexpr uint8 PENDING_SHIFT = 32;
         static constexpr uint64 PENDING_BIT = 1ull << PENDING_SHIFT;
-        static constexpr uint64 PENDING_FIELD = 0xfull << 32;
+        static constexpr uint64 PENDING_FIELD = 0xfull << PENDING_SHIFT;
         static constexpr uint8 INJECTED_SHIFT = 40;
         static constexpr uint64 INJECTED_BIT = 1ull << INJECTED_SHIFT;
+        static constexpr uint64 INJECTED_FIELD = 0xfull << INJECTED_SHIFT;
 
         bool pending() const { return (_info & PENDING_FIELD) != 0; }
+        bool in_injection() const { return (_info & INJECTED_FIELD) != 0; }
         bool is_targeting_cpu(Vcpu_id id) const {
             IrqTarget tgt(static_cast<uint32>(_info));
             return tgt.is_cpu_targeted(id);
@@ -760,7 +762,7 @@ public:
         info.active = irq.active();
         info.pending = irq.pending();
         info.enabled = irq.enabled();
-        info.in_injection = irq.injection_info.read().pending();
+        info.in_injection = irq.injection_info.read().in_injection();
         info.priority = irq.prio();
         info.num_asserted = irq.num_asserted;
         info.num_acked = irq.num_acked;
