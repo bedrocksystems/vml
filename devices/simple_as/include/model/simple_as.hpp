@@ -517,6 +517,21 @@ public:
     static Errno demand_unmap_bus_clean(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes,
                                         void *va);
 
+    PagePermission get_original_perms() const {
+        PagePermission pp = PagePermission::NONE;
+
+        if (get_mem_fd().cred().read())
+            pp |= PagePermission::READ;
+        if (get_mem_fd().cred().write())
+            pp |= PagePermission::WRITE;
+        if (get_mem_fd().cred().uexec())
+            pp |= PagePermission::EXEC_USER;
+        if (get_mem_fd().cred().sexec())
+            pp |= PagePermission::EXEC_SUPERVISOR;
+
+        return pp;
+    }
+
 public:
     /*! \brief Write data to the guest AS
      *  \pre Partial ownership of the object. Full ownership of the source buffer.
