@@ -30,6 +30,9 @@ namespace Platform::Mem {
 class Platform::Mem::Cred {
 public:
     bool write() const { return true; }
+    bool read() const { return true; }
+    bool uexec() const { return true; }
+    bool sexec() const { return true; }
 };
 
 class Platform::Mem::MemDescr {
