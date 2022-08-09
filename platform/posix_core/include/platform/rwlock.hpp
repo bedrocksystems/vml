@@ -41,8 +41,8 @@ public:
         _rq.enter();
         if ((_rw |= 1) >> 1) {
             {
-                std::unique_lock<std::mutex> lock(&_m);
-                _wq.wait(lock, [this] { return _rwlock_signal; });
+                std::unique_lock<std::mutex> lock(_m);
+                _wq.wait(lock, [this] { return _rwlock_signal.load(); });
             }
 
             _rwlock_signal = false;
@@ -57,7 +57,7 @@ public:
 
     void rexit() {
         if ((_rw -= 2) == 1) {
-            std::lock_guard<std::mutex> lock(&_m);
+            std::lock_guard<std::mutex> lock(_m);
             _rwlock_signal = true;
             _wq.notify_all();
         }
