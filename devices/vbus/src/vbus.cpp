@@ -118,5 +118,5 @@ void
 Vbus::Bus::unregister_device(mword addr, mword bytes) {
     Range<mword> range(addr, bytes);
 
-    delete _devices.remove(range);
+    delete static_cast<DeviceEntry*>(_devices.remove(range));
 }
