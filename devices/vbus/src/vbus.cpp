@@ -131,6 +131,8 @@ Vbus::Bus::register_device(Device* d, mword addr, mword bytes) {
     _vbus_lock.wenter();
     auto status = _devices.insert(de);
     _vbus_lock.wexit();
+    if (!status)
+      delete de;
 
     return status;
 }
