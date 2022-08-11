@@ -196,7 +196,7 @@ public:
         _fold = fold_successive;
     }
 
-    struct DeviceEntry : RangeNode<mword> {
+    struct DeviceEntry final : RangeNode<mword> {
         DeviceEntry(Device* d, const Range<mword>& r) : RangeNode(r), device(d) {}
 
         Device* device;
