@@ -15,7 +15,7 @@
 // should be fine uint32 but current Range implementation does not like this
 typedef uint64 aff_type;
 struct CpuClusterPtr : public RangeNode<aff_type> {
-    explicit CpuClusterPtr(const RangeNode<aff_type>& r) : RangeNode(r) {}
+    explicit CpuClusterPtr(const Range<aff_type>& r) : RangeNode(r) {}
     CpuCluster cluster;
 };
 
