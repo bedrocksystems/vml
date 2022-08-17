@@ -299,11 +299,17 @@ Errno
 Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINEAR *l,
                          size_t &size_bytes, size_t off, BulkCopier *copier) {
     if (not accessor) {
+        ASSERT(false);
         return EINVAL;
     }
 
-    if (sg.size_bytes() < size_bytes) {
+    if (sg.size_bytes() < off + size_bytes) {
+        ASSERT(false);
         return ENOMEM;
+    }
+
+    if (0 == size_bytes) {
+        return ENONE;
     }
 
     auto default_copier = BulkCopierDefault();
@@ -316,6 +322,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINE
 
     auto it = sg.find(off);
     if (it == sg.end()) {
+        ASSERT(false);
         return ENOENT;
     }
 
@@ -382,16 +389,22 @@ Virtio::Sg::Buffer::copy(ChainAccessor *src_accessor, void *dst, Virtio::Sg::Buf
                              copier);
 }
 
-Errno // NOLINTNEXTLINE(readability-function-size)
+Errno // NOLINTNEXTLINE(readability-function-size, readability-function-cognitive-complexity)
 Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
                          Virtio::Sg::Buffer &dst, Virtio::Sg::Buffer &src, size_t &size_bytes,
                          size_t d_off, size_t s_off, BulkCopier *copier) {
     if (not dst_accessor || not src_accessor) {
+        ASSERT(false);
         return EINVAL;
     }
 
-    if (dst.size_bytes() < size_bytes || src.size_bytes() < size_bytes) {
+    if (dst.size_bytes() < d_off + size_bytes || src.size_bytes() < s_off + size_bytes) {
+        ASSERT(false);
         return ENOMEM;
+    }
+
+    if (0 == size_bytes) {
+        return ENONE;
     }
 
     auto default_copier = BulkCopierDefault();
@@ -405,11 +418,13 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
 
     auto d = dst.find(d_off);
     if (d == dst.end()) {
+        ASSERT(false);
         return ENOENT;
     }
 
     auto s = src.find(s_off);
     if (s == src.end()) {
+        ASSERT(false);
         return ENOENT;
     }
 

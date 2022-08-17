@@ -38,7 +38,7 @@ Model::Virtio_console::to_guest(const char *buff, size_t size_bytes) {
             return false;
         }
 
-        size_t n_copy = size_bytes <= _rx_buff.size_bytes() ? size_bytes : _rx_buff.size_bytes();
+        size_t n_copy = min(size_bytes, _rx_buff.size_bytes());
 
         // NOTE: [Model::Virtio_console] is a concrete instantiation of
         // [Virtio::Sg::Buffer::ChainAccessor].
@@ -63,7 +63,7 @@ Model::Virtio_console::from_guest(char *out_buf, size_t size_bytes) {
         return 0;
 
     size_t was_read = 0;
-    Errno err;
+    Errno err = ENONE;
 
     while (size_bytes != 0) {
         // NOTE: prior to any [walk_chain] - or right after a [conclude_chain_use] - [0 ==
@@ -76,12 +76,14 @@ Model::Virtio_console::from_guest(char *out_buf, size_t size_bytes) {
             }
         }
 
-        size_t n_copy = size_bytes <= _tx_buff.size_bytes() ? size_bytes : _tx_buff.size_bytes();
+        size_t n_copy = min(size_bytes, _tx_buff.size_bytes() - _tx_buff_progress);
 
-        // NOTE: [Model::Virtio_console] is a concrete instantiation of
-        // [Virtio::Sg::Buffer::ChainAccessor].
-        err = Virtio::Sg::Buffer::copy(this, out_buf + was_read, _tx_buff, n_copy,
-                                       _tx_buff_progress);
+        if (n_copy > 0) {
+            // NOTE: [Model::Virtio_console] is a concrete instantiation of
+            // [Virtio::Sg::Buffer::ChainAccessor].
+            err = Virtio::Sg::Buffer::copy(this, out_buf + was_read, _tx_buff, n_copy,
+                                           _tx_buff_progress);
+        }
         if (ENONE != err || 0 == n_copy) {
             _tx_buff.conclude_chain_use(device_queue(TX));
             assert_irq();
