@@ -7,7 +7,6 @@
  */
 
 #include <debug_switches.hpp>
-#include <platform/log.hpp>
 #include <platform/new.hpp>
 #include <platform/rangemap.hpp>
 #include <platform/time.hpp>
@@ -24,59 +23,99 @@ Vbus::Bus::lookup(mword addr, uint64 bytes) const {
     return static_cast<DeviceEntry*>(_devices.lookup(&target));
 }
 
+void
+Vbus::Bus::log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry, Vbus::Access access, mword addr,
+                          uint8 bytes, uint64 val) {
+    const DeviceEntry* last_entry = _last_access;
+
+    if (last_entry != cur_entry) {
+        if (_fold && _num_accesses > 1 && last_entry != nullptr) {
+            INFO("%s accessed %llu times", last_entry->device->name(), _num_accesses.load());
+        }
+    } else {
+        _num_accesses++;
+        if (_fold)
+            return;
+    }
+
+    INFO("%s @ 0x%lx:%u %s " FMTx64, cur_entry->device->name(), addr, bytes,
+         access == EXEC ? "X" : (access == WRITE ? "W" : "R"), val);
+    _num_accesses = 0;
+
+    return;
+}
+
 Vbus::Err
 Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 bytes,
                   uint64& val) {
+
     bool absolute_access = _absolute_access; // silly but currently needed to simplify proof
+
+    _vbus_lock.renter();
     /*
      * When the size if unknown, consider that this only touching the first device encountered.
      * We will replay the instruction as necessary. Still let the device know that the size of the
      * access is not available at this time.
      */
-    const DeviceEntry* entry = lookup(addr, bytes == SIZE_UNKNOWN ? 1 : bytes);
-
-    if (entry == nullptr)
+    uint8 access_size = (bytes == SIZE_UNKNOWN ? 1 : bytes);
+    if (__UNLIKELY__((addr + access_size <= addr)))
         return NO_DEVICE;
 
+    Range<mword> target(addr, access_size);
+    const DeviceEntry* entry;
+    Device* dev;
+
+    entry = _last_access;
+    if (entry == nullptr || !entry->contains(target)) {
+        entry = lookup(addr, access_size);
+        if (entry == nullptr) {
+            _vbus_lock.rexit();
+            return NO_DEVICE;
+        }
+    }
+
+    if (_trace) {
+        log_trace_info(entry, access, addr, bytes, val);
+    }
+
+    if (_last_access != entry) {
+        _last_access = entry;
+    }
+
+    dev = entry->device;
     mword off = absolute_access ? addr : addr - entry->begin();
+    _vbus_lock.rexit();
+
     clock_t start = 0;
     if (Stats::enabled()) {
-        entry->device->accessed();
+        dev->accessed();
         start = clock();
     }
 
-    Err err = entry->device->access(access, &vcpu_ctx, _space, off, bytes, val);
+    Err err = dev->access(access, &vcpu_ctx, _space, off, bytes, val);
 
     if (Stats::enabled())
-        entry->device->add_time(clock() - start);
-
-    if (_trace && entry != nullptr) {
-        if (_last_access != entry) {
-            if (_fold && _num_accesses > 1) {
-                INFO("%s accessed %lu times", _last_access->device->name(), _num_accesses);
-            }
-        } else {
-            _num_accesses++;
-            if (_fold)
-                return err;
-        }
-
-        INFO("%s @ 0x%lx:%u %s " FMTx64, entry->device->name(), addr, bytes,
-             access == EXEC ? "X" : (access == WRITE ? "W" : "R"), val);
-        _num_accesses = 0;
-        _last_access = entry;
-    }
+        dev->add_time(clock() - start);
 
     return err;
 }
 
 Vbus::Device*
 Vbus::Bus::get_device_at(mword addr, uint64 size) const {
+    Device* dev;
+
+    _vbus_lock.renter();
     const DeviceEntry* entry = lookup(addr, size);
 
-    if (entry == nullptr)
+    if (entry == nullptr) {
+        _vbus_lock.rexit();
         return nullptr;
-    return entry->device;
+    }
+
+    dev = entry->device;
+    _vbus_lock.rexit();
+
+    return dev;
 }
 
 [[nodiscard]] bool
@@ -89,7 +128,11 @@ Vbus::Bus::register_device(Device* d, mword addr, mword bytes) {
     if (de == nullptr)
         return false;
 
-    return _devices.insert(de);
+    _vbus_lock.wenter();
+    auto status = _devices.insert(de);
+    _vbus_lock.wexit();
+
+    return status;
 }
 
 void
@@ -106,17 +149,23 @@ Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg) 
 
 void
 Vbus::Bus::reset(const VcpuCtx& vcpu_ctx) const {
+    _vbus_lock.renter();
     iter_devices(Vbus::Bus::reset_device_cb, &vcpu_ctx);
     iter_devices(Vbus::Bus::reset_irq_ctlr_cb, &vcpu_ctx);
+    _vbus_lock.rexit();
 }
 
-/*
- * Warning:
- * This function assumes that the caller has a locking scheme for the vbus.
- */
 void
 Vbus::Bus::unregister_device(mword addr, mword bytes) {
     Range<mword> range(addr, bytes);
 
-    delete static_cast<DeviceEntry*>(_devices.remove(range));
+    _vbus_lock.wenter();
+    DeviceEntry* rm_dev = static_cast<DeviceEntry*>(_devices.remove(range));
+
+    if (rm_dev == _last_access) {
+        _last_access = nullptr;
+    }
+    _vbus_lock.wexit();
+
+    delete rm_dev;
 }

@@ -8,7 +8,9 @@
 #pragma once
 
 #include <platform/atomic.hpp>
+#include <platform/log.hpp>
 #include <platform/rangemap.hpp>
+#include <platform/rwlock.hpp>
 #include <platform/types.hpp>
 
 struct VcpuCtx;
@@ -134,7 +136,12 @@ public:
      *  \post Full ownership of the vbus
      */
     explicit Bus(Vbus::Space sp = Space::ALL_MEM, bool absolute_access = false)
-        : _devices(), _space(sp), _absolute_access(absolute_access) {}
+        : _devices(), _space(sp), _absolute_access(absolute_access) {
+
+        if (!_vbus_lock.init()) {
+            ABORT_WITH("Unable to initialize the vbus lock");
+        }
+    }
 
     /*! \brief Add a device to the virtual bus
      *  \pre Full ownership of a valid virtual bus. Full ownership of a valid Device.
@@ -218,6 +225,9 @@ private:
 
     static void reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
 
+    void log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry, Vbus::Access access, mword addr,
+                        uint8 bytes, uint64 val);
+
     const DeviceEntry* lookup(mword addr, uint64 bytes) const;
 
     RangeMap<mword> _devices;
@@ -226,5 +236,6 @@ private:
     bool _fold{true};
     const bool _absolute_access{false};
     const DeviceEntry* _last_access{nullptr};
-    size_t _num_accesses{0};
+    atomic<uint64> _num_accesses{0};
+    mutable Platform::RWLock _vbus_lock;
 };
