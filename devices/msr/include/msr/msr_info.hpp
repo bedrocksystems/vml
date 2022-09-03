@@ -127,7 +127,7 @@ public:
         EL3_SHIFT = 12ull,
     };
 
-    Mode get_supported_mode(Level l) const { return Mode((_value >> l) & MODE_MASK); }
+    Mode get_supported_mode(Level l) const { return static_cast<Mode>((_value >> l) & MODE_MASK); }
 
 private:
     static constexpr uint64 MODE_MASK = 0xf;
@@ -184,7 +184,9 @@ public:
 
     enum IcachePolicy { VPIPT = 0b00, AIVIVT = 0b01, VIPT = 0b10, PIPT = 0b11 };
 
-    IcachePolicy get_icache_policy() const { return IcachePolicy(bits_in_range(_value, 14, 15)); }
+    IcachePolicy get_icache_policy() const {
+        return static_cast<IcachePolicy>(bits_in_range(_value, 14, 15));
+    }
 
     bool can_invalidate_guest_icache() const {
         IcachePolicy icp = get_icache_policy();
@@ -235,7 +237,7 @@ public:
     static constexpr uint64 TG1_MASK = 0x3ull << TG1_SHIFT;
 
     GranuleSize tg1() const {
-        uint8 bits = uint8(bits_in_range(_value, TG1_SHIFT, 31));
+        uint8 bits = static_cast<uint8>(bits_in_range(_value, TG1_SHIFT, 31));
         switch (bits) {
         case TG1_GRANULE_16KB:
             return GRANULE_16KB;
@@ -249,7 +251,7 @@ public:
     }
 
     GranuleSize tg0() const {
-        uint8 bits = uint8(bits_in_range(_value, 14, 15));
+        uint8 bits = static_cast<uint8>(bits_in_range(_value, 14, 15));
         switch (bits) {
         case 0b10:
             return GRANULE_16KB;
@@ -278,8 +280,8 @@ public:
     static constexpr uint8 T1SZ_SHIFT = 16;
     static constexpr uint64 T1SZ_MASK = 0x3full << T1SZ_SHIFT;
 
-    uint8 t0sz() const { return uint8(bits_in_range(_value, T0SZ_SHIFT, 5)); }
-    uint8 t1sz() const { return uint8(bits_in_range(_value, T1SZ_SHIFT, 21)); }
+    uint8 t0sz() const { return static_cast<uint8>(bits_in_range(_value, T0SZ_SHIFT, 5)); }
+    uint8 t1sz() const { return static_cast<uint8>(bits_in_range(_value, T1SZ_SHIFT, 21)); }
 
     bool eae() const { return bits_in_range(_value, 31, 31); }
 
@@ -309,7 +311,7 @@ public:
     static constexpr uint8 NORMAL_MEM_WB_RWALLOC_CACHE = 0b01;
 
     uint8 ips() const {
-        uint8 ips_bits = uint8(bits_in_range(_value, IPS_SHIFT, 34));
+        uint8 ips_bits = static_cast<uint8>(bits_in_range(_value, IPS_SHIFT, 34));
         switch (ips_bits) {
         case IPS_32B:
             return 32;
