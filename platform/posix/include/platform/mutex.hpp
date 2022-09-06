@@ -9,6 +9,7 @@
 
 #include <mutex>
 #include <platform/context.hpp>
+#include <platform/errno.hpp>
 
 /*! \file Define a mutex class
  */
@@ -21,6 +22,10 @@ namespace Platform {
 class Platform::Mutex : public std::mutex {
 public:
     bool init([[maybe_unused]] const Platform_ctx* ctx = nullptr) { return true; }
+
+    Errno create(const Platform_ctx*) { return ENONE; }
+
+    Errno destroy(const Platform_ctx*) { return ENONE; }
 
     bool enter() {
         lock();

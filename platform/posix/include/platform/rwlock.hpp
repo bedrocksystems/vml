@@ -31,11 +31,9 @@ public:
     RWLock(RWLock&) = delete;
     RWLock(const RWLock&&) = delete;
 
-    bool init([[maybe_unused]] const Platform_ctx* ctx = nullptr) {
-        _rq.init();
-        _m.init();
-        return true;
-    }
+    Errno create(const Platform_ctx*) { return ENONE; }
+    Errno destroy(const Platform_ctx*) { return ENONE; }
+    bool init([[maybe_unused]] const Platform_ctx* = nullptr) { return true; }
 
     void wenter() {
         _rq.enter();
