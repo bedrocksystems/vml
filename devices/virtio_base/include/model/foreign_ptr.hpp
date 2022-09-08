@@ -57,6 +57,16 @@ public:
     }
 };
 
+template ForeignData &ForeignData::operator=(const uint8 &);
+template ForeignData &ForeignData::operator=(const uint16 &);
+template ForeignData &ForeignData::operator=(const uint32 &);
+template ForeignData &ForeignData::operator=(const uint64 &);
+
+template ForeignData::operator uint8();
+template ForeignData::operator uint16();
+template ForeignData::operator uint32();
+template ForeignData::operator uint64();
+
 class ForeignPtr {
 private:
     volatile void *_p;
