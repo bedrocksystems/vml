@@ -132,7 +132,7 @@ Vbus::Bus::register_device(Device* d, mword addr, mword bytes) {
     auto status = _devices.insert(de);
     _vbus_lock.wexit();
     if (!status)
-      delete de;
+        delete de;
 
     return status;
 }
