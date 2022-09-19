@@ -520,6 +520,7 @@ public:
     void send(Virtio::Descriptor &&desc, uint32 len) override;
     Errno recv(Virtio::Descriptor &desc) override;
 
+    uint16 get_available() const;
     uint16 get_free() const;
     bool used_event_notify() const;
     bool interrupts_disabled() const;
@@ -564,6 +565,7 @@ public:
     void send(Virtio::Descriptor &&desc, uint32) override;
     Errno recv(Virtio::Descriptor &desc) override;
 
+    uint16 get_available() const;
     uint16 get_free() const;
     bool notifications_disabled();
     void enable_interrupts();

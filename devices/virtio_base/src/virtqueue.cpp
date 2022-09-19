@@ -127,6 +127,9 @@ namespace Virtio {
         return ENONE;
     }
 
+    // Returns the number of queue elements available for processing.
+    uint16 DeviceQueue::get_available() const { return count_available(available_index()); }
+
     // Returns the number of free queue elements.
     uint16 DeviceQueue::get_free() const { return count_free(available_index()); }
 
@@ -215,6 +218,9 @@ namespace Virtio {
         desc = Descriptor(_descriptor_base, desc_idx);
         return ENONE;
     }
+
+    // Returns the number of queue elements available for processing.
+    uint16 DriverQueue::get_available() const { return count_available(used_index()); }
 
     // Returns the number of free queue elements.
     uint16 DriverQueue::get_free() const { return count_free(used_index()); }
