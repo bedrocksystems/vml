@@ -89,6 +89,7 @@ public:
             cxx::swap(_active_chain_length, other._active_chain_length);
             cxx::swap(_size_bytes, other._size_bytes);
             cxx::swap(_complete_chain, other._complete_chain);
+            cxx::swap(_chain_for_device, other._chain_for_device);
             cxx::swap(_nodes, other._nodes);
         }
         return *this;
@@ -98,6 +99,7 @@ public:
         cxx::swap(_active_chain_length, other._active_chain_length);
         cxx::swap(_size_bytes, other._size_bytes);
         cxx::swap(_complete_chain, other._complete_chain);
+        cxx::swap(_chain_for_device, other._chain_for_device);
         cxx::swap(_nodes, other._nodes);
     }
 
@@ -235,6 +237,32 @@ private:
         }
     };
 
+    // Hoist some static checks out of [Sg::Buffer::copy] to reduce cognitive complexity to
+    // an acceptable level.
+    Errno check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t off,
+                                   Iterator &out_it);
+
+    // Check whether reading from the descriptor buffer /should/ be allowed based
+    // on the supplied [flags].
+    //
+    // NOTE: sometimes a payload read /may/ be allowed (e.g. when debugging a
+    // [Virtio::DeviceQueue]) even with the incorrect flags.
+    // [Virtio::Sg::Buffer::copy] interprets the result of this call appropriately.
+    bool should_read(uint16 flags) const {
+        return _chain_for_device ? not(flags & VIRTQ_DESC_WRITE_ONLY) : true;
+    }
+
+    // Check whether writing to the descriptor buffer /should/ be allowed based
+    // on the supplied [flags].
+    //
+    //
+    // NOTE: sometimes a payload read /may/ be allowed (e.g. when debugging a
+    // [Virtio::DeviceQueue]) even with the incorrect flags.
+    // [Virtio::Sg::Buffer::copy] interprets the result of this call appropriately.
+    bool should_write(uint16 flags) const {
+        return _chain_for_device ? (flags & VIRTQ_DESC_WRITE_ONLY) : true;
+    }
+
     // Common addition of descriptors to the chain
     void add_descriptor(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags,
                         uint16 next);
@@ -260,6 +288,8 @@ private:
     // complete or partial chain of descriptors; [reset] uses this
     // to determine how to properly clean up the contents of [_nodes].
     bool _complete_chain{false};
+    // NOTE: Only meaningful when [_complete_chain] is [true]
+    bool _chain_for_device{false};
     // morally [Virtio::Sg::Node _nodes[_max_chain_length]], but we can't allow for
     // exceptions in constructors (and thus defer allocation until the
     // [init] function).

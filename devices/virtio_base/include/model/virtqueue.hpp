@@ -459,6 +459,9 @@ public:
     Errno next_in_chain(const Virtio::Descriptor &desc, uint16 &flags, bool &next_en, uint16 &next,
                         Virtio::Descriptor &next_desc);
 
+    virtual bool is_device_queue() = 0;
+    inline bool is_driver_queue() { return not(is_device_queue()); }
+
     // NOTE: [Virtio::DriverQueue] will ignore the [len] parameter
     virtual void send(Virtio::Descriptor &&desc, uint32 len) = 0;
     virtual Errno recv(Virtio::Descriptor &desc) = 0;
@@ -520,6 +523,8 @@ public:
     void send(Virtio::Descriptor &&desc, uint32 len) override;
     Errno recv(Virtio::Descriptor &desc) override;
 
+    bool is_device_queue() override { return true; }
+
     uint16 get_available() const;
     uint16 get_free() const;
     bool used_event_notify() const;
@@ -564,6 +569,8 @@ public:
     // NOTE: [Virtio::DriverQueue] will ignore the [len] parameter
     void send(Virtio::Descriptor &&desc, uint32) override;
     Errno recv(Virtio::Descriptor &desc) override;
+
+    bool is_device_queue() override { return false; }
 
     uint16 get_available() const;
     uint16 get_free() const;

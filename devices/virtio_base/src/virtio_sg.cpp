@@ -25,6 +25,28 @@ Virtio::Sg::Node::heuristically_track_written_bytes(size_t off, size_t size_byte
     }
 }
 
+Errno
+Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t off,
+                                             Virtio::Sg::Buffer::Iterator &out_it) {
+    if (not accessor) {
+        ASSERT(false);
+        return EINVAL;
+    }
+
+    if (this->size_bytes() < off + size_bytes) {
+        ASSERT(false);
+        return ENOMEM;
+    }
+
+    out_it = this->find(off);
+    if (out_it == this->end()) {
+        ASSERT(false);
+        return ENOENT;
+    }
+
+    return ENONE;
+}
+
 uint32
 Virtio::Sg::Buffer::written_bytes_lowerbound_heuristic() const {
     uint32 lb = 0;
@@ -121,6 +143,8 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
         vq.send(cxx::move(root_desc), 0);
         return err;
     }
+
+    _chain_for_device = vq.is_device_queue();
 
     do {
         // NOTE: we must've moved the head of the chain into the buffer already since virtio
@@ -298,14 +322,10 @@ template<typename T_LINEAR, bool LINEAR_TO_SG>
 Errno
 Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINEAR *l,
                          size_t &size_bytes, size_t off, BulkCopier *copier) {
-    if (not accessor) {
-        ASSERT(false);
-        return EINVAL;
-    }
-
-    if (sg.size_bytes() < off + size_bytes) {
-        ASSERT(false);
-        return ENOMEM;
+    Virtio::Sg::Buffer::Iterator it = sg.end();
+    Errno err = sg.check_copy_configuration(accessor, size_bytes, off, it);
+    if (ENONE != err) {
+        return err;
     }
 
     if (0 == size_bytes) {
@@ -320,12 +340,6 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINE
     size_t rem = size_bytes;
     size_bytes = 0;
 
-    auto it = sg.find(off);
-    if (it == sg.end()) {
-        ASSERT(false);
-        return ENOENT;
-    }
-
     while (rem and it != sg.end()) {
         auto *node = &(*it);
 
@@ -334,7 +348,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINE
         // Register the read/write to the [sg] buffer (depending on whether it is
         // a copy /from/ or /to/ the buffer).
         if constexpr (LINEAR_TO_SG) {
-            if (not(node->flags & VIRTQ_DESC_WRITE_ONLY)) {
+            if (sg.should_read(node->flags)) {
                 return EPERM;
             }
 
@@ -349,9 +363,10 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINE
 
             node->heuristically_track_written_bytes(off, n_copy);
         } else {
-            // TODO (BC-1016): Drivers can use this path to copy data out of write-only
-            // descriptors. So cannot perform strict permission checks, unless we
-            // differentiate between Device- and Driver-copies.
+            if (sg.should_write(node->flags)) {
+                WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
+                     "debugging purposes.");
+            }
 
             // NOTE: this function ensures that [copier] is non-null which means
             // that any non-[ENONE] error code came from the address translation
@@ -393,14 +408,16 @@ Errno // NOLINTNEXTLINE(readability-function-size, readability-function-cognitiv
 Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
                          Virtio::Sg::Buffer &dst, Virtio::Sg::Buffer &src, size_t &size_bytes,
                          size_t d_off, size_t s_off, BulkCopier *copier) {
-    if (not dst_accessor || not src_accessor) {
-        ASSERT(false);
-        return EINVAL;
+    Virtio::Sg::Buffer::Iterator d = dst.end();
+    Errno err = dst.check_copy_configuration(dst_accessor, size_bytes, d_off, d);
+    if (ENONE != err) {
+        return err;
     }
 
-    if (dst.size_bytes() < d_off + size_bytes || src.size_bytes() < s_off + size_bytes) {
-        ASSERT(false);
-        return ENOMEM;
+    Virtio::Sg::Buffer::Iterator s = src.end();
+    err = src.check_copy_configuration(src_accessor, size_bytes, s_off, s);
+    if (ENONE != err) {
+        return err;
     }
 
     if (0 == size_bytes) {
@@ -416,30 +433,15 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
     size_t rem = size_bytes;
     size_bytes = 0;
 
-    auto d = dst.find(d_off);
-    if (d == dst.end()) {
-        ASSERT(false);
-        return ENOENT;
-    }
-
-    auto s = src.find(s_off);
-    if (s == src.end()) {
-        ASSERT(false);
-        return ENOENT;
-    }
-
     // Iterate over both till we have copied all or any of the buffers is exhausted.
     while (rem and (d != dst.end()) and (s != src.end())) {
         size_t n_copy = min(rem, min(s->length - s_off, d->length - d_off));
 
-        // TODO (BC-1016): Drivers can use this path to copy data out of write-only
-        // descriptors. So we shouldn't perform strict permission checks, unless we
-        // differentiate between Device- and Driver-copies.
-        //
-        // NOTE (JH): It seems that no existing driver code uses this particular code
-        // path, but we still need to fix it in order for it to be verifiable.
-        if (s->flags & VIRTQ_DESC_WRITE_ONLY || not(d->flags & VIRTQ_DESC_WRITE_ONLY)) {
+        if (dst.should_read(d->flags)) {
             return EPERM;
+        } else if (src.should_write(s->flags)) {
+            WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
+                 "debugging purposes.");
         }
 
         // NOTE: this function ensures that [copier]/[dst_accessor]/[src_accessor]
@@ -447,8 +449,8 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
         // address translation itself. Clients who need access to the particular
         // translation which failed can instrument custom tracking within their
         // overload(s) of [Sg::Buffer::ChainAccessor].
-        Errno err = ChainAccessor::copy_between_gpa(copier, dst_accessor, src_accessor,
-                                                    d->address + d_off, s->address + s_off, n_copy);
+        err = ChainAccessor::copy_between_gpa(copier, dst_accessor, src_accessor,
+                                              d->address + d_off, s->address + s_off, n_copy);
         if (ENONE != err) {
             return EBADR;
         }
