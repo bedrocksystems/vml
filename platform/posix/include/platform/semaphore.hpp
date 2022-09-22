@@ -22,7 +22,14 @@
  *  - An acquire and acquire_until function
  *  - A release function
  */
-class Semaphore {
+
+namespace Platform {
+    class Semaphore;
+}
+
+using Platform::Semaphore;
+
+class Platform::Semaphore {
 public:
     Semaphore() : _mutex(), _cv(), _count(0) {}
 

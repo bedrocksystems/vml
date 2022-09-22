@@ -6,15 +6,19 @@
  */
 #pragma once
 
+#include <vector>
+
 /**
- *  Dummy stub for Vector class.
+ *  Vector class.
  */
 
 template<typename T>
-class Vector {
+class Vector : public std::vector<T> {
 
 public:
-    Vector() = delete;
-    bool insert(T) { return false; }
-    void reset() {}
+    bool insert(T& item) {
+        std::vector<T>::push_back(item);
+        return true;
+    }
+    void reset() { std::vector<T>::clear(); }
 };

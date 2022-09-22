@@ -13,6 +13,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <platform/context.hpp>
+#include <platform/errno.hpp>
 
 namespace Platform {
     class Signal;
@@ -34,6 +35,9 @@ public:
      *  \return true - no failure possible at the moment
      */
     bool init(const Platform_ctx*) { return true; }
+
+    Errno create(const Platform_ctx*) { return ENONE; }
+    Errno destroy(const Platform_ctx*) { return ENONE; }
 
     /*! \brief Wait for a signal
      */
