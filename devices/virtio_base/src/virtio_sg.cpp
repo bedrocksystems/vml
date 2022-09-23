@@ -14,7 +14,6 @@ Virtio::Sg::Node::heuristically_track_written_bytes(size_t off, size_t size_byte
 
     if (off <= local_prefix_written_bytes) {
         local_prefix_written_bytes += off + size_bytes - local_prefix_written_bytes;
-
         if (local_prefix_written_bytes < _prefix_written_bytes
             || UINT32_MAX < local_prefix_written_bytes) {
             local_prefix_written_bytes = UINT32_MAX;
@@ -27,15 +26,22 @@ Virtio::Sg::Node::heuristically_track_written_bytes(size_t off, size_t size_byte
 
 Errno
 Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t size_bytes,
-                                             size_t off) const {
+                                             size_t &inout_offset,
+                                             Virtio::Sg::Buffer::Iterator &out_it) const {
     if (not accessor) {
         ASSERT(false);
         return EINVAL;
     }
 
-    if (this->size_bytes() < off + size_bytes) {
+    if (this->size_bytes() < inout_offset + size_bytes) {
         ASSERT(false);
         return ENOMEM;
+    }
+
+    out_it = this->find(inout_offset);
+    if (out_it == this->end()) {
+        ASSERT(false);
+        return ENOENT;
     }
 
     return ENONE;
@@ -316,15 +322,10 @@ template<typename T_LINEAR, bool LINEAR_TO_SG>
 Errno
 Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINEAR *l,
                          size_t &size_bytes, size_t off, BulkCopier *copier) {
-    Errno err = sg.check_copy_configuration(accessor, size_bytes, off);
+    Virtio::Sg::Buffer::Iterator it = sg.end();
+    Errno err = sg.check_copy_configuration(accessor, size_bytes, off, it);
     if (ENONE != err) {
         return err;
-    }
-
-    Virtio::Sg::Buffer::Iterator it = sg.find(off);
-    if (it == sg.end()) {
-        ASSERT(false);
-        return ENOENT;
     }
 
     if (0 == size_bytes) {
@@ -407,26 +408,16 @@ Errno // NOLINTNEXTLINE(readability-function-size, readability-function-cognitiv
 Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
                          Virtio::Sg::Buffer &dst, Virtio::Sg::Buffer &src, size_t &size_bytes,
                          size_t d_off, size_t s_off, BulkCopier *copier) {
-    Errno err = dst.check_copy_configuration(dst_accessor, size_bytes, d_off);
+    Virtio::Sg::Buffer::Iterator d = dst.end();
+    Errno err = dst.check_copy_configuration(dst_accessor, size_bytes, d_off, d);
     if (ENONE != err) {
         return err;
     }
 
-    Virtio::Sg::Buffer::Iterator d = dst.find(d_off);
-    if (d == dst.end()) {
-        ASSERT(false);
-        return ENOENT;
-    }
-
-    err = src.check_copy_configuration(src_accessor, size_bytes, s_off);
+    Virtio::Sg::Buffer::Iterator s = src.end();
+    err = src.check_copy_configuration(src_accessor, size_bytes, s_off, s);
     if (ENONE != err) {
         return err;
-    }
-
-    Virtio::Sg::Buffer::Iterator s = src.find(s_off);
-    if (s == src.end()) {
-        ASSERT(false);
-        return ENOENT;
     }
 
     if (0 == size_bytes) {
