@@ -271,8 +271,9 @@ private:
     // are dealt with.
     void reset(void);
 
-    // Returns an iterator pointing to the node containing the linear data offset.
-    Iterator find(size_t &offset) const;
+    // Returns an iterator pointing to the node containing the linear data offset /and/
+    // modifies [inout_offset] to the appropriate node-specific linear data offset.
+    Iterator find(size_t &inout_offset) const;
 
     Virtio::Sg::Node *operator[](size_t index);
     const Virtio::Sg::Node *operator[](size_t index) const;
