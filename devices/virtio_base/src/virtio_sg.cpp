@@ -542,19 +542,19 @@ Virtio::Sg::Buffer::reset(void) {
 }
 
 Virtio::Sg::Buffer::Iterator
-Virtio::Sg::Buffer::find(size_t &offset) const {
-    if (offset > size_bytes())
+Virtio::Sg::Buffer::find(size_t &inout_offset) const {
+    if (inout_offset > size_bytes())
         return end();
 
-    if (offset == 0)
+    if (inout_offset == 0)
         return begin();
 
     size_t cur_off = 0;
     for (auto it = begin(); it != end(); ++it) {
         auto *node = &(*it);
-        if (cur_off + node->length > offset) {
+        if (cur_off + node->length > inout_offset) {
             // Return the local offset within this node corresponding to desired linear offset.
-            offset = offset - cur_off;
+            inout_offset = inout_offset - cur_off;
             return it;
         }
 
