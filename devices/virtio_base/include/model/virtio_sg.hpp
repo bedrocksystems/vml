@@ -239,7 +239,8 @@ private:
 
     // Hoist some static checks out of [Sg::Buffer::copy] to reduce cognitive complexity to
     // an acceptable level.
-    Errno check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t off) const;
+    Errno check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t &inout_offset,
+                                   Iterator &out_it) const;
 
     // Check whether reading from the descriptor buffer /should/ be allowed based
     // on the supplied [flags].
