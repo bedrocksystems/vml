@@ -239,8 +239,7 @@ private:
 
     // Hoist some static checks out of [Sg::Buffer::copy] to reduce cognitive complexity to
     // an acceptable level.
-    Errno check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t off,
-                                   Iterator &out_it);
+    Errno check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t off) const;
 
     // Check whether reading from the descriptor buffer /should/ be allowed based
     // on the supplied [flags].
@@ -248,8 +247,8 @@ private:
     // NOTE: sometimes a payload read /may/ be allowed (e.g. when debugging a
     // [Virtio::DeviceQueue]) even with the incorrect flags.
     // [Virtio::Sg::Buffer::copy] interprets the result of this call appropriately.
-    bool should_read(uint16 flags) const {
-        return _chain_for_device ? not(flags & VIRTQ_DESC_WRITE_ONLY) : true;
+    bool should_only_read(uint16 flags) const {
+        return _chain_for_device ? not(flags & VIRTQ_DESC_WRITE_ONLY) : false;
     }
 
     // Check whether writing to the descriptor buffer /should/ be allowed based
@@ -259,8 +258,8 @@ private:
     // NOTE: sometimes a payload read /may/ be allowed (e.g. when debugging a
     // [Virtio::DeviceQueue]) even with the incorrect flags.
     // [Virtio::Sg::Buffer::copy] interprets the result of this call appropriately.
-    bool should_write(uint16 flags) const {
-        return _chain_for_device ? (flags & VIRTQ_DESC_WRITE_ONLY) : true;
+    bool should_only_write(uint16 flags) const {
+        return _chain_for_device ? (flags & VIRTQ_DESC_WRITE_ONLY) : false;
     }
 
     // Common addition of descriptors to the chain

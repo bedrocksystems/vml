@@ -26,8 +26,8 @@ Virtio::Sg::Node::heuristically_track_written_bytes(size_t off, size_t size_byte
 }
 
 Errno
-Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t off,
-                                             Virtio::Sg::Buffer::Iterator &out_it) {
+Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t size_bytes,
+                                             size_t off) const {
     if (not accessor) {
         ASSERT(false);
         return EINVAL;
@@ -36,12 +36,6 @@ Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t siz
     if (this->size_bytes() < off + size_bytes) {
         ASSERT(false);
         return ENOMEM;
-    }
-
-    out_it = this->find(off);
-    if (out_it == this->end()) {
-        ASSERT(false);
-        return ENOENT;
     }
 
     return ENONE;
@@ -322,10 +316,15 @@ template<typename T_LINEAR, bool LINEAR_TO_SG>
 Errno
 Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINEAR *l,
                          size_t &size_bytes, size_t off, BulkCopier *copier) {
-    Virtio::Sg::Buffer::Iterator it = sg.end();
-    Errno err = sg.check_copy_configuration(accessor, size_bytes, off, it);
+    Errno err = sg.check_copy_configuration(accessor, size_bytes, off);
     if (ENONE != err) {
         return err;
+    }
+
+    Virtio::Sg::Buffer::Iterator it = sg.find(off);
+    if (it == sg.end()) {
+        ASSERT(false);
+        return ENOENT;
     }
 
     if (0 == size_bytes) {
@@ -348,7 +347,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINE
         // Register the read/write to the [sg] buffer (depending on whether it is
         // a copy /from/ or /to/ the buffer).
         if constexpr (LINEAR_TO_SG) {
-            if (sg.should_read(node->flags)) {
+            if (sg.should_only_read(node->flags)) {
                 return EPERM;
             }
 
@@ -363,7 +362,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINE
 
             node->heuristically_track_written_bytes(off, n_copy);
         } else {
-            if (sg.should_write(node->flags)) {
+            if (sg.should_only_write(node->flags)) {
                 WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
                      "debugging purposes.");
             }
@@ -408,16 +407,26 @@ Errno // NOLINTNEXTLINE(readability-function-size, readability-function-cognitiv
 Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
                          Virtio::Sg::Buffer &dst, Virtio::Sg::Buffer &src, size_t &size_bytes,
                          size_t d_off, size_t s_off, BulkCopier *copier) {
-    Virtio::Sg::Buffer::Iterator d = dst.end();
-    Errno err = dst.check_copy_configuration(dst_accessor, size_bytes, d_off, d);
+    Errno err = dst.check_copy_configuration(dst_accessor, size_bytes, d_off);
     if (ENONE != err) {
         return err;
     }
 
-    Virtio::Sg::Buffer::Iterator s = src.end();
-    err = src.check_copy_configuration(src_accessor, size_bytes, s_off, s);
+    Virtio::Sg::Buffer::Iterator d = dst.find(d_off);
+    if (d == dst.end()) {
+        ASSERT(false);
+        return ENOENT;
+    }
+
+    err = src.check_copy_configuration(src_accessor, size_bytes, s_off);
     if (ENONE != err) {
         return err;
+    }
+
+    Virtio::Sg::Buffer::Iterator s = src.find(s_off);
+    if (s == src.end()) {
+        ASSERT(false);
+        return ENOENT;
     }
 
     if (0 == size_bytes) {
@@ -437,9 +446,9 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
     while (rem and (d != dst.end()) and (s != src.end())) {
         size_t n_copy = min(rem, min(s->length - s_off, d->length - d_off));
 
-        if (dst.should_read(d->flags)) {
+        if (dst.should_only_read(d->flags)) {
             return EPERM;
-        } else if (src.should_write(s->flags)) {
+        } else if (src.should_only_write(s->flags)) {
             WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
                  "debugging purposes.");
         }
