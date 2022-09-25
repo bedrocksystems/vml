@@ -8,7 +8,8 @@
 
 #pragma once
 
-#include <msr/msr.hpp>
+#include <bits.hpp>
+#include <msr/msr_id.hpp>
 #include <types.hpp>
 
 namespace Esr {
