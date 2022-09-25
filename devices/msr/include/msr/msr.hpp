@@ -10,6 +10,7 @@
 #include <model/aa64_timer.hpp>
 #include <model/cpu.hpp>
 #include <model/vcpu_types.hpp>
+#include <msr/msr_id.hpp>
 #include <platform/log.hpp>
 #include <platform/reg_accessor.hpp>
 #include <platform/time.hpp>
@@ -37,13 +38,6 @@ namespace Msr {
     class MdscrEl1;
 
     constexpr uint8 CCSIDR_NUM{7};
-
-    static constexpr uint32 build_msr_id(uint8 const op0, uint8 const crn, uint8 const op1,
-                                         uint8 const crm, uint8 const op2) {
-        return (((uint32(crm) & 0xfu) << 3) | ((uint32(crn) & 0xfu) << 7)
-                | ((uint32(op1) & 0x7u) << 10) | ((uint32(op2) & 0x7u) << 13)
-                | ((uint32(op0) & 0xffu) << 16));
-    }
 
     static constexpr uint8 OP0_AARCH32_ONLY_MSR = 0xff;
 
@@ -335,25 +329,6 @@ namespace Msr {
 namespace Model {
     class GicD;
 }
-
-class Msr::Id {
-private:
-    uint32 _id;
-
-public:
-    /* align id 8 byte for vbus usage */
-    Id(uint8 const op0, uint8 const crn, uint8 const op1, uint8 const crm, uint8 const op2)
-        : _id(build_msr_id(op0, crn, op1, crm, op2)) {}
-
-    /*
-     * We are bending the rules a bit for this class. It is useful to have a conversion from uint32
-     * to an ID without being explicit because most IDs are stored in an enum as uint32. We still
-     * want to use those uint32 as Ids transparently whenever possible.
-     */
-    Id(uint32 id) : _id(id) {} // NOLINT
-
-    uint32 id() const { return _id; }
-};
 
 class Msr::Access {
 public:
