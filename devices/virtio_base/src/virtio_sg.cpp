@@ -322,14 +322,14 @@ template<typename T_LINEAR, bool LINEAR_TO_SG>
 Errno
 Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINEAR *l,
                          size_t &size_bytes, size_t off, BulkCopier *copier) {
+    if (0 == size_bytes) {
+        return ENONE;
+    }
+
     Virtio::Sg::Buffer::Iterator it = sg.end();
     Errno err = sg.check_copy_configuration(accessor, size_bytes, off, it);
     if (ENONE != err) {
         return err;
-    }
-
-    if (0 == size_bytes) {
-        return ENONE;
     }
 
     auto default_copier = BulkCopierDefault();
@@ -408,6 +408,10 @@ Errno // NOLINTNEXTLINE(readability-function-size, readability-function-cognitiv
 Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
                          Virtio::Sg::Buffer &dst, Virtio::Sg::Buffer &src, size_t &size_bytes,
                          size_t d_off, size_t s_off, BulkCopier *copier) {
+    if (0 == size_bytes) {
+        return ENONE;
+    }
+
     Virtio::Sg::Buffer::Iterator d = dst.end();
     Errno err = dst.check_copy_configuration(dst_accessor, size_bytes, d_off, d);
     if (ENONE != err) {
@@ -418,10 +422,6 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
     err = src.check_copy_configuration(src_accessor, size_bytes, s_off, s);
     if (ENONE != err) {
         return err;
-    }
-
-    if (0 == size_bytes) {
-        return ENONE;
     }
 
     auto default_copier = BulkCopierDefault();
