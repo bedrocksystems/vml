@@ -345,8 +345,9 @@ class Msr::Info::TcrEl2 : private Msr::Info::TcrEl1 {
 public:
     explicit TcrEl2(uint64 val) : TcrEl1(val) {}
 
-    uint8 t0sz() const { return TcrEl1::t0sz(); }
-    GranuleSize tg0() const { return TcrEl1::tg0(); }
+    using TcrEl1::t0sz;
+    using TcrEl1::tg0;
+
     uint8 start_level() const {
         uint8 level = static_cast<uint8>(bits_in_range(_value, 6, 7));
 
