@@ -95,7 +95,7 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
     Err err = dev->access(access, &vcpu_ctx, _space, off, bytes, val);
 
     if (Stats::enabled())
-        dev->add_time(clock() - start);
+        dev->add_time(static_cast<size_t>(clock() - start));
 
     return err;
 }
