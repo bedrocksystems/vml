@@ -87,10 +87,10 @@ private:
 
         static constexpr uint8 PENDING_SHIFT = 32;
         static constexpr uint64 PENDING_BIT = 1ull << PENDING_SHIFT;
-        static constexpr uint64 PENDING_FIELD = 0xfull << PENDING_SHIFT;
+        static constexpr uint64 PENDING_FIELD = 0xffull << PENDING_SHIFT;
         static constexpr uint8 INJECTED_SHIFT = 40;
         static constexpr uint64 INJECTED_BIT = 1ull << INJECTED_SHIFT;
-        static constexpr uint64 INJECTED_FIELD = 0xfull << INJECTED_SHIFT;
+        static constexpr uint64 INJECTED_FIELD = 0xffull << INJECTED_SHIFT;
 
         bool pending() const { return (_info & PENDING_FIELD) != 0; }
         bool in_injection() const { return (_info & INJECTED_FIELD) != 0; }
@@ -109,21 +109,35 @@ private:
          */
         bool is_injected(uint8 sender_id = 0) const {
             ASSERT(sender_id != NO_INJECTION);
+            ASSERT(sender_id < Model::GICV2_MAX_CPUS);
             return _info & (INJECTED_BIT << sender_id);
         }
-        void set_injected(uint8 sender_id = 0) { _info |= (INJECTED_BIT << sender_id); }
-        void unset_injected(uint8 sender_id = 0) { _info &= ~(INJECTED_BIT << sender_id); }
-        void set_pending(uint8 sender_id = 0) { _info |= (PENDING_BIT << sender_id); }
-        void unset_pending(uint8 sender_id = 0) { _info &= ~(PENDING_BIT << sender_id); }
+        void set_injected(uint8 sender_id = 0) {
+            ASSERT(sender_id < Model::GICV2_MAX_CPUS);
+            _info |= (INJECTED_BIT << sender_id);
+        }
+        void unset_injected(uint8 sender_id = 0) {
+            ASSERT(sender_id < Model::GICV2_MAX_CPUS);
+            _info &= ~(INJECTED_BIT << sender_id);
+        }
+        void set_pending(uint8 sender_id = 0) {
+            ASSERT(sender_id < Model::GICV2_MAX_CPUS);
+            _info |= (PENDING_BIT << sender_id);
+        }
+        void unset_pending(uint8 sender_id = 0) {
+            ASSERT(sender_id < Model::GICV2_MAX_CPUS);
+            _info &= ~(PENDING_BIT << sender_id);
+        }
 
         /*
          * The function below is only relevant for SGIs with affinity routing disabled.
          * In that configuration, SGIs are banked by senders and up to 8 CPUs are supported.
          */
         uint8 get_pending_sender_id() const {
-            int sender_bit_set = ffs(static_cast<unsigned int>((_info >> PENDING_SHIFT) & 0xf));
+            int sender_bit_set
+                = ffs(static_cast<unsigned int>(((_info & PENDING_FIELD) >> PENDING_SHIFT)));
             ASSERT(sender_bit_set > 0);
-            ASSERT(sender_bit_set < Model::GICV2_MAX_CPUS);
+            ASSERT(sender_bit_set <= Model::GICV2_MAX_CPUS);
 
             return static_cast<uint8>(sender_bit_set - 1);
         }
@@ -131,11 +145,12 @@ private:
         static constexpr uint8 NO_INJECTION = 0xff;
 
         uint8 get_injected_sender_id() const {
-            int sender_bit_set = ffs(static_cast<unsigned int>((_info >> INJECTED_SHIFT) & 0xf));
+            int sender_bit_set
+                = ffs(static_cast<unsigned int>(((_info & INJECTED_FIELD) >> INJECTED_SHIFT)));
             if (sender_bit_set == 0)
                 return NO_INJECTION;
 
-            ASSERT(sender_bit_set < Model::GICV2_MAX_CPUS);
+            ASSERT(sender_bit_set <= Model::GICV2_MAX_CPUS);
 
             return static_cast<uint8>(sender_bit_set - 1);
         }
