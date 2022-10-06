@@ -71,7 +71,9 @@ namespace Msr::Info {
         AI_MASKED = 0b11ull << 7,
         F_MASKED = 0b1ull << 6,
         D_MASKED = 0b1ull << 9,
+        SPSR_IL = 1ull << 20,
         SPSR_SINGLE_STEP = 1ull << 21,
+        SPSR_A32_IT = 0x3full << 10 | 0x3ull << 25,
     };
 
     enum MdscrFlags {
