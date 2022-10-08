@@ -8,7 +8,8 @@
 
 #pragma once
 
-#include <msr/msr.hpp>
+#include <bits.hpp>
+#include <msr/msr_id.hpp>
 #include <types.hpp>
 
 namespace Esr {
@@ -120,8 +121,6 @@ public:
 
 class Esr::Abort : public Common {
 private:
-    static constexpr uint64 FNV_MASK = 0x1ull;
-    static constexpr uint64 S1PTW_MASK = 0x1ull;
     static constexpr uint64 IFSC_MASK = 0x3full;
 
     static constexpr uint8 FNV_SHIFT = 10;
@@ -170,8 +169,8 @@ public:
         }
     }
 
-    bool stage1_page_table_walk() const { return (_esr >> S1PTW_SHIFT) & S1PTW_MASK; }
-    bool far_not_valid() const { return (_esr >> FNV_SHIFT) & FNV_MASK; };
+    bool stage1_page_table_walk() const { return bits(_esr, S1PTW_SHIFT, 1); }
+    bool far_not_valid() const { return bits(_esr, FNV_SHIFT, 1); };
 
     bool hpfar_is_valid() const {
         return (fault_status_code() <= ACCESS_FLAG_FAULT_LVL_3)
