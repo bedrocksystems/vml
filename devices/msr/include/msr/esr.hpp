@@ -169,8 +169,8 @@ public:
         }
     }
 
-    bool stage1_page_table_walk() const { return bits(_esr, S1PTW_SHIFT, 1); }
-    bool far_not_valid() const { return bits(_esr, FNV_SHIFT, 1); };
+    bool stage1_page_table_walk() const { return bits(_esr, 1, S1PTW_SHIFT); }
+    bool far_not_valid() const { return bits(_esr, 1, FNV_SHIFT); };
 
     bool hpfar_is_valid() const {
         return (fault_status_code() <= ACCESS_FLAG_FAULT_LVL_3)
