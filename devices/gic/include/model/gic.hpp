@@ -233,6 +233,7 @@ private:
         void configure_hw(bool hw, uint16 pintid = 0, bool edge = false) {
             _pintid = pintid;
             _hw_edge = edge;
+            _sw_edge = edge;
             _hw = hw;
         }
         uint8 edge_encoded() const { return sw_edge() ? 0b10 : 0; }

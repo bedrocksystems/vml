@@ -222,6 +222,7 @@ Model::GicD::write_sgir(Vcpu_id cpu_id, uint64 value) {
 }
 
 bool
+// NOLINTNEXTLINE(readability-function-size, readability-function-cognitive-complexity)
 Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 value) {
     Banked &cpu = _local[cpu_id];
 
@@ -266,6 +267,11 @@ Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 va
         acc.base_abs = GICD_ITARGETSR8;
         acc.configure_access(AccessType::SPI);
         return change_target(cpu, acc, value);
+    case GICD_ICFGR1 ... GICD_ICFGR1_END:
+        acc.base_abs = GICD_ICFGR1;
+        acc.irq_per_bytes = 4;
+        acc.configure_access(AccessType::PPI);
+        return write<uint8, &Irq::set_encoded_edge>(cpu, acc, value);
     case GICD_ICFGR ... GICD_ICFGR_END:
         acc.base_abs = GICD_ICFGR;
         acc.irq_per_bytes = 4;
@@ -303,7 +309,6 @@ Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 va
     case GICD_RESERVED_19 ... GICD_RESERVED_19_END: /* WI */
     case GICD_RESERVED_20 ... GICD_RESERVED_20_END: /* WI */
     case GICD_ICFGR0 ... GICD_ICFGR0_END:           /* WI */
-    case GICD_ICFGR1 ... GICD_ICFGR1_END:           /* WI */
     case GICD_IMPLDEF_0 ... GICD_IMPLDEF_0_END:     /* impl. defined */
     case GICD_PIDR4 ... GICD_PIDR4_END:             /* RO */
     case GICD_PIDR5 ... GICD_PIDR5_END:             /* RO */
