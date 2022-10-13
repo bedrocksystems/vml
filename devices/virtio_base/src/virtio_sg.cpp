@@ -318,9 +318,9 @@ Virtio::Sg::Buffer::ChainAccessor::copy_to_gpa(BulkCopier *copier, const GPA &ds
     return ENONE;
 }
 
-template<typename T_LINEAR, bool LINEAR_TO_SG>
+template<typename T_LINEAR, bool LINEAR_TO_SG, typename SG_MAYBE_CONST>
 Errno
-Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINEAR *l,
+Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *l,
                          size_t &size_bytes, size_t off, BulkCopier *copier) {
     if (0 == size_bytes) {
         return ENONE;
@@ -393,20 +393,20 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINE
 Errno
 Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, Virtio::Sg::Buffer &dst, const void *src,
                          size_t &size_bytes, size_t d_off, BulkCopier *copier) {
-    return copy<const char, true>(dst_accessor, dst, static_cast<const char *>(src), size_bytes,
-                                  d_off, copier);
+    return copy<const char, true, Virtio::Sg::Buffer>(
+        dst_accessor, dst, static_cast<const char *>(src), size_bytes, d_off, copier);
 }
 
 Errno
-Virtio::Sg::Buffer::copy(ChainAccessor *src_accessor, void *dst, Virtio::Sg::Buffer &src,
+Virtio::Sg::Buffer::copy(ChainAccessor *src_accessor, void *dst, const Virtio::Sg::Buffer &src,
                          size_t &size_bytes, size_t s_off, BulkCopier *copier) {
-    return copy<char, false>(src_accessor, src, static_cast<char *>(dst), size_bytes, s_off,
-                             copier);
+    return copy<char, false, const Virtio::Sg::Buffer>(src_accessor, src, static_cast<char *>(dst),
+                                                       size_bytes, s_off, copier);
 }
 
 Errno // NOLINTNEXTLINE(readability-function-size, readability-function-cognitive-complexity)
 Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
-                         Virtio::Sg::Buffer &dst, Virtio::Sg::Buffer &src, size_t &size_bytes,
+                         Virtio::Sg::Buffer &dst, const Virtio::Sg::Buffer &src, size_t &size_bytes,
                          size_t d_off, size_t s_off, BulkCopier *copier) {
     if (0 == size_bytes) {
         return ENONE;
