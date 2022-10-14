@@ -11,7 +11,10 @@
 #include <bits.hpp>
 #include <msr/msr_id.hpp>
 #include <types.hpp>
-
+/**
+ * Decoding of ESR_EL2 ARMv8-A register, carrying fault information.
+ * See ARM manual DDI0487.I, Sec. D17.2.38 D17.2.38 ESR_EL2, Exception Syndrome Register (EL2).
+ */
 namespace Esr {
     class Common;
     class Hvc;
@@ -31,15 +34,16 @@ class Esr::Common {
 public:
     explicit Common(uint64 const esr) : _esr(esr) {}
 
-    bool il() const { return (_esr >> IL_SHIFT) & IL_MASK; }
+    bool il() const { return (_esr & IL_MASK) != 0; }
     uint8 exception_class() const { return (_esr >> EC_SHIFT) & EC_MASK; }
+    uint8 instruction_len_bytes() const { return il() ? 4 : 2; }
 
 private:
     static constexpr uint64 EC_MASK = 0x3full;
     static constexpr uint8 EC_SHIFT = 26;
 
-    static constexpr uint64 IL_MASK = 0x1ull;
     static constexpr uint8 IL_SHIFT = 25;
+    static constexpr uint64 IL_MASK = 0x1ull << IL_SHIFT;
 
 protected:
     uint64 const _esr;
@@ -207,8 +211,6 @@ public:
         UNCONTAINABLE = 0b01,
         RESTARTABLE_OR_CORRECTED = 0b10,
     };
-
-    uint8 instruction_len_bytes() const { return il() ? 4 : 2; }
 
     SyncErrType sync_err_type() const { return SyncErrType((_esr >> SET_SHIFT) & SET_MASK); }
 };

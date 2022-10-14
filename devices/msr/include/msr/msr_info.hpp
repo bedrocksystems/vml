@@ -61,8 +61,8 @@ namespace Msr::Info {
 
     enum SpsrFlags : uint64 {
         T32 = 1ull << 5,
-        AARCH32 = 1ull << 4,
-        AARCH64 = 0ull << 4,
+        NRW_AA32 = 1ull << 4,
+        NRW_AA64 = 0ull << 4,
         AA32_SVC = 0b0011ull,
         AA32_ABT = 0b0111ull,
         AA64_EL1 = 0b0100ull,
