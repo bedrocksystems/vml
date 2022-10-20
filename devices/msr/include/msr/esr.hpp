@@ -9,7 +9,7 @@
 #pragma once
 
 #include <bits.hpp>
-#include <msr/msr_id.hpp>
+#include <msr/msr_access.hpp>
 #include <types.hpp>
 /**
  * Decoding of ESR_EL2 ARMv8-A register, carrying fault information.
@@ -73,7 +73,9 @@ public:
 
     static constexpr uint64 ISS_MASK = 0x3fffffull;
 
-    Msr::Id system_register() const { return Msr::Id(op0(), crn(), op1(), crm(), op2()); }
+    Msr::Access system_register() const {
+        return Msr::Access(op0(), crn(), op1(), crm(), op2(), rt(), write());
+    }
 };
 
 class Esr::McrMrc : public Esr::Common {
