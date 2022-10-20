@@ -20,6 +20,30 @@ namespace Virtio {
     };
 };
 
+// Template specializations for moves
+// [Virtio::Sg::Node]
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::Sg::Node &>::type &&
+cxx::move<Virtio::Sg::Node &>(Virtio::Sg::Node &t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::Sg::Node &>::type &&>(t);
+}
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::Sg::Node>::type &&
+cxx::move<Virtio::Sg::Node>(Virtio::Sg::Node &&t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::Sg::Node>::type &&>(t);
+}
+// [Virtio::Sg::Buffer]
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::Sg::Buffer &>::type &&
+cxx::move<Virtio::Sg::Buffer &>(Virtio::Sg::Buffer &t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::Sg::Buffer &>::type &&>(t);
+}
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::Sg::Buffer>::type &&
+cxx::move<Virtio::Sg::Buffer>(Virtio::Sg::Buffer &&t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::Sg::Buffer>::type &&>(t);
+}
+
 struct Virtio::Sg::Node {
 public:
     friend class Virtio::Sg::Buffer;

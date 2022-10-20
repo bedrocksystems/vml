@@ -43,6 +43,74 @@ namespace Virtio {
     class Used;
 };
 
+// Template specializations for moves
+// [Virtio::Available]
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::Available &>::type &&
+cxx::move<Virtio::Available &>(Virtio::Available &t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::Available &>::type &&>(t);
+}
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::Available>::type &&
+cxx::move<Virtio::Available>(Virtio::Available &&t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::Available>::type &&>(t);
+}
+// [Virtio::Descriptor]
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::Descriptor &>::type &&
+cxx::move<Virtio::Descriptor &>(Virtio::Descriptor &t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::Descriptor &>::type &&>(t);
+}
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::Descriptor>::type &&
+cxx::move<Virtio::Descriptor>(Virtio::Descriptor &&t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::Descriptor>::type &&>(t);
+}
+// [Virtio::UsedEntry]
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::UsedEntry &>::type &&
+cxx::move<Virtio::UsedEntry &>(Virtio::UsedEntry &t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::UsedEntry &>::type &&>(t);
+}
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::UsedEntry>::type &&
+cxx::move<Virtio::UsedEntry>(Virtio::UsedEntry &&t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::UsedEntry>::type &&>(t);
+}
+// [Virtio::Used]
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::Used &>::type &&
+cxx::move<Virtio::Used &>(Virtio::Used &t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::Used &>::type &&>(t);
+}
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::Used>::type &&
+cxx::move<Virtio::Used>(Virtio::Used &&t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::Used>::type &&>(t);
+}
+// [Virtio::DeviceQueue]
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::DeviceQueue &>::type &&
+cxx::move<Virtio::DeviceQueue &>(Virtio::DeviceQueue &t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::DeviceQueue &>::type &&>(t);
+}
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::DeviceQueue>::type &&
+cxx::move<Virtio::DeviceQueue>(Virtio::DeviceQueue &&t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::DeviceQueue>::type &&>(t);
+}
+// [Virtio::DriverQueue]
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::DriverQueue &>::type &&
+cxx::move<Virtio::DriverQueue &>(Virtio::DriverQueue &t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::DriverQueue &>::type &&>(t);
+}
+template<>
+inline constexpr typename cxx::remove_reference<Virtio::DriverQueue>::type &&
+cxx::move<Virtio::DriverQueue>(Virtio::DriverQueue &&t) noexcept {
+    return static_cast<typename cxx::remove_reference<Virtio::DriverQueue>::type &&>(t);
+}
+
 enum VirtqAvail : uint16 {
     VIRTQ_AVAIL_NO_INTERRUPT = 0x1,
 };
