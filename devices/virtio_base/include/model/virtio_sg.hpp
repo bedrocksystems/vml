@@ -20,29 +20,14 @@ namespace Virtio {
     };
 };
 
+// TODO: upstream this to [type_traits.hpp]
+#define INSTANTIATE_CXX_MOVES(T)                                                                   \
+    template typename cxx::remove_reference<T &>::type &&cxx::move<T &>(T & t) noexcept;           \
+    template typename cxx::remove_reference<T>::type &&cxx::move<T>(T && t) noexcept;
+
 // Template specializations for moves
-// [Virtio::Sg::Node]
-template<>
-inline constexpr typename cxx::remove_reference<Virtio::Sg::Node &>::type &&
-cxx::move<Virtio::Sg::Node &>(Virtio::Sg::Node &t) noexcept {
-    return static_cast<typename cxx::remove_reference<Virtio::Sg::Node &>::type &&>(t);
-}
-template<>
-inline constexpr typename cxx::remove_reference<Virtio::Sg::Node>::type &&
-cxx::move<Virtio::Sg::Node>(Virtio::Sg::Node &&t) noexcept {
-    return static_cast<typename cxx::remove_reference<Virtio::Sg::Node>::type &&>(t);
-}
-// [Virtio::Sg::Buffer]
-template<>
-inline constexpr typename cxx::remove_reference<Virtio::Sg::Buffer &>::type &&
-cxx::move<Virtio::Sg::Buffer &>(Virtio::Sg::Buffer &t) noexcept {
-    return static_cast<typename cxx::remove_reference<Virtio::Sg::Buffer &>::type &&>(t);
-}
-template<>
-inline constexpr typename cxx::remove_reference<Virtio::Sg::Buffer>::type &&
-cxx::move<Virtio::Sg::Buffer>(Virtio::Sg::Buffer &&t) noexcept {
-    return static_cast<typename cxx::remove_reference<Virtio::Sg::Buffer>::type &&>(t);
-}
+INSTANTIATE_CXX_MOVES(Virtio::Sg::Node)
+INSTANTIATE_CXX_MOVES(Virtio::Sg::Buffer)
 
 struct Virtio::Sg::Node {
 public:
