@@ -45,8 +45,8 @@ namespace Virtio {
 
 // TODO: upstream this to [type_traits.hpp]
 #define INSTANTIATE_CXX_MOVES(T)                                                                   \
-    template typename cxx::remove_reference<T &>::type &&cxx::move<T &>(T & t) noexcept;           \
-    template typename cxx::remove_reference<T>::type &&cxx::move<T>(T && t) noexcept;
+    template typename cxx::remove_reference<(T) &>::type &&cxx::move<(T) &>((T)&t) noexcept;       \
+    template typename cxx::remove_reference<(T)>::type &&cxx::move<(T)>((T) && t) noexcept;
 
 // Template specializations for moves
 INSTANTIATE_CXX_MOVES(Virtio::Available)
