@@ -20,6 +20,18 @@ namespace Virtio {
     };
 };
 
+// Template specializations for moves
+// [Virtio::Sg::Node]
+template typename cxx::remove_reference<Virtio::Sg::Node &>::type &&
+cxx::move<Virtio::Sg::Node &>(Virtio::Sg::Node &t) noexcept;
+template typename cxx::remove_reference<Virtio::Sg::Node>::type &&
+cxx::move<Virtio::Sg::Node>(Virtio::Sg::Node &&t) noexcept;
+// [Virtio::Sg::Buffer]
+template typename cxx::remove_reference<Virtio::Sg::Buffer &>::type &&
+cxx::move<Virtio::Sg::Buffer &>(Virtio::Sg::Buffer &t) noexcept;
+template typename cxx::remove_reference<Virtio::Sg::Buffer>::type &&
+cxx::move<Virtio::Sg::Buffer>(Virtio::Sg::Buffer &&t) noexcept;
+
 struct Virtio::Sg::Node {
 public:
     friend class Virtio::Sg::Buffer;
@@ -178,7 +190,7 @@ public:
 public:
     // Copy [size_bytes] bytes from [src] Sg::Buffer to [dst] Sg::Buffer.
     static Errno copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
-                      Virtio::Sg::Buffer &dst, Virtio::Sg::Buffer &src, size_t &size_bytes,
+                      Virtio::Sg::Buffer &dst, const Virtio::Sg::Buffer &src, size_t &size_bytes,
                       size_t d_off = 0, size_t s_off = 0, BulkCopier *copier = nullptr);
 
     // Copy [size_bytes] bytes from a linear buffer to an Sg::Buffer.
@@ -186,13 +198,13 @@ public:
                       size_t &size_bytes, size_t d_off = 0, BulkCopier *copier = nullptr);
 
     // Copt [size_bytes] bytes from an Sg::Buffer to linear buffer.
-    static Errno copy(ChainAccessor *src_accessor, void *dst, Virtio::Sg::Buffer &src,
+    static Errno copy(ChainAccessor *src_accessor, void *dst, const Virtio::Sg::Buffer &src,
                       size_t &size_bytes, size_t s_off = 0, BulkCopier *copier = nullptr);
 
 private:
-    template<typename T_LINEAR, bool LINEAR_TO_SG>
-    static Errno copy(ChainAccessor *accessor, Virtio::Sg::Buffer &sg, T_LINEAR *l,
-                      size_t &size_bytes, size_t off, BulkCopier *copier);
+    template<typename T_LINEAR, bool LINEAR_TO_SG, typename SG_MAYBE_CONST>
+    static Errno copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *l, size_t &size_bytes,
+                      size_t off, BulkCopier *copier);
 
 public:
     class Iterator {

@@ -43,6 +43,38 @@ namespace Virtio {
     class Used;
 };
 
+// Template specializations for moves
+// [Virtio::Available]
+template typename cxx::remove_reference<Virtio::Available &>::type &&
+cxx::move<Virtio::Available &>(Virtio::Available &t) noexcept;
+template typename cxx::remove_reference<Virtio::Available>::type &&
+cxx::move<Virtio::Available>(Virtio::Available &&t) noexcept;
+// [Virtio::Descriptor]
+template typename cxx::remove_reference<Virtio::Descriptor &>::type &&
+cxx::move<Virtio::Descriptor &>(Virtio::Descriptor &t) noexcept;
+template typename cxx::remove_reference<Virtio::Descriptor>::type &&
+cxx::move<Virtio::Descriptor>(Virtio::Descriptor &&t) noexcept;
+// [Virtio::UsedEntry]
+template typename cxx::remove_reference<Virtio::UsedEntry &>::type &&
+cxx::move<Virtio::UsedEntry &>(Virtio::UsedEntry &t) noexcept;
+template typename cxx::remove_reference<Virtio::UsedEntry>::type &&
+cxx::move<Virtio::UsedEntry>(Virtio::UsedEntry &&t) noexcept;
+// [Virtio::Used]
+template typename cxx::remove_reference<Virtio::Used &>::type &&
+cxx::move<Virtio::Used &>(Virtio::Used &t) noexcept;
+template typename cxx::remove_reference<Virtio::Used>::type &&
+cxx::move<Virtio::Used>(Virtio::Used &&t) noexcept;
+// [Virtio::DeviceQueue]
+template typename cxx::remove_reference<Virtio::DeviceQueue &>::type &&
+cxx::move<Virtio::DeviceQueue &>(Virtio::DeviceQueue &t) noexcept;
+template typename cxx::remove_reference<Virtio::DeviceQueue>::type &&
+cxx::move<Virtio::DeviceQueue>(Virtio::DeviceQueue &&t) noexcept;
+// [Virtio::DriverQueue]
+template typename cxx::remove_reference<Virtio::DriverQueue &>::type &&
+cxx::move<Virtio::DriverQueue &>(Virtio::DriverQueue &t) noexcept;
+template typename cxx::remove_reference<Virtio::DriverQueue>::type &&
+cxx::move<Virtio::DriverQueue>(Virtio::DriverQueue &&t) noexcept;
+
 enum VirtqAvail : uint16 {
     VIRTQ_AVAIL_NO_INTERRUPT = 0x1,
 };
@@ -459,8 +491,8 @@ public:
     Errno next_in_chain(const Virtio::Descriptor &desc, uint16 &flags, bool &next_en, uint16 &next,
                         Virtio::Descriptor &next_desc);
 
-    virtual bool is_device_queue() = 0;
-    inline bool is_driver_queue() { return not(is_device_queue()); }
+    virtual bool is_device_queue() const = 0;
+    inline bool is_driver_queue() const { return not(is_device_queue()); }
 
     // NOTE: [Virtio::DriverQueue] will ignore the [len] parameter
     virtual void send(Virtio::Descriptor &&desc, uint32 len) = 0;
@@ -523,7 +555,7 @@ public:
     void send(Virtio::Descriptor &&desc, uint32 len) override;
     Errno recv(Virtio::Descriptor &desc) override;
 
-    bool is_device_queue() override { return true; }
+    bool is_device_queue() const override { return true; }
 
     uint16 get_available() const;
     uint16 get_free() const;
@@ -570,7 +602,7 @@ public:
     void send(Virtio::Descriptor &&desc, uint32) override;
     Errno recv(Virtio::Descriptor &desc) override;
 
-    bool is_device_queue() override { return false; }
+    bool is_device_queue() const override { return false; }
 
     uint16 get_available() const;
     uint16 get_free() const;
