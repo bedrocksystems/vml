@@ -43,18 +43,37 @@ namespace Virtio {
     class Used;
 };
 
-// TODO: upstream this to [type_traits.hpp]
-#define INSTANTIATE_CXX_MOVES(T)                                                                   \
-    template typename cxx::remove_reference<(T) &>::type &&cxx::move<(T) &>((T)&t) noexcept;       \
-    template typename cxx::remove_reference<(T)>::type &&cxx::move<(T)>((T) && t) noexcept;
-
 // Template specializations for moves
-INSTANTIATE_CXX_MOVES(Virtio::Available)
-INSTANTIATE_CXX_MOVES(Virtio::Descriptor)
-INSTANTIATE_CXX_MOVES(Virtio::UsedEntry)
-INSTANTIATE_CXX_MOVES(Virtio::Used)
-INSTANTIATE_CXX_MOVES(Virtio::DeviceQueue)
-INSTANTIATE_CXX_MOVES(Virtio::DriverQueue)
+// [Virtio::Available]
+template typename cxx::remove_reference<Virtio::Available &>::type &&
+cxx::move<Virtio::Available &>(Virtio::Available &t) noexcept;
+template typename cxx::remove_reference<Virtio::Available>::type &&
+cxx::move<Virtio::Available>(Virtio::Available &&t) noexcept;
+// [Virtio::Descriptor]
+template typename cxx::remove_reference<Virtio::Descriptor &>::type &&
+cxx::move<Virtio::Descriptor &>(Virtio::Descriptor &t) noexcept;
+template typename cxx::remove_reference<Virtio::Descriptor>::type &&
+cxx::move<Virtio::Descriptor>(Virtio::Descriptor &&t) noexcept;
+// [Virtio::UsedEntry]
+template typename cxx::remove_reference<Virtio::UsedEntry &>::type &&
+cxx::move<Virtio::UsedEntry &>(Virtio::UsedEntry &t) noexcept;
+template typename cxx::remove_reference<Virtio::UsedEntry>::type &&
+cxx::move<Virtio::UsedEntry>(Virtio::UsedEntry &&t) noexcept;
+// [Virtio::Used]
+template typename cxx::remove_reference<Virtio::Used &>::type &&
+cxx::move<Virtio::Used &>(Virtio::Used &t) noexcept;
+template typename cxx::remove_reference<Virtio::Used>::type &&
+cxx::move<Virtio::Used>(Virtio::Used &&t) noexcept;
+// [Virtio::DeviceQueue]
+template typename cxx::remove_reference<Virtio::DeviceQueue &>::type &&
+cxx::move<Virtio::DeviceQueue &>(Virtio::DeviceQueue &t) noexcept;
+template typename cxx::remove_reference<Virtio::DeviceQueue>::type &&
+cxx::move<Virtio::DeviceQueue>(Virtio::DeviceQueue &&t) noexcept;
+// [Virtio::DriverQueue]
+template typename cxx::remove_reference<Virtio::DriverQueue &>::type &&
+cxx::move<Virtio::DriverQueue &>(Virtio::DriverQueue &t) noexcept;
+template typename cxx::remove_reference<Virtio::DriverQueue>::type &&
+cxx::move<Virtio::DriverQueue>(Virtio::DriverQueue &&t) noexcept;
 
 enum VirtqAvail : uint16 {
     VIRTQ_AVAIL_NO_INTERRUPT = 0x1,

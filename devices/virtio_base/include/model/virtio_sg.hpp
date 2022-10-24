@@ -20,14 +20,17 @@ namespace Virtio {
     };
 };
 
-// TODO: upstream this to [type_traits.hpp]
-#define INSTANTIATE_CXX_MOVES(T)                                                                   \
-    template typename cxx::remove_reference<(T) &>::type &&cxx::move<(T) &>((T)&t) noexcept;       \
-    template typename cxx::remove_reference<(T)>::type &&cxx::move<(T)>((T) && t) noexcept;
-
 // Template specializations for moves
-INSTANTIATE_CXX_MOVES(Virtio::Sg::Node)
-INSTANTIATE_CXX_MOVES(Virtio::Sg::Buffer)
+// [Virtio::Sg::Node]
+template typename cxx::remove_reference<Virtio::Sg::Node &>::type &&
+cxx::move<Virtio::Sg::Node &>(Virtio::Sg::Node &t) noexcept;
+template typename cxx::remove_reference<Virtio::Sg::Node>::type &&
+cxx::move<Virtio::Sg::Node>(Virtio::Sg::Node &&t) noexcept;
+// [Virtio::Sg::Buffer]
+template typename cxx::remove_reference<Virtio::Sg::Buffer &>::type &&
+cxx::move<Virtio::Sg::Buffer &>(Virtio::Sg::Buffer &t) noexcept;
+template typename cxx::remove_reference<Virtio::Sg::Buffer>::type &&
+cxx::move<Virtio::Sg::Buffer>(Virtio::Sg::Buffer &&t) noexcept;
 
 struct Virtio::Sg::Node {
 public:
