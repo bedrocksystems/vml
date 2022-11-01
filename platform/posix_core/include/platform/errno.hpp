@@ -16,5 +16,17 @@
 #include <errno.h>
 #include <platform/types.hpp>
 
+#ifndef EBADR     // Some platforms (BSD-derived) don't have this one
+#define EBADR 200 // Pick a high number that won't collide with something else
+#endif
+
 using Errno = uint8;
-static constexpr Errno ENONE = 0;
+
+// Future: this enum will be renamed Errno, this is not yet possible
+// due to clashing of some definitions
+enum {
+    ENONE = 0,
+    NONE = ENONE,
+    PERM = EPERM,
+    BADR = EBADR,
+};

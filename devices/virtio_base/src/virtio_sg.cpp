@@ -349,7 +349,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
         // a copy /from/ or /to/ the buffer).
         if constexpr (LINEAR_TO_SG) {
             if (sg.should_only_read(node->flags)) {
-                return EPERM;
+                return PERM;
             }
 
             // NOTE: this function ensures that [copier] is non-null which means
@@ -438,7 +438,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
         size_t n_copy = min(rem, min(s->length - s_off, d->length - d_off));
 
         if (dst.should_only_read(d->flags)) {
-            return EPERM;
+            return PERM;
         } else if (src.should_only_write(s->flags)) {
             WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
                  "debugging purposes.");

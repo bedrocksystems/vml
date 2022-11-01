@@ -142,7 +142,7 @@ Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool w
     if (write && is_read_only() && !get_mem_fd().cred().write()) {
         WARN("Cannot map read-only guest memory for write pa:0x%llx size:0x%lx", gpa.get_value(),
              size_bytes);
-        return EPERM;
+        return PERM;
     }
 
     mword offset = gpa.get_value() - get_guest_view().get_value();
