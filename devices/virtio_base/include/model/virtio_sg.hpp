@@ -165,6 +165,10 @@ public:
     // NOTE: This interface does not allow flag/next modifications.
     void modify_link(size_t chain_idx, uint64 address, uint32 length);
 
+    // Common cleanup which should be completed after (partial) chains
+    // are dealt with.
+    void reset(void);
+
     inline size_t max_chain_length(void) const { return _max_chain_length; }
     inline size_t active_chain_length(void) const { return _active_chain_length; }
     inline size_t size_bytes(void) const { return _size_bytes; }
@@ -278,10 +282,6 @@ private:
     // Common addition of descriptors to the chain
     void add_descriptor(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags,
                         uint16 next);
-
-    // Common cleanup which should be completed after (partial) chains
-    // are dealt with.
-    void reset(void);
 
     // Returns an iterator pointing to the node containing the linear data offset /and/
     // modifies [inout_offset] to the appropriate node-specific linear data offset.
