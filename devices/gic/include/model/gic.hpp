@@ -399,8 +399,8 @@ private:
         constexpr bool affinity_routing() const { return value & 0x10; }
     } _ctlr;
 
-    Banked *_local;
-    Irq *_spi;
+    Banked *_local{nullptr};
+    Irq *_spi{nullptr};
 
     // simple way to round-robin IRQs when GICv3 is enabled
     atomic<uint16> _vcpu_global_hint{0};
@@ -694,6 +694,11 @@ public:
         : Irq_controller("GICD"), _version(version), _num_vcpus(num_vcpus),
           _configured_irqs(compute_irq_lines(conf_irqs)) {}
 
+    ~GicD() {
+        delete[] _local;
+        delete[] _spi;
+    }
+
     uint16 configured_irqs() const { return _configured_irqs; }
     uint16 configured_spis() const { return _configured_irqs - MAX_PPI - MAX_SGI; }
 
@@ -732,6 +737,7 @@ public:
     virtual void deassert_line_ppi(Vcpu_id, uint32) override;
     virtual void deassert_global_line(uint32) override;
     virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id) override;
+    virtual void disable_cpu(Vcpu_id) override;
     virtual void assert_msi(uint64, uint32) override { ABORT_WITH("GICD: no support for MSI yet"); }
 
     virtual bool signal_eoi(uint8) override { return false; }

@@ -1054,6 +1054,14 @@ Model::GicD::enable_cpu(Cpu_irq_interface *cpu, Vcpu_id const cpu_id) {
     _local[cpu_id].notify = cpu;
 }
 
+void
+Model::GicD::disable_cpu(Vcpu_id const cpu_id) {
+    ASSERT(cpu_id < _num_vcpus);
+    ASSERT(_local[cpu_id].notify != nullptr);
+
+    _local[cpu_id].notify = nullptr;
+}
+
 class IccSgi1rEl1 {
 private:
     uint64 const _value;

@@ -45,6 +45,7 @@ public:
     virtual void assert_msi(uint64 address, uint32 data) = 0;
     virtual void deassert_line_ppi(Vcpu_id, uint32) = 0;
     virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id) = 0;
+    virtual void disable_cpu(Vcpu_id id) = 0;
 
     virtual void deassert_global_line(uint32) = 0;
     virtual bool assert_global_line(uint32) = 0;

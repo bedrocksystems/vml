@@ -34,6 +34,12 @@ Model::Cpu::init(uint16 config_vcpus) {
     return vcpus != nullptr;
 }
 
+void
+Model::Cpu::deinit() {
+    delete[] vcpus;
+    vcpus = nullptr;
+}
+
 bool
 Model::Cpu::is_64bit(Vcpu_id id) {
     return vcpus[id]->_start_mode == BITS_64;
@@ -260,6 +266,11 @@ Model::Cpu::Cpu(Irq_controller* girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id)
     : _vcpu_id(vcpu_id), _pcpu_id(pcpu_id), _girq_ctlr(girq_ctlr) {
     _girq_ctlr->enable_cpu(this, _vcpu_id);
     vcpus[vcpu_id] = this;
+}
+
+Model::Cpu::~Cpu() {
+    _girq_ctlr->disable_cpu(id());
+    vcpus[id()] = nullptr;
 }
 
 bool
