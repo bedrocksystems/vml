@@ -210,9 +210,11 @@ public:
 
     static constexpr uint64 CACHE_MASK = 1ull << 2;
     static constexpr uint64 MMU_MASK = 1ull << 0;
+    static constexpr uint64 WXN_OFFSET = 19;
 
     bool mmu_enabled() const { return (_value & MMU_MASK) != 0; }
     bool cache_enabled() const { return ((_value & CACHE_MASK) != 0) && mmu_enabled(); }
+    bool wxn() const { return bits(_value, 1, WXN_OFFSET); }
 
 private:
     const uint64 _value;
@@ -333,6 +335,9 @@ public:
             return INVALID_IPS;
         }
     }
+
+    bool hpd0() const { return bits_in_range(_value, 41, 41); }
+    bool hpd1() const { return bits_in_range(_value, 42, 42); }
 
 protected:
     const uint64 _value;
