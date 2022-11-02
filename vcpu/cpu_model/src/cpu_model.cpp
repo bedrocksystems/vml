@@ -453,6 +453,11 @@ Model::Cpu::switch_state_to_emulating() {
 }
 
 void
+Model::Cpu::set_space_on(Vcpu_id id, RegAccessor& regs, Platform::Mem::MemSel space) {
+    vcpus[id]->set_vcpu_space(regs, space);
+}
+
+void
 Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolute) {
     if (!will_timeout)
         while (!_lirq_ctlr->int_pending() and !_lirq_ctlr->nmi_pending() and !is_roundup_pending())
