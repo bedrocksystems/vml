@@ -7,6 +7,7 @@
  */
 #pragma once
 
+#include <algorithm>
 #include <platform/types.hpp>
 
 template<typename T>
