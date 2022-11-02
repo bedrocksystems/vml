@@ -610,6 +610,10 @@ public:
     void enable_interrupts();
     void disable_interrupts();
 
+    // Helpers to create DriverQueue from regions allocated from heap.
+    static Errno create_driver_queue(uint16 num_entries, Virtio::DriverQueue &out);
+    static void delete_driver_queue(Virtio::DriverQueue &queue);
+
 private:
     // Driver manipulates used_event field to suggest device to suppress iterrupts till it has
     // added used_event number of buffers to queue.

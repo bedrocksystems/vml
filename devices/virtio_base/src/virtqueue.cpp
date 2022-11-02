@@ -5,6 +5,9 @@
  */
 
 #include <model/virtqueue.hpp>
+#include <platform/bits.hpp>
+#include <platform/new.hpp>
+#include <platform/string.hpp>
 
 /** [Virtio::Queue] */
 namespace Virtio {
@@ -231,5 +234,59 @@ namespace Virtio {
     void DriverQueue::enable_interrupts() { _available.set_flags(0); }
     void DriverQueue::disable_interrupts() {
         _available.set_flags(_available.flags() | VIRTQ_AVAIL_NO_INTERRUPT);
+    }
+
+    static uint8 *allocz(size_t sz) {
+        auto alloc_sz = align_up(sz, 4096);
+        auto *p = new (nothrow) uint8[alloc_sz];
+        if (not p)
+            return nullptr;
+
+        memset(p, 0, alloc_sz);
+        return p;
+    }
+
+    template<typename T>
+    static uint8 *create_region(uint16 num_entries) {
+        return allocz(T::region_size_bytes(num_entries));
+    }
+
+    Errno DriverQueue::create_driver_queue(uint16 num_entries, Virtio::DriverQueue &out) {
+        // Allocate descriptor region.
+        auto *desc = create_region<Virtio::Descriptor>(num_entries);
+        if (nullptr == desc)
+            return ENOMEM;
+
+        // Allocate available region.
+        auto *avail = create_region<Virtio::Available>(num_entries);
+        if (nullptr == avail) {
+            delete[] desc;
+            return ENOMEM;
+        }
+
+        // Allocate used region.
+        auto *used = create_region<Virtio::Used>(num_entries);
+        if (nullptr == used) {
+            delete[] avail;
+            delete[] desc;
+            return ENOMEM;
+        }
+
+        // Construct a DriverQueue using the allocated regions.
+        out = Virtio::DriverQueue(desc, avail, used, num_entries);
+        return ENONE;
+    }
+
+    void DriverQueue::delete_driver_queue(Virtio::DriverQueue &queue) {
+        auto *desc = reinterpret_cast<uint8 *>(queue.descriptor_addr());
+        delete[] desc;
+
+        auto *avail = reinterpret_cast<uint8 *>(queue.available_addr());
+        delete[] avail;
+
+        auto *used = reinterpret_cast<uint8 *>(queue.used_addr());
+        delete[] used;
+
+        queue.~DriverQueue();
     }
 };
