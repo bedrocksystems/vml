@@ -131,10 +131,14 @@ namespace Virtio {
     }
 
     // Returns the number of queue elements available for processing.
-    uint16 DeviceQueue::get_available() const { return count_available(available_index()); }
+    uint16 DeviceQueue::get_available() const {
+        return count_available(available_index());
+    }
 
     // Returns the number of free queue elements.
-    uint16 DeviceQueue::get_free() const { return count_free(available_index()); }
+    uint16 DeviceQueue::get_free() const {
+        return count_free(available_index());
+    }
 
     // This checks if used->index satisfies the used_event condition for host to generate interrupt.
     // Guest (Driver) can use used_event to suppress interrupts till a certain threshold.
@@ -151,7 +155,9 @@ namespace Virtio {
     }
 
     // Host (Device) can suppress notifications using these routines.
-    void DeviceQueue::enable_notifications() { _used.set_flags(0); }
+    void DeviceQueue::enable_notifications() {
+        _used.set_flags(0);
+    }
     void DeviceQueue::disable_notifications() {
         _used.set_flags(_used.flags() | VIRTQ_USED_NO_NOTIFY);
     }
@@ -223,15 +229,23 @@ namespace Virtio {
     }
 
     // Returns the number of queue elements available for processing.
-    uint16 DriverQueue::get_available() const { return count_available(used_index()); }
+    uint16 DriverQueue::get_available() const {
+        return count_available(used_index());
+    }
 
     // Returns the number of free queue elements.
-    uint16 DriverQueue::get_free() const { return count_free(used_index()); }
+    uint16 DriverQueue::get_free() const {
+        return count_free(used_index());
+    }
 
-    bool DriverQueue::notifications_disabled(void) { return _used.flags() & VIRTQ_USED_NO_NOTIFY; }
+    bool DriverQueue::notifications_disabled(void) {
+        return _used.flags() & VIRTQ_USED_NO_NOTIFY;
+    }
 
     // Host (Device) can suppress notifications using these routines.
-    void DriverQueue::enable_interrupts() { _available.set_flags(0); }
+    void DriverQueue::enable_interrupts() {
+        _available.set_flags(0);
+    }
     void DriverQueue::disable_interrupts() {
         _available.set_flags(_available.flags() | VIRTQ_AVAIL_NO_INTERRUPT);
     }

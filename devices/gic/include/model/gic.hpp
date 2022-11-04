@@ -333,14 +333,15 @@ public:
     public:
         explicit Lr(uint64 const lr) : _lr(lr) {}
         Lr(IrqState const state, Irq &irq, uint32 const vintid, uint8 sender = 0) : _lr(0) {
-            _lr |= uint64(state) << STATE_SHIFT;
+            _lr |= static_cast<uint64>(state) << STATE_SHIFT;
             _lr |= (irq.hw() ? 1ull : 0ull) << HW_BIT_SHIFT;
             _lr |= (irq.group1() ? 1ULL : 0ull) << GROUP_BIT_SHIFT;
 
-            _lr |= uint64(irq.prio()) << PRIO_SHIFT; /* 8 bit - 48-55 */
+            _lr |= static_cast<uint64>(irq.prio()) << PRIO_SHIFT; /* 8 bit - 48-55 */
 
             if (irq.hw()) {
-                _lr |= uint64(irq.hw_int_id() & PIRQ_ID_MASK) << PIRQ_ID_SHIFT; /* 10bit - 32-41 */
+                _lr |= static_cast<uint64>(irq.hw_int_id() & PIRQ_ID_MASK)
+                       << PIRQ_ID_SHIFT; /* 10bit - 32-41 */
             } else if (vintid < MAX_SGI) {
                 /*
                  * This can be surprising to read - the data has to go in
@@ -349,14 +350,14 @@ public:
                  * that this field will always be zero if we are emulating a
                  * GICv3.
                  */
-                _lr |= uint64(sender & SENDER_MASK) << SENDER_SHIFT;
+                _lr |= static_cast<uint64>(sender & SENDER_MASK) << SENDER_SHIFT;
             }
-            _lr |= uint64(vintid); /* low 32bit */
+            _lr |= static_cast<uint64>(vintid); /* low 32bit */
         }
 
-        IrqState state() const { return IrqState((_lr >> STATE_SHIFT) & STATE_MASK); }
+        IrqState state() const { return static_cast<IrqState>((_lr >> STATE_SHIFT) & STATE_MASK); }
         void set_state(IrqState st) {
-            _lr = (_lr & ~(STATE_MASK << STATE_SHIFT)) | (uint64(st) << STATE_SHIFT);
+            _lr = (_lr & ~(STATE_MASK << STATE_SHIFT)) | (static_cast<uint64>(st) << STATE_SHIFT);
         }
         void activate() { set_state(IrqState::ACTIVE); }
         void deactivate() { set_state(IrqState::INACTIVE); }
@@ -384,7 +385,7 @@ private:
             for (uint8 i = 0; i < MAX_SGI; i++)
                 sgi[i].set_id(i);
             for (uint8 i = 0; i < MAX_PPI; i++)
-                ppi[i].set_id(uint16(i + MAX_SGI));
+                ppi[i].set_id(static_cast<uint16>(i + MAX_SGI));
         }
     };
 
@@ -633,10 +634,11 @@ private:
             return false;
 
         uint64 const base = acc.offset - acc.base_reg;
-        uint64 const mask = (acc.bytes >= TSIZE) ? (T(0) - 1) : ((T(1) << (acc.bytes * 8)) - 1);
+        uint64 const mask = (acc.bytes >= TSIZE) ? (static_cast<T>(0) - 1) :
+                                                   ((static_cast<T>(1) << (acc.bytes * 8)) - 1);
 
-        result &= (acc.bytes >= TSIZE) ? T(0) : ~(T(mask) << (base * 8));
-        result |= T(value & mask) << (base * 8);
+        result &= (acc.bytes >= TSIZE) ? static_cast<T>(0) : ~(static_cast<T>(mask) << (base * 8));
+        result |= static_cast<T>(value & mask) << (base * 8);
         result &= ~fixed_clear;
         result |= fixed_set;
         return true;
@@ -676,9 +678,9 @@ private:
     void reset_status_bitfields_on_vcpu(uint16 vcpu_idx);
     uint64 get_typer() const {
         uint64 itl = configured_irqs() == MAX_IRQ ? 31ull : (configured_irqs() / 32) - 1;
-        return itl | (uint64(_num_vcpus - 1) << 5) /* CPU count */
-               | (9ULL << 19)                      /* id bits */
-               | (1ULL << 24);                     /* Aff3 supported */
+        return itl | (static_cast<uint64>(_num_vcpus - 1) << 5) /* CPU count */
+               | (9ULL << 19)                                   /* id bits */
+               | (1ULL << 24);                                  /* Aff3 supported */
     }
 
     void update_inj_status_inactive(Vcpu_id cpu_id, uint32 irq_id);
@@ -718,7 +720,7 @@ public:
         if (_local == nullptr or _spi == nullptr)
             return false;
         for (uint16 i = 0; i < configured_spis(); i++)
-            _spi[i].set_id(uint16(MAX_PPI + MAX_SGI + i));
+            _spi[i].set_id(static_cast<uint16>(MAX_PPI + MAX_SGI + i));
 
         reset(nullptr); // vctx not used for now
 

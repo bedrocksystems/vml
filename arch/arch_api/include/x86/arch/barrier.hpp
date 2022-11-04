@@ -21,14 +21,23 @@ namespace Barrier {
      * after the barrier must wait for the barrier to complete.
      */
 
-    static inline void r_before_rw(void) { asm volatile("lfence" : : : "memory"); }
+    static inline void r_before_rw(void) {
+        asm volatile("lfence" : : : "memory");
+    }
 
-    static inline void w_before_w(void) { asm volatile("sfence" : : : "memory"); }
+    static inline void w_before_w(void) {
+        asm volatile("sfence" : : : "memory");
+    }
 
-    static inline void rw_before_rw(void) { asm volatile("mfence" : : : "memory"); }
+    static inline void rw_before_rw(void) {
+        asm volatile("mfence" : : : "memory");
+    }
 
-    static inline void system(void) { asm volatile("mfence" : : : "memory"); }
+    static inline void system(void) {
+        asm volatile("mfence" : : : "memory");
+    }
 
-    static inline void instruction(void) {}
+    static inline void instruction(void) {
+    }
 
 }

@@ -35,5 +35,7 @@ namespace Stats {
      */
     extern bool requested;
 
-    inline bool enabled() { return (Debug::current_level > Debug::Level::NONE) or requested; }
+    inline bool enabled() {
+        return (Debug::current_level > Debug::Level::NONE) or requested;
+    }
 }

@@ -107,7 +107,7 @@ public:
         COND_AL = 0b1110,
     };
 
-    constexpr enum Cond cond() const { return Cond((_esr >> 20) & 0xf); }
+    constexpr enum Cond cond() const { return static_cast<Cond>((_esr >> 20) & 0xf); }
     constexpr uint8 cv() const { return (_esr >> 24) & 0x1; }
 };
 
@@ -121,7 +121,9 @@ public:
     constexpr uint8 rt2() const { return (_esr >> 10) & 0x1f; }
     constexpr uint8 opc1() const { return (_esr >> 16) & 0xf; }
 
-    constexpr enum Esr::McrMrc::Cond cond() const { return McrMrc::Cond((_esr >> 20) & 0xf); }
+    constexpr enum Esr::McrMrc::Cond cond() const {
+        return static_cast<McrMrc::Cond>((_esr >> 20) & 0xf);
+    }
     constexpr uint8 cv() const { return (_esr >> 24) & 0x1; }
 };
 
@@ -158,7 +160,9 @@ public:
         OTHER_FAULT,
     };
 
-    FaultStatusCode fault_status_code() const { return FaultStatusCode(_esr & IFSC_MASK); }
+    FaultStatusCode fault_status_code() const {
+        return static_cast<FaultStatusCode>(_esr & IFSC_MASK);
+    }
     FaultType fault_type() const {
         switch (fault_status_code()) {
         case TRANSLATION_FAULT_LVL_0:
@@ -214,7 +218,9 @@ public:
         RESTARTABLE_OR_CORRECTED = 0b10,
     };
 
-    SyncErrType sync_err_type() const { return SyncErrType((_esr >> SET_SHIFT) & SET_MASK); }
+    SyncErrType sync_err_type() const {
+        return static_cast<SyncErrType>((_esr >> SET_SHIFT) & SET_MASK);
+    }
 };
 
 class Esr::SoftStep : public Common {

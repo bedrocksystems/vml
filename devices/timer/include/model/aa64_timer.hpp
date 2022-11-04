@@ -95,7 +95,7 @@ public:
     uint8 get_ctl() const { return _cntv_ctl.get(); }
 
     static bool will_timeout(uint64 const control) {
-        CntvCtl ctl = CntvCtl(uint8(control));
+        CntvCtl ctl = CntvCtl(static_cast<uint8>(control));
         return ctl.can_fire();
     }
 
