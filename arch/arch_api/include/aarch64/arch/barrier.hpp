@@ -21,17 +21,31 @@ namespace Barrier {
      * after the barrier must wait for the barrier to complete.
      */
 
-    static inline void r_before_rw(void) { asm volatile("dsb ishld" : : : "memory"); }
+    static inline void r_before_rw(void) {
+        asm volatile("dsb ishld" : : : "memory");
+    }
 
-    static inline void w_before_w(void) { asm volatile("dsb ishst" : : : "memory"); }
+    static inline void w_before_w(void) {
+        asm volatile("dsb ishst" : : : "memory");
+    }
 
-    static inline void rw_before_rw(void) { asm volatile("dsb ish" : : : "memory"); }
+    static inline void rw_before_rw(void) {
+        asm volatile("dsb ish" : : : "memory");
+    }
 
-    static inline void system(void) { asm volatile("dsb sy" : : : "memory"); }
+    static inline void system(void) {
+        asm volatile("dsb sy" : : : "memory");
+    }
 
-    static inline void memory_system_write(void) { asm volatile("dmb ld" : : : "memory"); }
-    static inline void memory_system_read(void) { asm volatile("dmb st" : : : "memory"); }
+    static inline void memory_system_write(void) {
+        asm volatile("dmb ld" : : : "memory");
+    }
+    static inline void memory_system_read(void) {
+        asm volatile("dmb st" : : : "memory");
+    }
 
-    static inline void instruction(void) { asm volatile("isb" : : : "memory"); }
+    static inline void instruction(void) {
+        asm volatile("isb" : : : "memory");
+    }
 
 }

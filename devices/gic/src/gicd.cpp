@@ -446,7 +446,7 @@ Model::GicD::mmio_read_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 &va
         value = 0xb4;
         return true;
     case GICD_PIDR2 ... GICD_PIDR2_END:
-        value = (uint64(_version) << 4) | 0xb;
+        value = (static_cast<uint64>(_version) << 4) | 0xb;
         return true;
     case GICD_CPENDSGIR ... GICD_CPENDSGIR_END:
         return read_pending(cpu, acc, GICD_CPENDSGIR, value);
@@ -1076,7 +1076,8 @@ public:
     uint8 irm() const { return (_value >> 40) & 0x1; }
 
     uint32 cluster_affinity() const {
-        return (uint32(aff1()) << 8u) | (uint32(aff2()) << 16u) | (uint32(aff3()) << 24u);
+        return (static_cast<uint32>(aff1()) << 8u) | (static_cast<uint32>(aff2()) << 16u)
+               | (static_cast<uint32>(aff3()) << 24u);
     }
     uint8 aff1() const { return (_value >> 16) & 0xff; }
     uint8 aff2() const { return (_value >> 32) & 0xff; }
@@ -1158,7 +1159,7 @@ void
 Model::GicD::reset(const VcpuCtx *) {
     for (uint16 cpu = 0; cpu < _num_vcpus; cpu++) {
         for (uint8 i = 0; i < MAX_SGI; i++) {
-            _local[cpu].sgi[i].reset(uint8(1u << cpu));
+            _local[cpu].sgi[i].reset(static_cast<uint8>(1u << cpu));
             /*
              * The spec says: Whether SGIs are permanently enabled, or can be enabled and disabled
              * by writes to the GICD_ISENABLERn and GICD_ICENABLERn, is IMPLEMENTATION DEFINED.
@@ -1168,7 +1169,7 @@ Model::GicD::reset(const VcpuCtx *) {
             _local[cpu].sgi[i].enable();
         }
         for (uint8 i = 0; i < MAX_PPI; i++)
-            _local[cpu].ppi[i].reset(uint8(1u << cpu));
+            _local[cpu].ppi[i].reset(static_cast<uint8>(1u << cpu));
 
         reset_status_bitfields_on_vcpu(cpu);
     }
