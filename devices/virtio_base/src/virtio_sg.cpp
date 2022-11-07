@@ -80,11 +80,15 @@ Virtio::Sg::Buffer::print(const char *msg) const {
 void
 Virtio::Sg::Buffer::conclude_chain_use(Virtio::Queue &vq, bool send_incomplete) {
     if (_complete_chain || send_incomplete) {
+        // NOTE (JH): important to call this member before we move some of the
+        // [Virtio::Descriptor] ownership into [vq.send].
+        auto lb = written_bytes_lowerbound_heuristic();
+
         // Implicitly drop the rest of the descriptors in the chain.
         //
         // NOTE: justified in the op-model because /physically/ sending the head
         // of the (partial) chain also /logically/ sends the body.
-        vq.send(cxx::move(_nodes[0]._desc), written_bytes_lowerbound_heuristic());
+        vq.send(cxx::move(_nodes[0]._desc), lb);
     }
 
     reset();
