@@ -38,11 +38,12 @@ public:
     uint8 exception_class() const { return (_esr >> EC_SHIFT) & EC_MASK; }
     uint8 instruction_len_bytes() const { return il() ? 4 : 2; }
 
+    static constexpr uint8 IL_SHIFT = 25;
+
 private:
     static constexpr uint64 EC_MASK = 0x3full;
     static constexpr uint8 EC_SHIFT = 26;
 
-    static constexpr uint8 IL_SHIFT = 25;
     static constexpr uint64 IL_MASK = 0x1ull << IL_SHIFT;
 
 protected:

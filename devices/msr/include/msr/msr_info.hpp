@@ -65,6 +65,7 @@ namespace Msr::Info {
         NRW_AA64 = 0ull << 4,
         AA32_SVC = 0b0011ull,
         AA32_ABT = 0b0111ull,
+        AA32_UND = 0b1011ull,
         AA64_EL1 = 0b0100ull,
         AA64_SPX = 0b1ull,
         AA64_EL0 = 0b0000ull,
@@ -105,7 +106,7 @@ namespace Msr::Info {
     };
 
     enum ExceptionType : uint64 { SYNC = 0x0, IRQ = 0x80, FIQ = 0x100, SERR = 0x180 };
-    enum ExceptionType32 : uint32 { A32_DEBUG = 0b00010 };
+    enum ExceptionType32 : uint32 { A32_TYPE_UNDEF = 0, A32_DEBUG = 0b00010 };
     enum ExceptionType32Eae : uint32 { A32_EAE_DEBUG = 0b100010 };
 
     class IdAa64pfr0;
