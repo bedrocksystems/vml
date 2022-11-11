@@ -25,7 +25,7 @@ namespace Virtio {
             // Through malice or accident, an invalid descriptor index has been used within a chain;
             // the best we can do is avoid corrupting guest memory.
             if (next >= _size)
-                return NOTRECOVERABLE;
+                return Errno::NOTRECOVERABLE;
 
             next_desc = Descriptor(_descriptor_base, next);
         } else {
@@ -107,7 +107,7 @@ namespace Virtio {
         // NOTE: make sure to test whether or not there are any descriptors available
         // prior to modifying the shared memory in any way.
         if (count_available(avail_idx) == 0)
-            return NOENT;
+            return Errno::NOENT;
 
         // To support interrupt/notification suppression features.
         // If VIRTIO_EVENT_IDX is negotiated, we want to receive a notification from guest when it
@@ -124,7 +124,7 @@ namespace Virtio {
         // In any case, the virtio spec is violated and there is no gurantee of recovering
         // communication on this queue. The best we can do is not to corrupt guest memory.
         if (available_ring_idx >= _size)
-            return NOTRECOVERABLE;
+            return Errno::NOTRECOVERABLE;
 
         desc = Descriptor(_descriptor_base, available_ring_idx);
         return ENONE;
@@ -213,7 +213,7 @@ namespace Virtio {
         // NOTE: make sure to test whether or not there are any descriptors available
         // prior to modifying the shared memory in any way.
         if (count_available(used_idx) == 0)
-            return NOENT;
+            return Errno::NOENT;
 
         // To support interrupt/notification suppression features.
         // If VIRTIO_EVENT_IDX is negotiated, we want to receive a notification from device when it
@@ -269,13 +269,13 @@ namespace Virtio {
         // Allocate descriptor region.
         auto *desc = create_region<Virtio::Descriptor>(num_entries);
         if (nullptr == desc)
-            return NOMEM;
+            return Errno::NOMEM;
 
         // Allocate available region.
         auto *avail = create_region<Virtio::Available>(num_entries);
         if (nullptr == avail) {
             delete[] desc;
-            return NOMEM;
+            return Errno::NOMEM;
         }
 
         // Allocate used region.
@@ -283,7 +283,7 @@ namespace Virtio {
         if (nullptr == used) {
             delete[] avail;
             delete[] desc;
-            return NOMEM;
+            return Errno::NOMEM;
         }
 
         // Construct a DriverQueue using the allocated regions.

@@ -20,11 +20,7 @@
 #define EBADR 200 // Pick a high number that won't collide with something else
 #endif
 
-using Errno = uint8;
-
-// Future: this enum will be renamed Errno, this is not yet possible
-// due to clashing of some definitions
-enum {
+enum Errno {
     ENONE = 0,
     NONE = ENONE,
     PERM = EPERM,

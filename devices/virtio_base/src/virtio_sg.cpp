@@ -30,18 +30,18 @@ Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t siz
                                              Virtio::Sg::Buffer::Iterator &out_it) const {
     if (not accessor) {
         ASSERT(false);
-        return INVAL;
+        return Errno::INVAL;
     }
 
     if (this->size_bytes() < inout_offset + size_bytes) {
         ASSERT(false);
-        return NOMEM;
+        return Errno::NOMEM;
     }
 
     out_it = this->find(inout_offset);
     if (out_it == this->end()) {
         ASSERT(false);
-        return NOENT;
+        return Errno::NOENT;
     }
 
     return ENONE;
@@ -141,7 +141,7 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
         //
         // NOTE: No need to [reset()] since that was a pre-condition
         // of invoking the function, and we haven't modified [this].
-        err = NOMEM;
+        err = Errno::NOMEM;
         callback->chain_walking_cb(err, 0, 0, 0, 0, extra);
         // Maybe still necessary, but this won't fix what we've been seeing.
         vq.send(cxx::move(root_desc), 0);
@@ -163,7 +163,7 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
             // the problematic (partial) descriptor chain from the virtio queue
             // observational model (rather than leaving the op-model state
             // unconstrained).
-            err = NOTRECOVERABLE;
+            err = Errno::NOTRECOVERABLE;
 
             // NOTE: The constructor of [Virtio::Queue] ensures that the queue-size is
             // nonzero and the early-return guarded by the [_max_chain_length < vq.size()]
@@ -191,7 +191,7 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
         if (node.flags & VIRTQ_DESC_WRITE_ONLY) {
             seen_writable = true;
         } else if (seen_writable) {
-            err = NOTRECOVERABLE;
+            err = Errno::NOTRECOVERABLE;
         }
 
         callback->chain_walking_cb(err, node.address, node.length, node.flags, node.next, extra);
@@ -240,7 +240,7 @@ Virtio::Sg::Buffer::ChainAccessor::copy_between_gpa(BulkCopier *copier, ChainAcc
                                                     const GPA &dst_addr, const GPA &src_addr,
                                                     size_t &size_bytes) {
     if (not copier || not dst_accessor || not src_accessor) {
-        return INVAL;
+        return Errno::INVAL;
     }
 
     char *dst_va{nullptr};
@@ -276,7 +276,7 @@ Errno
 Virtio::Sg::Buffer::ChainAccessor::copy_from_gpa(BulkCopier *copier, char *dst_va,
                                                  const GPA &src_addr, size_t &size_bytes) {
     if (not copier) {
-        return INVAL;
+        return Errno::INVAL;
     }
 
     char *src_va{nullptr};
@@ -301,7 +301,7 @@ Errno
 Virtio::Sg::Buffer::ChainAccessor::copy_to_gpa(BulkCopier *copier, const GPA &dst_addr,
                                                const char *src_va, size_t &size_bytes) {
     if (not copier) {
-        return INVAL;
+        return Errno::INVAL;
     }
 
     char *dst_va{nullptr};
@@ -353,7 +353,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
         // a copy /from/ or /to/ the buffer).
         if constexpr (LINEAR_TO_SG) {
             if (sg.should_only_read(node->flags)) {
-                return PERM;
+                return Errno::PERM;
             }
 
             // NOTE: this function ensures that [copier] is non-null which means
@@ -362,7 +362,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
             // which failed can instrument custom tracking within their overload(s)
             // of [Sg::Buffer::ChainAccessor].
             if (ENONE != accessor->copy_to_gpa(copier, node->address + off, l, n_copy)) {
-                return BADR;
+                return Errno::BADR;
             }
 
             node->heuristically_track_written_bytes(off, n_copy);
@@ -378,7 +378,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
             // which failed can instrument custom tracking within their overload(s)
             // of [Sg::Buffer::ChainAccessor].
             if (ENONE != accessor->copy_from_gpa(copier, l, node->address + off, n_copy)) {
-                return BADR;
+                return Errno::BADR;
             }
         }
 
@@ -442,7 +442,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
         size_t n_copy = min(rem, min(s->length - s_off, d->length - d_off));
 
         if (dst.should_only_read(d->flags)) {
-            return PERM;
+            return Errno::PERM;
         } else if (src.should_only_write(s->flags)) {
             WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
                  "debugging purposes.");
@@ -456,7 +456,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
         err = ChainAccessor::copy_between_gpa(copier, dst_accessor, src_accessor,
                                               d->address + d_off, s->address + s_off, n_copy);
         if (ENONE != err) {
-            return BADR;
+            return Errno::BADR;
         }
 
         d->heuristically_track_written_bytes(d_off, n_copy);
@@ -487,7 +487,7 @@ Virtio::Sg::Buffer::descriptor_offset(size_t descriptor_chain_idx, size_t &offse
     size_t off = 0;
     for (Virtio::Sg::Buffer::Iterator i = begin(); 0 < descriptor_chain_idx; ++i) {
         if (i == end()) {
-            return INVAL;
+            return Errno::INVAL;
         }
 
         off += (*i).length;
@@ -502,7 +502,7 @@ Errno
 Virtio::Sg::Buffer::init() {
     _nodes = new (nothrow) Virtio::Sg::Node[_max_chain_length];
     if (_nodes == nullptr)
-        return NOMEM;
+        return Errno::NOMEM;
 
     return ENONE;
 }
@@ -511,7 +511,7 @@ Errno
 Virtio::Sg::Buffer::root_desc_idx(uint16 &root_desc_idx) const {
     if (0 == _active_chain_length) {
         root_desc_idx = UINT16_MAX;
-        return NOENT;
+        return Errno::NOENT;
     } else {
         root_desc_idx = _nodes[0]._desc.index();
         return ENONE;

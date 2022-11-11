@@ -115,7 +115,7 @@ public:
         char *mapped_va = Model::SimpleAS::map_guest_mem(*_vbus, gpa, size_bytes, false);
 
         if (nullptr == mapped_va) {
-            return NOENT;
+            return Errno::NOENT;
         }
 
         va = mapped_va;
@@ -125,7 +125,7 @@ public:
         char *mapped_va = Model::SimpleAS::map_guest_mem(*_vbus, gpa, size_bytes, true);
 
         if (nullptr == mapped_va) {
-            return NOENT;
+            return Errno::NOENT;
         }
 
         va = mapped_va;
