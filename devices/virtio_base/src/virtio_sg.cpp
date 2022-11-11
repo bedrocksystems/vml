@@ -362,7 +362,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
             // which failed can instrument custom tracking within their overload(s)
             // of [Sg::Buffer::ChainAccessor].
             if (ENONE != accessor->copy_to_gpa(copier, node->address + off, l, n_copy)) {
-                return EBADR;
+                return BADR;
             }
 
             node->heuristically_track_written_bytes(off, n_copy);
@@ -378,7 +378,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
             // which failed can instrument custom tracking within their overload(s)
             // of [Sg::Buffer::ChainAccessor].
             if (ENONE != accessor->copy_from_gpa(copier, l, node->address + off, n_copy)) {
-                return EBADR;
+                return BADR;
             }
         }
 
@@ -456,7 +456,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
         err = ChainAccessor::copy_between_gpa(copier, dst_accessor, src_accessor,
                                               d->address + d_off, s->address + s_off, n_copy);
         if (ENONE != err) {
-            return EBADR;
+            return BADR;
         }
 
         d->heuristically_track_written_bytes(d_off, n_copy);
