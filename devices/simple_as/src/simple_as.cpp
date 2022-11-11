@@ -105,7 +105,7 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
     if (!mapped()) {
         src = Platform::Mem::map_mem(_mobject, offset, size, Platform::Mem::READ);
         if (src == nullptr)
-            return ENOMEM;
+            return NOMEM;
     } else {
         src = get_vmm_view() + offset;
     }
@@ -153,7 +153,7 @@ Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool w
                                     Platform::Mem::READ | (write ? Platform::Mem::WRITE : 0));
         if (va == nullptr) {
             WARN("Unable to map a chunk pa:%llx size:0x%lx", gpa.get_value(), size_bytes);
-            return ENOMEM;
+            return NOMEM;
         }
     } else {
         va = get_vmm_view() + offset;
@@ -218,7 +218,7 @@ Model::SimpleAS::clean_invalidate(GPA gpa, size_t size) const {
         dst = Platform::Mem::map_mem(_mobject, offset, size,
                                      Platform::Mem::READ | Platform::Mem::WRITE);
         if (dst == nullptr)
-            return ENOMEM;
+            return NOMEM;
     } else {
         dst = get_vmm_view() + offset;
     }

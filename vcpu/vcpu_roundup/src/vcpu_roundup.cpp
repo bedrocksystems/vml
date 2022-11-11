@@ -90,7 +90,7 @@ public:
         _vcpu_waiters = 0;
 
         if (!_sig_emulating.init(ctx) || !_waiter_mutex.init(ctx))
-            return ENOMEM;
+            return NOMEM;
 
         return ENONE;
     }
@@ -128,7 +128,7 @@ public:
     Errno init(const Platform_ctx* ctx, uint16 nvcpus) {
         vcpus_pending_init = nvcpus;
         if (!_sm_all_initialized.init(ctx))
-            return ENOMEM;
+            return NOMEM;
 
         return ENONE;
     }
@@ -156,7 +156,7 @@ static VcpuInitializedInfo initialized_info;
 Errno
 Vcpu::Roundup::init(const Platform_ctx* ctx, uint16 num_vcpus) {
     if (!parallel_info.count_sem.init(ctx) || !parallel_info.resume_waiter_sem.init(ctx))
-        return ENOMEM;
+        return NOMEM;
     parallel_info.count = 0;
 
     Errno err = initialized_info.init(ctx, num_vcpus);

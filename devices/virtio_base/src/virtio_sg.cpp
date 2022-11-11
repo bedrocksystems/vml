@@ -35,7 +35,7 @@ Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t siz
 
     if (this->size_bytes() < inout_offset + size_bytes) {
         ASSERT(false);
-        return ENOMEM;
+        return NOMEM;
     }
 
     out_it = this->find(inout_offset);
@@ -141,7 +141,7 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
         //
         // NOTE: No need to [reset()] since that was a pre-condition
         // of invoking the function, and we haven't modified [this].
-        err = ENOMEM;
+        err = NOMEM;
         callback->chain_walking_cb(err, 0, 0, 0, 0, extra);
         // Maybe still necessary, but this won't fix what we've been seeing.
         vq.send(cxx::move(root_desc), 0);
@@ -502,7 +502,7 @@ Errno
 Virtio::Sg::Buffer::init() {
     _nodes = new (nothrow) Virtio::Sg::Node[_max_chain_length];
     if (_nodes == nullptr)
-        return ENOMEM;
+        return NOMEM;
 
     return ENONE;
 }

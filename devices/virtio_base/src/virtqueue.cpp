@@ -269,13 +269,13 @@ namespace Virtio {
         // Allocate descriptor region.
         auto *desc = create_region<Virtio::Descriptor>(num_entries);
         if (nullptr == desc)
-            return ENOMEM;
+            return NOMEM;
 
         // Allocate available region.
         auto *avail = create_region<Virtio::Available>(num_entries);
         if (nullptr == avail) {
             delete[] desc;
-            return ENOMEM;
+            return NOMEM;
         }
 
         // Allocate used region.
@@ -283,7 +283,7 @@ namespace Virtio {
         if (nullptr == used) {
             delete[] avail;
             delete[] desc;
-            return ENOMEM;
+            return NOMEM;
         }
 
         // Construct a DriverQueue using the allocated regions.
