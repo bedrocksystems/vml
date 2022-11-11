@@ -25,7 +25,7 @@ namespace Virtio {
             // Through malice or accident, an invalid descriptor index has been used within a chain;
             // the best we can do is avoid corrupting guest memory.
             if (next >= _size)
-                return ENOTRECOVERABLE;
+                return NOTRECOVERABLE;
 
             next_desc = Descriptor(_descriptor_base, next);
         } else {
@@ -124,7 +124,7 @@ namespace Virtio {
         // In any case, the virtio spec is violated and there is no gurantee of recovering
         // communication on this queue. The best we can do is not to corrupt guest memory.
         if (available_ring_idx >= _size)
-            return ENOTRECOVERABLE;
+            return NOTRECOVERABLE;
 
         desc = Descriptor(_descriptor_base, available_ring_idx);
         return ENONE;

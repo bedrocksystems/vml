@@ -163,7 +163,7 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
             // the problematic (partial) descriptor chain from the virtio queue
             // observational model (rather than leaving the op-model state
             // unconstrained).
-            err = ENOTRECOVERABLE;
+            err = NOTRECOVERABLE;
 
             // NOTE: The constructor of [Virtio::Queue] ensures that the queue-size is
             // nonzero and the early-return guarded by the [_max_chain_length < vq.size()]
@@ -191,7 +191,7 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
         if (node.flags & VIRTQ_DESC_WRITE_ONLY) {
             seen_writable = true;
         } else if (seen_writable) {
-            err = ENOTRECOVERABLE;
+            err = NOTRECOVERABLE;
         }
 
         callback->chain_walking_cb(err, node.address, node.length, node.flags, node.next, extra);
