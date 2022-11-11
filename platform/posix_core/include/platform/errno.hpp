@@ -29,4 +29,5 @@ enum {
     NONE = ENONE,
     PERM = EPERM,
     BADR = EBADR,
+    INVAL = EINVAL,
 };

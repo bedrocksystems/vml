@@ -97,7 +97,7 @@ Model::SimpleAS::single_access_write(uint64 off, uint8 size, uint64 value) const
 Errno
 Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
     if (!is_gpa_valid(addr, size))
-        return EINVAL;
+        return INVAL;
 
     mword offset = addr.get_value() - get_guest_view().get_value();
     void* src;
@@ -137,7 +137,7 @@ Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
 Errno
 Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool write) const {
     if (!is_gpa_valid(gpa, size_bytes))
-        return EINVAL;
+        return INVAL;
 
     if (write && is_read_only() && !get_mem_fd().cred().write()) {
         WARN("Cannot map read-only guest memory for write pa:0x%llx size:0x%lx", gpa.get_value(),
@@ -209,7 +209,7 @@ Model::SimpleAS::map_view(mword offset, size_t size, bool write) const {
 Errno
 Model::SimpleAS::clean_invalidate(GPA gpa, size_t size) const {
     if (!is_gpa_valid(gpa, size))
-        return EINVAL;
+        return INVAL;
 
     mword offset = gpa.get_value() - get_guest_view().get_value();
     void* dst;
@@ -309,7 +309,7 @@ Errno
 Model::SimpleAS::read_bus(const Vbus::Bus& bus, GPA addr, char* dst, size_t sz) {
     Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
     if (tgt == nullptr)
-        return EINVAL;
+        return INVAL;
 
     return tgt->read(dst, sz, addr);
 }
@@ -319,7 +319,7 @@ Model::SimpleAS::demand_map_bus(const Vbus::Bus& bus, const GPA& gpa, size_t siz
                                 bool write) {
     Model::SimpleAS* tgt = get_as_device_at(bus, gpa, size_bytes);
     if (tgt == nullptr)
-        return EINVAL;
+        return INVAL;
 
     void* temp_va = nullptr;
     Errno err = tgt->demand_map(gpa, size_bytes, temp_va, write);
@@ -336,7 +336,7 @@ Model::SimpleAS::demand_unmap_bus(const Vbus::Bus& bus, const GPA& gpa, size_t s
                                   void* va) {
     Model::SimpleAS* tgt = get_as_device_at(bus, gpa.value(), size_bytes);
     if (tgt == nullptr)
-        return EINVAL;
+        return INVAL;
 
     return tgt->demand_unmap(gpa, size_bytes, va);
 }
@@ -346,7 +346,7 @@ Model::SimpleAS::demand_unmap_bus_clean(const Vbus::Bus& bus, const GPA& gpa, si
                                         void* va) {
     Model::SimpleAS* tgt = get_as_device_at(bus, gpa.value(), size_bytes);
     if (tgt == nullptr)
-        return EINVAL;
+        return INVAL;
 
     return tgt->demand_unmap_clean(gpa, size_bytes, va);
 }
@@ -355,7 +355,7 @@ Errno
 Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size_t sz) {
     Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
     if (tgt == nullptr)
-        return EINVAL;
+        return INVAL;
 
     return tgt->write(addr, sz, src);
 }
@@ -364,7 +364,7 @@ Errno
 Model::SimpleAS::clean_invalidate_bus(const Vbus::Bus& bus, GPA addr, size_t sz) {
     Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
     if (tgt == nullptr)
-        return EINVAL;
+        return INVAL;
 
     return tgt->clean_invalidate(addr, sz);
 }

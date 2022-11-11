@@ -30,7 +30,7 @@ Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t siz
                                              Virtio::Sg::Buffer::Iterator &out_it) const {
     if (not accessor) {
         ASSERT(false);
-        return EINVAL;
+        return INVAL;
     }
 
     if (this->size_bytes() < inout_offset + size_bytes) {
@@ -240,7 +240,7 @@ Virtio::Sg::Buffer::ChainAccessor::copy_between_gpa(BulkCopier *copier, ChainAcc
                                                     const GPA &dst_addr, const GPA &src_addr,
                                                     size_t &size_bytes) {
     if (not copier || not dst_accessor || not src_accessor) {
-        return EINVAL;
+        return INVAL;
     }
 
     char *dst_va{nullptr};
@@ -276,7 +276,7 @@ Errno
 Virtio::Sg::Buffer::ChainAccessor::copy_from_gpa(BulkCopier *copier, char *dst_va,
                                                  const GPA &src_addr, size_t &size_bytes) {
     if (not copier) {
-        return EINVAL;
+        return INVAL;
     }
 
     char *src_va{nullptr};
@@ -301,7 +301,7 @@ Errno
 Virtio::Sg::Buffer::ChainAccessor::copy_to_gpa(BulkCopier *copier, const GPA &dst_addr,
                                                const char *src_va, size_t &size_bytes) {
     if (not copier) {
-        return EINVAL;
+        return INVAL;
     }
 
     char *dst_va{nullptr};
@@ -487,7 +487,7 @@ Virtio::Sg::Buffer::descriptor_offset(size_t descriptor_chain_idx, size_t &offse
     size_t off = 0;
     for (Virtio::Sg::Buffer::Iterator i = begin(); 0 < descriptor_chain_idx; ++i) {
         if (i == end()) {
-            return EINVAL;
+            return INVAL;
         }
 
         off += (*i).length;
