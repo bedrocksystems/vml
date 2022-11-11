@@ -41,7 +41,7 @@ Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t siz
     out_it = this->find(inout_offset);
     if (out_it == this->end()) {
         ASSERT(false);
-        return ENOENT;
+        return NOENT;
     }
 
     return ENONE;
@@ -511,7 +511,7 @@ Errno
 Virtio::Sg::Buffer::root_desc_idx(uint16 &root_desc_idx) const {
     if (0 == _active_chain_length) {
         root_desc_idx = UINT16_MAX;
-        return ENOENT;
+        return NOENT;
     } else {
         root_desc_idx = _nodes[0]._desc.index();
         return ENONE;

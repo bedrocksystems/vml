@@ -30,4 +30,5 @@ enum {
     PERM = EPERM,
     BADR = EBADR,
     INVAL = EINVAL,
+    NOENT = ENOENT,
 };

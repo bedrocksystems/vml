@@ -107,7 +107,7 @@ namespace Virtio {
         // NOTE: make sure to test whether or not there are any descriptors available
         // prior to modifying the shared memory in any way.
         if (count_available(avail_idx) == 0)
-            return ENOENT;
+            return NOENT;
 
         // To support interrupt/notification suppression features.
         // If VIRTIO_EVENT_IDX is negotiated, we want to receive a notification from guest when it
@@ -213,7 +213,7 @@ namespace Virtio {
         // NOTE: make sure to test whether or not there are any descriptors available
         // prior to modifying the shared memory in any way.
         if (count_available(used_idx) == 0)
-            return ENOENT;
+            return NOENT;
 
         // To support interrupt/notification suppression features.
         // If VIRTIO_EVENT_IDX is negotiated, we want to receive a notification from device when it
