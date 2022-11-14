@@ -17,14 +17,14 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
 uint64
-Model::SimpleAS::single_access_read(uint64 off, uint8 size) const {
+Model::SimpleAS::single_access_read(uint64 off, uint8 size, Platform::Mem::MemSel msel) const {
     ASSERT(off % size == 0);
     ASSERT(size <= sizeof(uint64));
 
     uint64 ret;
     void* ptr;
-    if (!mapped()) {
-        ptr = map_view(off, size, true);
+    if (!mapped(msel)) {
+        ptr = map_view(off, size, true, msel);
     } else {
         ptr = get_vmm_view() + off;
     }
@@ -49,20 +49,21 @@ Model::SimpleAS::single_access_read(uint64 off, uint8 size) const {
         __UNREACHED__;
     }
 
-    if (!mapped()) {
+    if (!mapped(msel)) {
         unmap_guest_mem(ptr, size);
     }
     return ret;
 }
 
 void
-Model::SimpleAS::single_access_write(uint64 off, uint8 size, uint64 value) const {
+Model::SimpleAS::single_access_write(uint64 off, uint8 size, uint64 value,
+                                     Platform::Mem::MemSel msel) const {
     ASSERT(off % size == 0);
     ASSERT(size <= sizeof(uint64));
 
     void* ptr;
-    if (!mapped()) {
-        ptr = map_view(off, size, true);
+    if (!mapped(msel)) {
+        ptr = map_view(off, size, true, msel);
     } else {
         ptr = get_vmm_view() + off;
     }
@@ -88,22 +89,27 @@ Model::SimpleAS::single_access_write(uint64 off, uint8 size, uint64 value) const
     }
 
     icache_sync_range(ptr, size);
-    if (!mapped()) {
+    if (!mapped(msel)) {
         unmap_guest_mem(ptr, size);
     }
 }
 #pragma GCC diagnostic pop
 
 Errno
-Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
+Model::SimpleAS::read(char* dst, size_t size, const GPA& addr, Platform::Mem::MemSel msel) const {
     if (!is_gpa_valid(addr, size))
         return Errno::INVAL;
 
     mword offset = addr.get_value() - get_guest_view().get_value();
     void* src;
+    Platform::Mem::MemSel memsel = msel;
 
-    if (!mapped()) {
-        src = Platform::Mem::map_mem(_mobject, offset, size, Platform::Mem::READ);
+    if (memsel == Platform::Mem::REF_MEM) {
+        memsel = get_mem_fd().msel();
+    }
+
+    if (!mapped(msel)) {
+        src = Platform::Mem::map_mem(_mobject, offset, size, Platform::Mem::READ, memsel);
         if (src == nullptr)
             return Errno::NOMEM;
     } else {
@@ -113,7 +119,7 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
     memcpy(dst, src, size);
 
     /* unmap */
-    if (!mapped()) {
+    if (!mapped(msel)) {
         bool b = Platform::Mem::unmap_mem(src, size);
         if (!b)
             ABORT_WITH("Unable to unmap region");
@@ -122,20 +128,25 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
 }
 
 Errno
-Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
+Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src,
+                       Platform::Mem::MemSel msel) const {
     void* dst;
-    Errno err = demand_map(gpa, size, dst, true);
+
+    Errno err = demand_map(gpa, size, dst, true, msel);
     if (ENONE != err) {
         return err;
     }
 
     memcpy(dst, src, size);
 
-    return demand_unmap_clean(gpa, size, dst);
+    return demand_unmap_clean(gpa, size, dst, msel);
 }
 
 Errno
-Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool write) const {
+Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool write,
+                            Platform::Mem::MemSel msel) const {
+    Platform::Mem::MemSel memsel = msel;
+
     if (!is_gpa_valid(gpa, size_bytes))
         return Errno::INVAL;
 
@@ -145,12 +156,17 @@ Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool w
         return Errno::PERM;
     }
 
+    if (memsel == Platform::Mem::REF_MEM) {
+        memsel = get_mem_fd().msel();
+    }
+
     mword offset = gpa.get_value() - get_guest_view().get_value();
     DEBUG("demand_map pa:0x%llx size:0x%lx write:%d (+0x%lx)", gpa.get_value(), size_bytes, write,
           offset);
-    if (!mapped()) {
+    if (!mapped(msel)) {
         va = Platform::Mem::map_mem(_mobject, offset, size_bytes,
-                                    Platform::Mem::READ | (write ? Platform::Mem::WRITE : 0));
+                                    Platform::Mem::READ | (write ? Platform::Mem::WRITE : 0),
+                                    memsel);
         if (va == nullptr) {
             WARN("Unable to map a chunk pa:%llx size:0x%lx", gpa.get_value(), size_bytes);
             return Errno::NOMEM;
@@ -163,10 +179,17 @@ Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool w
 }
 
 Errno
-Model::SimpleAS::demand_unmap(const GPA&, size_t size_bytes, void* va) const {
+Model::SimpleAS::demand_unmap(const GPA&, size_t size_bytes, void* va,
+                              Platform::Mem::MemSel msel) const {
     DEBUG("demand_unmap mem:0x%p size:0x%lx", va, size_bytes);
 
-    if (!mapped()) {
+    Platform::Mem::MemSel memsel = msel;
+
+    if (memsel == Platform::Mem::REF_MEM) {
+        memsel = get_mem_fd().msel();
+    }
+
+    if (!mapped(memsel)) {
         bool b = Platform::Mem::unmap_mem(va, size_bytes);
         if (!b)
             ABORT_WITH("Unable to unmap guest memory mem:0x%p size:0x%lx", va, size_bytes);
@@ -176,13 +199,20 @@ Model::SimpleAS::demand_unmap(const GPA&, size_t size_bytes, void* va) const {
 }
 
 Errno
-Model::SimpleAS::demand_unmap_clean(const GPA&, size_t size_bytes, void* va) const {
+Model::SimpleAS::demand_unmap_clean(const GPA&, size_t size_bytes, void* va,
+                                    Platform::Mem::MemSel msel) const {
     DEBUG("demand_unmap_clean mem:0x%p size:0x%lx", va, size_bytes);
+
+    Platform::Mem::MemSel memsel = msel;
+
+    if (memsel == Platform::Mem::REF_MEM) {
+        memsel = get_mem_fd().msel();
+    }
 
     dcache_clean_range(va, size_bytes);
     icache_invalidate_range(va, size_bytes);
 
-    if (!mapped()) {
+    if (!mapped(memsel)) {
         bool b = Platform::Mem::unmap_mem(va, size_bytes);
         if (!b)
             ABORT_WITH("Unable to unmap guest memory mem:0x%p size:0x%lx", va, size_bytes);
@@ -192,12 +222,19 @@ Model::SimpleAS::demand_unmap_clean(const GPA&, size_t size_bytes, void* va) con
 }
 
 void*
-Model::SimpleAS::map_view(mword offset, size_t size, bool write) const {
+Model::SimpleAS::map_view(mword offset, size_t size, bool write,
+                          Platform::Mem::MemSel memsel) const {
+    Platform::Mem::MemSel msel = memsel;
+
     if (_read_only && write && !_mobject.cred().write())
         return nullptr;
 
-    void* dst = Platform::Mem::map_mem(_mobject, offset, size,
-                                       Platform::Mem::READ | (write ? Platform::Mem::WRITE : 0));
+    if (msel == Platform::Mem::REF_MEM) {
+        msel = get_mem_fd().msel();
+    }
+
+    void* dst = Platform::Mem::map_mem(
+        _mobject, offset, size, Platform::Mem::READ | (write ? Platform::Mem::WRITE : 0), msel);
     if (dst == nullptr)
         ABORT_WITH("Unable to map view of the guest region:0x%llx offset:0x%lx "
                    "size:0x%lx",
@@ -207,16 +244,16 @@ Model::SimpleAS::map_view(mword offset, size_t size, bool write) const {
 }
 
 Errno
-Model::SimpleAS::clean_invalidate(GPA gpa, size_t size) const {
+Model::SimpleAS::clean_invalidate(GPA gpa, size_t size, Platform::Mem::MemSel msel) const {
     if (!is_gpa_valid(gpa, size))
         return Errno::INVAL;
 
     mword offset = gpa.get_value() - get_guest_view().get_value();
     void* dst;
 
-    if (!mapped()) {
+    if (!mapped(msel)) {
         dst = Platform::Mem::map_mem(_mobject, offset, size,
-                                     Platform::Mem::READ | Platform::Mem::WRITE);
+                                     Platform::Mem::READ | Platform::Mem::WRITE, msel);
         if (dst == nullptr)
             return Errno::NOMEM;
     } else {
@@ -225,12 +262,22 @@ Model::SimpleAS::clean_invalidate(GPA gpa, size_t size) const {
 
     dcache_clean_invalidate_range(dst, size);
 
-    if (!mapped()) {
+    if (!mapped(msel)) {
         bool b = Platform::Mem::unmap_mem(dst, size);
         if (!b)
             ABORT_WITH("Unable to unmap region");
     }
     return ENONE;
+}
+
+bool
+Model::SimpleAS::mapped(Platform::Mem::MemSel memsel) const {
+    Platform::Mem::MemSel ref_memsel = get_mem_fd().msel();
+
+    if (memsel != Platform::Mem::REF_MEM && memsel != ref_memsel)
+        return false;
+
+    return (_vmm_view != nullptr);
 }
 
 void
@@ -241,7 +288,8 @@ Model::SimpleAS::flush_guest_as() {
     void* mapped_area;
     if (!mapped()) {
         mapped_area = Platform::Mem::map_mem(_mobject, 0, get_size(),
-                                             Platform::Mem::READ | Platform::Mem::WRITE);
+                                             Platform::Mem::READ | Platform::Mem::WRITE,
+                                             get_mem_fd().msel());
         if (mapped_area == nullptr)
             ABORT_WITH("Unable to map guest region %llx", get_guest_view().get_value());
     } else {
@@ -306,12 +354,13 @@ Model::SimpleAS::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
 }
 
 Errno
-Model::SimpleAS::read_bus(const Vbus::Bus& bus, GPA addr, char* dst, size_t sz) {
+Model::SimpleAS::read_bus(const Vbus::Bus& bus, GPA addr, char* dst, size_t sz,
+                          Platform::Mem::MemSel msel) {
     Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
     if (tgt == nullptr)
         return Errno::INVAL;
 
-    return tgt->read(dst, sz, addr);
+    return tgt->read(dst, sz, addr, msel);
 }
 
 Errno
@@ -322,7 +371,7 @@ Model::SimpleAS::demand_map_bus(const Vbus::Bus& bus, const GPA& gpa, size_t siz
         return Errno::INVAL;
 
     void* temp_va = nullptr;
-    Errno err = tgt->demand_map(gpa, size_bytes, temp_va, write);
+    Errno err = tgt->demand_map(gpa, size_bytes, temp_va, write, Platform::Mem::REF_MEM);
 
     if (ENONE == err) {
         va = temp_va;
@@ -338,7 +387,7 @@ Model::SimpleAS::demand_unmap_bus(const Vbus::Bus& bus, const GPA& gpa, size_t s
     if (tgt == nullptr)
         return Errno::INVAL;
 
-    return tgt->demand_unmap(gpa, size_bytes, va);
+    return tgt->demand_unmap(gpa, size_bytes, va, Platform::Mem::REF_MEM);
 }
 
 Errno
@@ -348,25 +397,17 @@ Model::SimpleAS::demand_unmap_bus_clean(const Vbus::Bus& bus, const GPA& gpa, si
     if (tgt == nullptr)
         return Errno::INVAL;
 
-    return tgt->demand_unmap_clean(gpa, size_bytes, va);
+    return tgt->demand_unmap_clean(gpa, size_bytes, va, Platform::Mem::REF_MEM);
 }
 
 Errno
-Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size_t sz) {
+Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size_t sz,
+                           Platform::Mem::MemSel msel) {
     Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
     if (tgt == nullptr)
         return Errno::INVAL;
 
-    return tgt->write(addr, sz, src);
-}
-
-Errno
-Model::SimpleAS::clean_invalidate_bus(const Vbus::Bus& bus, GPA addr, size_t sz) {
-    Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
-    if (tgt == nullptr)
-        return Errno::INVAL;
-
-    return tgt->clean_invalidate(addr, sz);
+    return tgt->write(addr, sz, src, msel);
 }
 
 bool
@@ -378,7 +419,8 @@ Model::SimpleAS::construct(GPA guest_base, const mword size, bool map) {
 
     _vmm_view = reinterpret_cast<char*>(Platform::Mem::map_mem(
         _mobject, 0, size,
-        Platform::Mem::READ | (_mobject.cred().write() ? Platform::Mem::WRITE : 0)));
+        Platform::Mem::READ | (_mobject.cred().write() ? Platform::Mem::WRITE : 0),
+        get_mem_fd().msel()));
     return (_vmm_view != nullptr);
 }
 
@@ -393,7 +435,8 @@ Model::SimpleAS::destruct() {
 }
 
 char*
-Model::SimpleAS::map_guest_mem(const Vbus::Bus& bus, GPA gpa, size_t sz, bool write) {
+Model::SimpleAS::map_guest_mem(const Vbus::Bus& bus, GPA gpa, size_t sz, bool write,
+                               Platform::Mem::MemSel msel) {
     Model::SimpleAS* tgt = get_as_device_at(bus, gpa, sz);
     if (tgt == nullptr) {
         WARN("Cannot map guest memory pa:0x%llx size:0x%lx. Memory range doesn't exist",
@@ -410,7 +453,7 @@ Model::SimpleAS::map_guest_mem(const Vbus::Bus& bus, GPA gpa, size_t sz, bool wr
     mword offset = gpa.get_value() - tgt->get_guest_view().get_value();
     DEBUG("map_guest_mem pa:0x%llx size:0x%lx write:%d (+0x%lx)", gpa.get_value(), sz, write,
           offset);
-    void* dst = tgt->map_view(offset, sz, write);
+    void* dst = tgt->map_view(offset, sz, write, msel);
     if (dst == nullptr) {
         WARN("Unable to map a chunk pa:%llx size:0x%lx", gpa.get_value(), sz);
     }
