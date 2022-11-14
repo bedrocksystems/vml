@@ -504,12 +504,18 @@ public:
      *  \param addr start of the read on the guest AS
      *  \return ENONE if the operation was a success, error code otherwise
      */
-    Errno read(char *dst, size_t size, const GPA &addr) const;
+    Errno read(char *dst, size_t size, const GPA &addr,
+               Platform::Mem::MemSel msel = Platform::Mem::REF_MEM) const;
 
-    Errno demand_map(const GPA &gpa, size_t size_bytes, void *&va, bool write) const;
-    Errno demand_unmap(const GPA &gpa, size_t size_bytes, void *va) const;
-    Errno demand_unmap_clean(const GPA &gpa, size_t size_bytes, void *va) const;
+protected:
+    Errno demand_map(const GPA &gpa, size_t size_bytes, void *&va, bool write,
+                     Platform::Mem::MemSel msel) const;
+    Errno demand_unmap(const GPA &gpa, size_t size_bytes, void *va,
+                       Platform::Mem::MemSel msel) const;
+    Errno demand_unmap_clean(const GPA &gpa, size_t size_bytes, void *va,
+                             Platform::Mem::MemSel msel) const;
 
+public:
     static Errno demand_map_bus(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes, void *&va,
                                 bool write);
     static Errno demand_unmap_bus(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes,
@@ -542,7 +548,8 @@ public:
      *  \param src buffer that contains the data to write
      *  \return ENONE if the operation was a success, error code otherwise
      */
-    Errno write(const GPA &gpa, size_t size, const char *src) const;
+    Errno write(const GPA &gpa, size_t size, const char *src,
+                Platform::Mem::MemSel msel = Platform::Mem::REF_MEM) const;
 
     /*! \brief Callback that can be used to iterate over flushable AS in a virtual Bus
      *  \pre Nothing
@@ -586,34 +593,38 @@ public:
      */
     char *gpa_to_vmm_view(GPA addr, size_t sz) const;
 
-    void *map_view(mword offset, size_t size, bool write) const;
+    void *map_view(mword offset, size_t size, bool write,
+                   Platform::Mem::MemSel msel = Platform::Mem::REF_MEM) const;
 
     bool is_read_only() const { return _read_only; }
 
     static char *gpa_to_vmm_view(const Vbus::Bus &bus, GPA addr, size_t sz);
-    static char *map_guest_mem(const Vbus::Bus &bus, GPA gpa, size_t sz, bool write);
+    static char *map_guest_mem(const Vbus::Bus &bus, GPA gpa, size_t sz, bool write,
+                               Platform::Mem::MemSel msel = Platform::Mem::REF_MEM);
     static void unmap_guest_mem(const void *mem, size_t sz);
 
     static Model::SimpleAS *get_as_device_at(const Vbus::Bus &bus, GPA addr, size_t sz);
 
-    static Errno read_bus(const Vbus::Bus &bus, GPA addr, char *dst, size_t sz);
-    static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz);
-    static Errno clean_invalidate_bus(const Vbus::Bus &bus, GPA addr, size_t sz);
+    static Errno read_bus(const Vbus::Bus &bus, GPA addr, char *dst, size_t sz,
+                          Platform::Mem::MemSel msel = Platform::Mem::REF_MEM);
+    static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz,
+                           Platform::Mem::MemSel msel = Platform::Mem::REF_MEM);
 
     static void lookup_mem_ranges(const Vbus::Bus &bus, const Range<uint64> &gpa_range,
                                   Vector<Model::SimpleAS *> &out);
+    Errno clean_invalidate(GPA gpa, size_t size, Platform::Mem::MemSel msel) const;
 
 protected:
-    uint64 single_access_read(uint64 off, uint8 size) const;
-    void single_access_write(uint64 off, uint8 size, uint64 value) const;
+    uint64 single_access_read(uint64 off, uint8 size, Platform::Mem::MemSel msel) const;
+    void single_access_write(uint64 off, uint8 size, uint64 value,
+                             Platform::Mem::MemSel msel) const;
 
     /*! \brief Iterate over this AS and make sure that all data made it to physical RAM
      *  \pre Partial ownership of this device
      *  \post Ownership unchanged
      */
     void flush_guest_as();
-    Errno clean_invalidate(GPA gpa, size_t size) const;
-    bool mapped() const { return (_vmm_view != nullptr); }
+    bool mapped(Platform::Mem::MemSel memsel = Platform::Mem::REF_MEM) const;
 
     const bool _read_only;    /*!< Is the AS read-only from the guest point of view? */
     const bool _flushable;    /*!< Are full AS flush operations needed/allowed? */

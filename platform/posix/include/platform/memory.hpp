@@ -20,10 +20,14 @@ namespace Platform::Mem {
     static constexpr int WRITE = PROT_WRITE;
     static constexpr int EXEC = PROT_EXEC;
 
+    typedef uint64 MemSel;
+    static constexpr MemSel REF_MEM{~0UL};
+
     class MemDescr;
     class Cred;
 
-    static inline void *map_mem(const MemDescr &descr, mword offset, size_t size, int flags);
+    static inline void *map_mem(const MemDescr &descr, mword offset, size_t size, int flags,
+                                MemSel);
     static inline bool unmap_mem(const void *addr, size_t length);
 };
 
@@ -37,21 +41,23 @@ public:
 
 class Platform::Mem::MemDescr {
 public:
-    MemDescr(int fd) : _memrange_sel(fd) {}
+    MemDescr(MemSel fd) : _memrange_sel(fd) {}
 
-    MemDescr() : _memrange_sel(-1) {}
+    MemDescr() : _memrange_sel(~0UL) {}
 
-    int msel() const { return _memrange_sel; }
+    MemSel msel() const { return _memrange_sel; }
     Platform::Mem::Cred cred() const { return _cred; }
 
 private:
-    int _memrange_sel{-1};
+    MemSel _memrange_sel{~0UL};
     Platform::Mem::Cred _cred;
 };
 
 static inline void *
-Platform::Mem::map_mem(const Platform::Mem::MemDescr &descr, mword offset, size_t size, int flags) {
-    return mmap(nullptr, size, flags, MAP_SHARED, descr.msel(), static_cast<long>(offset));
+Platform::Mem::map_mem(const Platform::Mem::MemDescr &descr, mword offset, size_t size, int flags,
+                       MemSel) {
+    return mmap(nullptr, size, flags, MAP_SHARED, static_cast<int>(descr.msel()),
+                static_cast<long>(offset));
 }
 
 static inline bool
