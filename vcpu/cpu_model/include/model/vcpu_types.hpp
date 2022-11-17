@@ -18,9 +18,10 @@ class RegAccessor;
 static constexpr Vcpu_id INVALID_VCPU_ID = ~0x0ull;
 
 enum class CtxInfo {
-    VMEXIT = 0, /*!< Default, we are handling a vmexit */
-    TRANSLATE,  /*!< VCPU is performing a software page table walk */
-    EMULATE,    /*!< VCPU is currently emulating instructions */
+    VMEXIT = 0,  /*!< Default, we are handling a vmexit */
+    TRANSLATE,   /*!< VCPU is performing a software page table walk */
+    EMULATE,     /*!< VCPU is currently emulating instructions */
+    COMMIT_INST, /*!< VCPU is committing instructions */
 };
 
 struct VcpuCtx {
