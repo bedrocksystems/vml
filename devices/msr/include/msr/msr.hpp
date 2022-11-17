@@ -7,14 +7,15 @@
  */
 #pragma once
 
+#include <intrusive/map.hpp>
 #include <model/aa64_timer.hpp>
 #include <model/cpu.hpp>
 #include <model/vcpu_types.hpp>
+#include <msr/msr_access.hpp>
 #include <msr/msr_id.hpp>
 #include <platform/log.hpp>
 #include <platform/reg_accessor.hpp>
 #include <platform/time.hpp>
-#include <vbus/vbus.hpp>
 
 namespace Msr {
 
@@ -34,6 +35,8 @@ namespace Msr {
     class WtrappedMsr;
     class SctlrEl1;
     class MdscrEl1;
+
+    using Vbus::Err;
 
     constexpr uint8 CCSIDR_NUM{7};
 
@@ -328,17 +331,31 @@ namespace Model {
     class GicD;
 }
 
-class Msr::RegisterBase : public Vbus::Device {
+class Msr::RegisterBase : public Map_key<mword> {
 public:
-    RegisterBase(const char* name, Id reg_id) : Vbus::Device::Device(name), _reg_id(reg_id) {}
+    RegisterBase(const char* name, Id reg_id) : Map_key(), _name(name), _reg_id(reg_id) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, Vbus::Space, mword off,
-                             uint8 bytes, uint64& res)
-        = 0;
+    virtual Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& res) = 0;
 
     uint32 id() const { return _reg_id.id(); };
 
+    /*! \brief Reset the device to its initial state
+     *  \pre The caller has full ownership of a valid Device object which can be in any state.
+     *  \post The ownership of the object is returned to the caller. The device is in its initial
+     *        state.
+     */
+    virtual void reset(const VcpuCtx* vcpu_ctx) = 0;
+
+    /*! \brief Query the name of the device
+     *  \pre The caller has partial ownership of a valid Device object
+     *  \post A pointer pointing to a valid array of chars representing the name of the this device.
+     *        The caller also receives a fractional ownership of the name.
+     *  \return the name of the device
+     */
+    const char* name() const { return _name; }
+
 private:
+    const char* _name; /*!< Name of the device - cannot be changed at run-time */
     Id _reg_id;
 };
 
@@ -357,10 +374,9 @@ public:
         : RegisterBase(name, reg_id), _value(reset_value), _reset_value(reset_value),
           _write_mask(mask), _writable(writable) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx*, Vbus::Space, mword, uint8,
-                             uint64& value) override {
+    virtual Err access(Vbus::Access access, const VcpuCtx*, uint64& value) override {
         if (access == Vbus::WRITE && !_writable)
-            return Vbus::Err::ACCESS_ERR;
+            return Err::ACCESS_ERR;
 
         if (access == Vbus::WRITE) {
             _value |= value & _write_mask;                    // Set the bits at 1
@@ -369,7 +385,7 @@ public:
             value = _value;
         }
 
-        return Vbus::Err::OK;
+        return Err::OK;
     }
 
     virtual void reset(const VcpuCtx*) override { _value = _reset_value; }
@@ -383,9 +399,8 @@ public:
             vbus = &b;
     }
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vctx, Vbus::Space sp, mword off,
-                             uint8 bytes, uint64& value) override {
-        Vbus::Err ret = Register::access(access, vctx, sp, off, bytes, value);
+    virtual Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override {
+        Err ret = Register::access(access, vctx, value);
 
         if (access == Vbus::Access::WRITE) {
             flush(vctx, (_value >> 1) & 0x7, static_cast<uint32>(_value >> 4));
@@ -469,35 +484,33 @@ public:
         }
     }
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, Vbus::Space sp, mword,
-                             uint8, uint64& value) override {
+    virtual Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& value) override {
         if (access == Vbus::WRITE)
-            return Vbus::Err::ACCESS_ERR;
+            return Err::ACCESS_ERR;
 
         uint64 el = 0;
-        if (Vbus::Err::OK
-            != _csselr.access(access, vcpu_ctx, sp, 0 /* offset */, 4 /* bytes */, el))
-            return Vbus::Err::ACCESS_ERR;
+        if (Err::OK != _csselr.access(access, vcpu_ctx, el))
+            return Err::ACCESS_ERR;
 
         bool const instr = el & 0x1;
         unsigned const level = (el >> 1) & 0x7;
 
         if (level > 6)
-            return Vbus::Err::ACCESS_ERR;
+            return Err::ACCESS_ERR;
 
         uint8 const ce = (_clidr_el1 >> (level * 3)) & 0b111;
 
         if (ce == NO_CACHE || (ce == DATA_CACHE_ONLY && instr)) {
             value = INVALID;
-            return Vbus::Err::OK;
+            return Err::OK;
         }
         if (ce == INSTRUCTION_CACHE_ONLY || (ce == SEPARATE_CACHE && instr)) {
             value = _ccsidr_inst_el1[level];
-            return Vbus::Err::OK;
+            return Err::OK;
         }
 
         value = _ccsidr_data_el1[level];
-        return Vbus::Err::OK;
+        return Err::OK;
     }
 
     virtual void reset(const VcpuCtx*) override {}
@@ -511,8 +524,7 @@ public:
     explicit IccSgi1rEl1(Model::GicD& gic)
         : RegisterBase("ICC_SGI1R_EL1", ICC_SGI1R_EL1), _gic(&gic) {}
 
-    virtual Vbus::Err access(Vbus::Access, const VcpuCtx*, Vbus::Space, mword, uint8,
-                             uint64&) override;
+    virtual Err access(Vbus::Access, const VcpuCtx*, uint64&) override;
 
     virtual void reset(const VcpuCtx*) override {}
 };
@@ -525,12 +537,11 @@ public:
     CntpCtl(const char* name, Msr::RegisterId id, Model::AA64Timer& t)
         : Register(name, id, true, 0, 0b11), _ptimer(&t) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, Vbus::Space sp,
-                             mword addr, uint8 size, uint64& value) {
+    virtual Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& value) {
         _value = _ptimer->get_ctl();
 
-        Vbus::Err err = Register::access(access, vcpu_ctx, sp, addr, size, value);
-        if (err == Vbus::OK && access == Vbus::WRITE) {
+        Err err = Register::access(access, vcpu_ctx, value);
+        if (err == Err::OK && access == Vbus::WRITE) {
             _ptimer->set_ctl(static_cast<uint8>(_value));
         }
 
@@ -546,12 +557,11 @@ public:
     CntpCval(const char* name, Msr::RegisterId id, Model::AA64Timer& t)
         : Register(name, id, true, 0), _ptimer(&t) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, Vbus::Space sp,
-                             mword addr, uint8 size, uint64& value) {
+    virtual Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& value) {
         _value = _ptimer->get_cval();
 
-        Vbus::Err err = Register::access(access, vcpu_ctx, sp, addr, size, value);
-        if (err == Vbus::OK && access == Vbus::WRITE) {
+        Err err = Register::access(access, vcpu_ctx, value);
+        if (err == Msr::Err::OK && access == Vbus::WRITE) {
             _ptimer->set_cval(_value);
         }
 
@@ -563,13 +573,12 @@ class Msr::CntpctEl0 : public RegisterBase {
 public:
     explicit CntpctEl0() : RegisterBase("CNTPCT_EL0", CNTPCT_EL0) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vctx, Vbus::Space, mword, uint8,
-                             uint64& value) override {
+    virtual Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override {
         if (access != Vbus::READ)
-            return Vbus::Err::ACCESS_ERR;
+            return Err::ACCESS_ERR;
 
         value = static_cast<uint64>(clock()) - vctx->regs->tmr_cntvoff();
-        return Vbus::Err::OK;
+        return Err::OK;
     }
 
     virtual void reset(const VcpuCtx*) override {}
@@ -584,19 +593,18 @@ public:
     CntpTval(const char* name, Msr::RegisterId id, Model::AA64Timer& t)
         : Register(name, id, true, 0, CNTP_TVAL_MASK), _ptimer(&t) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vctx, Vbus::Space, mword, uint8,
-                             uint64& value) {
+    virtual Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) {
         if (access == Vbus::READ) {
             uint64 cval = _ptimer->get_cval(),
                    curr = static_cast<uint64>(clock()) - vctx->regs->tmr_cntvoff();
             value = (cval - curr) & CNTP_TVAL_MASK;
-            return Vbus::Err::OK;
+            return Err::OK;
         } else if (access == Vbus::WRITE) {
             int32 v = static_cast<int32>(value);
             _ptimer->set_cval(static_cast<uint64>(clock()) + static_cast<uint64>(v));
-            return Vbus::Err::OK;
+            return Err::OK;
         } else {
-            return Vbus::Err::ACCESS_ERR;
+            return Err::ACCESS_ERR;
         }
     }
 };
@@ -605,10 +613,9 @@ class Msr::WtrappedMsr : public Msr::RegisterBase {
 public:
     using Msr::RegisterBase::RegisterBase;
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx*, Vbus::Space, mword, uint8,
-                             uint64&) override {
+    virtual Err access(Vbus::Access access, const VcpuCtx*, uint64&) override {
         ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
-        return Vbus::Err::UPDATE_REGISTER;     // Tell the VCPU to update the relevant physical
+        return Err::UPDATE_REGISTER;           // Tell the VCPU to update the relevant physical
                                                // register
     }
     virtual void reset(const VcpuCtx*) override {}
@@ -618,8 +625,7 @@ class Msr::SctlrEl1 : public Msr::RegisterBase {
 public:
     SctlrEl1(const char* name, Msr::Id reg_id) : Msr::RegisterBase(name, reg_id) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu, Vbus::Space, mword, uint8,
-                             uint64& res) override;
+    virtual Err access(Vbus::Access access, const VcpuCtx* vcpu, uint64& res) override;
     virtual void reset(const VcpuCtx*) override {}
 };
 
@@ -631,8 +637,7 @@ private:
 public:
     MdscrEl1() : Msr::Register("MDSCR_EL1", MDSCR_EL1, true, 0x0ULL) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx* vcpu, Vbus::Space space, mword off,
-                             uint8 bytes, uint64& value) override {
+    virtual Err access(Vbus::Access access, const VcpuCtx* vcpu, uint64& value) override {
 
         if (access == Vbus::WRITE && mdscr_ss_enabled(value)) {
             if (!mdscr_ss_enabled(_value)) {
@@ -640,7 +645,7 @@ public:
             }
         }
 
-        return Msr::Register::access(access, vcpu, space, off, bytes, value);
+        return Msr::Register::access(access, vcpu, value);
     }
 };
 
@@ -648,9 +653,9 @@ public:
  * This is the bus that will handle all reads and writes
  * to system registers.
  */
-class Msr::Bus : public Vbus::Bus {
+class Msr::Bus {
 public:
-    Bus() : Vbus::Bus(Vbus::Space::SYSTEM_REGISTER) {}
+    Bus() {}
 
     struct AA64PlatformInfo {
         uint64 id_aa64pfr0_el1;
@@ -696,6 +701,51 @@ public:
         AA32PlatformInfo aa32;
     };
 
+    /*! \brief Add a register to the msr bus
+     *  \pre Full ownership of a valid virtual bus. Full ownership of a valid register.
+     *  \post Ownership of the bus is unchanged. The bus adds this register to its
+     *        internal list if there is no conflict. Otherwise, ownership of the register
+     *        is returned and no changes are performed on the bus.
+     *  \param r RegisterBase to add
+     *  \return true if there is no conflict and the register was added. false otherwise.
+     */
+    [[nodiscard]] bool register_device(RegisterBase* r, mword id);
+
+    /*! \brief Query for a register with given id
+     *  \pre Fractional ownership of a valid msr bus.
+     *  \post Ownership of the bus is unchanged. The bus itself is not changed.
+     *        If a register was found, a fractional ownership to a valid RegisterBase is returned.
+     *  \param id Id of the device in the Bus
+     *  \return nullptr is no register with that id, the register otherwise.
+     */
+    RegisterBase* get_device_at(mword id) const { return _devices[id]; }
+
+    /*! \brief Access the register at the given location
+     *  \pre Fractional ownership of a valid bus. Full ownership of a valid Vcpu context.
+     *  \post Ownership of the bus is unchanged. Ownership of the Vcpu context is returned.
+     *        If a register was found at the given range, access was called on that register.
+     *        An status is returned to understand the consequence of the call.
+     *  \param access Type of access (R/W/X)
+     *  \param vcpu_ctx Contains information about the VCPU generating this access
+     *  \param id Id of the device in the Bus
+     *  \param val Buffer for read or write operations
+     *  \return The status of the access
+     */
+    Err access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword id, uint64& val);
+
+    /*! \brief Reset all registers on the bus
+     *  \pre Fractional ownership of a valid msr bus.
+     *  \post Ownership of the bus is unchanged. All registers must have transitioned from some
+     *        state to their initial state.
+     */
+    void reset(const VcpuCtx& vcpu_ctx);
+
+    /*! \brief Debug only: control the trace of the access to the bus
+     *  \param enabled Should accesses be traced?
+     *  \param fold_successive Should repeated accesses to the same register be logged only once?
+     */
+    void set_trace(bool enabled, bool) { _trace = enabled; }
+
 private:
     bool setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
                                 uint64 id_aa64isar0_el1, uint64 id_aa64isar1_el1,
@@ -721,12 +771,19 @@ private:
     bool setup_tvm();
     bool setup_gic_registers(Model::GicD&);
 
+    static void reset_register_cb(Msr::RegisterBase*, const VcpuCtx*);
+
+    void log_trace_info(const RegisterBase* reg, Vbus::Access access, uint64 val);
+
+    Map_kv<mword, RegisterBase> _devices;
+    bool _trace{false};
+
 protected:
     bool register_system_reg(RegisterBase* reg) {
         ASSERT(reg != nullptr);
         bool ret;
 
-        ret = register_device(reg, reg->id(), sizeof(uint64));
+        ret = register_device(reg, reg->id());
         if (!ret) {
             Msr::RegisterBase* r = get_register_with_id(reg->id());
             if (r != nullptr) {
@@ -752,6 +809,6 @@ public:
     bool setup_aarch64_caching_info(const CacheTopo& topo);
 
     RegisterBase* get_register_with_id(Msr::Id id) const {
-        return reinterpret_cast<RegisterBase*>(get_device_at(id.id(), sizeof(uint64)));
+        return reinterpret_cast<RegisterBase*>(get_device_at(id.id()));
     }
 };

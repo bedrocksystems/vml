@@ -12,6 +12,7 @@
 #include <model/simple_as.hpp>
 #include <msr/msr.hpp>
 #include <msr/msr_info.hpp>
+#include <platform/compiler.hpp>
 #include <platform/log.hpp>
 #include <platform/new.hpp>
 #include <platform/types.hpp>
@@ -652,15 +653,14 @@ Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Mo
     return true;
 }
 
-Vbus::Err
-Msr::IccSgi1rEl1::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, Vbus::Space, mword,
-                         uint8, uint64 &value) {
+Msr::Err
+Msr::IccSgi1rEl1::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, uint64 &value) {
     if (access != Vbus::WRITE)
-        return Vbus::Err::ACCESS_ERR;
+        return Err::ACCESS_ERR;
 
     _gic->icc_sgi1r_el1(value, vcpu_ctx->vcpu_id);
 
-    return Vbus::Err::OK;
+    return Err::OK;
 }
 
 void
@@ -713,12 +713,64 @@ Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, uint64 new_value) {
     }
 }
 
-Vbus::Err
-Msr::SctlrEl1::access(Vbus::Access access, const VcpuCtx *vcpu, Vbus::Space, mword, uint8,
-                      uint64 &res) {
+Msr::Err
+Msr::SctlrEl1::access(Vbus::Access access, const VcpuCtx *vcpu, uint64 &res) {
     ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
 
     flush_on_cache_toggle(vcpu, res);
-    return Vbus::Err::UPDATE_REGISTER; // Tell the VCPU to update the relevant physical
-                                       // register
+    return Msr::Err::UPDATE_REGISTER; // Tell the VCPU to update the relevant physical
+                                      // register
+}
+
+[[nodiscard]] bool
+Msr::Bus::register_device(RegisterBase *r, mword id) {
+
+    RegisterBase *old = _devices.insert(id, r);
+
+    if (__UNLIKELY__(old != nullptr)) {
+        _devices.remove_existing(r);
+        _devices.insert(id, old);
+        return false;
+    }
+
+    return true;
+}
+
+void
+Msr::Bus::reset(const VcpuCtx &vcpu_ctx) {
+
+    for (auto it = _devices.begin(); it != _devices.end(); ++it) {
+        it->reset(&vcpu_ctx);
+    }
+}
+
+void
+Msr::Bus::log_trace_info(const Msr::RegisterBase *reg, Vbus::Access access, uint64 val) {
+
+    ASSERT(access != Vbus::Access::EXEC);
+
+    INFO("%s @ 0x%i:%u %s " FMTx64, reg->name(), reg->id(), 0,
+         (access == Vbus::Access::WRITE ? "W" : "R"), val);
+
+    return;
+}
+
+Msr::Err
+Msr::Bus::access(Vbus::Access access, const VcpuCtx &vcpu_ctx, mword id, uint64 &val) {
+
+    ASSERT(access != Vbus::Access::EXEC);
+
+    RegisterBase *reg = _devices[id];
+
+    if (reg == nullptr) {
+        return Msr::Err::NO_DEVICE;
+    }
+
+    if (_trace) {
+        log_trace_info(reg, access, val);
+    }
+
+    Err err = reg->access(access, &vcpu_ctx, val);
+
+    return err;
 }
