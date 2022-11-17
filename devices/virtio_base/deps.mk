@@ -1,3 +1,3 @@
-LIBS = vbus irq_controller simple_as arch_api $(PLATFORM)
+LIBS = vbus irq_controller simple_as cpu_model arch_api $(PLATFORM)
 
 $(eval $(call dep_hook,virtio_base,$(LIBS)))

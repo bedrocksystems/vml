@@ -21,7 +21,7 @@ namespace Model {
 }
 
 enum class Model::VirtioBlockFeatures : uint64 {
-    SIZE_MAX = (1 << 1),
+    BLK_SIZE_MAX = (1 << 1),
     SEG_MAX = (1 << 2),
     GEMOETRY = (1 << 4),
     RO = (1 << 5),
