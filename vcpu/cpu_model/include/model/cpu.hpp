@@ -13,6 +13,7 @@
 #include <platform/context.hpp>
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
+#include <platform/memory.hpp>
 #include <platform/semaphore.hpp>
 #include <platform/signal.hpp>
 #include <platform/types.hpp>
@@ -146,6 +147,8 @@ public:
     static void roundup_all();
     static void resume_all();
 
+    static void set_space_on(Vcpu_id id, RegAccessor &regs, Platform::Mem::MemSel space);
+
     // Configuration API
     typedef void (*ctrl_feature_cb)(Model::Cpu *, bool, Request::Requestor, Reg_selection);
 
@@ -251,4 +254,6 @@ public:
     virtual Model::Local_Irq_controller *local_irq_ctlr() override { return _lirq_ctlr; }
 
     virtual void ctrl_register_trap(bool, Request::Requestor, uint64, Reg_selection) {}
+
+    virtual void set_vcpu_space(RegAccessor &, Platform::Mem::MemSel) {}
 };
