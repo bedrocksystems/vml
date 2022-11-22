@@ -724,7 +724,6 @@ Msr::SctlrEl1::access(Vbus::Access access, const VcpuCtx *vcpu, uint64 &res) {
 
 [[nodiscard]] bool
 Msr::Bus::register_device(RegisterBase *r, mword id) {
-
     RegisterBase *old = _devices.insert(id, r);
 
     if (__UNLIKELY__(old != nullptr)) {
@@ -738,7 +737,6 @@ Msr::Bus::register_device(RegisterBase *r, mword id) {
 
 void
 Msr::Bus::reset(const VcpuCtx &vcpu_ctx) {
-
     for (auto it = _devices.begin(); it != _devices.end(); ++it) {
         it->reset(&vcpu_ctx);
     }
@@ -746,31 +744,34 @@ Msr::Bus::reset(const VcpuCtx &vcpu_ctx) {
 
 void
 Msr::Bus::log_trace_info(const Msr::RegisterBase *reg, Vbus::Access access, uint64 val) {
-
     ASSERT(access != Vbus::Access::EXEC);
+    ASSERT(reg != nullptr);
 
-    INFO("%s @ 0x%i:%u %s " FMTx64, reg->name(), reg->id(), 0,
-         (access == Vbus::Access::WRITE ? "W" : "R"), val);
+    if (_last_access != reg) {
+        if (_fold && _num_accesses > 1)
+            INFO("%s accessed %lu times", _last_access->name(), _num_accesses);
+    } else {
+        _num_accesses++;
+        if (_fold)
+            return;
+    }
 
-    return;
+    INFO("%s @%#x %s " FMTx64, reg->name(), reg->id(), (access == Vbus::Access::WRITE ? "W" : "R"),
+         val);
+    _num_accesses = 0;
+    _last_access = reg;
 }
 
 Msr::Err
 Msr::Bus::access(Vbus::Access access, const VcpuCtx &vcpu_ctx, mword id, uint64 &val) {
+    RegisterBase *reg = _devices[id];
 
     ASSERT(access != Vbus::Access::EXEC);
 
-    RegisterBase *reg = _devices[id];
-
-    if (reg == nullptr) {
+    if (reg == nullptr)
         return Msr::Err::NO_DEVICE;
-    }
-
-    if (_trace) {
+    if (_trace)
         log_trace_info(reg, access, val);
-    }
 
-    Err err = reg->access(access, &vcpu_ctx, val);
-
-    return err;
+    return reg->access(access, &vcpu_ctx, val);
 }

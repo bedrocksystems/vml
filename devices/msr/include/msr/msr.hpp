@@ -744,7 +744,10 @@ public:
      *  \param enabled Should accesses be traced?
      *  \param fold_successive Should repeated accesses to the same register be logged only once?
      */
-    void set_trace(bool enabled, bool) { _trace = enabled; }
+    void set_trace(bool enabled, bool fold_successive) {
+        _trace = enabled;
+        _fold = fold_successive;
+    }
 
 private:
     bool setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
@@ -777,6 +780,9 @@ private:
 
     Map_kv<mword, RegisterBase> _devices;
     bool _trace{false};
+    bool _fold{true};
+    const RegisterBase* _last_access{nullptr};
+    size_t _num_accesses{0};
 
 protected:
     bool register_system_reg(RegisterBase* reg) {
