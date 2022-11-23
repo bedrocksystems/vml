@@ -23,10 +23,33 @@
 
 #include <cassert>
 #include <cinttypes>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 
 #include <platform/compiler.hpp>
+
+namespace Log {
+    enum Log_level {
+        DEBUG,
+        VERBOSE,
+        INFO,
+        WARN,
+        ERROR,
+        FATAL,
+    };
+
+    __attribute__((format(printf, 3, 4))) inline void _log(Log_level, bool enabled, const char *fmt,
+                                                           ...) {
+        if (!enabled)
+            return;
+
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(stdout, fmt, args);
+        va_end(args);
+    }
+}
 
 #define FMTx64 "0x%" PRIx64
 #define FMTu64 "%" PRIu64
