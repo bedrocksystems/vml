@@ -41,7 +41,12 @@ private:
 public:
     struct UserConfig {
         Virtio::Transport *transport{nullptr};
-        uint32 device_feature{0};
+        // 5.2.3 Feature bits
+        // VIRTIO_BLK_F_SIZE_MAX (1) Maximum size of any single segment is in size_max.
+        // VIRTIO_BLK_F_SEG_MAX (2) Maximum number of segments in a request is in seg_max.
+        // Used to constrain the block request size from the guest.
+        uint32 device_feature{static_cast<uint32>(Model::VirtioBlockFeatures::SEG_MAX)
+                              | static_cast<uint32>(Model::VirtioBlockFeatures::BLK_SIZE_MAX)};
         Model::Virtio_block_config block_config;
     };
 
