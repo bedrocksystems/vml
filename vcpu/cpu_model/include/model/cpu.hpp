@@ -127,6 +127,7 @@ protected:
     CpuFlag _single_step;
     CpuFlag _execution_paused;
     CpuFlag _icache_invalidate;
+    CpuFeature _dump_regs;
 
 public:
     // VCPU api start
@@ -180,6 +181,8 @@ public:
                                                Request::Requestor requestor, Reg_selection regs);
     static void ctrl_feature_hypercall(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
                                        Reg_selection regs);
+    static void ctrl_feature_regs_dump(Model::Cpu *mcpu, bool enable, Request::Requestor requestor,
+                                       Reg_selection regs);
 
     // this is just like the above but it requires threading an extra argument
     typedef void (*ctrl_feature_ex_cb)(Model::Cpu *, bool, Request::Requestor, uint64,
@@ -202,6 +205,7 @@ public:
     static bool requested_feature_tvm(Model::Cpu *vcpu, Request::Requestor requestor);
     static bool requested_feature_single_step(Model::Cpu *vcpu, Request::Requestor requestor);
     static bool requested_feature_hypercall(Model::Cpu *vcpu, Request::Requestor requestor);
+    static bool requested_feature_regs_dump(Model::Cpu *mcpu, Request::Requestor requestor);
 
     /*
      * Values are chosen to match the PSCI spec for conveniency. This could be changed
