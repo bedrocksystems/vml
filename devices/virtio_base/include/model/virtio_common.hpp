@@ -53,26 +53,6 @@ enum class Virtio::DeviceID : uint16 {
     IOMMU = 23,
 };
 
-class Virtio::Transport {
-public:
-    virtual ~Transport() {}
-
-    virtual bool access(Vbus::Access access, mword offset, uint8 size, uint64 &value,
-                        Virtio::DeviceState &state)
-        = 0;
-
-    virtual void assert_queue_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &) = 0;
-    virtual void deassert_queue_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &)
-        = 0;
-
-    virtual void assert_config_change_interrupt(Model::Irq_controller *, uint16,
-                                                Virtio::DeviceState &)
-        = 0;
-    virtual void deassert_config_change_interrupt(Model::Irq_controller *, uint16,
-                                                  Virtio::DeviceState &)
-        = 0;
-};
-
 enum class Virtio::DeviceStatus : uint32 {
     DEVICE_RESET = 0,
     ACKNOWLEDGE = 1,
@@ -309,3 +289,54 @@ Virtio::write_register(uint64 const offset, uint32 const base_reg, uint32 const 
     result |= static_cast<T>((value & mask) << (base * 8));
     return true;
 }
+
+class Virtio::Transport {
+public:
+    virtual ~Transport() {}
+
+    virtual bool access(Vbus::Access access, mword offset, uint8 size, uint64 &value,
+                        Virtio::DeviceState &state)
+        = 0;
+
+    virtual void assert_queue_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &) = 0;
+    virtual void deassert_queue_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &)
+        = 0;
+
+    virtual void assert_config_change_interrupt(Model::Irq_controller *, uint16,
+                                                Virtio::DeviceState &)
+        = 0;
+    virtual void deassert_config_change_interrupt(Model::Irq_controller *, uint16,
+                                                  Virtio::DeviceState &)
+        = 0;
+
+    static bool config_space_read(uint64 const offset, uint64 const config_base, uint8 const bytes,
+                                  uint64 &value, const Virtio::DeviceState &state) {
+        // Config space access can be byte aligned.
+        // We reserve upto 256 bytes for config space. So first read the corresponding word from
+        // config space.
+        uint64 v = state.config_space[(offset - config_base) / 8];
+
+        // The required offset within the word
+        uint64 offset_byte = offset % 8;
+
+        // Since the word is already read, [Virtio::read_register' is only used to appropriately
+        // mask and retrieve the required number of bytes.
+        return Virtio::read_register(offset_byte, 0, 8, bytes, v, value);
+    }
+
+    static bool config_space_write(uint64 const offset, uint64 const config_base, uint8 const bytes,
+                                   uint64 const value, Virtio::DeviceState &state) {
+        // Config space access can be byte aligned.
+        // We reserve upto 256 bytes for config space. So first read the corresponding word from
+        // config space.
+        uint64 v = state.config_space[(offset - config_base) / 8];
+
+        // The required offset within the word
+        uint64 offset_byte = offset % 8;
+        auto ok = Virtio::write_register(offset_byte, 0, 8, bytes, value, v);
+        if (ok)
+            state.config_space[(offset - config_base) / 8] = v;
+
+        return ok;
+    }
+};

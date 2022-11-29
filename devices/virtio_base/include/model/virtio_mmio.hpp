@@ -130,17 +130,7 @@ public:
             if (offset + bytes > RW_CONFIG_END)
                 return false;
 
-            // Config space access can be byte aligned.
-            // We reserve upto 256 bytes for config space. So first read the corresponding word from
-            // config space.
-            uint64 v = state.config_space[(offset - RW_CONFIG) / 8];
-
-            // The required offset within the word
-            uint64 offset_byte = offset % 8;
-
-            // Since the word is already read, [Virtio::read_register' is only used to appropriately
-            // mask and retrieve the required number of bytes.
-            return Virtio::read_register(offset_byte, 0, 8, bytes, v, value);
+            return config_space_read(offset, RW_CONFIG, bytes, value, state);
         }
         }
         return false;
@@ -216,18 +206,7 @@ public:
             if (offset + bytes > RW_CONFIG_END)
                 return false;
 
-            // Config space access can be byte aligned.
-            // We reserve upto 256 bytes for config space. So first read the corresponding word from
-            // config space.
-            uint64 v = state.config_space[(offset - RW_CONFIG) / 8];
-
-            // The required offset within the word
-            uint64 offset_byte = offset % 8;
-            auto ok = Virtio::write_register(offset_byte, 0, 8, bytes, value, v);
-            if (ok)
-                state.config_space[(offset - RW_CONFIG) / 8] = v;
-
-            return ok;
+            return config_space_write(offset, RW_CONFIG, bytes, value, state);
         }
         }
         return false;
