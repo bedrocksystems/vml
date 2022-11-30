@@ -18,6 +18,7 @@ namespace Model {
     enum class VirtioBlockRequestType : uint32;
     enum class VirtioBlockStatus : uint8;
     enum class VirtioBlockProtocol : size_t;
+    enum class VirtioBlockGetID : size_t;
 }
 
 enum class Model::VirtioBlockFeatures : uint64 {
@@ -31,14 +32,21 @@ enum class Model::VirtioBlockFeatures : uint64 {
     CONFIG_WCE = (1 << 11),
     DISCARD = (1 << 13),
     WRITE_ZEROES = (1 << 14),
+    LIFETIME = (1 << 15),     // VirtIO v1.2
+    SECURE_ERASE = (1 << 16), // VirtIO v1.2
 };
 
 enum class Model::VirtioBlockRequestType : uint32 {
     IN = 0,
     OUT = 1,
     FLUSH = 4,
+    GET_ID = 8, // Documented in VirtIO v1.2
+    GET_LIFETIME
+    = 10, // Added in VirtIO v1.2. Requires [VirtioBlockFeatures::LIFETIME] negotiation.
     DISCARD = 11,
     WRITE_ZEROES = 13,
+    SECURE_ERASE
+    = 14, // Added in VirtIO v1.2. Requires [VirtioBlockFeatures::LIFETIME] negotiation.
 };
 
 enum class Model::VirtioBlockStatus : uint8 {
@@ -49,6 +57,23 @@ enum class Model::VirtioBlockStatus : uint8 {
 
 enum class Model::VirtioBlockProtocol : size_t {
     SIZE = 512,
+};
+
+enum class Model::VirtioBlockGetID : size_t {
+    // v1.2, 5.2.6.1 Driver Requirements: Device Operation
+    //
+    // The length of data MUST be 20 bytes for VIRTIO_BLK_T_GET_ID requests.
+    //
+    // v1.2, 5.2.6 Device Operation
+    //
+    // VIRTIO_BLK_T_GET_ID requests fetch the device ID string from the device into data. The device
+    // ID string is a NUL-padded ASCII string up to 20 bytes long. If the string is 20 bytes long
+    // then there is no NUL terminator.
+    DATA_SIZE = 20,
+
+    // Extrapolated from the buffers sent by guest.
+    // header (16) + DATA_SIZE (20) + status (1)
+    BUFFER_SIZE = 37,
 };
 
 #pragma pack(1)
