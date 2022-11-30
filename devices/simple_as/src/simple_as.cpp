@@ -139,7 +139,10 @@ Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src,
 
     memcpy(dst, src, size);
 
-    return demand_unmap_clean(gpa, size, dst, msel);
+    if (_flush_on_write)
+        return demand_unmap_clean(gpa, size, dst, msel);
+
+    return demand_unmap(gpa, size, dst, msel);
 }
 
 Errno

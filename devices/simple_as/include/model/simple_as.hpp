@@ -440,8 +440,10 @@ public:
      *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    explicit SimpleAS(const Platform::Mem::MemDescr &descr, bool read_only, bool flushable = true)
-        : Vbus::Device("SimpleAS"), _read_only(read_only), _flushable(flushable), _mobject(descr) {}
+    explicit SimpleAS(const Platform::Mem::MemDescr &descr, bool read_only, bool flushable = true,
+                      bool flush_on_write = true)
+        : Vbus::Device("SimpleAS"), _read_only(read_only), _flushable(flushable),
+          _flush_on_write(flush_on_write), _mobject(descr) {}
 
     /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
@@ -450,8 +452,9 @@ public:
      *  \param read_only is the AS read-only from the guest point of view?
      */
     SimpleAS(const char *name, const Platform::Mem::MemDescr &descr, bool read_only,
-             bool flushable = true)
-        : Vbus::Device(name), _read_only(read_only), _flushable(flushable), _mobject(descr) {}
+             bool flushable = true, bool flush_on_write = true)
+        : Vbus::Device(name), _read_only(read_only), _flushable(flushable),
+          _flush_on_write(flush_on_write), _mobject(descr) {}
 
     bool construct(GPA guest_base, size_t size, bool map);
     bool destruct();
@@ -626,10 +629,11 @@ protected:
     void flush_guest_as();
     bool mapped(Platform::Mem::MemSel memsel = Platform::Mem::REF_MEM) const;
 
-    const bool _read_only;    /*!< Is the AS read-only from the guest point of view? */
-    const bool _flushable;    /*!< Are full AS flush operations needed/allowed? */
-    char *_vmm_view{nullptr}; /*!< base host mapping of base gpa. */
-    Range<mword> _as;         /*!< Range(gpa RAM base, guest RAM size) */
+    const bool _read_only;      /*!< Is the AS read-only from the guest point of view? */
+    const bool _flushable;      /*!< Are full AS flush operations needed/allowed? */
+    const bool _flush_on_write; /*!< Do we need to flush on write? */
+    char *_vmm_view{nullptr};   /*!< base host mapping of base gpa. */
+    Range<mword> _as;           /*!< Range(gpa RAM base, guest RAM size) */
 
     Platform::Mem::MemDescr _mobject; /*!< BHV Memory Range object behind this guest range */
 };
