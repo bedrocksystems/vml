@@ -8,6 +8,13 @@
 # See the LICENSE-BedRock file in the repository root for details.
 #
 
+PLATFORM ?= bedrock
+BHV_ROOT ?= ../../../../..
+LIBNAME = $(shell basename `pwd`)
+
+CC_SRCS = mem_util.cpp breakpoint.cpp
+OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
+
 include deps.mk
 
 include $(BHV_ROOT)/support/build/rules.mk
