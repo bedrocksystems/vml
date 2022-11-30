@@ -87,6 +87,10 @@ $(OBJDIR)%.o: $(SRCDIR)%.cpp
 	@mkdir -p $(@D) 2>&1 > /dev/null
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
+$(OBJDIR)%.o: $(SRCDIR)/$(ARCH_INC)/%.cpp
+	@mkdir -p $(@D) 2>&1 > /dev/null
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
 ifdef LIBNAME
 all: $(OBJDIR)lib$(LIBNAME).a
 
