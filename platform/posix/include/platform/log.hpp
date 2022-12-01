@@ -71,14 +71,12 @@ namespace Log {
     do {                                                                                           \
         if (__UNLIKELY__(!(_expr_))) {                                                             \
             FATAL("Assertion failure.");                                                           \
-            __on_abort();                                                                          \
-            assert(false);                                                                         \
+            cxx::abort();                                                                          \
         }                                                                                          \
     } while (0)
 
 #define ABORT_WITH(_FMT_, ...)                                                                     \
     do {                                                                                           \
         FATAL(_FMT_, ##__VA_ARGS__);                                                               \
-        __on_abort();                                                                              \
-        exit(1);                                                                                   \
+        cxx::abort();                                                                              \
     } while (0)
