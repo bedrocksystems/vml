@@ -13,6 +13,7 @@
 
 typedef uint64 Vcpu_id;
 typedef uint64 Pcpu_id;
+typedef uint64 VcpuVHWId;
 class RegAccessor;
 
 static constexpr Vcpu_id INVALID_VCPU_ID = ~0x0ull;
