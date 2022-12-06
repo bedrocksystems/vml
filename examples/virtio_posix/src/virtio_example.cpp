@@ -153,15 +153,24 @@ main() {
     ASSERT(ok);
 
     Vbus::Bus bus;
-    char fname[32];
-    strncpy(fname, "/tmp/bhv-XXXXXX", 32);
-    int fd = mkstemp(fname);
-    unlink(fname);
-    int rc = fallocate(fd, 0, 0, VIRTIO_RAM_SIZE);
-    ASSERT(rc == 0);
+    off_t file_size = 4096;
+    static constexpr char *TMP_FILE = "tmp-bhv";
+
+    shm_unlink(TMP_FILE); // In case there was a file left behind
+    int fd = shm_open(TMP_FILE, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("shm_open");
+        exit(1);
+    }
+
+    int rc = ftruncate(fd, file_size);
+    if (rc == -1) {
+        perror("ftruncate");
+        exit(1);
+    }
 
     Model::SimpleAS sas(Platform::Mem::MemDescr(fd), false);
-    ok = sas.construct(GPA(VIRTIO_GUEST_BASE), VIRTIO_RAM_SIZE, false);
+    ok = sas.construct(GPA(VIRTIO_GUEST_BASE), VIRTIO_RAM_SIZE, true);
     ASSERT(ok);
     ok = bus.register_device(&sas, VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);
     ASSERT(ok);
@@ -203,6 +212,11 @@ main() {
 
     sig.wait();
     INFO("Virtio console received kick");
-    close(fd);
+    rc = shm_unlink(TMP_FILE);
+    if (rc != 0) {
+        perror("shm_unlink");
+        exit(1);
+    }
+
     return 0;
 }
