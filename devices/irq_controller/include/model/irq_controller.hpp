@@ -27,6 +27,18 @@ namespace Model {
         MAX_IRQ = 1024 - 4,
     };
 
+    struct IrqInfo {
+        bool active;
+        bool pending;
+        bool enabled;
+        bool in_injection;
+        uint8 priority;
+        uint32 target;
+        uint64 num_asserted;
+        uint64 num_acked;
+        uint64 num_handled;
+    };
+
     enum GICVersion {
         GIC_UNKNOWN = 0,
         GIC_V2 = 2,

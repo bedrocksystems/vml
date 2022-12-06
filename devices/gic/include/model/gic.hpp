@@ -764,17 +764,6 @@ public:
     bool is_affinity_routing_enabled() const { return _ctlr.affinity_routing(); }
     GICVersion version() const { return _version; }
 
-    struct IrqInfo {
-        bool active;
-        bool pending;
-        bool enabled;
-        bool in_injection;
-        uint8 priority;
-        uint32 target;
-        uint64 num_asserted;
-        uint64 num_acked;
-    };
-
     bool get_irq_info(Vcpu_id id, uint16 irq_id, IrqInfo &info) const {
         if (id >= _num_vcpus)
             return false;
