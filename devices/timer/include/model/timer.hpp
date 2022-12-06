@@ -21,6 +21,8 @@ private:
     Platform::Signal _ready_sig;
     Platform::Signal _wait_timer;
 
+    atomic<bool> _terminate{false};
+
 protected:
     Irq_controller *const _irq_ctlr;
     Vcpu_id const _vcpu;
@@ -81,5 +83,7 @@ public:
      *  \param ctx Platform specific data
      *  \param timer The timer object that will be partially owned by the timer loop thread
      */
-    [[noreturn]] static void timer_loop(const Platform_ctx *ctx, Model::Timer *timer);
+    static void timer_loop(const Platform_ctx *ctx, Model::Timer *timer);
+
+    void terminate();
 };

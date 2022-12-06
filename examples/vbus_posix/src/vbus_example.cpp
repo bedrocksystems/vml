@@ -77,7 +77,6 @@ main() {
     ok = ptimer.init_timer_loop(&ctx);
 
     std::thread timer_thread(Model::Timer::timer_loop, &ctx, &ptimer);
-    timer_thread.detach();
 
     ptimer.wait_for_loop_start();
 
@@ -125,6 +124,9 @@ main() {
 
     INFO("Waiting for the timer interrupt (2s wait)");
     wait_sm.acquire();
+
+    ptimer.terminate();
+    timer_thread.join();
 
     uint64 res;
     Firmware::Psci::smc_call_service(vctx, regs, vbus, 0x84000003u, res);

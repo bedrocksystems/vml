@@ -10,14 +10,14 @@
 #include <platform/context.hpp>
 #include <platform/log.hpp>
 
-[[noreturn]] void
+void
 Model::Timer::timer_loop(const Platform_ctx*, Model::Timer* timer) {
     ASSERT(timer != nullptr);
 
     INFO("The physical timer is ready");
     timer->set_ready();
 
-    while (1) {
+    while (not timer->_terminate) {
         bool released;
 
         /*
@@ -44,4 +44,10 @@ Model::Timer::timer_loop(const Platform_ctx*, Model::Timer* timer) {
 bool
 Model::Timer::init_timer_loop(const Platform_ctx* ctx) {
     return _wait_timer.init(ctx) && _ready_sig.init(ctx);
+}
+
+void
+Model::Timer::terminate() {
+    _terminate = true;
+    timer_wakeup();
 }
