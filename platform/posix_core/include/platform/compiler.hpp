@@ -16,6 +16,8 @@
  *  - ffs
  */
 
+#include <stdlib.h>
+
 #define __LIKELY__(x) __builtin_expect(!!(x), 1)
 #define __UNLIKELY__(x) __builtin_expect(!!(x), 0)
 #define __UNREACHED__ __builtin_unreachable()
@@ -27,3 +29,10 @@ ffs(unsigned int val) {
 
 /* provide interception for ABORT_WITH in log.hpp */
 extern void __on_abort();
+
+namespace cxx {
+    [[noreturn]] inline void abort() {
+        __on_abort();
+        exit(1);
+    }
+}
