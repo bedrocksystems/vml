@@ -16,6 +16,7 @@
 
 
 
+UNAME_S = $(shell uname -s | tr A-Z a-z)
 PLATFORM ?= posix
 LLVM ?= 1
 CXX ?= clang++
@@ -77,6 +78,10 @@ APPINCL = ./include ./include/$(ARCH_INC)
 IFLAGS = $(addprefix -I, $(APPINCL)) $(addprefix -I, $(INCLS))
 LINKDEPS = $(foreach l,$(LINKLIBS),$(call find_path_to_archive,$l))
 EXTRA_LINK = -pthread
+
+ifeq ($(UNAME_S), linux)
+EXTRA_LINK += -lrt
+endif
 
 CXXFLAGS ?= $(TARGET_FLAG) $(MFLAGS) $(AFLAGS) $(OFLAGS) $(FFLAGS) $(XFLAGS) $(IFLAGS) $(DFLAGS) $(WFLAGS)
 

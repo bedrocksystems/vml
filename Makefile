@@ -50,10 +50,28 @@ EXAMPLES = examples/vbus_posix examples/virtio_posix
 
 $(CMDGOAL): $(EXAMPLES)
 
+ifeq ($(CMDGOAL),test)
+SUBCMDGOAL=all
+else
+SUBCMDGOAL=$(CMDGOAL)
+endif
+
 $(EXAMPLES) $(SUBDIRS):
-		+$(MAKE) -C $@ BHV_ROOT=$(realpath .)/ VMM_ROOT=$(realpath .)/ $(CMDGOAL)
+		+$(MAKE) -C $@ BHV_ROOT=$(realpath .)/ VMM_ROOT=$(realpath .)/ $(SUBCMDGOAL)
 
 $(EXAMPLES): $(SUBDIRS)
+
+RUN_TEST_PREFIX=run_test_
+
+test: $(addprefix $(RUN_TEST_PREFIX),$(EXAMPLES))
+.PHONY: test
+
+define run_example
+$(RUN_TEST_PREFIX)$(1): $(1)
+	$(BLDDIR)$(1)/$(notdir $(1))
+endef
+
+$(foreach e,$(EXAMPLES),$(eval $(call run_example,$e)))
 
 else
 # Bedrock platform

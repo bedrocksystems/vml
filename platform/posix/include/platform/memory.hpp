@@ -11,6 +11,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include <platform/bits.hpp>
 #include <platform/mempage.hpp>
 #include <platform/types.hpp>
 
@@ -53,15 +54,37 @@ private:
     Platform::Mem::Cred _cred;
 };
 
+static inline mword
+align_mmap(mword &offset, mword size) {
+    size_t pagesize = static_cast<size_t>(getpagesize());
+    mword aligned_off = align_dn(offset, pagesize);
+    mword offset_in_page = offset - aligned_off;
+    size_t aligned_size = align_up(size + offset_in_page, pagesize);
+
+    offset = aligned_off;
+    size = aligned_size;
+
+    return offset_in_page;
+}
+
 static inline void *
 Platform::Mem::map_mem(const Platform::Mem::MemDescr &descr, mword offset, size_t size, int flags,
                        MemSel) {
-    return mmap(nullptr, size, flags, MAP_SHARED, static_cast<int>(descr.msel()),
-                static_cast<long>(offset));
+    mword offset_in_page = align_mmap(offset, size);
+    void *res = mmap(nullptr, size, flags, MAP_SHARED, static_cast<int>(descr.msel()),
+                     static_cast<long>(offset));
+    if (res == MAP_FAILED) {
+        perror("mmap");
+        return nullptr;
+    }
+
+    return reinterpret_cast<void *>(reinterpret_cast<mword>(res) + offset_in_page);
 }
 
 static inline bool
-Platform::Mem::unmap_mem(const void *addr, size_t length) {
-    int r = munmap(const_cast<void *>(addr), length);
+Platform::Mem::unmap_mem(const void *addr, size_t size) {
+    mword offset = reinterpret_cast<mword>(addr);
+    align_mmap(offset, size);
+    int r = munmap(const_cast<void *>(addr), size);
     return r == 0;
 }

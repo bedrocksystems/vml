@@ -29,7 +29,7 @@ static Semaphore wait_sm;
 
 class Dummy_vcpu : public Model::Cpu {
 public:
-    Dummy_vcpu(Model::GicD &gic) : Model::Cpu(&gic, 0, 0) {}
+    Dummy_vcpu(Model::GicD& gic) : Model::Cpu(&gic, 0, 0) {}
 
     virtual void recall(bool, RecallReason) override {
         DEBUG("VCPU recalled - an interrupt is waiting.");
@@ -55,6 +55,7 @@ main() {
     Dummy_vcpu vcpu(gicd);
     ok = vcpu.setup(&ctx);
     ASSERT(ok);
+    vcpu.switch_state_to_on();
 
     Model::Pl011 pl011(gicd, 0x42);
     Model::AA64Timer ptimer(gicd, 0, 0x12);
@@ -76,7 +77,6 @@ main() {
     ok = ptimer.init_timer_loop(&ctx);
 
     std::thread timer_thread(Model::Timer::timer_loop, &ctx, &ptimer);
-    timer_thread.detach();
 
     ptimer.wait_for_loop_start();
 
@@ -86,12 +86,20 @@ main() {
     ASSERT(ok == true);
 
     off_t file_size = 4096;
-    char fname[32];
-    strncpy(fname, "/tmp/bhv-XXXXXX", 32);
-    int fd = mkstemp(fname);
-    unlink(fname);
-    int rc = fallocate(fd, 0, 0, file_size);
-    ASSERT(rc == 0);
+    static constexpr char* TMP_FILE = "vml-vbus-example";
+
+    shm_unlink(TMP_FILE); // In case there was a file left behind
+    int fd = shm_open(TMP_FILE, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("shm_open");
+        exit(1);
+    }
+
+    int rc = ftruncate(fd, file_size);
+    if (rc == -1) {
+        perror("ftruncate");
+        exit(1);
+    }
 
     Model::SimpleAS as(Platform::Mem::MemDescr(fd), false);
     GPA gpa(0x10000000);
@@ -99,8 +107,6 @@ main() {
     ASSERT(ok == true);
     ok = vbus.register_device(&as, gpa.get_value(), mword(file_size));
     ASSERT(ok == true);
-
-    vbus.iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
 
     RegAccessor regs(ctx, 0);
     VcpuCtx vctx{nullptr, &regs, 0};
@@ -119,11 +125,18 @@ main() {
     INFO("Waiting for the timer interrupt (2s wait)");
     wait_sm.acquire();
 
+    ptimer.terminate();
+    timer_thread.join();
+
     uint64 res;
     Firmware::Psci::smc_call_service(vctx, regs, vbus, 0x84000003u, res);
 
     INFO("Done");
+    rc = shm_unlink(TMP_FILE);
+    if (rc != 0) {
+        perror("shm_unlink");
+        exit(1);
+    }
 
-    close(fd);
     return 0;
 }
