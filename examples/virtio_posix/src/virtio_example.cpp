@@ -157,7 +157,7 @@ main() {
 
     Vbus::Bus bus;
     off_t file_size = VIRTIO_RAM_SIZE;
-    static constexpr char *TMP_FILE = "tmp-bhv";
+    static constexpr char *TMP_FILE = "vml-virtio-example";
 
     shm_unlink(TMP_FILE); // In case there was a file left behind
     int fd = shm_open(TMP_FILE, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);

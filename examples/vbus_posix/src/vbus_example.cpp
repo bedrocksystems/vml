@@ -86,7 +86,7 @@ main() {
     ASSERT(ok == true);
 
     off_t file_size = 4096;
-    static constexpr char* TMP_FILE = "tmp-bhv";
+    static constexpr char* TMP_FILE = "vml-vbus-example";
 
     shm_unlink(TMP_FILE); // In case there was a file left behind
     int fd = shm_open(TMP_FILE, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
