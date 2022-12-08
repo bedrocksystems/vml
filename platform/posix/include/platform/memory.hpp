@@ -55,7 +55,7 @@ private:
 };
 
 static inline mword
-align_mmap(mword &offset, mword size) {
+align_mmap(mword &offset, mword &size) {
     size_t pagesize = static_cast<size_t>(getpagesize());
     mword aligned_off = align_dn(offset, pagesize);
     mword offset_in_page = offset - aligned_off;
