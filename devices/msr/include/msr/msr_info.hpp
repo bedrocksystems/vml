@@ -238,6 +238,12 @@ public:
         TG1_GRANULE_64KB = 0b11
     };
 
+    enum Tg0GranuleSize : uint64 {
+        TG0_GRANULE_16KB = 0b10,
+        TG0_GRANULE_4KB = 0b00,
+        TG0_GRANULE_64KB = 0b01
+    };
+
     static constexpr uint8 TG1_SHIFT = 30;
     static constexpr uint64 TG1_MASK = 0x3ull << TG1_SHIFT;
 
@@ -258,11 +264,11 @@ public:
     GranuleSize tg0() const {
         uint8 bits = static_cast<uint8>(bits_in_range(_value, 14, 15));
         switch (bits) {
-        case 0b10:
+        case TG0_GRANULE_16KB:
             return GRANULE_16KB;
-        case 0b00:
+        case TG0_GRANULE_4KB:
             return GRANULE_4KB;
-        case 0b01:
+        case TG0_GRANULE_64KB:
             return GRANULE_64KB;
         default:
             return GRANULE_INVALID;
