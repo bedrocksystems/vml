@@ -138,6 +138,7 @@ public:
     static Errno run(Vcpu_id);
     static uint16 get_num_vcpus();
     static Pcpu_id get_pcpu(Vcpu_id);
+    static VcpuVHWId get_vcpu_vhw_id(Vcpu_id);
 
     // Debugging/Info purposes: describe the current status of the VCPU
     // NOTE: the specification of this function is simply: returns a string
@@ -238,7 +239,8 @@ public:
     void switch_state_to_on();
     bool switch_state_to_emulating();
 
-    Vcpu_id id() const { return _vcpu_id; }
+    Vcpu_id id() const { return _vcpu_id; }           // VMM ID, linear from 0 to N
+    virtual VcpuVHWId vhw_id() const { return id(); } // virtual HW ID, can be non-linear
 
     // higher level API for CPU emulation
     bool begin_emulation() {
