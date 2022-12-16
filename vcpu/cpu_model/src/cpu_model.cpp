@@ -56,6 +56,12 @@ Model::Cpu::get_pcpu(Vcpu_id id) {
     return vcpus[id]->_pcpu_id;
 }
 
+VcpuVHWId
+Model::Cpu::get_vcpu_vhw_id(Vcpu_id id) {
+    ASSERT(id < configured_vcpus);
+    return vcpus[id]->vhw_id();
+}
+
 const char*
 Model::Cpu::cpu_state_string(Vcpu_id id) {
     ASSERT(id < configured_vcpus);
