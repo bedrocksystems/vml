@@ -23,9 +23,9 @@ class Platform::Mutex : public std::mutex {
 public:
     bool init([[maybe_unused]] const Platform_ctx* ctx = nullptr) { return true; }
 
-    Errno create(const Platform_ctx*) { return ENONE; }
+    Errno create(const Platform_ctx*) { return Errno::NONE; }
 
-    Errno destroy(const Platform_ctx*) { return ENONE; }
+    Errno destroy(const Platform_ctx*) { return Errno::NONE; }
 
     bool enter() {
         lock();

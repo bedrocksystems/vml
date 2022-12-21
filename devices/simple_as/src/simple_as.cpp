@@ -124,7 +124,7 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr, Platform::Mem::Me
         if (!b)
             ABORT_WITH("Unable to unmap region");
     }
-    return ENONE;
+    return Errno::NONE;
 }
 
 Errno
@@ -133,7 +133,7 @@ Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src,
     void* dst;
 
     Errno err = demand_map(gpa, size, dst, true, msel);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
@@ -178,7 +178,7 @@ Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool w
         va = get_vmm_view() + offset;
     }
 
-    return ENONE;
+    return Errno::NONE;
 }
 
 Errno
@@ -198,7 +198,7 @@ Model::SimpleAS::demand_unmap(const GPA&, size_t size_bytes, void* va,
             ABORT_WITH("Unable to unmap guest memory mem:0x%p size:0x%lx", va, size_bytes);
     }
 
-    return ENONE;
+    return Errno::NONE;
 }
 
 Errno
@@ -221,7 +221,7 @@ Model::SimpleAS::demand_unmap_clean(const GPA&, size_t size_bytes, void* va,
             ABORT_WITH("Unable to unmap guest memory mem:0x%p size:0x%lx", va, size_bytes);
     }
 
-    return ENONE;
+    return Errno::NONE;
 }
 
 void*
@@ -270,7 +270,7 @@ Model::SimpleAS::clean_invalidate(GPA gpa, size_t size, Platform::Mem::MemSel ms
         if (!b)
             ABORT_WITH("Unable to unmap region");
     }
-    return ENONE;
+    return Errno::NONE;
 }
 
 bool
@@ -376,7 +376,7 @@ Model::SimpleAS::demand_map_bus(const Vbus::Bus& bus, const GPA& gpa, size_t siz
     void* temp_va = nullptr;
     Errno err = tgt->demand_map(gpa, size_bytes, temp_va, write, Platform::Mem::REF_MEM);
 
-    if (ENONE == err) {
+    if (Errno::NONE == err) {
         va = temp_va;
     }
 

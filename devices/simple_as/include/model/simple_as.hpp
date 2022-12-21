@@ -349,12 +349,12 @@ public:
  * | Errno err;
  * |
  * | err = translator->gpa_to_va_{write}(addr, sz, va);
- * | if (Errno::ENONE != err) return err;
+ * | if (Errno::NONE != err) return err;
  * |
  * | // use [va] in a readable XOR writable way
  * |
  * | err = translator->gpa_to_va_post_{write}(addr, sz, va);
- * | if (Errno::ENONE != err) return err;
+ * | if (Errno::NONE != err) return err;
  */
 class GuestPhysicalToVirtual {
 public:
@@ -381,7 +381,7 @@ public:
         (void)(gpa);
         (void)(byte_size);
         (void)(va);
-        return ENONE;
+        return Errno::NONE;
     }
     virtual Errno gpa_to_va_post_write(const GPA &gpa, size_t byte_size, char *va) {
         return gpa_to_va_post(gpa, byte_size, va);
@@ -505,7 +505,7 @@ public:
      *  \param dst buffer that will receive the guest data
      *  \param size size to read
      *  \param addr start of the read on the guest AS
-     *  \return ENONE if the operation was a success, error code otherwise
+     *  \return Errno::NONE if the operation was a success, error code otherwise
      */
     Errno read(char *dst, size_t size, const GPA &addr,
                Platform::Mem::MemSel msel = Platform::Mem::REF_MEM) const;
@@ -549,7 +549,7 @@ public:
      *  \param gpa start of the write on the guest AS
      *  \param size size to write
      *  \param src buffer that contains the data to write
-     *  \return ENONE if the operation was a success, error code otherwise
+     *  \return Errno::NONE if the operation was a success, error code otherwise
      */
     Errno write(const GPA &gpa, size_t size, const char *src,
                 Platform::Mem::MemSel msel = Platform::Mem::REF_MEM) const;
@@ -647,7 +647,7 @@ public:
         ASSERT(_va == nullptr);
 
         Errno err = Model::SimpleAS::demand_map_bus(*_bus, _gpa, _size_bytes, va, _write);
-        if (err == ENONE)
+        if (err == Errno::NONE)
             _va = va;
         return err;
     }

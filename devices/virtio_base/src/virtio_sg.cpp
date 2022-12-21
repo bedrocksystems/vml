@@ -44,7 +44,7 @@ Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t siz
         return Errno::NOENT;
     }
 
-    return ENONE;
+    return Errno::NONE;
 }
 
 uint32
@@ -111,7 +111,7 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, void *extra,
                                         ChainWalkingCallback *callback) {
     Virtio::Descriptor root_desc;
     Errno err = vq.recv(root_desc);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
@@ -119,7 +119,7 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, void *extra,
 }
 
 // \pre "[this.reset(_)] has been invoked"
-// \pre "[desc] derived from a [vq->recv] call which returned [ENONE] (i.e. it is the
+// \pre "[desc] derived from a [vq->recv] call which returned [Errno::NONE] (i.e. it is the
 //       root of a descriptor chain in [vq])"
 Errno
 Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&root_desc,
@@ -196,14 +196,14 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
 
         callback->chain_walking_cb(err, node.address, node.length, node.flags, node.next, extra);
 
-        if (err != ENONE) {
+        if (err != Errno::NONE) {
             conclude_chain_use(vq, true);
             return err;
         }
     } while (next_en);
 
     _complete_chain = true;
-    return ENONE;
+    return Errno::NONE;
 }
 
 void
@@ -248,28 +248,28 @@ Virtio::Sg::Buffer::ChainAccessor::copy_between_gpa(BulkCopier *copier, ChainAcc
     Errno err;
 
     err = dst_accessor->gpa_to_va_write(dst_addr, size_bytes, dst_va);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
     err = src_accessor->gpa_to_va(src_addr, size_bytes, src_va);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
     copier->bulk_copy(dst_va, src_va, size_bytes);
 
     err = src_accessor->gpa_to_va_post(src_addr, size_bytes, src_va);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
     err = dst_accessor->gpa_to_va_post_write(dst_addr, size_bytes, dst_va);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
-    return ENONE;
+    return Errno::NONE;
 }
 
 Errno
@@ -283,18 +283,18 @@ Virtio::Sg::Buffer::ChainAccessor::copy_from_gpa(BulkCopier *copier, char *dst_v
     Errno err;
 
     err = gpa_to_va(src_addr, size_bytes, src_va);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
     copier->bulk_copy(dst_va, src_va, size_bytes);
 
     err = gpa_to_va_post(src_addr, size_bytes, src_va);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
-    return ENONE;
+    return Errno::NONE;
 }
 
 Errno
@@ -308,18 +308,18 @@ Virtio::Sg::Buffer::ChainAccessor::copy_to_gpa(BulkCopier *copier, const GPA &ds
     Errno err;
 
     err = gpa_to_va_write(dst_addr, size_bytes, dst_va);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
     copier->bulk_copy(dst_va, src_va, size_bytes);
 
     err = gpa_to_va_post_write(dst_addr, size_bytes, dst_va);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
-    return ENONE;
+    return Errno::NONE;
 }
 
 template<typename T_LINEAR, bool LINEAR_TO_SG, typename SG_MAYBE_CONST>
@@ -327,12 +327,12 @@ Errno
 Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *l,
                          size_t &size_bytes, size_t off, BulkCopier *copier) {
     if (0 == size_bytes) {
-        return ENONE;
+        return Errno::NONE;
     }
 
     Virtio::Sg::Buffer::Iterator it = sg.end();
     Errno err = sg.check_copy_configuration(accessor, size_bytes, off, it);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
@@ -357,11 +357,11 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
             }
 
             // NOTE: this function ensures that [copier] is non-null which means
-            // that any non-[ENONE] error code came from the address translation
+            // that any non-[Errno::NONE] error code came from the address translation
             // itself. Clients who need access to the particular translation
             // which failed can instrument custom tracking within their overload(s)
             // of [Sg::Buffer::ChainAccessor].
-            if (ENONE != accessor->copy_to_gpa(copier, node->address + off, l, n_copy)) {
+            if (Errno::NONE != accessor->copy_to_gpa(copier, node->address + off, l, n_copy)) {
                 return Errno::BADR;
             }
 
@@ -373,11 +373,11 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
             }
 
             // NOTE: this function ensures that [copier] is non-null which means
-            // that any non-[ENONE] error code came from the address translation
+            // that any non-[Errno::NONE] error code came from the address translation
             // itself. Clients who need access to the particular translation
             // which failed can instrument custom tracking within their overload(s)
             // of [Sg::Buffer::ChainAccessor].
-            if (ENONE != accessor->copy_from_gpa(copier, l, node->address + off, n_copy)) {
+            if (Errno::NONE != accessor->copy_from_gpa(copier, l, node->address + off, n_copy)) {
                 return Errno::BADR;
             }
         }
@@ -391,7 +391,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
         ++it;
     }
 
-    return ENONE;
+    return Errno::NONE;
 }
 
 Errno
@@ -413,18 +413,18 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
                          Virtio::Sg::Buffer &dst, const Virtio::Sg::Buffer &src, size_t &size_bytes,
                          size_t d_off, size_t s_off, BulkCopier *copier) {
     if (0 == size_bytes) {
-        return ENONE;
+        return Errno::NONE;
     }
 
     Virtio::Sg::Buffer::Iterator d = dst.end();
     Errno err = dst.check_copy_configuration(dst_accessor, size_bytes, d_off, d);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
     Virtio::Sg::Buffer::Iterator s = src.end();
     err = src.check_copy_configuration(src_accessor, size_bytes, s_off, s);
-    if (ENONE != err) {
+    if (Errno::NONE != err) {
         return err;
     }
 
@@ -449,13 +449,13 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
         }
 
         // NOTE: this function ensures that [copier]/[dst_accessor]/[src_accessor]
-        // are non-null which means that any non-[ENONE] error code came from the
+        // are non-null which means that any non-[Errno::NONE] error code came from the
         // address translation itself. Clients who need access to the particular
         // translation which failed can instrument custom tracking within their
         // overload(s) of [Sg::Buffer::ChainAccessor].
         err = ChainAccessor::copy_between_gpa(copier, dst_accessor, src_accessor,
                                               d->address + d_off, s->address + s_off, n_copy);
-        if (ENONE != err) {
+        if (Errno::NONE != err) {
             return Errno::BADR;
         }
 
@@ -479,7 +479,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
         }
     }
 
-    return ENONE;
+    return Errno::NONE;
 }
 
 Errno
@@ -495,7 +495,7 @@ Virtio::Sg::Buffer::descriptor_offset(size_t descriptor_chain_idx, size_t &offse
     }
 
     offset = off;
-    return ENONE;
+    return Errno::NONE;
 }
 
 Errno
@@ -504,7 +504,7 @@ Virtio::Sg::Buffer::init() {
     if (_nodes == nullptr)
         return Errno::NOMEM;
 
-    return ENONE;
+    return Errno::NONE;
 }
 
 Errno
@@ -514,7 +514,7 @@ Virtio::Sg::Buffer::root_desc_idx(uint16 &root_desc_idx) const {
         return Errno::NOENT;
     } else {
         root_desc_idx = _nodes[0]._desc.index();
-        return ENONE;
+        return Errno::NONE;
     }
 }
 

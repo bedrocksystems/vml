@@ -31,8 +31,8 @@ public:
     RWLock(RWLock&) = delete;
     RWLock(const RWLock&&) = delete;
 
-    Errno create(const Platform_ctx*) { return ENONE; }
-    Errno destroy(const Platform_ctx*) { return ENONE; }
+    Errno create(const Platform_ctx*) { return Errno::NONE; }
+    Errno destroy(const Platform_ctx*) { return Errno::NONE; }
     bool init([[maybe_unused]] const Platform_ctx* = nullptr) { return true; }
 
     void wenter() {

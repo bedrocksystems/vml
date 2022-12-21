@@ -32,7 +32,7 @@ namespace Virtio {
             next_en = false;
         }
 
-        return ENONE;
+        return Errno::NONE;
     }
 };
 
@@ -90,7 +90,7 @@ namespace Virtio {
     }
 
     // "Receive" the head of a descriptor chain from the guest. It retrieves the head of a chain of
-    // descriptors to be processed and modified by the host. If the return value is [ENONE] then
+    // descriptors to be processed and modified by the host. If the return value is [Errno::NONE] then
     // the reference argument will contain the head of a descriptor chain, else it will be left
     // unchanged.
     //
@@ -127,7 +127,7 @@ namespace Virtio {
             return Errno::NOTRECOVERABLE;
 
         desc = Descriptor(_descriptor_base, available_ring_idx);
-        return ENONE;
+        return Errno::NONE;
     }
 
     // Returns the number of queue elements available for processing.
@@ -225,7 +225,7 @@ namespace Virtio {
         // but the compiler isn't smart enough to realize this.
         uint16 desc_idx = static_cast<uint16>(_used.ring(_idx++ % _size).id() % _size);
         desc = Descriptor(_descriptor_base, desc_idx);
-        return ENONE;
+        return Errno::NONE;
     }
 
     // Returns the number of queue elements available for processing.
@@ -288,7 +288,7 @@ namespace Virtio {
 
         // Construct a DriverQueue using the allocated regions.
         out = Virtio::DriverQueue(desc, avail, used, num_entries);
-        return ENONE;
+        return Errno::NONE;
     }
 
     void DriverQueue::delete_driver_queue(Virtio::DriverQueue &queue) {

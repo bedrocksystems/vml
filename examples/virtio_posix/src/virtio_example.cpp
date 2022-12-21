@@ -44,7 +44,7 @@ public:
     Dummy_vcpu(Model::GicD &gic) : Model::Cpu(&gic, 0, 0) {}
 
     virtual void recall(bool, RecallReason) override {}
-    virtual Errno run() override { return ENONE; }
+    virtual Errno run() override { return Errno::NONE; }
 };
 
 class Dummy_Virtio_Interface : public Virtio::Callback {

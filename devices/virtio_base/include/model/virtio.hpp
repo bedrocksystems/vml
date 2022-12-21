@@ -119,7 +119,7 @@ public:
         }
 
         va = mapped_va;
-        return ENONE;
+        return Errno::NONE;
     }
     Errno gpa_to_va_write(const GPA &gpa, size_t size_bytes, char *&va) override {
         char *mapped_va = Model::SimpleAS::map_guest_mem(*_vbus, gpa, size_bytes, true);
@@ -129,10 +129,10 @@ public:
         }
 
         va = mapped_va;
-        return ENONE;
+        return Errno::NONE;
     }
     Errno gpa_to_va_post(const GPA &, size_t size_bytes, char *va) override {
         Model::SimpleAS::unmap_guest_mem(va, size_bytes);
-        return ENONE;
+        return Errno::NONE;
     }
 };

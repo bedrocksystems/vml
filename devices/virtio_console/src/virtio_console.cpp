@@ -33,7 +33,7 @@ Model::Virtio_console::to_guest(const char *buff, size_t size_bytes) {
     size_t buf_idx = 0;
     while (size_bytes) {
         Errno err = _rx_buff.walk_chain(device_queue(RX));
-        if (ENONE != err) {
+        if (Errno::NONE != err) {
             assert_irq();
             return false;
         }
@@ -46,7 +46,7 @@ Model::Virtio_console::to_guest(const char *buff, size_t size_bytes) {
         _rx_buff.conclude_chain_use(device_queue(RX));
         assert_irq();
 
-        if (ENONE != err) {
+        if (Errno::NONE != err) {
             return false; /* outside guest physical memory */
         }
 
@@ -63,7 +63,7 @@ Model::Virtio_console::from_guest(char *out_buf, size_t size_bytes) {
         return 0;
 
     size_t was_read = 0;
-    Errno err = ENONE;
+    Errno err = Errno::NONE;
 
     while (size_bytes != 0) {
         // NOTE: prior to any [walk_chain] - or right after a [conclude_chain_use] - [0 ==
@@ -71,7 +71,7 @@ Model::Virtio_console::from_guest(char *out_buf, size_t size_bytes) {
         if (0 == _tx_buff.size_bytes()) {
             _tx_buff_progress = 0;
             err = _tx_buff.walk_chain(device_queue(TX));
-            if (ENONE != err) {
+            if (Errno::NONE != err) {
                 break;
             }
         }
@@ -84,11 +84,11 @@ Model::Virtio_console::from_guest(char *out_buf, size_t size_bytes) {
             err = Virtio::Sg::Buffer::copy(this, out_buf + was_read, _tx_buff, n_copy,
                                            _tx_buff_progress);
         }
-        if (ENONE != err || 0 == n_copy) {
+        if (Errno::NONE != err || 0 == n_copy) {
             _tx_buff.conclude_chain_use(device_queue(TX));
             assert_irq();
 
-            if (ENONE != err)
+            if (Errno::NONE != err)
                 return was_read;
         } else {
             _tx_buff_progress += n_copy;

@@ -60,9 +60,9 @@ public:
           _sig_notify_event(sig) {}
 
     bool init(const Platform_ctx *ctx) {
-        if (ENONE != _rx_buff.init())
+        if (Errno::NONE != _rx_buff.init())
             return false;
-        if (ENONE != _tx_buff.init())
+        if (Errno::NONE != _tx_buff.init())
             return false;
         return _sig_notify_empty_space.init(ctx);
     }
@@ -87,7 +87,7 @@ public:
         void *temp_va = nullptr;
         Errno err = Model::SimpleAS::demand_map_bus(*_vbus, gpa, size_bytes, temp_va, false);
 
-        if (ENONE == err) {
+        if (Errno::NONE == err) {
             va = static_cast<char *>(temp_va);
         }
 
@@ -97,7 +97,7 @@ public:
         void *temp_va = nullptr;
         Errno err = Model::SimpleAS::demand_map_bus(*_vbus, gpa, size_bytes, temp_va, true);
 
-        if (ENONE == err) {
+        if (Errno::NONE == err) {
             va = static_cast<char *>(temp_va);
         }
 

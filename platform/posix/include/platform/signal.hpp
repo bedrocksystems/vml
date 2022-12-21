@@ -36,8 +36,8 @@ public:
      */
     bool init(const Platform_ctx*) { return true; }
 
-    Errno create(const Platform_ctx*) { return ENONE; }
-    Errno destroy(const Platform_ctx*) { return ENONE; }
+    Errno create(const Platform_ctx*) { return Errno::NONE; }
+    Errno destroy(const Platform_ctx*) { return Errno::NONE; }
 
     /*! \brief Wait for a signal
      */

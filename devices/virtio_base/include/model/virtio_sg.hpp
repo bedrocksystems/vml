@@ -154,7 +154,7 @@ public:
     Errno walk_chain_callback(Virtio::Queue &vq, void *extra, ChainWalkingCallback *callback);
 
     // \pre "[this.reset(_)] has been invoked"
-    // \pre "[desc] derived from a [vq->recv] call which returned [ENONE] (i.e. it is the
+    // \pre "[desc] derived from a [vq->recv] call which returned [Errno::NONE] (i.e. it is the
     //       root of a descriptor chain in [vq])"
     Errno walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&root_desc, void *extra,
                               ChainWalkingCallback *callback);

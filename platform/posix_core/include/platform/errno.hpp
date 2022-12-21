@@ -10,7 +10,7 @@
 /*! \file Exposes error code compatible with Zeta
  *
  *  We borrow the error codes from the standard errno.h and
- *  redefine ENONE since this is the only one that is not standard.
+ *  redefine Errno::NONE since this is the only one that is not standard.
  */
 
 #include <errno.h>
@@ -21,8 +21,7 @@
 #endif
 
 enum Errno {
-    ENONE = 0,
-    NONE = ENONE,
+    NONE = 0,
     PERM = EPERM,
     BADR = EBADR,
     INVAL = EINVAL,

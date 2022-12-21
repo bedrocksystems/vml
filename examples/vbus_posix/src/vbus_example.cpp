@@ -36,7 +36,7 @@ public:
 
         wait_sm.release();
     }
-    virtual Errno run() override { return ENONE; }
+    virtual Errno run() override { return Errno::NONE; }
 };
 
 int

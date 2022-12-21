@@ -92,7 +92,7 @@ public:
         if (!_sig_emulating.init(ctx) || !_waiter_mutex.init(ctx))
             return Errno::NOMEM;
 
-        return ENONE;
+        return Errno::NONE;
     }
 
     void wait_for_emulation_end() { _sig_emulating.wait(); }
@@ -130,7 +130,7 @@ public:
         if (!_sm_all_initialized.init(ctx))
             return Errno::NOMEM;
 
-        return ENONE;
+        return Errno::NONE;
     }
 
     void wait_for_all_vcpus_initialized() { _sm_all_initialized.acquire(); }
@@ -160,7 +160,7 @@ Vcpu::Roundup::init(const Platform_ctx* ctx, uint16 num_vcpus) {
     parallel_info.count = 0;
 
     Errno err = initialized_info.init(ctx, num_vcpus);
-    if (err != ENONE)
+    if (err != Errno::NONE)
         return err;
 
     return roundup_info.init(ctx, num_vcpus);
