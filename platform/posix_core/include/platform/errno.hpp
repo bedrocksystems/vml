@@ -20,7 +20,7 @@
 #define EBADR 200 // Pick a high number that won't collide with something else
 #endif
 
-enum Errno {
+enum class Errno {
     NONE = 0,
     PERM = EPERM,
     BADR = EBADR,
