@@ -49,6 +49,14 @@ namespace Log {
         vfprintf(stdout, fmt, args);
         va_end(args);
     }
+
+    __attribute__((format(printf, 3, 0))) inline void _vlog(Log_level, bool enabled,
+                                                            const char *fmt, va_list vap) {
+        if (!enabled)
+            return;
+
+        vfprintf(stdout, fmt, vap);
+    }
 }
 
 #define FMTx64 "0x%" PRIx64
