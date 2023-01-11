@@ -24,10 +24,9 @@ Vbus::Bus::lookup(mword addr, uint64 bytes) const {
 }
 
 void
-Vbus::Bus::log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry, Vbus::Access access, mword addr,
+Vbus::Bus::log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry,
+                          const Vbus::Bus::DeviceEntry* last_entry, Vbus::Access access, mword addr,
                           uint8 bytes, uint64 val) {
-    const DeviceEntry* last_entry = _last_access;
-
     if (last_entry != cur_entry) {
         if (_fold && _num_accesses > 1 && last_entry != nullptr) {
             INFO("%s accessed %llu times", last_entry->device->name(), _num_accesses.load());
@@ -43,6 +42,22 @@ Vbus::Bus::log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry, Vbus::Access 
     _num_accesses = 0;
 
     return;
+}
+
+Vbus::Err
+Vbus::Bus::access_with_dev(Device* dev, Vbus::Access access, const VcpuCtx& vcpu_ctx, mword off,
+                           uint8 bytes, uint64& val) {
+    clock_t start = 0;
+    if (Stats::enabled()) {
+        dev->accessed();
+        start = clock();
+    }
+
+    Err err = dev->access(access, &vcpu_ctx, _space, off, bytes, val);
+    if (Stats::enabled())
+        dev->add_time(static_cast<size_t>(clock() - start));
+
+    return err;
 }
 
 Vbus::Err
@@ -62,8 +77,7 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
         return NO_DEVICE;
 
     Range<mword> target(addr, access_size);
-    const DeviceEntry* entry;
-    Device* dev;
+    const DeviceEntry *entry, *previous_entry = nullptr;
 
     entry = _last_access;
     if (entry == nullptr || !entry->contains(target)) {
@@ -75,27 +89,21 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
     }
 
     if (_trace) {
-        log_trace_info(entry, access, addr, bytes, val);
+        previous_entry = _last_access;
+        if (access == Vbus::READ)
+            val = 0ull; // Initialize to zero for logging purposes
     }
 
     if (_last_access != entry) {
         _last_access = entry;
     }
 
-    dev = entry->device;
     mword off = absolute_access ? addr : addr - entry->begin();
     _vbus_lock.rexit();
 
-    clock_t start = 0;
-    if (Stats::enabled()) {
-        dev->accessed();
-        start = clock();
-    }
-
-    Err err = dev->access(access, &vcpu_ctx, _space, off, bytes, val);
-
-    if (Stats::enabled())
-        dev->add_time(static_cast<size_t>(clock() - start));
+    Err err = access_with_dev(entry->device, access, vcpu_ctx, off, bytes, val);
+    if (_trace)
+        log_trace_info(entry, previous_entry, access, addr, bytes, val);
 
     return err;
 }

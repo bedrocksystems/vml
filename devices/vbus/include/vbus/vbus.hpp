@@ -225,10 +225,13 @@ private:
 
     static void reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
 
-    void log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry, Vbus::Access access, mword addr,
+    void log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry,
+                        const Vbus::Bus::DeviceEntry* last_entry, Vbus::Access access, mword addr,
                         uint8 bytes, uint64 val);
 
     const DeviceEntry* lookup(mword addr, uint64 bytes) const;
+    Err access_with_dev(Device* dev, Vbus::Access access, const VcpuCtx& vcpu_ctx, mword off,
+                        uint8 bytes, uint64& val);
 
     RangeMap<mword> _devices;
     Space _space;
