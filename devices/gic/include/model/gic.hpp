@@ -850,7 +850,7 @@ public:
     virtual uint8 int_ack() override {
         ABORT_WITH("interrupt ACK shouldn't be called on the GICR");
     }
-    virtual bool int_pending() override {
+    virtual bool int_pending(uint8 *) override {
         return _gic_d->has_irq_in_injection(_vcpu_id) or _gic_d->has_irq_to_inject(_vcpu_id);
     }
 

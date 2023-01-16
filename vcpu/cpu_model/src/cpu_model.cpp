@@ -485,12 +485,13 @@ Model::Cpu::set_space_on(Vcpu_id id, RegAccessor& regs, Platform::Mem::MemSel sp
 
 void
 Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolute) {
+    uint8 irr;
     if (!will_timeout)
-        while (!_lirq_ctlr->int_pending() and !_lirq_ctlr->nmi_pending() and !is_roundup_pending()
-               and !_dump_regs.is_requested())
+        while (!_lirq_ctlr->int_pending(&irr) and !_lirq_ctlr->nmi_pending()
+               and !is_roundup_pending() and !_dump_regs.is_requested())
             block();
     else {
-        if (!_lirq_ctlr->int_pending() and !is_roundup_pending() and !_dump_regs.is_requested())
+        if (!_lirq_ctlr->int_pending(&irr) and !is_roundup_pending() and !_dump_regs.is_requested())
             block_timeout(timeout_absolute);
     }
 }
