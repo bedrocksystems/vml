@@ -164,9 +164,9 @@ Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool w
     }
 
     mword offset = gpa.get_value() - get_guest_view().get_value();
-    DEBUG("demand_map pa:0x%llx size:0x%lx write:%d (+0x%lx)", gpa.get_value(), size_bytes, write,
-          offset);
     if (!mapped(msel)) {
+        DEBUG("demand_map pa:0x%llx size:0x%lx write:%d (+0x%lx)", gpa.get_value(), size_bytes,
+              write, offset);
         va = Platform::Mem::map_mem(_mobject, offset, size_bytes,
                                     Platform::Mem::READ | (write ? Platform::Mem::WRITE : 0),
                                     memsel);
@@ -184,8 +184,6 @@ Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool w
 Errno
 Model::SimpleAS::demand_unmap(const GPA&, size_t size_bytes, void* va,
                               Platform::Mem::MemSel msel) const {
-    DEBUG("demand_unmap mem:0x%p size:0x%lx", va, size_bytes);
-
     Platform::Mem::MemSel memsel = msel;
 
     if (memsel == Platform::Mem::REF_MEM) {
@@ -193,6 +191,7 @@ Model::SimpleAS::demand_unmap(const GPA&, size_t size_bytes, void* va,
     }
 
     if (!mapped(memsel)) {
+        DEBUG("demand_unmap mem:0x%p size:0x%lx", va, size_bytes);
         bool b = Platform::Mem::unmap_mem(va, size_bytes);
         if (!b)
             ABORT_WITH("Unable to unmap guest memory mem:0x%p size:0x%lx", va, size_bytes);
@@ -204,8 +203,6 @@ Model::SimpleAS::demand_unmap(const GPA&, size_t size_bytes, void* va,
 Errno
 Model::SimpleAS::demand_unmap_clean(const GPA&, size_t size_bytes, void* va,
                                     Platform::Mem::MemSel msel) const {
-    DEBUG("demand_unmap_clean mem:0x%p size:0x%lx", va, size_bytes);
-
     Platform::Mem::MemSel memsel = msel;
 
     if (memsel == Platform::Mem::REF_MEM) {
@@ -216,6 +213,8 @@ Model::SimpleAS::demand_unmap_clean(const GPA&, size_t size_bytes, void* va,
     icache_invalidate_range(va, size_bytes);
 
     if (!mapped(memsel)) {
+        DEBUG("demand_unmap_clean mem:0x%p size:0x%lx", va, size_bytes);
+
         bool b = Platform::Mem::unmap_mem(va, size_bytes);
         if (!b)
             ABORT_WITH("Unable to unmap guest memory mem:0x%p size:0x%lx", va, size_bytes);
