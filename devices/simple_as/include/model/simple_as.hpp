@@ -596,14 +596,12 @@ public:
      */
     char *gpa_to_vmm_view(GPA addr, size_t sz) const;
 
-    void *map_view(mword offset, size_t size, bool write,
-                   Platform::Mem::MemSel msel = Platform::Mem::REF_MEM) const;
+    void *map_view(mword offset, size_t size, bool write) const;
 
     bool is_read_only() const { return _read_only; }
 
     static char *gpa_to_vmm_view(const Vbus::Bus &bus, GPA addr, size_t sz);
-    static char *map_guest_mem(const Vbus::Bus &bus, GPA gpa, size_t sz, bool write,
-                               Platform::Mem::MemSel msel = Platform::Mem::REF_MEM);
+    static char *map_guest_mem(const Vbus::Bus &bus, GPA gpa, size_t sz, bool write);
     static void unmap_guest_mem(const void *mem, size_t sz);
 
     static Model::SimpleAS *get_as_device_at(const Vbus::Bus &bus, GPA addr, size_t sz);
@@ -617,11 +615,13 @@ public:
                                   Vector<Model::SimpleAS *> &out);
     Errno clean_invalidate(GPA gpa, size_t size, Platform::Mem::MemSel msel) const;
 
-protected:
-    uint64 single_access_read(uint64 off, uint8 size, Platform::Mem::MemSel msel) const;
-    void single_access_write(uint64 off, uint8 size, uint64 value,
-                             Platform::Mem::MemSel msel) const;
+    uint64 single_access_read(uint64 off, uint8 size) const;
+    void single_access_write(uint64 off, uint8 size, uint64 value) const;
 
+    static uint64 single_mapped_read(void *ptr, uint8 size);
+    static void single_mapped_write(void *ptr, uint8 size, uint64 value);
+
+protected:
     /*! \brief Iterate over this AS and make sure that all data made it to physical RAM
      *  \pre Partial ownership of this device
      *  \post Ownership unchanged

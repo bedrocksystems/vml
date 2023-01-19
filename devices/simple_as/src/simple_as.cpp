@@ -17,20 +17,11 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
 uint64
-Model::SimpleAS::single_access_read(uint64 off, uint8 size, Platform::Mem::MemSel msel) const {
-    ASSERT(off % size == 0);
+Model::SimpleAS::single_mapped_read(void* ptr, uint8 size) {
     ASSERT(size <= sizeof(uint64));
-
-    uint64 ret;
-    void* ptr;
-    if (!mapped(msel)) {
-        ptr = map_view(off, size, true, msel);
-    } else {
-        ptr = get_vmm_view() + off;
-    }
-
     ASSERT(ptr != nullptr);
 
+    uint64 ret;
     switch (size) {
     case sizeof(uint8):
         ret = *(reinterpret_cast<uint8*>(ptr));
@@ -49,25 +40,12 @@ Model::SimpleAS::single_access_read(uint64 off, uint8 size, Platform::Mem::MemSe
         __UNREACHED__;
     }
 
-    if (!mapped(msel)) {
-        unmap_guest_mem(ptr, size);
-    }
     return ret;
 }
 
 void
-Model::SimpleAS::single_access_write(uint64 off, uint8 size, uint64 value,
-                                     Platform::Mem::MemSel msel) const {
-    ASSERT(off % size == 0);
+Model::SimpleAS::single_mapped_write(void* ptr, uint8 size, uint64 value) {
     ASSERT(size <= sizeof(uint64));
-
-    void* ptr;
-    if (!mapped(msel)) {
-        ptr = map_view(off, size, true, msel);
-    } else {
-        ptr = get_vmm_view() + off;
-    }
-
     ASSERT(ptr != nullptr);
 
     switch (size) {
@@ -89,11 +67,48 @@ Model::SimpleAS::single_access_write(uint64 off, uint8 size, uint64 value,
     }
 
     icache_sync_range(ptr, size);
-    if (!mapped(msel)) {
+}
+#pragma GCC diagnostic pop
+
+uint64
+Model::SimpleAS::single_access_read(uint64 off, uint8 size) const {
+    ASSERT(off % size == 0);
+    ASSERT(size <= sizeof(uint64));
+
+    uint64 ret;
+    void* ptr;
+    if (!mapped()) {
+        ptr = map_view(off, size, true);
+    } else {
+        ptr = get_vmm_view() + off;
+    }
+
+    ret = single_mapped_read(ptr, size);
+
+    if (!mapped()) {
+        unmap_guest_mem(ptr, size);
+    }
+    return ret;
+}
+
+void
+Model::SimpleAS::single_access_write(uint64 off, uint8 size, uint64 value) const {
+    ASSERT(off % size == 0);
+    ASSERT(size <= sizeof(uint64));
+
+    void* ptr;
+    if (!mapped()) {
+        ptr = map_view(off, size, true);
+    } else {
+        ptr = get_vmm_view() + off;
+    }
+
+    single_mapped_write(ptr, size, value);
+
+    if (!mapped()) {
         unmap_guest_mem(ptr, size);
     }
 }
-#pragma GCC diagnostic pop
 
 Errno
 Model::SimpleAS::read(char* dst, size_t size, const GPA& addr, Platform::Mem::MemSel msel) const {
@@ -224,19 +239,13 @@ Model::SimpleAS::demand_unmap_clean(const GPA&, size_t size_bytes, void* va,
 }
 
 void*
-Model::SimpleAS::map_view(mword offset, size_t size, bool write,
-                          Platform::Mem::MemSel memsel) const {
-    Platform::Mem::MemSel msel = memsel;
-
+Model::SimpleAS::map_view(mword offset, size_t size, bool write) const {
     if (_read_only && write && !_mobject.cred().write())
         return nullptr;
 
-    if (msel == Platform::Mem::REF_MEM) {
-        msel = get_mem_fd().msel();
-    }
-
-    void* dst = Platform::Mem::map_mem(
-        _mobject, offset, size, Platform::Mem::READ | (write ? Platform::Mem::WRITE : 0), msel);
+    void* dst = Platform::Mem::map_mem(_mobject, offset, size,
+                                       Platform::Mem::READ | (write ? Platform::Mem::WRITE : 0),
+                                       get_mem_fd().msel());
     if (dst == nullptr)
         ABORT_WITH("Unable to map view of the guest region:0x%llx offset:0x%lx "
                    "size:0x%lx",
@@ -437,8 +446,7 @@ Model::SimpleAS::destruct() {
 }
 
 char*
-Model::SimpleAS::map_guest_mem(const Vbus::Bus& bus, GPA gpa, size_t sz, bool write,
-                               Platform::Mem::MemSel msel) {
+Model::SimpleAS::map_guest_mem(const Vbus::Bus& bus, GPA gpa, size_t sz, bool write) {
     Model::SimpleAS* tgt = get_as_device_at(bus, gpa, sz);
     if (tgt == nullptr) {
         WARN("Cannot map guest memory pa:0x%llx size:0x%lx. Memory range doesn't exist",
@@ -455,7 +463,7 @@ Model::SimpleAS::map_guest_mem(const Vbus::Bus& bus, GPA gpa, size_t sz, bool wr
     mword offset = gpa.get_value() - tgt->get_guest_view().get_value();
     DEBUG("map_guest_mem pa:0x%llx size:0x%lx write:%d (+0x%lx)", gpa.get_value(), sz, write,
           offset);
-    void* dst = tgt->map_view(offset, sz, write, msel);
+    void* dst = tgt->map_view(offset, sz, write);
     if (dst == nullptr) {
         WARN("Unable to map a chunk pa:%llx size:0x%lx", gpa.get_value(), sz);
     }
