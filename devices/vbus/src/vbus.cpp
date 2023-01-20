@@ -63,25 +63,18 @@ Vbus::Bus::access_with_dev(Device* dev, Vbus::Access access, const VcpuCtx& vcpu
 Vbus::Err
 Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 bytes,
                   uint64& val) {
-
     bool absolute_access = _absolute_access; // silly but currently needed to simplify proof
 
     _vbus_lock.renter();
-    /*
-     * When the size if unknown, consider that this only touching the first device encountered.
-     * We will replay the instruction as necessary. Still let the device know that the size of the
-     * access is not available at this time.
-     */
-    uint8 access_size = (bytes == SIZE_UNKNOWN ? 1 : bytes);
-    if (__UNLIKELY__((addr + access_size <= addr)))
+    if (__UNLIKELY__((addr + bytes <= addr)))
         return NO_DEVICE;
 
-    Range<mword> target(addr, access_size);
+    Range<mword> target(addr, bytes);
     const DeviceEntry *entry, *previous_entry = nullptr;
 
     entry = _last_access;
     if (entry == nullptr || !entry->contains(target)) {
-        entry = lookup(addr, access_size);
+        entry = lookup(addr, bytes);
         if (entry == nullptr) {
             _vbus_lock.rexit();
             return NO_DEVICE;
