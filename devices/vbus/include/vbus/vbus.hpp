@@ -48,16 +48,6 @@ namespace Vbus {
         EXEC = EXEC_USER | EXEC_SUPERVISOR,
     };
 
-    /*! \brief Special value used by the Vbus caller to specify that the access size is not known
-     *
-     * In practice, this is used when the VM exit handler in itself does not have enough
-     * information to infer the size. Finding out the size will usually require some manual
-     * instruction decoding and emulation. This is left to the device for now. A virtual device
-     * shouldn't need to worry about this case but it is useful for the virtual RAM.
-     */
-    //    static constexpr uint8 SIZE_UNKNOWN = static_cast<uint8>(~0x0);
-    enum : uint8 { SIZE_UNKNOWN = static_cast<uint8>(~0x0) };
-
     class Device;
     class Bus;
 }
