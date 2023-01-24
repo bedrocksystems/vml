@@ -111,20 +111,16 @@ Model::SimpleAS::single_access_write(uint64 off, uint8 size, uint64 value) const
 }
 
 Errno
-Model::SimpleAS::read(char* dst, size_t size, const GPA& addr, Platform::Mem::MemSel msel) const {
+Model::SimpleAS::read(char* dst, size_t size, const GPA& addr) const {
     if (!is_gpa_valid(addr, size))
         return Errno::INVAL;
 
     mword offset = addr.get_value() - get_guest_view().get_value();
     void* src;
-    Platform::Mem::MemSel memsel = msel;
 
-    if (memsel == Platform::Mem::REF_MEM) {
-        memsel = get_mem_fd().msel();
-    }
-
-    if (!mapped(msel)) {
-        src = Platform::Mem::map_mem(_mobject, offset, size, Platform::Mem::READ, memsel);
+    if (!mapped()) {
+        src = Platform::Mem::map_mem(_mobject, offset, size, Platform::Mem::READ,
+                                     get_mem_fd().msel());
         if (src == nullptr)
             return Errno::NOMEM;
     } else {
@@ -134,7 +130,7 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr, Platform::Mem::Me
     memcpy(dst, src, size);
 
     /* unmap */
-    if (!mapped(msel)) {
+    if (!mapped()) {
         bool b = Platform::Mem::unmap_mem(src, size);
         if (!b)
             ABORT_WITH("Unable to unmap region");
@@ -143,11 +139,10 @@ Model::SimpleAS::read(char* dst, size_t size, const GPA& addr, Platform::Mem::Me
 }
 
 Errno
-Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src,
-                       Platform::Mem::MemSel msel) const {
+Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src) const {
     void* dst;
 
-    Errno err = demand_map(gpa, size, dst, true, msel);
+    Errno err = demand_map(gpa, size, dst, true);
     if (Errno::NONE != err) {
         return err;
     }
@@ -155,16 +150,13 @@ Model::SimpleAS::write(const GPA& gpa, size_t size, const char* src,
     memcpy(dst, src, size);
 
     if (_flush_on_write)
-        return demand_unmap_clean(gpa, size, dst, msel);
+        return demand_unmap_clean(gpa, size, dst);
 
-    return demand_unmap(gpa, size, dst, msel);
+    return demand_unmap(gpa, size, dst);
 }
 
 Errno
-Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool write,
-                            Platform::Mem::MemSel msel) const {
-    Platform::Mem::MemSel memsel = msel;
-
+Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool write) const {
     if (!is_gpa_valid(gpa, size_bytes))
         return Errno::INVAL;
 
@@ -174,17 +166,13 @@ Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool w
         return Errno::PERM;
     }
 
-    if (memsel == Platform::Mem::REF_MEM) {
-        memsel = get_mem_fd().msel();
-    }
-
     mword offset = gpa.get_value() - get_guest_view().get_value();
-    if (!mapped(msel)) {
+    if (!mapped()) {
         DEBUG("demand_map pa:0x%llx size:0x%lx write:%d (+0x%lx)", gpa.get_value(), size_bytes,
               write, offset);
         va = Platform::Mem::map_mem(_mobject, offset, size_bytes,
                                     Platform::Mem::READ | (write ? Platform::Mem::WRITE : 0),
-                                    memsel);
+                                    get_mem_fd().msel());
         if (va == nullptr) {
             WARN("Unable to map a chunk pa:%llx size:0x%lx", gpa.get_value(), size_bytes);
             return Errno::NOMEM;
@@ -197,15 +185,8 @@ Model::SimpleAS::demand_map(const GPA& gpa, size_t size_bytes, void*& va, bool w
 }
 
 Errno
-Model::SimpleAS::demand_unmap(const GPA&, size_t size_bytes, void* va,
-                              Platform::Mem::MemSel msel) const {
-    Platform::Mem::MemSel memsel = msel;
-
-    if (memsel == Platform::Mem::REF_MEM) {
-        memsel = get_mem_fd().msel();
-    }
-
-    if (!mapped(memsel)) {
+Model::SimpleAS::demand_unmap(const GPA&, size_t size_bytes, void* va) const {
+    if (!mapped()) {
         DEBUG("demand_unmap mem:0x%p size:0x%lx", va, size_bytes);
         bool b = Platform::Mem::unmap_mem(va, size_bytes);
         if (!b)
@@ -216,18 +197,11 @@ Model::SimpleAS::demand_unmap(const GPA&, size_t size_bytes, void* va,
 }
 
 Errno
-Model::SimpleAS::demand_unmap_clean(const GPA&, size_t size_bytes, void* va,
-                                    Platform::Mem::MemSel msel) const {
-    Platform::Mem::MemSel memsel = msel;
-
-    if (memsel == Platform::Mem::REF_MEM) {
-        memsel = get_mem_fd().msel();
-    }
-
+Model::SimpleAS::demand_unmap_clean(const GPA&, size_t size_bytes, void* va) const {
     dcache_clean_range(va, size_bytes);
     icache_invalidate_range(va, size_bytes);
 
-    if (!mapped(memsel)) {
+    if (!mapped()) {
         DEBUG("demand_unmap_clean mem:0x%p size:0x%lx", va, size_bytes);
 
         bool b = Platform::Mem::unmap_mem(va, size_bytes);
@@ -255,16 +229,17 @@ Model::SimpleAS::map_view(mword offset, size_t size, bool write) const {
 }
 
 Errno
-Model::SimpleAS::clean_invalidate(GPA gpa, size_t size, Platform::Mem::MemSel msel) const {
+Model::SimpleAS::clean_invalidate(GPA gpa, size_t size) const {
     if (!is_gpa_valid(gpa, size))
         return Errno::INVAL;
 
     mword offset = gpa.get_value() - get_guest_view().get_value();
     void* dst;
 
-    if (!mapped(msel)) {
+    if (!mapped()) {
         dst = Platform::Mem::map_mem(_mobject, offset, size,
-                                     Platform::Mem::READ | Platform::Mem::WRITE, msel);
+                                     Platform::Mem::READ | Platform::Mem::WRITE,
+                                     get_mem_fd().msel());
         if (dst == nullptr)
             return Errno::NOMEM;
     } else {
@@ -273,22 +248,12 @@ Model::SimpleAS::clean_invalidate(GPA gpa, size_t size, Platform::Mem::MemSel ms
 
     dcache_clean_invalidate_range(dst, size);
 
-    if (!mapped(msel)) {
+    if (!mapped()) {
         bool b = Platform::Mem::unmap_mem(dst, size);
         if (!b)
             ABORT_WITH("Unable to unmap region");
     }
     return Errno::NONE;
-}
-
-bool
-Model::SimpleAS::mapped(Platform::Mem::MemSel memsel) const {
-    Platform::Mem::MemSel ref_memsel = get_mem_fd().msel();
-
-    if (memsel != Platform::Mem::REF_MEM && memsel != ref_memsel)
-        return false;
-
-    return (_vmm_view != nullptr);
 }
 
 void
@@ -365,13 +330,12 @@ Model::SimpleAS::gpa_to_vmm_view(const Vbus::Bus& bus, GPA addr, size_t sz) {
 }
 
 Errno
-Model::SimpleAS::read_bus(const Vbus::Bus& bus, GPA addr, char* dst, size_t sz,
-                          Platform::Mem::MemSel msel) {
+Model::SimpleAS::read_bus(const Vbus::Bus& bus, GPA addr, char* dst, size_t sz) {
     Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
     if (tgt == nullptr)
         return Errno::INVAL;
 
-    return tgt->read(dst, sz, addr, msel);
+    return tgt->read(dst, sz, addr);
 }
 
 Errno
@@ -382,7 +346,7 @@ Model::SimpleAS::demand_map_bus(const Vbus::Bus& bus, const GPA& gpa, size_t siz
         return Errno::INVAL;
 
     void* temp_va = nullptr;
-    Errno err = tgt->demand_map(gpa, size_bytes, temp_va, write, Platform::Mem::REF_MEM);
+    Errno err = tgt->demand_map(gpa, size_bytes, temp_va, write);
 
     if (Errno::NONE == err) {
         va = temp_va;
@@ -398,7 +362,7 @@ Model::SimpleAS::demand_unmap_bus(const Vbus::Bus& bus, const GPA& gpa, size_t s
     if (tgt == nullptr)
         return Errno::INVAL;
 
-    return tgt->demand_unmap(gpa, size_bytes, va, Platform::Mem::REF_MEM);
+    return tgt->demand_unmap(gpa, size_bytes, va);
 }
 
 Errno
@@ -408,17 +372,16 @@ Model::SimpleAS::demand_unmap_bus_clean(const Vbus::Bus& bus, const GPA& gpa, si
     if (tgt == nullptr)
         return Errno::INVAL;
 
-    return tgt->demand_unmap_clean(gpa, size_bytes, va, Platform::Mem::REF_MEM);
+    return tgt->demand_unmap_clean(gpa, size_bytes, va);
 }
 
 Errno
-Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size_t sz,
-                           Platform::Mem::MemSel msel) {
+Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size_t sz) {
     Model::SimpleAS* tgt = get_as_device_at(bus, addr, sz);
     if (tgt == nullptr)
         return Errno::INVAL;
 
-    return tgt->write(addr, sz, src, msel);
+    return tgt->write(addr, sz, src);
 }
 
 bool

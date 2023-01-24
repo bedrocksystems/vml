@@ -507,16 +507,12 @@ public:
      *  \param addr start of the read on the guest AS
      *  \return Errno::NONE if the operation was a success, error code otherwise
      */
-    Errno read(char *dst, size_t size, const GPA &addr,
-               Platform::Mem::MemSel msel = Platform::Mem::REF_MEM) const;
+    Errno read(char *dst, size_t size, const GPA &addr) const;
 
 protected:
-    Errno demand_map(const GPA &gpa, size_t size_bytes, void *&va, bool write,
-                     Platform::Mem::MemSel msel) const;
-    Errno demand_unmap(const GPA &gpa, size_t size_bytes, void *va,
-                       Platform::Mem::MemSel msel) const;
-    Errno demand_unmap_clean(const GPA &gpa, size_t size_bytes, void *va,
-                             Platform::Mem::MemSel msel) const;
+    Errno demand_map(const GPA &gpa, size_t size_bytes, void *&va, bool write) const;
+    Errno demand_unmap(const GPA &gpa, size_t size_bytes, void *va) const;
+    Errno demand_unmap_clean(const GPA &gpa, size_t size_bytes, void *va) const;
 
 public:
     static Errno demand_map_bus(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes, void *&va,
@@ -551,8 +547,7 @@ public:
      *  \param src buffer that contains the data to write
      *  \return Errno::NONE if the operation was a success, error code otherwise
      */
-    Errno write(const GPA &gpa, size_t size, const char *src,
-                Platform::Mem::MemSel msel = Platform::Mem::REF_MEM) const;
+    Errno write(const GPA &gpa, size_t size, const char *src) const;
 
     /*! \brief Callback that can be used to iterate over flushable AS in a virtual Bus
      *  \pre Nothing
@@ -606,14 +601,12 @@ public:
 
     static Model::SimpleAS *get_as_device_at(const Vbus::Bus &bus, GPA addr, size_t sz);
 
-    static Errno read_bus(const Vbus::Bus &bus, GPA addr, char *dst, size_t sz,
-                          Platform::Mem::MemSel msel = Platform::Mem::REF_MEM);
-    static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz,
-                           Platform::Mem::MemSel msel = Platform::Mem::REF_MEM);
+    static Errno read_bus(const Vbus::Bus &bus, GPA addr, char *dst, size_t sz);
+    static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz);
 
     static void lookup_mem_ranges(const Vbus::Bus &bus, const Range<uint64> &gpa_range,
                                   Vector<Model::SimpleAS *> &out);
-    Errno clean_invalidate(GPA gpa, size_t size, Platform::Mem::MemSel msel) const;
+    Errno clean_invalidate(GPA gpa, size_t size) const;
 
     uint64 single_access_read(uint64 off, uint8 size) const;
     void single_access_write(uint64 off, uint8 size, uint64 value) const;
@@ -627,7 +620,7 @@ protected:
      *  \post Ownership unchanged
      */
     void flush_guest_as();
-    bool mapped(Platform::Mem::MemSel memsel = Platform::Mem::REF_MEM) const;
+    bool mapped() const { return (_vmm_view != nullptr); }
 
     const bool _read_only;      /*!< Is the AS read-only from the guest point of view? */
     const bool _flushable;      /*!< Are full AS flush operations needed/allowed? */
