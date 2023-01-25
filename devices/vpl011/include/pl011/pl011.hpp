@@ -285,7 +285,7 @@ public:
 
     /*! \brief Reset the PL011 to its initial state
      */
-    virtual void reset(const VcpuCtx *) override {
+    virtual void reset(const VcpuCtx *vctx) override {
         Platform::MutexGuard guard(_state_lock);
 
         _ilpr = 0;
@@ -313,5 +313,15 @@ public:
 
         _rx_fifo.reset(1);
         _sig_notify_empty_space.sig();
+
+        if (_lifecycle_callbacks) {
+            _lifecycle_callbacks->device_reset(vctx);
+        }
+    }
+
+    virtual void shutdown(const VcpuCtx *vctx) override {
+        if (_lifecycle_callbacks) {
+            _lifecycle_callbacks->shutdown(vctx);
+        }
     }
 };

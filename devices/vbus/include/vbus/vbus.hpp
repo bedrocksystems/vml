@@ -98,6 +98,12 @@ public:
      */
     virtual void reset(const VcpuCtx* vcpu_ctx) = 0;
 
+    /*! \brief Called during a shutdown event
+     *  \pre The caller has full ownership of a valid Device object which can be in any state.
+     *  \post The ownership of the object is returned to the caller.
+     */
+    virtual void shutdown(const VcpuCtx*) {} // Not all devices may need to make use of it
+
     /*! \brief Type that represents the device
      */
     enum Type {
@@ -194,6 +200,12 @@ public:
      */
     void reset(const VcpuCtx& vcpu_ctx) const;
 
+    /*! \brief Notify all devices on the bus of a shutdown event
+     *  \pre Fractional ownership of a valid virtual bus.
+     *  \post Ownership of the vbus is unchanged.
+     */
+    void shutdown(const VcpuCtx& vcpu_ctx) const;
+
     /*! \brief Debug only: control the trace of the access to the bus
      *  \param enabled Should accesses be traced?
      *  \param fold_successive Should repeated accesses to the same device be logged only once?
@@ -224,6 +236,8 @@ private:
     static void reset_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
 
     static void reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
+
+    static void shutdown_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
 
     void log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry,
                         const Vbus::Bus::DeviceEntry* last_entry, Vbus::Access access, mword addr,

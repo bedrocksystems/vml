@@ -33,10 +33,16 @@ public:
      *  \pre Valid Vuart object, no callback set, q ownership of the callback object
      *  \post Valid Vuart object wit the callback set (keeps ownership of the callback)
      */
-    void register_callback(::Vuart::Tx_callback *callback) { _callback = callback; }
+    void register_callback(::Vuart::Tx_callback *callback,
+                           ::Vuart::LifeCycleCallbacks *lifecycle_callbacks) {
+        _callback = callback;
+        _lifecycle_callbacks = lifecycle_callbacks;
+    }
 
 protected:
     ::Vuart::Tx_callback *_callback{nullptr}; /*!< Callback interface used to send chars (TX) */
+    ::Vuart::LifeCycleCallbacks *_lifecycle_callbacks{
+        nullptr}; /*!< Callback interface used for lifecycle */
 };
 
 /*! \brief Virtual 'Dummy' UART.

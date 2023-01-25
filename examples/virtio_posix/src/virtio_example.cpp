@@ -183,7 +183,7 @@ main() {
     Model::Virtio_console virtio_console(gicd, bus, 0x13, QUEUE_SIZE, &transport, &sig);
 
     Dummy_Virtio_Interface virtio_interface;
-    virtio_console.register_callback(&virtio_interface);
+    virtio_console.register_callback(&virtio_interface, nullptr);
 
     INFO("== Virtio Test application ==");
     INFO("Adding devices to the virtual bus");
