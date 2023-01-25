@@ -166,6 +166,18 @@ Vbus::Bus::reset(const VcpuCtx& vcpu_ctx) const {
 }
 
 void
+Vbus::Bus::shutdown_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg) {
+    entry->device->shutdown(arg);
+}
+
+void
+Vbus::Bus::shutdown(const VcpuCtx& vcpu_ctx) const {
+    _vbus_lock.renter();
+    iter_devices(Vbus::Bus::shutdown_device_cb, &vcpu_ctx);
+    _vbus_lock.rexit();
+}
+
+void
 Vbus::Bus::unregister_device(mword addr, mword bytes) {
     Range<mword> range(addr, bytes);
 

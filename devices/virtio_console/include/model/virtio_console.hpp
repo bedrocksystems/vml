@@ -18,6 +18,7 @@
 namespace Model {
     class Virtio_console;
     struct Virtio_console_config;
+    class VirtioConsoleCallback;
     class Irq_controller;
 }
 
@@ -26,6 +27,12 @@ struct Model::Virtio_console_config {
     uint16 rows;
     uint32 num_ports;
     uint32 emerg_wr;
+};
+
+class Model::VirtioConsoleCallback {
+public:
+    virtual void device_reset(const VcpuCtx *ctx) = 0;
+    virtual void shutdown(const VcpuCtx *ctx) = 0;
 };
 
 // NOTE: while [Virtio::Device] is a concrete instance of [Virtio::Sg::Buffer::ChainAccessor],
@@ -50,6 +57,7 @@ private:
     void driver_ok() override;
 
     Virtio::Callback *_callback{nullptr};
+    Model::VirtioConsoleCallback *_console_callback{nullptr};
 
 public:
     Virtio_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
@@ -70,14 +78,28 @@ public:
     bool to_guest(const char *buff, size_t size_bytes);
     virtual size_t from_guest(char *out_buf, size_t size_bytes);
     void wait_for_available_buffer() { _sig_notify_empty_space.wait(); }
-    void reset(const VcpuCtx *) override {
+    void reset(const VcpuCtx *ctx) override {
         _rx_buff.conclude_chain_use(device_queue(RX));
         _tx_buff.conclude_chain_use(device_queue(TX));
         _sig_notify_empty_space.sig();
         reset_virtio();
+
+        if (_console_callback) {
+            _console_callback->device_reset(ctx);
+        }
     }
 
-    void register_callback(Virtio::Callback *callback) { _callback = callback; }
+    void shutdown(const VcpuCtx *ctx) override {
+        if (_console_callback) {
+            _console_callback->shutdown(ctx);
+        }
+    }
+
+    void register_callback(Virtio::Callback *callback,
+                           Model::VirtioConsoleCallback *console_callback) {
+        _callback = callback;
+        _console_callback = console_callback;
+    }
 
     // [GuestPhysicalToVirtual] overrides inherited by [Virtio::Sg::Buffer::ChainAccessor]
     //

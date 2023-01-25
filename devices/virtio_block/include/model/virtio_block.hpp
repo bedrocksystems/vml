@@ -24,6 +24,7 @@ namespace Model {
 class Model::Virtio_block_callback {
 public:
     virtual void device_reset(const VcpuCtx *ctx) = 0;
+    virtual void shutdown(const VcpuCtx *ctx) = 0;
 };
 
 class Model::Virtio_block : public Virtio::Device {
@@ -69,7 +70,8 @@ public:
     void disconnect() { _backend_connected = false; }
     void signal();
 
-    virtual void reset(const VcpuCtx *) override;
+    void reset(const VcpuCtx *) override;
+    void shutdown(const VcpuCtx *) override;
 
     Virtio::DeviceQueue &request_queue() { return device_queue(REQUEST); }
     Virtio::QueueData const &queue_data_request() const { return queue_data(REQUEST); }
