@@ -15,6 +15,8 @@
 #include <platform/mempage.hpp>
 #include <platform/types.hpp>
 
+typedef uint64 GFN;
+
 namespace Platform::Mem {
 
     static constexpr int READ = PROT_READ;
