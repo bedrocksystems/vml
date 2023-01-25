@@ -323,7 +323,7 @@ public:
     /**
      * \brief Get the guest frame number.
      */
-    uint64 gfn(void) const { return (_value >> PAGE_BITS); }
+    GFN gfn(void) const { return (_value >> PAGE_BITS); }
 
     /**
      * \brief Check whether the GPA is invalid.
