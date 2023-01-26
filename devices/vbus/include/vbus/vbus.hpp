@@ -126,6 +126,8 @@ public:
     void accessed() { _accesses++; }
     void add_time(uint64 t) { _time_spent += t; }
 
+    virtual Errno deinit() { return Errno::NONE; }
+
 private:
     const char* _name; /*!< Name of the device - cannot be changed at run-time */
     atomic<uint64> _accesses{0};
@@ -232,12 +234,16 @@ public:
         _devices.iter(f, arg);
     }
 
+    Errno deinit();
+
 private:
     static void reset_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
 
     static void reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
 
     static void shutdown_device_cb(Vbus::Bus::DeviceEntry* entry, const void*);
+
+    static void rm_device_cb(RangeNode<mword>* entry);
 
     void log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry,
                         const Vbus::Bus::DeviceEntry* last_entry, Vbus::Access access, mword addr,

@@ -135,4 +135,6 @@ public:
         Model::SimpleAS::unmap_guest_mem(va, size_bytes);
         return Errno::NONE;
     }
+
+    virtual Errno deinit() override { return Errno::NONE; }
 };

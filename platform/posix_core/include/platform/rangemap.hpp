@@ -116,6 +116,15 @@ public:
         return nullptr;
     }
 
+    /** Clear the map and delete all nodes.
+     *
+     */
+    void clear(void (*rm)(RangeNode<T> *)) {
+        for (auto *r : _set)
+            rm(r);
+        _set.clear();
+    }
+
 private:
     std::set<RangeNode<T> *, Range_compare<RangeNode<T> *>> _set;
 };

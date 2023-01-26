@@ -172,9 +172,25 @@ Vbus::Bus::shutdown_device_cb(Vbus::Bus::DeviceEntry* entry, const void*) {
 
 void
 Vbus::Bus::shutdown() const {
+    VERBOSE("Vbus::Bus::shutdown %p", this);
     _vbus_lock.renter();
     iter_devices(Vbus::Bus::shutdown_device_cb, static_cast<const void*>(nullptr));
     _vbus_lock.rexit();
+}
+
+void
+Vbus::Bus::rm_device_cb(RangeNode<mword>* entry) {
+    static_cast<Vbus::Bus::DeviceEntry*>(entry)->device->deinit();
+}
+
+Errno
+Vbus::Bus::deinit() {
+    VERBOSE("Vbus::Bus::deinit %p", this);
+    _vbus_lock.renter();
+    _devices.clear(Vbus::Bus::rm_device_cb);
+    _vbus_lock.rexit();
+
+    return Errno::NONE;
 }
 
 void

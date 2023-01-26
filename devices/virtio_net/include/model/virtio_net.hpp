@@ -109,6 +109,8 @@ public:
     void reset(const VcpuCtx *) override;
     void shutdown() override;
 
+    virtual Errno deinit() override { return Errno::NONE; }
+
     Virtio::QueueData const &queue_data_rx() const { return queue_data(RX); }
     Virtio::QueueData const &queue_data_tx() const { return queue_data(TX); }
 };
