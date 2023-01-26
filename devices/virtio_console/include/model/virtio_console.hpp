@@ -32,7 +32,7 @@ struct Model::Virtio_console_config {
 class Model::VirtioConsoleCallback {
 public:
     virtual void device_reset(const VcpuCtx *ctx) = 0;
-    virtual void shutdown(const VcpuCtx *ctx) = 0;
+    virtual void shutdown() = 0;
 };
 
 // NOTE: while [Virtio::Device] is a concrete instance of [Virtio::Sg::Buffer::ChainAccessor],
@@ -89,9 +89,9 @@ public:
         }
     }
 
-    void shutdown(const VcpuCtx *ctx) override {
+    void shutdown() override {
         if (_console_callback) {
-            _console_callback->shutdown(ctx);
+            _console_callback->shutdown();
         }
     }
 

@@ -166,14 +166,14 @@ Vbus::Bus::reset(const VcpuCtx& vcpu_ctx) const {
 }
 
 void
-Vbus::Bus::shutdown_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg) {
-    entry->device->shutdown(arg);
+Vbus::Bus::shutdown_device_cb(Vbus::Bus::DeviceEntry* entry, const void*) {
+    entry->device->shutdown();
 }
 
 void
-Vbus::Bus::shutdown(const VcpuCtx& vcpu_ctx) const {
+Vbus::Bus::shutdown() const {
     _vbus_lock.renter();
-    iter_devices(Vbus::Bus::shutdown_device_cb, &vcpu_ctx);
+    iter_devices(Vbus::Bus::shutdown_device_cb, static_cast<const void*>(nullptr));
     _vbus_lock.rexit();
 }
 

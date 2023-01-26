@@ -319,9 +319,9 @@ public:
         }
     }
 
-    virtual void shutdown(const VcpuCtx *vctx) override {
+    virtual void shutdown() override {
         if (_lifecycle_callbacks) {
-            _lifecycle_callbacks->shutdown(vctx);
+            _lifecycle_callbacks->shutdown();
         }
     }
 };
