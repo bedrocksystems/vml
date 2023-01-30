@@ -37,7 +37,7 @@ Model::Virtio_net::reset(const VcpuCtx *ctx) {
 }
 
 void
-Model::Virtio_net::shutdown(const VcpuCtx *ctx) {
+Model::Virtio_net::shutdown() {
     if (_virtio_net_callback)
-        _virtio_net_callback->shutdown(ctx);
+        _virtio_net_callback->shutdown();
 }

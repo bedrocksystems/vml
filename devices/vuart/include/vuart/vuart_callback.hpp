@@ -34,5 +34,5 @@ public:
 class Vuart::LifeCycleCallbacks {
 public:
     virtual void device_reset(const VcpuCtx *) = 0;
-    virtual void shutdown(const VcpuCtx *) = 0;
+    virtual void shutdown() = 0;
 };

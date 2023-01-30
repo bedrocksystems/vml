@@ -37,7 +37,7 @@ Model::Virtio_sock::reset(const VcpuCtx *ctx) {
 }
 
 void
-Model::Virtio_sock::shutdown(const VcpuCtx *ctx) {
+Model::Virtio_sock::shutdown() {
     if (_virtio_sock_callback)
-        _virtio_sock_callback->shutdown(ctx);
+        _virtio_sock_callback->shutdown();
 }
