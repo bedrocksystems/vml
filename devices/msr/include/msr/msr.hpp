@@ -82,6 +82,7 @@ namespace Msr {
         CNTP_TVAL_EL0 = Msr::build_msr_id(3, 0xe, 3, 2, 0),
         ID_AA64MMFR0_EL1 = Msr::build_msr_id(3, 0, 0, 7, 0),
         ID_AA64PFR0_EL1 = Msr::build_msr_id(3, 0, 0, 4, 0),
+        ID_AA64SMFR0_EL1 = Msr::build_msr_id(3, 0, 0, 4, 5),
         CCSIDR_EL1 = Msr::build_msr_id(3, 0, 1, 0, 0),
         ID_PFR0_EL1 = Msr::build_msr_id(3, 0, 0, 1, 0),
         ID_PFR1_EL1 = Msr::build_msr_id(3, 0, 0, 1, 1),

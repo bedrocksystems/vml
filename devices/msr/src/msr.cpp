@@ -120,6 +120,13 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
     if (!register_system_reg(reg))
         return false;
 
+    /* Scalable Matrix Extension - not yet implemented in the VMM.*/
+    uint64 id_aa64smfr0_el1 = 0ull;
+    reg = new (nothrow)
+        Msr::Register("ID_AA64SMFR0_EL1", ID_AA64SMFR0_EL1, false, id_aa64smfr0_el1);
+    if (!register_system_reg(reg))
+        return false;
+
     id_aa64zfr0_el1 = 0ull;
     reg = new (nothrow) Msr::Register("ID_AA64ZFR0_EL1", ID_AA64ZFR0_EL1, false, id_aa64zfr0_el1);
     if (!register_system_reg(reg))
