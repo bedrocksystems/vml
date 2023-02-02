@@ -28,6 +28,10 @@ namespace Debug {
     /*! \brief Current debugging level. The final binary is responsible for defining this variable.
      */
     extern enum Level current_level;
+
+    inline bool enabled() {
+        return Debug::current_level > Debug::Level::NONE;
+    }
 };
 
 namespace Stats {
@@ -36,6 +40,6 @@ namespace Stats {
     extern bool requested;
 
     inline bool enabled() {
-        return (Debug::current_level > Debug::Level::NONE) or requested;
+        return (Debug::enabled() or requested);
     }
 }
