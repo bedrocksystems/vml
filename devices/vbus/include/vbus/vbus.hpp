@@ -20,9 +20,9 @@ namespace Vbus {
     /*! \brief Error status returned by the Vbus on access operations
      */
     enum Err {
-        OK = 0,          /*!< No error */
-        REPLAY_INST = 1, /*!< The access was fine but the current instruction was not executed */
-        ACCESS_ERR = 2,  /*!< The access was invalid */
+        OK = 0,              /*!< No error */
+        NO_OP = 1,           /*!< Request to not emulate after the device acces */
+        ACCESS_ERR = 2,      /*!< The access was invalid */
         UPDATE_REGISTER = 3, /*!< The access was fine but a register update is required */
         NO_DEVICE = 4        /*!< No device at this address */
     };
