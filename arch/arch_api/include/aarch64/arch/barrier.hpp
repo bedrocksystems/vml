@@ -6,6 +6,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 #pragma once
+#include <arch/barrier_common.hpp>
 
 namespace Barrier {
 

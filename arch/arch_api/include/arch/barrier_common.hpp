@@ -1,15 +1,14 @@
 /**
- * Copyright (C) 2020 BedRock Systems, Inc.
+ * Copyright (C) 2023 BedRock Systems, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BedRock Open-Source License.
  * See the LICENSE-BedRock file in the repository root for details.
  */
 #pragma once
-#include <arch/barrier_common.hpp>
 
+/* Arch-independent interfaces for arch-dependent memory barriers. */
 namespace Barrier {
-
     /*
      * Semantic of the functions below:
      * op1_before_op2
@@ -22,23 +21,9 @@ namespace Barrier {
      * after the barrier must wait for the barrier to complete.
      */
 
-    static inline void r_before_rw(void) {
-        asm volatile("lfence" : : : "memory");
-    }
-
-    static inline void w_before_w(void) {
-        asm volatile("sfence" : : : "memory");
-    }
-
-    static inline void rw_before_rw(void) {
-        asm volatile("mfence" : : : "memory");
-    }
-
-    static inline void system(void) {
-        asm volatile("mfence" : : : "memory");
-    }
-
-    static inline void instruction(void) {
-    }
-
+    static inline void r_before_rw(void);
+    static inline void w_before_w(void);
+    static inline void rw_before_rw(void);
+    static inline void system(void);
+    static inline void instruction(void);
 }
