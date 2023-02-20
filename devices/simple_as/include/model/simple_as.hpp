@@ -655,7 +655,7 @@ public:
     }
 
     ~MappingGuard() {
-        if (_va)
+        if (_va != nullptr)
             unmap();
     }
 

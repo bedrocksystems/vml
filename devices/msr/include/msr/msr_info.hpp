@@ -149,14 +149,14 @@ public:
     static constexpr uint64 EL_MASK = 0xeull;
     static constexpr uint64 SP_MASK = 0x1ull;
 
-    constexpr bool is_t32() const { return _val & T32; }
-    constexpr bool is_aa32() const { return _val & M_MASK; }
-    constexpr bool is_n() const { return _val & N_MASK; }
-    constexpr bool is_z() const { return _val & Z_MASK; }
-    constexpr bool is_c() const { return _val & C_MASK; }
-    constexpr bool is_v() const { return _val & V_MASK; }
+    constexpr bool is_t32() const { return (_val & T32) != 0u; }
+    constexpr bool is_aa32() const { return (_val & M_MASK) != 0u; }
+    constexpr bool is_n() const { return (_val & N_MASK) != 0u; }
+    constexpr bool is_z() const { return (_val & Z_MASK) != 0u; }
+    constexpr bool is_c() const { return (_val & C_MASK) != 0u; }
+    constexpr bool is_v() const { return (_val & V_MASK) != 0u; }
     constexpr uint8 el() const { return _val & EL_MASK; }
-    constexpr bool spx() const { return _val & SP_MASK; }
+    constexpr bool spx() const { return (_val & SP_MASK) != 0u; }
 
 private:
     const uint64 _val;
@@ -180,8 +180,8 @@ public:
     explicit Ctr(uint64 val) : _value(val) {}
     Ctr() { asm volatile("mrs %0, ctr_el0" : "=r"(_value) : :); }
 
-    bool dcache_clean_pou_for_itod() const { return !(_value & IDC_MASK); }
-    bool icache_clean_pou_for_itod() const { return !(_value & DIC_MASK); }
+    bool dcache_clean_pou_for_itod() const { return (_value & IDC_MASK) == 0u; }
+    bool icache_clean_pou_for_itod() const { return (_value & DIC_MASK) == 0u; }
     uint64 dcache_line_size() const { return 4ull << ((_value >> 16ull) & 0xfull); }
     uint64 icache_line_size() const { return 4ull << (_value & 0xfull); }
 
@@ -215,7 +215,7 @@ public:
 
     bool mmu_enabled() const { return (_value & MMU_MASK) != 0; }
     bool cache_enabled() const { return ((_value & CACHE_MASK) != 0) && mmu_enabled(); }
-    bool wxn() const { return bits(_value, 1, WXN_OFFSET); }
+    bool wxn() const { return bits(_value, 1, WXN_OFFSET) != 0u; }
 
 private:
     const uint64 _value;
@@ -275,16 +275,16 @@ public:
         }
     }
 
-    bool tbi0() const { return bits_in_range(_value, 38, 38); }
-    bool tbi1() const { return bits_in_range(_value, 37, 37); }
+    bool tbi0() const { return bits_in_range(_value, 38, 38) != 0u; }
+    bool tbi1() const { return bits_in_range(_value, 37, 37) != 0u; }
 
     static constexpr uint8 EPD1_BIT = 23;
     static constexpr uint64 EPD1_VAL = 1ull << EPD1_BIT;
     static constexpr uint8 EPD0_BIT = 7;
     static constexpr uint64 EPD0_VAL = 1ull << EPD0_BIT;
 
-    bool epd0() const { return bits_in_range(_value, EPD0_BIT, EPD0_BIT); }
-    bool epd1() const { return bits_in_range(_value, EPD1_BIT, EPD1_BIT); }
+    bool epd0() const { return bits_in_range(_value, EPD0_BIT, EPD0_BIT) != 0u; }
+    bool epd1() const { return bits_in_range(_value, EPD1_BIT, EPD1_BIT) != 0u; }
 
     static constexpr uint8 T0SZ_SHIFT = 0;
     static constexpr uint64 T0SZ_MASK = 0x3full << T0SZ_SHIFT;
@@ -294,7 +294,7 @@ public:
     uint8 t0sz() const { return static_cast<uint8>(bits_in_range(_value, T0SZ_SHIFT, 5)); }
     uint8 t1sz() const { return static_cast<uint8>(bits_in_range(_value, T1SZ_SHIFT, 21)); }
 
-    bool eae() const { return bits_in_range(_value, 31, 31); }
+    bool eae() const { return bits_in_range(_value, 31, 31) != 0u; }
 
     static constexpr uint8 INVALID_IPS = 0xff;
 
@@ -343,8 +343,8 @@ public:
         }
     }
 
-    bool hpd0() const { return bits_in_range(_value, 41, 41); }
-    bool hpd1() const { return bits_in_range(_value, 42, 42); }
+    bool hpd0() const { return bits_in_range(_value, 41, 41) != 0u; }
+    bool hpd1() const { return bits_in_range(_value, 42, 42) != 0u; }
 
 protected:
     const uint64 _value;

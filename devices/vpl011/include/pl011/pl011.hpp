@@ -182,13 +182,13 @@ private:
             set_lvl_to_gicd(new_irq_lvl);
     }
 
-    bool is_fifo_enabled() const { return FEN & _lcrh; }
-    bool can_tx() const { return (_cr & UARTEN) && (_cr & TXE); }
-    bool can_rx() const { return (_cr & UARTEN) && (_cr & RXE); }
-    bool is_rx_irq_active() const { return _imsc & RXIM; }
-    bool is_tx_irq_active() const { return _imsc & TXIM; }
-    bool is_rx_irq_asserted() const { return is_rx_irq_active() && (_ris & RXRIS); }
-    bool is_tx_irq_asserted() const { return is_tx_irq_active() && (_ris & TXRIS); }
+    bool is_fifo_enabled() const { return (FEN & _lcrh) != 0; }
+    bool can_tx() const { return ((_cr & UARTEN) != 0) && ((_cr & TXE) != 0); }
+    bool can_rx() const { return ((_cr & UARTEN) != 0) && ((_cr & RXE) != 0); }
+    bool is_rx_irq_active() const { return (_imsc & RXIM) != 0; }
+    bool is_tx_irq_active() const { return (_imsc & TXIM) != 0; }
+    bool is_rx_irq_asserted() const { return is_rx_irq_active() && ((_ris & RXRIS) != 0); }
+    bool is_tx_irq_asserted() const { return is_tx_irq_active() && ((_ris & TXRIS) != 0); }
     bool is_irq_asserted() const { return is_rx_irq_asserted() || is_tx_irq_asserted(); }
     void set_rxris(bool b) {
         if (b)
@@ -314,13 +314,13 @@ public:
         _rx_fifo.reset(1);
         _sig_notify_empty_space.sig();
 
-        if (_lifecycle_callbacks) {
+        if (_lifecycle_callbacks != nullptr) {
             _lifecycle_callbacks->device_reset(vctx);
         }
     }
 
     virtual void shutdown() override {
-        if (_lifecycle_callbacks) {
+        if (_lifecycle_callbacks != nullptr) {
             _lifecycle_callbacks->shutdown();
         }
     }

@@ -265,7 +265,7 @@ private:
     // [Virtio::DeviceQueue]) even with the incorrect flags.
     // [Virtio::Sg::Buffer::copy] interprets the result of this call appropriately.
     bool should_only_read(uint16 flags) const {
-        return _chain_for_device ? not(flags & VIRTQ_DESC_WRITE_ONLY) : false;
+        return _chain_for_device ? (flags & VIRTQ_DESC_WRITE_ONLY) == 0 : false;
     }
 
     // Check whether writing to the descriptor buffer /should/ be allowed based
@@ -276,7 +276,7 @@ private:
     // [Virtio::DeviceQueue]) even with the incorrect flags.
     // [Virtio::Sg::Buffer::copy] interprets the result of this call appropriately.
     bool should_only_write(uint16 flags) const {
-        return _chain_for_device ? (flags & VIRTQ_DESC_WRITE_ONLY) : false;
+        return _chain_for_device ? (flags & VIRTQ_DESC_WRITE_ONLY) != 0 : false;
     }
 
     // Common addition of descriptors to the chain

@@ -64,7 +64,7 @@ class Esr::MsrMrs : public Esr::Common {
 public:
     explicit MsrMrs(uint64 const esr) : Common(esr) {}
 
-    constexpr bool write() const { return !(_esr & 0x1); }
+    constexpr bool write() const { return (_esr & 0x1) == 0u; }
     constexpr uint8 crm() const { return (_esr >> 1) & 0xf; }
     constexpr uint8 rt() const { return (_esr >> 5) & 0x1f; }
     constexpr uint8 crn() const { return (_esr >> 10) & 0xf; }
@@ -83,7 +83,7 @@ class Esr::McrMrc : public Esr::Common {
 public:
     explicit McrMrc(uint64 const esr) : Common(esr) {}
 
-    constexpr bool write() const { return !(_esr & 0x1); }
+    constexpr bool write() const { return (_esr & 0x1) == 0u; }
     constexpr uint8 crm() const { return (_esr >> 1) & 0xf; }
     constexpr uint8 rt() const { return (_esr >> 5) & 0x1f; }
     constexpr uint8 crn() const { return (_esr >> 10) & 0xf; }
@@ -116,7 +116,7 @@ class Esr::McrrMrrc : public Common {
 public:
     explicit McrrMrrc(uint64 const esr) : Common(esr) {}
 
-    constexpr bool write() const { return !(_esr & 0x1); }
+    constexpr bool write() const { return (_esr & 0x1) == 0u; }
     constexpr uint8 crm() const { return (_esr >> 1) & 0xf; }
     constexpr uint8 rt() const { return (_esr >> 5) & 0x1f; }
     constexpr uint8 rt2() const { return (_esr >> 10) & 0x1f; }
@@ -180,8 +180,8 @@ public:
         }
     }
 
-    bool stage1_page_table_walk() const { return bits(_esr, 1, S1PTW_SHIFT); }
-    bool far_not_valid() const { return bits(_esr, 1, FNV_SHIFT); };
+    bool stage1_page_table_walk() const { return bits(_esr, 1, S1PTW_SHIFT) != 0u; }
+    bool far_not_valid() const { return bits(_esr, 1, FNV_SHIFT) != 0u; };
 
     bool hpfar_is_valid() const {
         return (fault_status_code() <= ACCESS_FLAG_FAULT_LVL_3)
@@ -195,12 +195,12 @@ class Esr::DataAbort : public Esr::Abort {
 public:
     explicit DataAbort(uint64 const esr) : Abort(esr) {}
 
-    bool isv() const { return (_esr >> 24) & 0x1; }
-    bool sse() const { return bits_in_range(_esr, 21, 21); }
-    bool ar() const { return bits_in_range(_esr, 14, 14); }
-    bool sf() const { return bits_in_range(_esr, 15, 15); }
+    bool isv() const { return ((_esr >> 24) & 0x1) != 0u; }
+    bool sse() const { return bits_in_range(_esr, 21, 21) != 0u; }
+    bool ar() const { return bits_in_range(_esr, 14, 14) != 0u; }
+    bool sf() const { return bits_in_range(_esr, 15, 15) != 0u; }
     uint8 reg() const { return (_esr >> 16) & 0x1f; }
-    bool write() const { return (_esr >> 6) & 0x1; }
+    bool write() const { return ((_esr >> 6) & 0x1) != 0u; }
     uint8 access_size_bytes() const { return static_cast<uint8>((1 << access_size()) & 0xff); }
 };
 
@@ -229,8 +229,8 @@ private:
     static constexpr uint64 ISV_MASK = 0x1ull << 24;
     static constexpr uint64 EX_MASK = 0x1ull << 6;
 
-    bool isv() const { return _esr & ISV_MASK; }
-    bool ex() const { return _esr & EX_MASK; }
+    bool isv() const { return (_esr & ISV_MASK) != 0u; }
+    bool ex() const { return (_esr & EX_MASK) != 0u; }
 
 public:
     explicit SoftStep(uint64 const esr) : Common(esr) {}

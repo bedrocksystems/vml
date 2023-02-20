@@ -64,7 +64,8 @@ protected:
 
             if (_dev_state.status == static_cast<uint32>(Virtio::DeviceStatus::DEVICE_RESET)) {
                 _dev_state.reset();
-            } else if (_dev_state.status & static_cast<uint32>(Virtio::DeviceStatus::DRIVER_OK)) {
+            } else if ((_dev_state.status & static_cast<uint32>(Virtio::DeviceStatus::DRIVER_OK))
+                       != 0u) {
                 driver_ok();
             }
         }

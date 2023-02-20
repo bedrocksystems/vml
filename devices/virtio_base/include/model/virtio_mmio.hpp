@@ -228,7 +228,7 @@ public:
            deassert_queue_interrupt is being executed from other context. In both cases, the guest
            still needs to process the queues once it returns from vmexit and it is safe to skip
            injecting a new interrupt. */
-        if (state.irq_status & 0x1)
+        if ((state.irq_status & 0x1) != 0u)
             return;
 
         // The interrupt has been deasserted/acknowledged at this point (happens once) so we need to
@@ -245,7 +245,7 @@ public:
 
     virtual void assert_config_change_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq,
                                                 Virtio::DeviceState &state) override {
-        if (state.irq_status & 0x2)
+        if ((state.irq_status & 0x2) != 0u)
             return;
 
         state.irq_status.or_fetch(0x2);

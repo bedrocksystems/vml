@@ -84,13 +84,13 @@ public:
         _sig_notify_empty_space.sig();
         reset_virtio();
 
-        if (_console_callback) {
+        if (_console_callback != nullptr) {
             _console_callback->device_reset(ctx);
         }
     }
 
     void shutdown() override {
-        if (_console_callback) {
+        if (_console_callback != nullptr) {
             _console_callback->shutdown();
         }
     }
