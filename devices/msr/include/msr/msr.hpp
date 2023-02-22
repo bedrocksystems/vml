@@ -59,7 +59,7 @@ namespace Msr {
         MVFR1 = build_msr_id(3, 0, 0, 3, 1),
         MVFR2 = build_msr_id(3, 0, 0, 3, 2),
         CONTEXTIDR_A32 = build_msr_id(0b1111, 0xd, 0, 0, 1),
-        CONTEXTIDR_EL1 = build_msr_id(3, 0xd, 0, 3, 1),
+        CONTEXTIDR_EL1 = build_msr_id(3, 0xd, 0, 0, 1),
         SCTLR_EL1 = Msr::build_msr_id(3, 1, 0, 0, 0),
         TTBR0_EL1 = Msr::build_msr_id(3, 2, 0, 0, 0),
         TTBR0_A32 = Msr::build_msr_id(0b1111, 0, 0, 2, 0),
