@@ -493,7 +493,7 @@ public:
         if (Err::OK != _csselr.access(access, vcpu_ctx, el))
             return Err::ACCESS_ERR;
 
-        bool const instr = el & 0x1;
+        bool const instr = (el & 0x1) != 0u;
         unsigned const level = (el >> 1) & 0x7;
 
         if (level > 6)

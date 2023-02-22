@@ -135,17 +135,17 @@ public:
 
         _device_queue = cxx::move(Virtio::DeviceQueue());
 
-        if (_desc_addr) {
+        if (_desc_addr != nullptr) {
             Model::SimpleAS::unmap_guest_mem(
                 _desc_addr, Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)));
             _desc_addr = nullptr;
         }
-        if (_avail_addr) {
+        if (_avail_addr != nullptr) {
             Model::SimpleAS::unmap_guest_mem(
                 _avail_addr, Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)));
             _avail_addr = nullptr;
         }
-        if (_used_addr) {
+        if (_used_addr != nullptr) {
             Model::SimpleAS::unmap_guest_mem(
                 _used_addr, Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)));
             _used_addr = nullptr;
@@ -256,7 +256,7 @@ struct Virtio::DeviceState {
 inline bool
 Virtio::read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
                       uint8 const bytes, uint64 const value, uint64 &result) {
-    if (!bytes || (bytes > 8) || (offset + bytes > base_max + 1)) {
+    if ((bytes == 0u) || (bytes > 8) || (offset + bytes > base_max + 1)) {
         WARN("Register read failure: off " FMTx64 " - base_reg 0x%u - base_max 0x%u - bytes "
 
              "0x%u",

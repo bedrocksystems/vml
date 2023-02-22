@@ -59,13 +59,13 @@ private:
         bool is_valid() const { return _tgt != INVALID_TARGET; }
         uint32 raw() const { return _tgt; }
         uint32 target() const { return _tgt & TARGET_DATA_MASK; }
-        bool is_targeting_a_set() const { return _tgt & CPU_SET; }
+        bool is_targeting_a_set() const { return (_tgt & CPU_SET) != 0u; }
         bool is_cpu_targeted(Vcpu_id id) const {
             if (!is_targeting_a_set())
                 return target() == id;
             else {
                 ASSERT(id < 8);
-                return target() & (1u << id);
+                return (target() & (1u << id)) != 0u;
             }
         }
 
@@ -110,7 +110,7 @@ private:
         bool is_injected(uint8 sender_id = 0) const {
             ASSERT(sender_id != NO_INJECTION);
             ASSERT(sender_id < Model::GICV2_MAX_CPUS);
-            return _info & (INJECTED_BIT << sender_id);
+            return (_info & (INJECTED_BIT << sender_id)) != 0u;
         }
         void set_injected(uint8 sender_id = 0) {
             ASSERT(sender_id < Model::GICV2_MAX_CPUS);
@@ -220,7 +220,7 @@ private:
             constexpr uint8 aff1() const { return (value >> 8) & 0xff; }
             constexpr uint8 aff2() const { return (value >> 16) & 0xff; }
             constexpr uint8 aff3() const { return (value >> 32) & 0x1f; }
-            constexpr bool any() const { return (value >> 31) & 0x1; }
+            constexpr bool any() const { return ((value >> 31) & 0x1) != 0u; }
         } routing;
 
         void enable(bool mmio_one = true) {
@@ -252,7 +252,7 @@ private:
             _hw = hw;
         }
         uint8 edge_encoded() const { return sw_edge() ? 0b10 : 0; }
-        void set_encoded_edge(uint8 encoded_edge) { _sw_edge = encoded_edge & 0x2; }
+        void set_encoded_edge(uint8 encoded_edge) { _sw_edge = ((encoded_edge & 0x2) != 0); }
 
         uint8 target() const { return _target; }
         void target(uint8 const t) {
@@ -362,7 +362,7 @@ public:
         void activate() { set_state(IrqState::ACTIVE); }
         void deactivate() { set_state(IrqState::INACTIVE); }
 
-        bool hw() const { return _lr & (1ull << HW_BIT_SHIFT); }
+        bool hw() const { return (_lr & (1ull << HW_BIT_SHIFT)) != 0u; }
         uint32 pintid() const { return (_lr >> PIRQ_ID_SHIFT) & PIRQ_ID_MASK; }
         uint32 vintid() const { return _lr & VIRQ_ID_MASK; }
         uint8 senderid() const {
@@ -395,9 +395,9 @@ private:
 
     struct {
         uint32 value{0};
-        constexpr bool group0_enabled() const { return value & 0x1; }
-        constexpr bool group1_enabled() const { return value & 0x2; }
-        constexpr bool affinity_routing() const { return value & 0x10; }
+        constexpr bool group0_enabled() const { return (value & 0x1) != 0u; }
+        constexpr bool group1_enabled() const { return (value & 0x2) != 0u; }
+        constexpr bool affinity_routing() const { return (value & 0x10) != 0u; }
     } _ctlr;
 
     Banked *_local{nullptr};
@@ -826,7 +826,7 @@ private:
         static constexpr uint32 RESV_ZERO = ~(SLEEP_BIT | CHILDREN_ASLEEP_BIT);
 
         uint32 value{SLEEP_BIT | CHILDREN_ASLEEP_BIT};
-        constexpr bool sleeping() const { return value & SLEEP_BIT; }
+        constexpr bool sleeping() const { return (value & SLEEP_BIT) != 0u; }
     } _waker;
 
     bool mmio_write(uint64, uint8, uint64);
