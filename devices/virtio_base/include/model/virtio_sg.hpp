@@ -15,75 +15,96 @@
 
 namespace Virtio {
     namespace Sg {
-        struct Node;
+        struct LinearizedDesc;
+        struct DescMetadata;
+
+        // [Sg::Buffer] contains [LinearizedDesc *_desc_chain] and [DescMetadata
+        // *_desc_chain_metadata], whose elements are pairwise-related.
         class Buffer;
     };
 };
 
 // Template specializations for moves
-// [Virtio::Sg::Node]
-template typename cxx::remove_reference<Virtio::Sg::Node &>::type &&
-cxx::move<Virtio::Sg::Node &>(Virtio::Sg::Node &t) noexcept;
-template typename cxx::remove_reference<Virtio::Sg::Node>::type &&
-cxx::move<Virtio::Sg::Node>(Virtio::Sg::Node &&t) noexcept;
+// [Virtio::Sg::LinearizedDesc]
+template typename cxx::remove_reference<Virtio::Sg::LinearizedDesc &>::type &&
+cxx::move<Virtio::Sg::LinearizedDesc &>(Virtio::Sg::LinearizedDesc &t) noexcept;
+template typename cxx::remove_reference<Virtio::Sg::LinearizedDesc>::type &&
+cxx::move<Virtio::Sg::LinearizedDesc>(Virtio::Sg::LinearizedDesc &&t) noexcept;
+// [Virtio::Sg::DescMetadata]
+template typename cxx::remove_reference<Virtio::Sg::DescMetadata &>::type &&
+cxx::move<Virtio::Sg::DescMetadata &>(Virtio::Sg::DescMetadata &t) noexcept;
+template typename cxx::remove_reference<Virtio::Sg::DescMetadata>::type &&
+cxx::move<Virtio::Sg::DescMetadata>(Virtio::Sg::DescMetadata &&t) noexcept;
 // [Virtio::Sg::Buffer]
 template typename cxx::remove_reference<Virtio::Sg::Buffer &>::type &&
 cxx::move<Virtio::Sg::Buffer &>(Virtio::Sg::Buffer &t) noexcept;
 template typename cxx::remove_reference<Virtio::Sg::Buffer>::type &&
 cxx::move<Virtio::Sg::Buffer>(Virtio::Sg::Buffer &&t) noexcept;
 
-struct Virtio::Sg::Node {
+struct Virtio::Sg::LinearizedDesc {
+public:
+    LinearizedDesc &operator=(const LinearizedDesc &) = delete;
+    LinearizedDesc(const LinearizedDesc &) = delete;
+
+    /* TODO BEFORE MERGE (JH): double check whether the [default]
+       move operators are sensible.
+     */
+    LinearizedDesc &operator=(LinearizedDesc &&other) = default;
+    LinearizedDesc(LinearizedDesc &&other) = default;
+
+    LinearizedDesc() {}
+    ~LinearizedDesc() {}
+
+    // [Sg::Buffer] exposes a shadow-"Desriptor Table" which ensures that
+    // the metadata constituting a descriptor chain is read only once. The
+    // next links within this cached metadata are "linearized" - and related
+    // to the real chain in shared memory via the corresponding
+    // [DescMetadata] entry.
+    uint64 address{0};
+    uint32 length{0};
+    uint16 flags{0};
+    uint16 linear_next{0};
+};
+
+struct Virtio::Sg::DescMetadata {
 public:
     friend class Virtio::Sg::Buffer;
 
-    Node &operator=(const Node &) = delete;
-    Node(const Node &) = delete;
+    DescMetadata &operator=(const DescMetadata &) = delete;
+    DescMetadata(const DescMetadata &) = delete;
 
-    Node &operator=(Node &&other) {
+    DescMetadata &operator=(DescMetadata &&other) {
         if (this != &other) {
-            cxx::swap(address, other.address);
-            cxx::swap(length, other.length);
-            cxx::swap(flags, other.flags);
-            cxx::swap(next, other.next);
             cxx::swap(_desc, other._desc);
+            cxx::swap(_original_next, other._original_next);
             cxx::swap(_prefix_written_bytes, other._prefix_written_bytes);
         }
         return *this;
     }
-    Node(Node &&other) {
-        cxx::swap(address, other.address);
-        cxx::swap(length, other.length);
-        cxx::swap(flags, other.flags);
-        cxx::swap(next, other.next);
+    DescMetadata(DescMetadata &&other) {
         _desc = cxx::move(other._desc);
+        cxx::swap(_original_next, other._original_next);
         cxx::swap(_prefix_written_bytes, other._prefix_written_bytes);
     }
 
-    Node() {}
-    ~Node() {}
+    DescMetadata() {}
+    ~DescMetadata() {}
 
 private:
     void heuristically_track_written_bytes(size_t off, size_t size_bytes);
 
-public:
-    // We ensure only a single read/write to each field by caching the values locally
-    // and keeping the underlying [Virtio::Descriptor] private.
-    uint64 address{0};
-    uint32 length{0};
-    uint16 flags{0};
-    uint16 next{0};
-
 private:
     Virtio::Descriptor _desc{Virtio::Descriptor()};
+    uint16 _original_next{0};
 
     // Used entries contain a [len] field which is used by the Device to inform the Driver
     // of the /lowerbound/ on the number of bytes that it wrote into the /prefix/ of the
     // /writable portion/ of the buffer. Since this is a /lowerbound/ on the number
     // of bytes written into the prefix, we can heuristically track this value. In particular
-    // each /writable/ [Virtio::Sg::Node] will track a "prefix range" corresponding to the
-    // number of bytes written to the beginning of the payload-shard for its [_desc];
-    // [conclude_chain_use] will heuristically coalesce mergeable per-[Sg::Node] "prefix range"s,
-    // giving a "maximal prefix range" for the whole chain.
+    // each /writable/ [Virtio::Sg::DescMetadata] will track a "prefix range" corresponding
+    // to the number of bytes written to the beginning of the payload-shard for its [_desc];
+    // [conclude_chain_use] will heuristically coalesce mergeable per-[Sg::DescMetadata]
+    // "prefix range"s, giving a "maximal prefix range" for the whole chain.
     //
     // NOTE: While buffers can be made extremely large via chaining, the [len] field
     // can only hold a [uint32].
@@ -102,7 +123,8 @@ public:
             cxx::swap(_size_bytes, other._size_bytes);
             cxx::swap(_complete_chain, other._complete_chain);
             cxx::swap(_chain_for_device, other._chain_for_device);
-            cxx::swap(_nodes, other._nodes);
+            cxx::swap(_desc_chain, other._desc_chain);
+            cxx::swap(_desc_chain_metadata, other._desc_chain_metadata);
         }
         return *this;
     }
@@ -112,15 +134,19 @@ public:
         cxx::swap(_size_bytes, other._size_bytes);
         cxx::swap(_complete_chain, other._complete_chain);
         cxx::swap(_chain_for_device, other._chain_for_device);
-        cxx::swap(_nodes, other._nodes);
+        cxx::swap(_desc_chain, other._desc_chain);
+        cxx::swap(_desc_chain_metadata, other._desc_chain_metadata);
     }
 
     explicit Buffer(uint16 m) : _max_chain_length(m) {}
 
     // Maybe move this to a [deinit] function
     ~Buffer() {
-        delete[] _nodes;
-        _nodes = nullptr;
+        delete[] _desc_chain;
+        _desc_chain = nullptr;
+
+        delete[] _desc_chain_metadata;
+        _desc_chain_metadata = nullptr;
     }
 
     void print(const char *msg) const;
@@ -214,26 +240,38 @@ public:
     class Iterator {
     public:
         Iterator &operator++() {
-            _cur++;
+            _cur_desc++;
+            _cur_desc_metadata++;
             return *this;
         }
 
-        bool operator==(const Iterator &r) const { return _cur == r._cur; }
+        bool operator==(const Iterator &r) const {
+            return (_cur_desc == r._cur_desc) && (_cur_desc_metadata == r._cur_desc_metadata);
+        }
         bool operator!=(const Iterator &r) const { return !(*this == r); }
 
-        Virtio::Sg::Node &operator*() const { return *_cur; }
-        Virtio::Sg::Node *operator->() const { return _cur; }
+        Virtio::Sg::LinearizedDesc &desc_ref() const { return *_cur_desc; }
+        Virtio::Sg::LinearizedDesc *desc_ptr() const { return _cur_desc; }
+
+        Virtio::Sg::DescMetadata &meta_ref() const { return *_cur_desc_metadata; }
+        Virtio::Sg::DescMetadata *meta_ptr() const { return _cur_desc_metadata; }
 
     private:
         friend Virtio::Sg::Buffer;
-        explicit Iterator(Virtio::Sg::Node *cur) : _cur(cur) {}
+        explicit Iterator(Virtio::Sg::LinearizedDesc *cur_desc,
+                          Virtio::Sg::DescMetadata *cur_desc_metadata)
+            : _cur_desc(cur_desc), _cur_desc_metadata(cur_desc_metadata) {}
 
-        Virtio::Sg::Node *_cur;
+        Virtio::Sg::LinearizedDesc *_cur_desc;
+        Virtio::Sg::DescMetadata *_cur_desc_metadata;
     };
 
 public:
-    Iterator begin() const { return Iterator{&_nodes[0]}; }
-    Iterator end() const { return Iterator{&_nodes[_active_chain_length]}; }
+    Iterator begin() const { return Iterator{&_desc_chain[0], &_desc_chain_metadata[0]}; }
+    Iterator end() const {
+        return Iterator{&_desc_chain[_active_chain_length],
+                        &_desc_chain_metadata[_active_chain_length]};
+    }
     Errno descriptor_offset(size_t descriptor_chain_idx, size_t &offset) const;
 
 private:
@@ -280,31 +318,34 @@ private:
     }
 
     // Common addition of descriptors to the chain
-    void add_descriptor(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags,
+    void add_descriptor(Virtio::Descriptor &&new_desc, uint64 address, uint32 length, uint16 flags,
                         uint16 next);
 
     // Returns an iterator pointing to the node containing the linear data offset /and/
     // modifies [inout_offset] to the appropriate node-specific linear data offset.
     Iterator find(size_t &inout_offset) const;
 
-    Virtio::Sg::Node *operator[](size_t index);
-    const Virtio::Sg::Node *operator[](size_t index) const;
+    Virtio::Sg::LinearizedDesc *desc_ptr(size_t index);
+    const Virtio::Sg::LinearizedDesc *desc_ptr(size_t index) const;
+
+    Virtio::Sg::DescMetadata *meta_ptr(size_t index);
+    const Virtio::Sg::DescMetadata *meta_ptr(size_t index) const;
 
 private:
-    // [Virtio::Queue]s have a maximum size of (2^15 - 1) [Virtio::Descriptior]s, and
+    // [Virtio::Queue]s have a maximum size of (2^15 - 1) [Virtio::Descriptor]s, and
     // the exclusion of loops means that no chain can have a length longer than this.
     uint16 _max_chain_length{0};
     uint16 _active_chain_length{0};
     size_t _size_bytes{0};
 
-    // Track whether or not the contents of [_nodes] corresponds to a
-    // complete or partial chain of descriptors; [reset] uses this
-    // to determine how to properly clean up the contents of [_nodes].
+    // Track whether or not the contents of [_desc_chain]/[_desc_chain_metadata]
+    // correspond to a complete or partial chain of descriptors; [reset] uses this
+    // to determine how to properly clean up the contents of [_desc_chain]/[_desc_chain_metadata].
     bool _complete_chain{false};
     // NOTE: Only meaningful when [_complete_chain] is [true]
     bool _chain_for_device{false};
-    // morally [Virtio::Sg::Node _nodes[_max_chain_length]], but we can't allow for
-    // exceptions in constructors (and thus defer allocation until the
-    // [init] function).
-    Virtio::Sg::Node *_nodes{nullptr};
+    // Both of these are morally [XXX xxx[_max_chain_length]], but we can't allow for
+    // exceptions in constructors (and thus defer allocation until the [init] function).
+    Virtio::Sg::LinearizedDesc *_desc_chain{nullptr};
+    Virtio::Sg::DescMetadata *_desc_chain_metadata{nullptr};
 };

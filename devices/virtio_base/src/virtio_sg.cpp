@@ -9,7 +9,7 @@
 #include <platform/log.hpp>
 
 void
-Virtio::Sg::Node::heuristically_track_written_bytes(size_t off, size_t size_bytes) {
+Virtio::Sg::DescMetadata::heuristically_track_written_bytes(size_t off, size_t size_bytes) {
     size_t local_prefix_written_bytes = _prefix_written_bytes;
 
     if (off <= local_prefix_written_bytes) {
@@ -52,14 +52,15 @@ Virtio::Sg::Buffer::written_bytes_lowerbound_heuristic() const {
     uint32 lb = 0;
 
     for (auto it = begin(); it != end(); ++it) {
-        auto *node = &(*it);
+        auto *desc = it.desc_ptr();
+        auto *meta = it.meta_ptr();
 
-        if (not(node->flags & VIRTQ_DESC_WRITE_ONLY))
+        if (not(desc->flags & VIRTQ_DESC_WRITE_ONLY))
             continue;
 
-        lb += node->_prefix_written_bytes;
+        lb += meta->_prefix_written_bytes;
 
-        if (node->_prefix_written_bytes != node->length)
+        if (meta->_prefix_written_bytes != desc->length)
             break;
     }
 
@@ -71,9 +72,11 @@ Virtio::Sg::Buffer::print(const char *msg) const {
     INFO("[Virtio::Sg::Buffer::print] => %s", msg);
     uint16 idx = 0;
     for (Virtio::Sg::Buffer::Iterator i = begin(); i != end(); i.operator++()) {
-        auto &node = *i;
+        auto &desc = i.desc_ref();
+        auto &meta = i.meta_ref();
+
         INFO("| DESCRIPTOR@%d: {address: 0x%llx} {length: %d} {flags: 0x%x} {next: %d}", idx++,
-             node.address, node.length, node.flags, node.next);
+             desc.address, desc.length, desc.flags, meta._original_next);
     }
 }
 
@@ -88,7 +91,7 @@ Virtio::Sg::Buffer::conclude_chain_use(Virtio::Queue &vq, bool send_incomplete) 
         //
         // NOTE: justified in the op-model because /physically/ sending the head
         // of the (partial) chain also /logically/ sends the body.
-        vq.send(cxx::move(_nodes[0]._desc), lb);
+        vq.send(cxx::move(_desc_chain_metadata[0]._desc), lb);
     }
 
     reset();
@@ -125,7 +128,7 @@ Errno
 Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&root_desc,
                                         void *extra, ChainWalkingCallback *callback) {
     // Use a more meaningful name internally
-    Virtio::Descriptor &desc = root_desc;
+    Virtio::Descriptor &tmp_desc = root_desc;
     // This flag tracks whether a writable buffer has been encountered within this chain already;
     // "The driver MUST place any device-writable descriptor elements after any device-readable
     // descriptor elements." cf. 2.6.4.2
@@ -170,31 +173,38 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
             // test ensures that - at this point - [0 < max_chain_length]. This means that
             // [_nodes[_max_chain_length - 1]] corresponds to the last descriptor
             // which was walked prior to discovering the loop in the chain.
-            Virtio::Sg::Node &node = _nodes[_max_chain_length - 1];
-            callback->chain_walking_cb(err, node.address, node.length, node.flags, node.next,
-                                       extra);
+            auto &desc = _desc_chain[_max_chain_length - 1];
+            auto &meta = _desc_chain_metadata[_max_chain_length - 1];
+            callback->chain_walking_cb(err, desc.address, desc.length, desc.flags,
+                                       meta._original_next, extra);
             conclude_chain_use(vq, true);
             return err;
         }
 
-        Virtio::Sg::Node &node = _nodes[_active_chain_length++];
-        node._desc = cxx::move(desc);
-        node._prefix_written_bytes = 0;
+        // Grab the nodes for this [entry] and linearize the link for [desc.next]
+        auto &desc = _desc_chain[_active_chain_length];
+        auto &meta = _desc_chain_metadata[_active_chain_length];
+        desc.linear_next = ++_active_chain_length;
+
+        meta._desc = cxx::move(tmp_desc);
+        meta._prefix_written_bytes = 0;
 
         // Read the [address]/[length] a single time each.
-        node.address = node._desc.address();
-        node.length = node._desc.length();
-        _size_bytes += node.length;
+        desc.address = meta._desc.address();
+        desc.length = meta._desc.length();
+        _size_bytes += desc.length;
 
-        err = vq.next_in_chain(node._desc, node.flags, next_en, node.next, desc);
+        // Walk the chain - storing the "real" next index in the [meta._original_next] field
+        err = vq.next_in_chain(meta._desc, desc.flags, next_en, meta._original_next, tmp_desc);
 
-        if (node.flags & VIRTQ_DESC_WRITE_ONLY) {
+        if (desc.flags & VIRTQ_DESC_WRITE_ONLY) {
             seen_writable = true;
         } else if (seen_writable) {
             err = Errno::NOTRECOVERABLE;
         }
 
-        callback->chain_walking_cb(err, node.address, node.length, node.flags, node.next, extra);
+        callback->chain_walking_cb(err, desc.address, desc.length, desc.flags, meta._original_next,
+                                   extra);
 
         if (err != Errno::NONE) {
             conclude_chain_use(vq, true);
@@ -225,13 +235,14 @@ Virtio::Sg::Buffer::add_final_link(Virtio::Descriptor &&desc, uint64 address, ui
 void
 Virtio::Sg::Buffer::modify_link(size_t chain_idx, uint64 address, uint32 length) {
     ASSERT(chain_idx < _active_chain_length);
-    auto &node = _nodes[chain_idx];
+    auto &desc = _desc_chain[chain_idx];
+    auto &meta = _desc_chain_metadata[chain_idx];
 
-    node.address = address;
-    node.length = length;
+    desc.address = address;
+    desc.length = length;
 
-    node._desc.set_address(address);
-    node._desc.set_length(length);
+    meta._desc.set_address(address);
+    meta._desc.set_length(length);
 }
 
 Errno
@@ -345,14 +356,15 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
     size_bytes = 0;
 
     while (rem and it != sg.end()) {
-        auto *node = &(*it);
+        auto *desc = it.desc_ptr();
+        auto *meta = it.meta_ptr();
 
-        size_t n_copy = min(node->length - off, rem);
+        size_t n_copy = min(desc->length - off, rem);
 
         // Register the read/write to the [sg] buffer (depending on whether it is
         // a copy /from/ or /to/ the buffer).
         if constexpr (LINEAR_TO_SG) {
-            if (sg.should_only_read(node->flags)) {
+            if (sg.should_only_read(desc->flags)) {
                 return Errno::PERM;
             }
 
@@ -361,13 +373,13 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
             // itself. Clients who need access to the particular translation
             // which failed can instrument custom tracking within their overload(s)
             // of [Sg::Buffer::ChainAccessor].
-            if (Errno::NONE != accessor->copy_to_gpa(copier, node->address + off, l, n_copy)) {
+            if (Errno::NONE != accessor->copy_to_gpa(copier, desc->address + off, l, n_copy)) {
                 return Errno::BADR;
             }
 
-            node->heuristically_track_written_bytes(off, n_copy);
+            meta->heuristically_track_written_bytes(off, n_copy);
         } else {
-            if (sg.should_only_write(node->flags)) {
+            if (sg.should_only_write(desc->flags)) {
                 WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
                      "debugging purposes.");
             }
@@ -377,7 +389,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
             // itself. Clients who need access to the particular translation
             // which failed can instrument custom tracking within their overload(s)
             // of [Sg::Buffer::ChainAccessor].
-            if (Errno::NONE != accessor->copy_from_gpa(copier, l, node->address + off, n_copy)) {
+            if (Errno::NONE != accessor->copy_from_gpa(copier, l, desc->address + off, n_copy)) {
                 return Errno::BADR;
             }
         }
@@ -439,11 +451,15 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
 
     // Iterate over both till we have copied all or any of the buffers is exhausted.
     while (rem and (d != dst.end()) and (s != src.end())) {
-        size_t n_copy = min(rem, min(s->length - s_off, d->length - d_off));
+        auto *d_desc = d.desc_ptr();
+        auto *d_meta = d.meta_ptr();
+        auto *s_desc = s.desc_ptr();
 
-        if (dst.should_only_read(d->flags)) {
+        size_t n_copy = min(rem, min(s_desc->length - s_off, d_desc->length - d_off));
+
+        if (dst.should_only_read(d_desc->flags)) {
             return Errno::PERM;
-        } else if (src.should_only_write(s->flags)) {
+        } else if (src.should_only_write(s_desc->flags)) {
             WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
                  "debugging purposes.");
         }
@@ -454,26 +470,27 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
         // translation which failed can instrument custom tracking within their
         // overload(s) of [Sg::Buffer::ChainAccessor].
         err = ChainAccessor::copy_between_gpa(copier, dst_accessor, src_accessor,
-                                              d->address + d_off, s->address + s_off, n_copy);
+                                              d_desc->address + d_off, s_desc->address + s_off,
+                                              n_copy);
         if (Errno::NONE != err) {
             return Errno::BADR;
         }
 
-        d->heuristically_track_written_bytes(d_off, n_copy);
+        d_meta->heuristically_track_written_bytes(d_off, n_copy);
 
         rem -= n_copy;
         size_bytes += n_copy;
 
         // Update the destination offset and check if we need to move to next node.
         d_off += n_copy;
-        if (d_off == d->length) {
+        if (d_off == d_desc->length) {
             ++d;
             d_off = 0;
         }
 
         // Update the source offset and check if we need to move to next node.
         s_off += n_copy;
-        if (s_off == s->length) {
+        if (s_off == s_desc->length) {
             ++s;
             s_off = 0;
         }
@@ -490,7 +507,7 @@ Virtio::Sg::Buffer::descriptor_offset(size_t descriptor_chain_idx, size_t &offse
             return Errno::INVAL;
         }
 
-        off += (*i).length;
+        off += i.desc_ref().length;
         descriptor_chain_idx--;
     }
 
@@ -500,9 +517,15 @@ Virtio::Sg::Buffer::descriptor_offset(size_t descriptor_chain_idx, size_t &offse
 
 Errno
 Virtio::Sg::Buffer::init() {
-    _nodes = new (nothrow) Virtio::Sg::Node[_max_chain_length];
-    if (_nodes == nullptr)
+    _desc_chain = new (nothrow) Virtio::Sg::LinearizedDesc[_max_chain_length];
+    if (_desc_chain == nullptr)
         return Errno::NOMEM;
+
+    _desc_chain_metadata = new (nothrow) Virtio::Sg::DescMetadata[_max_chain_length];
+    if (_desc_chain_metadata == nullptr) {
+        delete[] _desc_chain;
+        return Errno::NOMEM;
+    }
 
     return Errno::NONE;
 }
@@ -513,29 +536,33 @@ Virtio::Sg::Buffer::root_desc_idx(uint16 &root_desc_idx) const {
         root_desc_idx = UINT16_MAX;
         return Errno::NOENT;
     } else {
-        root_desc_idx = _nodes[0]._desc.index();
+        root_desc_idx = _desc_chain_metadata[0]._desc.index();
         return Errno::NONE;
     }
 }
 
 void
-Virtio::Sg::Buffer::add_descriptor(Virtio::Descriptor &&desc, uint64 address, uint32 length,
+Virtio::Sg::Buffer::add_descriptor(Virtio::Descriptor &&new_desc, uint64 address, uint32 length,
                                    uint16 flags, uint16 next) {
     // Grab a reference to the next node
-    Virtio::Sg::Node &node = _nodes[_active_chain_length++];
+    auto &desc = _desc_chain[_active_chain_length];
+    auto &meta = _desc_chain_metadata[_active_chain_length];
+
+    // Set up the linearized next idx in the cache and store the real next
+    desc.linear_next = ++_active_chain_length;
+    meta._original_next = next;
 
     // Do the shared-memory updates
-    desc.set_address(address);
-    desc.set_length(length);
-    desc.set_flags(flags);
-    desc.set_next(next);
+    new_desc.set_address(address);
+    new_desc.set_length(length);
+    new_desc.set_flags(flags);
+    new_desc.set_next(next);
 
-    // Cache all of the values in the [node]
-    node._desc = cxx::move(desc);
-    node.address = address;
-    node.length = length;
-    node.flags = flags;
-    node.next = next;
+    // Cache all of the remaining values
+    meta._desc = cxx::move(new_desc);
+    desc.address = address;
+    desc.length = length;
+    desc.flags = flags;
 }
 
 void
@@ -555,31 +582,48 @@ Virtio::Sg::Buffer::find(size_t &inout_offset) const {
 
     size_t cur_off = 0;
     for (auto it = begin(); it != end(); ++it) {
-        auto *node = &(*it);
-        if (cur_off + node->length > inout_offset) {
+        auto &desc = it.desc_ref();
+
+        if (cur_off + desc.length > inout_offset) {
             // Return the local offset within this node corresponding to desired linear offset.
             inout_offset = inout_offset - cur_off;
             return it;
         }
 
-        cur_off += node->length;
+        cur_off += desc.length;
     }
 
     return end();
 }
 
-Virtio::Sg::Node *
-Virtio::Sg::Buffer::operator[](size_t index) {
+Virtio::Sg::LinearizedDesc *
+Virtio::Sg::Buffer::desc_ptr(size_t index) {
     if (index >= _active_chain_length)
         return nullptr;
 
-    return &_nodes[index];
+    return &_desc_chain[index];
 }
 
-const Virtio::Sg::Node *
-Virtio::Sg::Buffer::operator[](size_t index) const {
+const Virtio::Sg::LinearizedDesc *
+Virtio::Sg::Buffer::desc_ptr(size_t index) const {
     if (index >= _active_chain_length)
         return nullptr;
 
-    return &_nodes[index];
+    return &_desc_chain[index];
+}
+
+Virtio::Sg::DescMetadata *
+Virtio::Sg::Buffer::meta_ptr(size_t index) {
+    if (index >= _active_chain_length)
+        return nullptr;
+
+    return &_desc_chain_metadata[index];
+}
+
+const Virtio::Sg::DescMetadata *
+Virtio::Sg::Buffer::meta_ptr(size_t index) const {
+    if (index >= _active_chain_length)
+        return nullptr;
+
+    return &_desc_chain_metadata[index];
 }
