@@ -343,7 +343,7 @@ Model::Pl011::write_to_rx_queue(char c) {
         return false;
 
     bool old_irq = is_irq_asserted();
-    _rx_fifo.enqueue(static_cast<uint16>(c));
+    _rx_fifo.enqueue(static_cast<uint8>(c));
 
     if (compute_rxris()) { // we know this would be true. can drop the check
         set_rxris(true);
