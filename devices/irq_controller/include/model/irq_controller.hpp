@@ -39,10 +39,14 @@ namespace Model {
         uint64 num_handled;
     };
 
-    enum GICVersion {
+    enum IRQCtlrVersion {
+        // ARM
         GIC_UNKNOWN = 0,
         GIC_V2 = 2,
         GIC_V3 = 3,
+        // Intel
+        APIC,
+        X2APIC,
     };
 }
 
