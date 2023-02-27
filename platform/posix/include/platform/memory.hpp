@@ -24,8 +24,6 @@ namespace Platform::Mem {
     static constexpr int EXEC = PROT_EXEC;
 
     typedef uint64 MemSel;
-    static constexpr MemSel REF_MEM{~0UL};
-
     class MemDescr;
     class Cred;
 
@@ -44,6 +42,8 @@ public:
 
 class Platform::Mem::MemDescr {
 public:
+    MemDescr(MemSel fd, Cred) : _memrange_sel(fd) {}
+
     MemDescr(MemSel fd) : _memrange_sel(fd) {}
 
     MemDescr() : _memrange_sel(~0UL) {}
