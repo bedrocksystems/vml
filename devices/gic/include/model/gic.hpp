@@ -389,7 +389,7 @@ private:
         }
     };
 
-    GICVersion const _version;
+    IRQCtlrVersion const _version;
     uint16 const _num_vcpus;
     uint16 const _configured_irqs;
 
@@ -692,7 +692,7 @@ private:
     }
 
 public:
-    GicD(GICVersion const version, uint16 num_vcpus, uint16 conf_irqs = MAX_IRQ)
+    GicD(IRQCtlrVersion const version, uint16 num_vcpus, uint16 conf_irqs = MAX_IRQ)
         : Irq_controller("GICD"), _version(version), _num_vcpus(num_vcpus),
           _configured_irqs(compute_irq_lines(conf_irqs)) {}
 
@@ -762,7 +762,7 @@ public:
     void update_inj_status(Vcpu_id cpu_id, uint32 irq_id, IrqState state, bool in_injection);
     void icc_sgi1r_el1(uint64, Vcpu_id);
     bool is_affinity_routing_enabled() const { return _ctlr.affinity_routing(); }
-    GICVersion version() const { return _version; }
+    IRQCtlrVersion version() const { return _version; }
 
     bool get_irq_info(Vcpu_id id, uint16 irq_id, IrqInfo &info) const {
         if (id >= _num_vcpus)
