@@ -18,7 +18,7 @@ Model::Virtio_net::notify(uint32 const) {
 
 void
 Model::Virtio_net::driver_ok() {
-    if (_callback)
+    if (_callback != nullptr)
         _callback->driver_ok();
 }
 
@@ -30,7 +30,7 @@ Model::Virtio_net::signal() {
 
 void
 Model::Virtio_net::reset(const VcpuCtx *ctx) {
-    if (_virtio_net_callback)
+    if (_virtio_net_callback != nullptr)
         _virtio_net_callback->device_reset(ctx);
 
     reset_virtio();
@@ -38,6 +38,6 @@ Model::Virtio_net::reset(const VcpuCtx *ctx) {
 
 void
 Model::Virtio_net::shutdown() {
-    if (_virtio_net_callback)
+    if (_virtio_net_callback != nullptr)
         _virtio_net_callback->shutdown();
 }

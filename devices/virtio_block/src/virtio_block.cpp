@@ -18,7 +18,7 @@ Model::Virtio_block::notify(uint32 const) {
 
 void
 Model::Virtio_block::driver_ok() {
-    if (_callback)
+    if (_callback != nullptr)
         _callback->driver_ok();
 }
 
@@ -30,7 +30,7 @@ Model::Virtio_block::signal() {
 
 void
 Model::Virtio_block::reset(const VcpuCtx *ctx) {
-    if (_virtio_block_callback)
+    if (_virtio_block_callback != nullptr)
         _virtio_block_callback->device_reset(ctx);
 
     reset_virtio();
@@ -38,6 +38,6 @@ Model::Virtio_block::reset(const VcpuCtx *ctx) {
 
 void
 Model::Virtio_block::shutdown() {
-    if (_virtio_block_callback)
+    if (_virtio_block_callback != nullptr)
         _virtio_block_callback->shutdown();
 }

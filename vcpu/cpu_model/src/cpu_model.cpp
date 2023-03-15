@@ -23,8 +23,7 @@ namespace Model {
     static Cpu** vcpus;
 }
 
-const char* state_printable_name[]
-    = {"OFF", "OFF_ROUNDEDUP", "ON", "ON_ROUNDEDUP", "EMULATE", "EMULATE_ROUNDEDUP"};
+const char* state_printable_name[] = {"OFF", "OFF_ROUNDEDUP", "ON", "ON_ROUNDEDUP", "EMULATE", "EMULATE_ROUNDEDUP"};
 
 bool
 Model::Cpu::init(uint16 config_vcpus) {
@@ -99,8 +98,8 @@ Model::Cpu::resume_all() {
 }
 
 void
-Model::Cpu::ctrl_feature_on_vcpu(ctrl_feature_cb cb, Vcpu_id vcpu_id, bool enabled,
-                                 Request::Requestor requestor, Reg_selection regs) {
+Model::Cpu::ctrl_feature_on_vcpu(ctrl_feature_cb cb, Vcpu_id vcpu_id, bool enabled, Request::Requestor requestor,
+                                 Reg_selection regs) {
     ASSERT(vcpu_id < configured_vcpus);
 
     Model::Cpu* vcpu = vcpus[vcpu_id];
@@ -108,8 +107,8 @@ Model::Cpu::ctrl_feature_on_vcpu(ctrl_feature_cb cb, Vcpu_id vcpu_id, bool enabl
 }
 
 void
-Model::Cpu::ctrl_feature_on_all_but_vcpu(ctrl_feature_cb cb, Vcpu_id id, bool enabled,
-                                         Request::Requestor requestor, Reg_selection regs) {
+Model::Cpu::ctrl_feature_on_all_but_vcpu(ctrl_feature_cb cb, Vcpu_id id, bool enabled, Request::Requestor requestor,
+                                         Reg_selection regs) {
     ASSERT(id < configured_vcpus);
     for (Vcpu_id i = 0; i < configured_vcpus; ++i) {
         Model::Cpu* vcpu = vcpus[i];
@@ -120,9 +119,8 @@ Model::Cpu::ctrl_feature_on_all_but_vcpu(ctrl_feature_cb cb, Vcpu_id id, bool en
 }
 
 void
-Model::Cpu::ctrl_register_trap_on_vcpu(ctrl_feature_ex_cb cb, Vcpu_id vcpu_id, bool enabled,
-                                       Request::Requestor requestor, uint64 trap_id,
-                                       Reg_selection regs) {
+Model::Cpu::ctrl_register_trap_on_vcpu(ctrl_feature_ex_cb cb, Vcpu_id vcpu_id, bool enabled, Request::Requestor requestor,
+                                       uint64 trap_id, Reg_selection regs) {
     ASSERT(vcpu_id < configured_vcpus);
 
     Model::Cpu* vcpu = vcpus[vcpu_id];
@@ -130,8 +128,7 @@ Model::Cpu::ctrl_register_trap_on_vcpu(ctrl_feature_ex_cb cb, Vcpu_id vcpu_id, b
 }
 
 void
-Model::Cpu::ctrl_feature_on_all_vcpus(ctrl_feature_cb cb, bool enabled,
-                                      Request::Requestor requestor, Reg_selection regs) {
+Model::Cpu::ctrl_feature_on_all_vcpus(ctrl_feature_cb cb, bool enabled, Request::Requestor requestor, Reg_selection regs) {
     for (Vcpu_id i = 0; i < configured_vcpus; ++i) {
         Model::Cpu* vcpu = vcpus[i];
 
@@ -140,8 +137,7 @@ Model::Cpu::ctrl_feature_on_all_vcpus(ctrl_feature_cb cb, bool enabled,
 }
 
 bool
-Model::Cpu::is_feature_enabled_on_vcpu(requested_feature_cb cb, Vcpu_id vcpu_id,
-                                       Request::Requestor requestor) {
+Model::Cpu::is_feature_enabled_on_vcpu(requested_feature_cb cb, Vcpu_id vcpu_id, Request::Requestor requestor) {
     ASSERT(vcpu_id < configured_vcpus);
 
     Model::Cpu* vcpu = vcpus[vcpu_id];
@@ -149,15 +145,13 @@ Model::Cpu::is_feature_enabled_on_vcpu(requested_feature_cb cb, Vcpu_id vcpu_id,
 }
 
 void
-Model::Cpu::ctrl_feature_tvm(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
-                             Reg_selection regs) {
+Model::Cpu::ctrl_feature_tvm(Model::Cpu* vcpu, bool enable, Request::Requestor requestor, Reg_selection regs) {
     ASSERT(vcpu != nullptr);
     vcpu->_tvm.request(enable, requestor, regs);
 }
 
 void
-Model::Cpu::ctrl_feature_single_step(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
-                                     Reg_selection) {
+Model::Cpu::ctrl_feature_single_step(Model::Cpu* vcpu, bool enable, Request::Requestor requestor, Reg_selection) {
     ASSERT(vcpu != nullptr);
     vcpu->_single_step.request(enable, requestor);
 }
@@ -183,8 +177,7 @@ Model::Cpu::requested_feature_regs_dump(Model::Cpu* mcpu, Request::Requestor req
 }
 
 void
-Model::Cpu::ctrl_feature_off(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
-                             Reg_selection) {
+Model::Cpu::ctrl_feature_off(Model::Cpu* vcpu, bool enable, Request::Requestor requestor, Reg_selection) {
     vcpu->_execution_paused.request(enable, requestor);
     if (!enable) {
         vcpu->switch_on();
@@ -198,32 +191,28 @@ Model::Cpu::ctrl_feature_off(Model::Cpu* vcpu, bool enable, Request::Requestor r
 }
 
 void
-Model::Cpu::ctrl_feature_reset(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
-                               Reg_selection) {
+Model::Cpu::ctrl_feature_reset(Model::Cpu* vcpu, bool enable, Request::Requestor requestor, Reg_selection) {
     vcpu->_reset.request(enable, requestor);
 }
 
 void
-Model::Cpu::ctrl_feature_icache_invalidate(Model::Cpu* vcpu, bool enable,
-                                           Request::Requestor requestor, Reg_selection) {
+Model::Cpu::ctrl_feature_icache_invalidate(Model::Cpu* vcpu, bool enable, Request::Requestor requestor, Reg_selection) {
     vcpu->_icache_invalidate.request(enable, requestor);
 }
 
 void
-Model::Cpu::ctrl_feature_hypercall(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
-                                   Reg_selection regs) {
+Model::Cpu::ctrl_feature_hypercall(Model::Cpu* vcpu, bool enable, Request::Requestor requestor, Reg_selection regs) {
     vcpu->_hypercall.request(enable, requestor, regs);
 }
 
 void
-Model::Cpu::ctrl_register_trap_cb(Model::Cpu* vcpu, bool enable, Request::Requestor requestor,
-                                  uint64 trap_id, Reg_selection regs) {
+Model::Cpu::ctrl_register_trap_cb(Model::Cpu* vcpu, bool enable, Request::Requestor requestor, uint64 trap_id,
+                                  Reg_selection regs) {
     vcpu->ctrl_register_trap(enable, requestor, trap_id, regs);
 }
 
 void
-Model::Cpu::ctrl_feature_regs_dump(Model::Cpu* mcpu, bool enable, Request::Requestor requestor,
-                                   Reg_selection) {
+Model::Cpu::ctrl_feature_regs_dump(Model::Cpu* mcpu, bool enable, Request::Requestor requestor, Reg_selection) {
     if (not Stats::enabled())
         return;
 
@@ -244,8 +233,8 @@ Model::Cpu::run(Vcpu_id cpu_id) {
 }
 
 Model::Cpu::StartErr
-Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr,
-                      uint64 boot_args[MAX_BOOT_ARGS], uint64 timer_off, enum Mode m) {
+Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr, uint64 boot_args[MAX_BOOT_ARGS], uint64 timer_off,
+                      enum Mode m) {
     if (is_cpu_turned_on_by_guest(vcpu_id)) {
         WARN("Trying to power on VCPU " FMTu64 " but it is already on", vcpu_id);
         return ALREADY_ON;
@@ -264,8 +253,7 @@ Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr,
 }
 
 Model::Cpu::StartErr
-Model::Cpu::reset_cpu(Vcpu_id vcpu_id, uint64 boot_args[MAX_BOOT_ARGS], uint64 boot_addr,
-                      uint64 timer_off, enum Mode m) {
+Model::Cpu::reset_cpu(Vcpu_id vcpu_id, uint64 boot_args[MAX_BOOT_ARGS], uint64 boot_addr, uint64 timer_off, enum Mode m) {
     if (vcpu_id >= configured_vcpus) {
         WARN("vCPU " FMTu64 " number out of bound", vcpu_id);
         return INVALID_PARAMETERS;
@@ -338,14 +326,12 @@ Model::Cpu::switch_state_to_roundedup() {
             // case OFF_ROUNDEDUP:
             // case ON_ROUNDEDUP:
             // case EMULATE_ROUNDEDUP:
-            ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(),
-                       state_printable_name[cur_state]);
+            ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(), state_printable_name[cur_state]);
         }
     } while (!_state.cas(cur_state, new_state));
 
     if (__UNLIKELY__(Debug::current_level == Debug::FULL))
-        INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
-             state_printable_name[new_state]);
+        INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state], state_printable_name[new_state]);
 
     return (cur_state == EMULATE);
 }
@@ -366,14 +352,12 @@ Model::Cpu::resume() {
             new_state = EMULATE;
             break;
         default:
-            ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(),
-                       state_printable_name[cur_state]);
+            ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(), state_printable_name[cur_state]);
         }
     } while (!_state.cas(cur_state, new_state));
 
     if (__UNLIKELY__(Debug::current_level == Debug::FULL))
-        INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
-             state_printable_name[new_state]);
+        INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state], state_printable_name[new_state]);
 
     resume_vcpu();
 }
@@ -399,8 +383,7 @@ Model::Cpu::switch_state_to_on() {
             new_state = ON;
             break;
         default:
-            ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(),
-                       state_printable_name[cur_state]);
+            ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(), state_printable_name[cur_state]);
         }
     } while (!_state.cas(cur_state, new_state));
 
@@ -411,8 +394,7 @@ Model::Cpu::switch_state_to_on() {
         Vcpu::Roundup::vcpu_notify_switched_on();
 
     if (__UNLIKELY__(Debug::current_level == Debug::FULL))
-        INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
-             state_printable_name[new_state]);
+        INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state], state_printable_name[new_state]);
 }
 
 void
@@ -428,14 +410,12 @@ Model::Cpu::switch_state_to_off() {
             new_state = OFF;
             break;
         default:
-            ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(),
-                       state_printable_name[cur_state]);
+            ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(), state_printable_name[cur_state]);
         }
     } while (!_state.cas(cur_state, new_state));
 
     if (__UNLIKELY__(Debug::current_level == Debug::FULL))
-        INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
-             state_printable_name[new_state]);
+        INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state], state_printable_name[new_state]);
 }
 
 /*! \brief Enter an emulation section in the VMM. This may fail.
@@ -466,14 +446,12 @@ Model::Cpu::switch_state_to_emulating() {
             new_state = EMULATE;
             break;
         default:
-            ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(),
-                       state_printable_name[cur_state]);
+            ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(), state_printable_name[cur_state]);
         }
     } while (!_state.cas(cur_state, new_state));
 
     if (__UNLIKELY__(Debug::current_level == Debug::FULL))
-        INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state],
-             state_printable_name[new_state]);
+        INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state], state_printable_name[new_state]);
 
     return true;
 }
@@ -487,8 +465,8 @@ void
 Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolute) {
     uint8 irr;
     if (!will_timeout)
-        while (!_lirq_ctlr->int_pending(&irr) and !_lirq_ctlr->nmi_pending()
-               and !is_roundup_pending() and !_dump_regs.is_requested())
+        while (!_lirq_ctlr->int_pending(&irr) and !_lirq_ctlr->nmi_pending() and !is_roundup_pending()
+               and !_dump_regs.is_requested())
             block();
     else {
         if (!_lirq_ctlr->int_pending(&irr) and !is_roundup_pending() and !_dump_regs.is_requested())
@@ -498,7 +476,7 @@ Model::Cpu::wait_for_interrupt(bool will_timeout, uint64 const timeout_absolute)
 
 void
 Model::Cpu::notify_interrupt_pending() {
-    if (_state & ON) {
+    if ((_state & ON) != 0) {
         recall(false, IRQ);
     }
 
@@ -506,8 +484,8 @@ Model::Cpu::notify_interrupt_pending() {
 }
 
 void
-Model::Cpu::set_reset_parameters(uint64 const boot_addr, uint64 const boot_args[MAX_BOOT_ARGS],
-                                 uint64 const tmr_off, enum Mode m) {
+Model::Cpu::set_reset_parameters(uint64 const boot_addr, uint64 const boot_args[MAX_BOOT_ARGS], uint64 const tmr_off,
+                                 enum Mode m) {
     _boot_addr = boot_addr;
     for (unsigned i = 0; i < MAX_BOOT_ARGS; i++)
         _boot_args[i] = boot_args[i];

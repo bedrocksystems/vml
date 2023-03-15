@@ -18,7 +18,7 @@ Model::Virtio_sock::notify(uint32 const) {
 
 void
 Model::Virtio_sock::driver_ok() {
-    if (_callback)
+    if (_callback != nullptr)
         _callback->driver_ok();
 }
 
@@ -30,7 +30,7 @@ Model::Virtio_sock::signal() {
 
 void
 Model::Virtio_sock::reset(const VcpuCtx *ctx) {
-    if (_virtio_sock_callback)
+    if (_virtio_sock_callback != nullptr)
         _virtio_sock_callback->device_reset(ctx);
 
     reset_virtio();
@@ -38,6 +38,6 @@ Model::Virtio_sock::reset(const VcpuCtx *ctx) {
 
 void
 Model::Virtio_sock::shutdown() {
-    if (_virtio_sock_callback)
+    if (_virtio_sock_callback != nullptr)
         _virtio_sock_callback->shutdown();
 }

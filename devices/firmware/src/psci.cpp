@@ -68,7 +68,7 @@ start_cpu(RegAccessor &arch, Vbus::Bus &vbus) {
     uint64 boot_args[Model::Cpu::MAX_BOOT_ARGS] = {arch.gpr(3), 0, 0, 0};
 
     if (spsr.is_aa32()) {
-        if (boot_addr & 0x1ull) {
+        if ((boot_addr & 0x1ull) != 0u) {
             mode = Model::Cpu::T32;
             boot_addr = boot_addr & ~0x1ull;
         } else {
@@ -93,7 +93,7 @@ static Firmware::Psci::Status
 system_suspend(const VcpuCtx &vctx, uint64 &res) {
     bool all_others_off = true;
 
-    for (uint64 id = 0; Model::Cpu::get_num_vcpus(); id++)
+    for (uint64 id = 0; id < Model::Cpu::get_num_vcpus(); id++)
         if (id != vctx.vcpu_id)
             all_others_off = all_others_off && !Model::Cpu::is_cpu_turned_on_by_guest(id);
 
@@ -107,8 +107,7 @@ system_suspend(const VcpuCtx &vctx, uint64 &res) {
 }
 
 Firmware::Psci::Status
-Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::Bus &vbus,
-                                 uint64 const function_id, uint64 &res) {
+Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::Bus &vbus, uint64 const function_id, uint64 &res) {
     switch (static_cast<FunctionId>(function_id)) {
     case SMCCC_VERSION:
         res = static_cast<uint64>(SMCCC_MAJOR_VERSION | SMCCC_MINOR_VERSION);
@@ -123,10 +122,9 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         uint64 feature = arch.gpr(1);
         if (feature == CPU_SUSPEND_64 || feature == CPU_SUSPEND_32)
             res = 0; /* support "Original Format" of the parameter */
-        else if (feature == VERSION || feature == CPU_ON_32 || feature == CPU_ON_64
-                 || feature == AFFINITY_INFO_64 || feature == AFFINITY_INFO_32 || feature == CPU_OFF
-                 || feature == SYSTEM_SUSPEND_32 || feature == SYSTEM_SUSPEND_64
-                 || feature == SYSTEM_OFF || feature == SYSTEM_RESET || feature == SMCCC_VERSION)
+        else if (feature == VERSION || feature == CPU_ON_32 || feature == CPU_ON_64 || feature == AFFINITY_INFO_64
+                 || feature == AFFINITY_INFO_32 || feature == CPU_OFF || feature == SYSTEM_SUSPEND_32
+                 || feature == SYSTEM_SUSPEND_64 || feature == SYSTEM_OFF || feature == SYSTEM_RESET || feature == SMCCC_VERSION)
             res = 0; // The function is present
         else
             res = static_cast<uint64>(NOT_SUPPORTED);

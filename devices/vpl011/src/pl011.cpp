@@ -21,8 +21,8 @@ Model::Pl011::set_lvl_to_gicd(bool asserted) {
 }
 
 Vbus::Err
-Model::Pl011::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset,
-                     uint8 const size, uint64 &value) {
+Model::Pl011::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset, uint8 const size,
+                     uint64 &value) {
     bool ok = false;
     Platform::MutexGuard guard(_state_lock);
 
@@ -45,8 +45,7 @@ warn_bad_access(const char *name, uint64 const offset, uint8 const size, uint64 
      * to allow this. Note that registers are all 32-bit apart at least.
      */
     if (size > sizeof(uint32))
-        WARN("Incorrect size used on write access to the %s: off %llu, size %u, value %llu", name,
-             offset, size, value);
+        WARN("Incorrect size used on write access to the %s: off %llu, size %u, value %llu", name, offset, size, value);
 }
 
 bool
@@ -100,13 +99,13 @@ Model::Pl011::mmio_write_icr(uint64 const value) {
     _ris = _ris & static_cast<uint16>(~(value & 0x7ff));
     updated_irq_lvl_to_gicd_if_needed(old_irq);
 
-    if ((value & TXRIS) & (oldris & TXRIS)) {
+    if (((value & TXRIS) & (oldris & TXRIS)) != 0u) {
         // the next time txris is computed, it would be false until the tx interrupt
         // condition makes the transition from being false to being true. see set_txris(false)
         // and compute_txris()
         _tx_irq_disabled_by_icr = true;
     }
-    if ((value & RXRIS) & (oldris & RXRIS)) {
+    if (((value & RXRIS) & (oldris & RXRIS)) != 0u) {
         _rx_irq_disabled_by_icr = true;
     }
     return true;
@@ -121,8 +120,7 @@ Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const val
         ASSERT(_callback != nullptr);
         bool old_irq = is_irq_asserted();
         if (can_tx()) {
-            _callback->from_guest_sent(
-                static_cast<char>(value)); // queue length remains same (0), so no interrupt change.
+            _callback->from_guest_sent(static_cast<char>(value)); // queue length remains same (0), so no interrupt change.
             // one can argue that queue length becomes 1 transiently, but 1 and 0 are equiv upto
             // watermark conditions
         } else {
@@ -197,14 +195,13 @@ Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const val
 bool
 Model::Pl011::mmio_read(uint64 const offset, uint8 const size, uint64 &value) {
     if (size > sizeof(uint32))
-        WARN("Incorrect size used on read access to the %s: off %llu, size %u, value %llu", name(),
-             offset, size, value);
+        WARN("Incorrect size used on read access to the %s: off %llu, size %u, value %llu", name(), offset, size, value);
 
     switch (offset) {
     case UARTDR:
         if (_rx_fifo.is_empty() || !can_rx()) // drop can_rx()? do litmus test. fill up RX fifo then
                                               // disable RXE then read
-            value = 0; // This is an undefined behavior (not specified) returning 0 is fine
+            value = 0;                        // This is an undefined behavior (not specified) returning 0 is fine
         else {
             bool was_full = _rx_fifo.is_full();
             bool prev_rx_cond = rx_irq_cond();

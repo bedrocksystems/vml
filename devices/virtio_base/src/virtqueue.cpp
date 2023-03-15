@@ -14,11 +14,10 @@ namespace Virtio {
     // [flags] and [next] must be read from shared memory during this operation, so we return their
     // values in the [flags]/[next] reference arguments to encourage clients to avoid double-reading
     // the shared memory.
-    Errno Queue::next_in_chain(const Descriptor &desc, uint16 &flags, bool &next_en, uint16 &next,
-                               Descriptor &next_desc) {
+    Errno Queue::next_in_chain(const Descriptor &desc, uint16 &flags, bool &next_en, uint16 &next, Descriptor &next_desc) {
         flags = desc.flags();
 
-        if (flags & VIRTQ_DESC_CONT_NEXT) {
+        if ((flags & VIRTQ_DESC_CONT_NEXT) != 0) {
             next_en = true;
             next = desc.next();
 
@@ -151,7 +150,7 @@ namespace Virtio {
 
     // Host (Device) can check to see if interrupts are disabled by guest.
     bool DeviceQueue::interrupts_disabled(void) const {
-        return _available.flags() & VIRTQ_AVAIL_NO_INTERRUPT;
+        return (_available.flags() & VIRTQ_AVAIL_NO_INTERRUPT) != 0;
     }
 
     // Host (Device) can suppress notifications using these routines.
@@ -239,7 +238,7 @@ namespace Virtio {
     }
 
     bool DriverQueue::notifications_disabled(void) {
-        return _used.flags() & VIRTQ_USED_NO_NOTIFY;
+        return (_used.flags() & VIRTQ_USED_NO_NOTIFY) != 0;
     }
 
     // Host (Device) can suppress notifications using these routines.
@@ -253,7 +252,7 @@ namespace Virtio {
     static uint8 *allocz(size_t sz) {
         auto alloc_sz = align_up(sz, 4096);
         auto *p = new (nothrow) uint8[alloc_sz];
-        if (not p)
+        if (p == nullptr)
             return nullptr;
 
         memset(p, 0, alloc_sz);

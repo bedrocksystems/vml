@@ -14,8 +14,7 @@ Virtio::Sg::DescMetadata::heuristically_track_written_bytes(size_t off, size_t s
 
     if (off <= local_prefix_written_bytes) {
         local_prefix_written_bytes += off + size_bytes - local_prefix_written_bytes;
-        if (local_prefix_written_bytes < _prefix_written_bytes
-            || UINT32_MAX < local_prefix_written_bytes) {
+        if (local_prefix_written_bytes < _prefix_written_bytes || UINT32_MAX < local_prefix_written_bytes) {
             local_prefix_written_bytes = UINT32_MAX;
         }
 
@@ -25,10 +24,9 @@ Virtio::Sg::DescMetadata::heuristically_track_written_bytes(size_t off, size_t s
 }
 
 Errno
-Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t size_bytes,
-                                             size_t &inout_offset,
+Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t &inout_offset,
                                              Virtio::Sg::Buffer::Iterator &out_it) const {
-    if (not accessor) {
+    if (accessor == nullptr) {
         ASSERT(false);
         return Errno::INVAL;
     }
@@ -55,7 +53,7 @@ Virtio::Sg::Buffer::written_bytes_lowerbound_heuristic() const {
         auto *desc = it.desc_ptr();
         auto *meta = it.meta_ptr();
 
-        if (not(desc->flags & VIRTQ_DESC_WRITE_ONLY))
+        if ((desc->flags & VIRTQ_DESC_WRITE_ONLY) == 0)
             continue;
 
         lb += meta->_prefix_written_bytes;
@@ -75,8 +73,8 @@ Virtio::Sg::Buffer::print(const char *msg) const {
         auto &desc = i.desc_ref();
         auto &meta = i.meta_ref();
 
-        INFO("| DESCRIPTOR@%d: {address: 0x%llx} {length: %d} {flags: 0x%x} {next: %d}", idx++,
-             desc.address, desc.length, desc.flags, meta._original_next);
+        INFO("| DESCRIPTOR@%d: {address: 0x%llx} {length: %d} {flags: 0x%x} {next: %d}", idx++, desc.address, desc.length,
+             desc.flags, meta._original_next);
     }
 }
 
@@ -110,8 +108,7 @@ Virtio::Sg::Buffer::walk_chain(Virtio::Queue &vq, Virtio::Descriptor &&root_desc
 }
 
 Errno
-Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, void *extra,
-                                        ChainWalkingCallback *callback) {
+Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, void *extra, ChainWalkingCallback *callback) {
     Virtio::Descriptor root_desc;
     Errno err = vq.recv(root_desc);
     if (Errno::NONE != err) {
@@ -125,8 +122,8 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, void *extra,
 // \pre "[desc] derived from a [vq->recv] call which returned [Errno::NONE] (i.e. it is the
 //       root of a descriptor chain in [vq])"
 Errno
-Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&root_desc,
-                                        void *extra, ChainWalkingCallback *callback) {
+Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&root_desc, void *extra,
+                                        ChainWalkingCallback *callback) {
     // Use a more meaningful name internally
     Virtio::Descriptor &tmp_desc = root_desc;
     // This flag tracks whether a writable buffer has been encountered within this chain already;
@@ -175,8 +172,7 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
             // which was walked prior to discovering the loop in the chain.
             auto &desc = _desc_chain[_max_chain_length - 1];
             auto &meta = _desc_chain_metadata[_max_chain_length - 1];
-            callback->chain_walking_cb(err, desc.address, desc.length, desc.flags,
-                                       meta._original_next, extra);
+            callback->chain_walking_cb(err, desc.address, desc.length, desc.flags, meta._original_next, extra);
             conclude_chain_use(vq, true);
             return err;
         }
@@ -197,14 +193,13 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
         // Walk the chain - storing the "real" next index in the [meta._original_next] field
         err = vq.next_in_chain(meta._desc, desc.flags, next_en, meta._original_next, tmp_desc);
 
-        if (desc.flags & VIRTQ_DESC_WRITE_ONLY) {
+        if ((desc.flags & VIRTQ_DESC_WRITE_ONLY) != 0) {
             seen_writable = true;
         } else if (seen_writable) {
             err = Errno::NOTRECOVERABLE;
         }
 
-        callback->chain_walking_cb(err, desc.address, desc.length, desc.flags, meta._original_next,
-                                   extra);
+        callback->chain_walking_cb(err, desc.address, desc.length, desc.flags, meta._original_next, extra);
 
         if (err != Errno::NONE) {
             conclude_chain_use(vq, true);
@@ -217,15 +212,13 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
 }
 
 void
-Virtio::Sg::Buffer::add_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags,
-                             uint16 next) {
+Virtio::Sg::Buffer::add_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags, uint16 next) {
     ASSERT(flags & VIRTQ_DESC_CONT_NEXT);
     add_descriptor(cxx::move(desc), address, length, flags, next);
 }
 
 void
-Virtio::Sg::Buffer::add_final_link(Virtio::Descriptor &&desc, uint64 address, uint32 length,
-                                   uint16 flags) {
+Virtio::Sg::Buffer::add_final_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags) {
     ASSERT(not(flags & VIRTQ_DESC_CONT_NEXT));
     add_descriptor(cxx::move(desc), address, length, flags, 0);
     _complete_chain = true;
@@ -246,11 +239,9 @@ Virtio::Sg::Buffer::modify_link(size_t chain_idx, uint64 address, uint32 length)
 }
 
 Errno
-Virtio::Sg::Buffer::ChainAccessor::copy_between_gpa(BulkCopier *copier, ChainAccessor *dst_accessor,
-                                                    ChainAccessor *src_accessor,
-                                                    const GPA &dst_addr, const GPA &src_addr,
-                                                    size_t &size_bytes) {
-    if (not copier || not dst_accessor || not src_accessor) {
+Virtio::Sg::Buffer::ChainAccessor::copy_between_gpa(BulkCopier *copier, ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
+                                                    const GPA &dst_addr, const GPA &src_addr, size_t &size_bytes) {
+    if ((copier == nullptr) || (dst_accessor == nullptr) || (src_accessor == nullptr)) {
         return Errno::INVAL;
     }
 
@@ -284,9 +275,8 @@ Virtio::Sg::Buffer::ChainAccessor::copy_between_gpa(BulkCopier *copier, ChainAcc
 }
 
 Errno
-Virtio::Sg::Buffer::ChainAccessor::copy_from_gpa(BulkCopier *copier, char *dst_va,
-                                                 const GPA &src_addr, size_t &size_bytes) {
-    if (not copier) {
+Virtio::Sg::Buffer::ChainAccessor::copy_from_gpa(BulkCopier *copier, char *dst_va, const GPA &src_addr, size_t &size_bytes) {
+    if (copier == nullptr) {
         return Errno::INVAL;
     }
 
@@ -309,9 +299,8 @@ Virtio::Sg::Buffer::ChainAccessor::copy_from_gpa(BulkCopier *copier, char *dst_v
 }
 
 Errno
-Virtio::Sg::Buffer::ChainAccessor::copy_to_gpa(BulkCopier *copier, const GPA &dst_addr,
-                                               const char *src_va, size_t &size_bytes) {
-    if (not copier) {
+Virtio::Sg::Buffer::ChainAccessor::copy_to_gpa(BulkCopier *copier, const GPA &dst_addr, const char *src_va, size_t &size_bytes) {
+    if (copier == nullptr) {
         return Errno::INVAL;
     }
 
@@ -335,8 +324,8 @@ Virtio::Sg::Buffer::ChainAccessor::copy_to_gpa(BulkCopier *copier, const GPA &ds
 
 template<typename T_LINEAR, bool LINEAR_TO_SG, typename SG_MAYBE_CONST>
 Errno
-Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *l,
-                         size_t &size_bytes, size_t off, BulkCopier *copier) {
+Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *l, size_t &size_bytes, size_t off,
+                         BulkCopier *copier) {
     if (0 == size_bytes) {
         return Errno::NONE;
     }
@@ -407,23 +396,21 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
 }
 
 Errno
-Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, Virtio::Sg::Buffer &dst, const void *src,
-                         size_t &size_bytes, size_t d_off, BulkCopier *copier) {
-    return copy<const char, true, Virtio::Sg::Buffer>(
-        dst_accessor, dst, static_cast<const char *>(src), size_bytes, d_off, copier);
+Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, Virtio::Sg::Buffer &dst, const void *src, size_t &size_bytes, size_t d_off,
+                         BulkCopier *copier) {
+    return copy<const char, true, Virtio::Sg::Buffer>(dst_accessor, dst, static_cast<const char *>(src), size_bytes, d_off,
+                                                      copier);
 }
 
 Errno
-Virtio::Sg::Buffer::copy(ChainAccessor *src_accessor, void *dst, const Virtio::Sg::Buffer &src,
-                         size_t &size_bytes, size_t s_off, BulkCopier *copier) {
-    return copy<char, false, const Virtio::Sg::Buffer>(src_accessor, src, static_cast<char *>(dst),
-                                                       size_bytes, s_off, copier);
+Virtio::Sg::Buffer::copy(ChainAccessor *src_accessor, void *dst, const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t s_off,
+                         BulkCopier *copier) {
+    return copy<char, false, const Virtio::Sg::Buffer>(src_accessor, src, static_cast<char *>(dst), size_bytes, s_off, copier);
 }
 
 Errno // NOLINTNEXTLINE(readability-function-size, readability-function-cognitive-complexity)
-Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
-                         Virtio::Sg::Buffer &dst, const Virtio::Sg::Buffer &src, size_t &size_bytes,
-                         size_t d_off, size_t s_off, BulkCopier *copier) {
+Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor, Virtio::Sg::Buffer &dst,
+                         const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t d_off, size_t s_off, BulkCopier *copier) {
     if (0 == size_bytes) {
         return Errno::NONE;
     }
@@ -441,7 +428,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
     }
 
     auto default_copier = BulkCopierDefault();
-    if (not copier) {
+    if (copier == nullptr) {
         copier = &default_copier;
     }
 
@@ -450,7 +437,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
     size_bytes = 0;
 
     // Iterate over both till we have copied all or any of the buffers is exhausted.
-    while (rem and (d != dst.end()) and (s != src.end())) {
+    while ((rem != 0u) and (d != dst.end()) and (s != src.end())) {
         auto *d_desc = d.desc_ptr();
         auto *d_meta = d.meta_ptr();
         auto *s_desc = s.desc_ptr();
@@ -469,9 +456,8 @@ Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accesso
         // address translation itself. Clients who need access to the particular
         // translation which failed can instrument custom tracking within their
         // overload(s) of [Sg::Buffer::ChainAccessor].
-        err = ChainAccessor::copy_between_gpa(copier, dst_accessor, src_accessor,
-                                              d_desc->address + d_off, s_desc->address + s_off,
-                                              n_copy);
+        err = ChainAccessor::copy_between_gpa(copier, dst_accessor, src_accessor, d_desc->address + d_off,
+                                              s_desc->address + s_off, n_copy);
         if (Errno::NONE != err) {
             return Errno::BADR;
         }
@@ -542,8 +528,7 @@ Virtio::Sg::Buffer::root_desc_idx(uint16 &root_desc_idx) const {
 }
 
 void
-Virtio::Sg::Buffer::add_descriptor(Virtio::Descriptor &&new_desc, uint64 address, uint32 length,
-                                   uint16 flags, uint16 next) {
+Virtio::Sg::Buffer::add_descriptor(Virtio::Descriptor &&new_desc, uint64 address, uint32 length, uint16 flags, uint16 next) {
     // Grab a reference to the next node
     auto &desc = _desc_chain[_active_chain_length];
     auto &meta = _desc_chain_metadata[_active_chain_length];

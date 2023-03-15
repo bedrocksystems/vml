@@ -13,7 +13,7 @@ void
 Model::Virtio_console::notify(uint32 const) {
     _sig_notify_event->sig();
 
-    if (device_queue(RX).get_free())
+    if (device_queue(RX).get_free() != 0u)
         _sig_notify_empty_space.sig();
 }
 
@@ -21,7 +21,7 @@ void
 Model::Virtio_console::driver_ok() {
     _driver_initialized = true;
 
-    if (_callback)
+    if (_callback != nullptr)
         _callback->driver_ok();
 }
 
@@ -31,7 +31,7 @@ Model::Virtio_console::to_guest(const char *buff, size_t size_bytes) {
         return false;
 
     size_t buf_idx = 0;
-    while (size_bytes) {
+    while (size_bytes != 0u) {
         Errno err = _rx_buff.walk_chain(device_queue(RX));
         if (Errno::NONE != err) {
             assert_irq();
@@ -81,8 +81,7 @@ Model::Virtio_console::from_guest(char *out_buf, size_t size_bytes) {
         if (n_copy > 0) {
             // NOTE: [Model::Virtio_console] is a concrete instantiation of
             // [Virtio::Sg::Buffer::ChainAccessor].
-            err = Virtio::Sg::Buffer::copy(this, out_buf + was_read, _tx_buff, n_copy,
-                                           _tx_buff_progress);
+            err = Virtio::Sg::Buffer::copy(this, out_buf + was_read, _tx_buff, n_copy, _tx_buff_progress);
         }
         if (Errno::NONE != err || 0 == n_copy) {
             _tx_buff.conclude_chain_use(device_queue(TX));
