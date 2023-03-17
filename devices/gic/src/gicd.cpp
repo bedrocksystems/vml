@@ -123,7 +123,7 @@ public:
 
 bool
 Model::GicD::read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max, uint8 const bytes,
-                           uint64 const value, uint64 &result) const {
+                           uint64 const value, uint64 &result) {
     if ((bytes == 0u) || (bytes > 8) || (offset + bytes > base_max + 1))
         return false;
 

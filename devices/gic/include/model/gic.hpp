@@ -647,8 +647,7 @@ private:
     bool write_ctlr(uint64 offset, uint8 bytes, uint64 value);
     bool write_irouter(Banked &cpu, uint64 offset, uint8 bytes, uint64 value);
     bool write_sgir(Vcpu_id cpu_id, uint64 value);
-    bool read_register(uint64 offset, uint32 base_reg, uint32 base_max, uint8 bytes, uint64 value,
-                       uint64 &result) const;
+    static bool read_register(uint64 offset, uint32 base_reg, uint32 base_max, uint8 bytes, uint64 value, uint64 &result);
     bool read_pending(Banked &cpu, IrqMmioAccess &acc, uint32 base_offset, uint64 &value) const;
 
     void send_sgi(Vcpu_id from, Vcpu_id target, uint32 sgi_id);
