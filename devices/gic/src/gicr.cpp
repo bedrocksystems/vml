@@ -68,8 +68,8 @@ Model::GicR::can_receive_irq() const {
 }
 
 Vbus::Err
-Model::GicR::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset,
-                    uint8 const size, uint64 &value) {
+Model::GicR::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset, uint8 const size,
+                    uint64 &value) {
 
     bool ok = false;
 
@@ -112,8 +112,7 @@ Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const val
     case GICR_WAKER ... GICR_WAKER_END: {
         Waker w;
         uint32 new_w = 0;
-        GicD::RegAccess reg_acc{
-            .offset = offset, .base_reg = GICR_WAKER, .base_max = GICR_WAKER_END, .bytes = bytes};
+        GicD::RegAccess reg_acc{.offset = offset, .base_reg = GICR_WAKER, .base_max = GICR_WAKER_END, .bytes = bytes};
 
         w.value = static_cast<uint32>(value);
         new_w = (static_cast<uint32>(w.sleeping()) << Waker::CHILDREN_ASLEEP_BIT)
@@ -181,11 +180,9 @@ Model::GicR::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) co
     switch (offset) {
     case GICR_TYPER ... GICR_TYPER_END: {
         uint64 ret = static_cast<uint64>(_aff.aff3()) << 56 | static_cast<uint64>(_aff.aff2()) << 48
-                     | static_cast<uint64>(_aff.aff1()) << 40
-                     | static_cast<uint64>(_aff.aff0()) << 32;
-        ret |= static_cast<uint64>(_aff.aff1()) << 16
-               | static_cast<uint64>(_aff.aff0()) << 8; /* processor id */
-        ret |= (_last ? 1ull : 0ull) << 4;              /* last re-distributor */
+                     | static_cast<uint64>(_aff.aff1()) << 40 | static_cast<uint64>(_aff.aff0()) << 32;
+        ret |= static_cast<uint64>(_aff.aff1()) << 16 | static_cast<uint64>(_aff.aff0()) << 8; /* processor id */
+        ret |= (_last ? 1ull : 0ull) << 4;                                                     /* last re-distributor */
         return Model::GicD::read_register(offset, GICR_TYPER, GICR_TYPER_END, bytes, ret, value);
     }
     case GICR_WAKER ... GICR_WAKER_END: {

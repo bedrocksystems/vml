@@ -52,8 +52,7 @@ private:
         static constexpr uint32 INVALID_TARGET = ~0x0u;
 
         IrqTarget() : _tgt(INVALID_TARGET) {}
-        IrqTarget(Format f, uint64 target)
-            : _tgt((f & FORMAT_MASK) | (static_cast<uint32>(target) & TARGET_DATA_MASK)) {}
+        IrqTarget(Format f, uint64 target) : _tgt((f & FORMAT_MASK) | (static_cast<uint32>(target) & TARGET_DATA_MASK)) {}
         explicit IrqTarget(uint32 raw) : _tgt(raw) {}
 
         bool is_valid() const { return _tgt != INVALID_TARGET; }
@@ -99,9 +98,7 @@ private:
             return tgt.is_cpu_targeted(id);
         }
 
-        void set_target_cpu(const IrqTarget &tgt) {
-            _info = (_info & 0xffffffff00000000ull) | tgt.raw();
-        }
+        void set_target_cpu(const IrqTarget &tgt) { _info = (_info & 0xffffffff00000000ull) | tgt.raw(); }
 
         /*
          * The following functions are expected to be called with sender_id = 0.
@@ -134,8 +131,7 @@ private:
          * In that configuration, SGIs are banked by senders and up to 8 CPUs are supported.
          */
         uint8 get_pending_sender_id() const {
-            int sender_bit_set
-                = ffs(static_cast<unsigned int>(((_info & PENDING_FIELD) >> PENDING_SHIFT)));
+            int sender_bit_set = ffs(static_cast<unsigned int>(((_info & PENDING_FIELD) >> PENDING_SHIFT)));
             ASSERT(sender_bit_set > 0);
             ASSERT(sender_bit_set <= Model::GICV2_MAX_CPUS);
 
@@ -145,8 +141,7 @@ private:
         static constexpr uint8 NO_INJECTION = 0xff;
 
         uint8 get_injected_sender_id() const {
-            int sender_bit_set
-                = ffs(static_cast<unsigned int>(((_info & INJECTED_FIELD) >> INJECTED_SHIFT)));
+            int sender_bit_set = ffs(static_cast<unsigned int>(((_info & INJECTED_FIELD) >> INJECTED_SHIFT)));
             if (sender_bit_set == 0)
                 return NO_INJECTION;
 
@@ -280,8 +275,7 @@ private:
              * - The injection info is pending meaning that the IRQ was pending previously
              * asserted due to an edge IRQ firing.
              */
-            return (!sw_edge() && _line_asserted) || _sw_asserted
-                   || injection_info.read().pending();
+            return (!sw_edge() && _line_asserted) || _sw_asserted || injection_info.read().pending();
         }
 
         void reset(uint8 t) {
@@ -340,8 +334,7 @@ public:
             _lr |= static_cast<uint64>(irq.prio()) << PRIO_SHIFT; /* 8 bit - 48-55 */
 
             if (irq.hw()) {
-                _lr |= static_cast<uint64>(irq.hw_int_id() & PIRQ_ID_MASK)
-                       << PIRQ_ID_SHIFT; /* 10bit - 32-41 */
+                _lr |= static_cast<uint64>(irq.hw_int_id() & PIRQ_ID_MASK) << PIRQ_ID_SHIFT; /* 10bit - 32-41 */
             } else if (vintid < MAX_SGI) {
                 /*
                  * This can be surprising to read - the data has to go in
@@ -356,18 +349,14 @@ public:
         }
 
         IrqState state() const { return static_cast<IrqState>((_lr >> STATE_SHIFT) & STATE_MASK); }
-        void set_state(IrqState st) {
-            _lr = (_lr & ~(STATE_MASK << STATE_SHIFT)) | (static_cast<uint64>(st) << STATE_SHIFT);
-        }
+        void set_state(IrqState st) { _lr = (_lr & ~(STATE_MASK << STATE_SHIFT)) | (static_cast<uint64>(st) << STATE_SHIFT); }
         void activate() { set_state(IrqState::ACTIVE); }
         void deactivate() { set_state(IrqState::INACTIVE); }
 
         bool hw() const { return (_lr & (1ull << HW_BIT_SHIFT)) != 0u; }
         uint32 pintid() const { return (_lr >> PIRQ_ID_SHIFT) & PIRQ_ID_MASK; }
         uint32 vintid() const { return _lr & VIRQ_ID_MASK; }
-        uint8 senderid() const {
-            return hw() ? 0 : static_cast<uint8>((_lr >> SENDER_SHIFT) & SENDER_MASK);
-        }
+        uint8 senderid() const { return hw() ? 0 : static_cast<uint8>((_lr >> SENDER_SHIFT) & SENDER_MASK); }
         uint64 value() const { return _lr; }
         uint8 priority() const { return (_lr >> PRIO_SHIFT) & PRIO_MASK; }
     };
@@ -442,9 +431,7 @@ private:
         uint16 configured_irqs; // Maximum number of lines/irqs exposed by the GIC
 
         // First IRQ that will be modified by this access
-        uint16 first_irq_accessed() const {
-            return static_cast<uint16>(((offset - base_abs) * irq_per_bytes) + irq_base);
-        }
+        uint16 first_irq_accessed() const { return static_cast<uint16>(((offset - base_abs) * irq_per_bytes) + irq_base); }
 
         // Number of IRQ(s) concerned by this access
         uint16 num_irqs() const {
@@ -552,9 +539,8 @@ private:
         for (unsigned i = 0; i < acc.num_irqs(); i++) {
             uint64 const pos = acc.first_irq_accessed() + i;
             Irq &irq = irq_object(cpu, pos);
-            uint8 const val
-                = static_cast<uint8>((value >> (i * irq_per_bytes_to_bits(acc.irq_per_bytes)))
-                                     & irq_per_bytes_to_mask(acc.irq_per_bytes));
+            uint8 const val = static_cast<uint8>((value >> (i * irq_per_bytes_to_bits(acc.irq_per_bytes)))
+                                                 & irq_per_bytes_to_mask(acc.irq_per_bytes));
 
             irq.target(val);
 
@@ -612,8 +598,7 @@ private:
             uint64 const pos = acc.first_irq_accessed() + i;
             Irq const &irq = irq_object(cpu, pos);
 
-            value |= static_cast<uint64>((irq.*IRQ_FUN)())
-                     << (i * irq_per_bytes_to_bits(acc.irq_per_bytes));
+            value |= static_cast<uint64>((irq.*IRQ_FUN)()) << (i * irq_per_bytes_to_bits(acc.irq_per_bytes));
         }
 
         return true;
@@ -627,15 +612,13 @@ private:
     };
 
     template<typename T>
-    bool write_register(const RegAccess &acc, uint64 const value, T &result, T fixed_clear = 0,
-                        T fixed_set = 0) {
+    bool write_register(const RegAccess &acc, uint64 const value, T &result, T fixed_clear = 0, T fixed_set = 0) {
         unsigned constexpr TSIZE = sizeof(T);
         if (!acc.bytes || (acc.bytes > TSIZE) || (acc.offset + acc.bytes > acc.base_max + 1))
             return false;
 
         uint64 const base = acc.offset - acc.base_reg;
-        uint64 const mask = (acc.bytes >= TSIZE) ? (static_cast<T>(0) - 1) :
-                                                   ((static_cast<T>(1) << (acc.bytes * 8)) - 1);
+        uint64 const mask = (acc.bytes >= TSIZE) ? (static_cast<T>(0) - 1) : ((static_cast<T>(1) << (acc.bytes * 8)) - 1);
 
         result &= (acc.bytes >= TSIZE) ? static_cast<T>(0) : ~(static_cast<T>(mask) << (base * 8));
         result |= static_cast<T>(value & mask) << (base * 8);
@@ -683,8 +666,7 @@ private:
     }
 
     void update_inj_status_inactive(Vcpu_id cpu_id, uint32 irq_id);
-    void update_inj_status_active_or_pending(Vcpu_id cpu_id, IrqState state, uint32 irq_id,
-                                             bool in_injection);
+    void update_inj_status_active_or_pending(Vcpu_id cpu_id, IrqState state, uint32 irq_id, bool in_injection);
 
     static uint16 compute_irq_lines(uint16 desired) {
         return static_cast<uint16>(std::min<uint64>(MAX_IRQ, align_up(desired, 32)));
@@ -692,8 +674,7 @@ private:
 
 public:
     GicD(IRQCtlrVersion const version, uint16 num_vcpus, uint16 conf_irqs = MAX_IRQ)
-        : Irq_controller("GICD"), _version(version), _num_vcpus(num_vcpus),
-          _configured_irqs(compute_irq_lines(conf_irqs)) {}
+        : Irq_controller("GICD"), _version(version), _num_vcpus(num_vcpus), _configured_irqs(compute_irq_lines(conf_irqs)) {}
 
     ~GicD() {
         delete[] _local;
@@ -726,8 +707,7 @@ public:
         return true;
     }
 
-    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
-                             uint64 &) override;
+    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
     virtual void reset(const VcpuCtx *) override;
     virtual Type type() const override { return IRQ_CONTROLLER; }
 
@@ -780,8 +760,7 @@ public:
         info.num_acked = irq.num_acked;
 
         uint32 aff = irq.routing.aff0() | static_cast<uint32>(irq.routing.aff1() << 8u)
-                     | static_cast<uint32>(irq.routing.aff2() << 16u)
-                     | static_cast<uint32>(irq.routing.aff3() << 24u);
+                     | static_cast<uint32>(irq.routing.aff2() << 16u) | static_cast<uint32>(irq.routing.aff3() << 24u);
 
         if (_ctlr.affinity_routing())
             info.target = irq.routing.any() ? ~0x0u : aff;
@@ -835,20 +814,15 @@ public:
     GicR(GicD &gic, Vcpu_id cpu_id, CpuAffinity aff, bool last)
         : Local_Irq_controller("GICR"), _gic_d(&gic), _vcpu_id(cpu_id), _aff(aff), _last(last) {}
 
-    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
-                             uint64 &) override;
+    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
 
     virtual void reset(const VcpuCtx *) override {}
     virtual Type type() const override { return IRQ_CONTROLLER; }
 
     virtual bool can_receive_irq() const override;
 
-    virtual void assert_vector(uint8 irq_id, bool) override {
-        _gic_d->assert_ppi(_vcpu_id, irq_id);
-    }
-    virtual uint8 int_ack() override {
-        ABORT_WITH("interrupt ACK shouldn't be called on the GICR");
-    }
+    virtual void assert_vector(uint8 irq_id, bool) override { _gic_d->assert_ppi(_vcpu_id, irq_id); }
+    virtual uint8 int_ack() override { ABORT_WITH("interrupt ACK shouldn't be called on the GICR"); }
     virtual bool int_pending(uint8 *) override {
         return _gic_d->has_irq_in_injection(_vcpu_id) or _gic_d->has_irq_to_inject(_vcpu_id);
     }
