@@ -39,8 +39,7 @@ namespace Log {
         FATAL,
     };
 
-    __attribute__((format(printf, 3, 4))) inline void _log(Log_level, bool enabled, const char *fmt,
-                                                           ...) {
+    __attribute__((format(printf, 3, 4))) inline void _log(Log_level, bool enabled, const char *fmt, ...) {
         if (!enabled)
             return;
 
@@ -50,8 +49,7 @@ namespace Log {
         va_end(args);
     }
 
-    __attribute__((format(printf, 3, 0))) inline void _vlog(Log_level, bool enabled,
-                                                            const char *fmt, va_list vap) {
+    __attribute__((format(printf, 3, 0))) inline void _vlog(Log_level, bool enabled, const char *fmt, va_list vap) {
         if (!enabled)
             return;
 
@@ -66,7 +64,7 @@ namespace Log {
 #define FMTu32 "%" PRIu32
 #define FMTd32 "%" PRId32
 
-#define _LOG(_FILE_STREAM_, _LVL_STR_, _FMT_, ...)                                                 \
+#define _LOG(_FILE_STREAM_, _LVL_STR_, _FMT_, ...)                                                                               \
     fprintf(_FILE_STREAM_, "[%s][%s:%u] " _FMT_ "\n", _LVL_STR_, __FILE__, __LINE__, ##__VA_ARGS__);
 #define DEBUG(_FMT_, ...) _LOG(stdout, "DBG", _FMT_, ##__VA_ARGS__)
 #define VERBOSE(_FMT_, ...) _LOG(stdout, "VRB", _FMT_, ##__VA_ARGS__)
@@ -75,16 +73,29 @@ namespace Log {
 #define ERROR(_FMT_, ...) _LOG(stderr, "ERR", _FMT_, ##__VA_ARGS__)
 #define FATAL(_FMT_, ...) _LOG(stderr, "FTL", _FMT_, ##__VA_ARGS__)
 
-#define ASSERT(_expr_)                                                                             \
-    do {                                                                                           \
-        if (__UNLIKELY__(!(_expr_))) {                                                             \
-            FATAL("Assertion failure.");                                                           \
-            cxx::abort();                                                                          \
-        }                                                                                          \
+#define ASSERT(_expr_)                                                                                                           \
+    do {                                                                                                                         \
+        if (__UNLIKELY__(!(_expr_))) {                                                                                           \
+            FATAL("Assertion failure.");                                                                                         \
+            cxx::abort();                                                                                                        \
+        }                                                                                                                        \
     } while (0)
 
-#define ABORT_WITH(_FMT_, ...)                                                                     \
-    do {                                                                                           \
-        FATAL(_FMT_, ##__VA_ARGS__);                                                               \
-        cxx::abort();                                                                              \
+#define ABORT_WITH(_FMT_, ...)                                                                                                   \
+    do {                                                                                                                         \
+        FATAL(_FMT_, ##__VA_ARGS__);                                                                                             \
+        cxx::abort();                                                                                                            \
     } while (0)
+
+// DEBUG will add the file and line number, emulating a poor man's stacktrace.
+#define PROPAGATE_ERRNO_FAILURE(_err)                                                                                            \
+    do {                                                                                                                         \
+        Errno propagate_errno_failure_err = _err;                                                                                \
+        if (__UNLIKELY__(propagate_errno_failure_err != Errno::NONE)) {                                                          \
+            DEBUG("Propagating errno '%s' to caller", errno2str(propagate_errno_failure_err));                                   \
+            return propagate_errno_failure_err;                                                                                  \
+        }                                                                                                                        \
+    } while (0)
+
+// Simpler macro to type.
+#define TRY_ERRNO_LOG(x) PROPAGATE_ERRNO_FAILURE(x)
