@@ -112,25 +112,30 @@ Model::Pl011::mmio_write_icr(uint64 const value) {
 }
 
 bool
+Model::Pl011::mmio_write_dr(uint64 const value) {
+    ASSERT(_callback != nullptr);
+    bool old_irq = is_irq_asserted();
+    if (can_tx()) {
+        _callback->from_guest_sent(static_cast<char>(value));
+        // queue length remains same (0) so no interrupt change.
+        // one can argue that queue length becomes 1 transiently,
+        // but 1 and 0 are equiv upto watermark conditions
+    } else {
+        _tx_fifo.enqueue(static_cast<unsigned char>(value));
+    }
+    set_txris(tx_irq_cond());
+    updated_irq_lvl_to_gicd_if_needed(old_irq);
+
+    return true;
+}
+
+bool
 Model::Pl011::mmio_write(uint64 const offset, uint8 const size, uint64 const value) {
     warn_bad_access(name(), offset, size, value);
 
     switch (offset) {
-    case UARTDR: {
-        ASSERT(_callback != nullptr);
-        bool old_irq = is_irq_asserted();
-        if (can_tx()) {
-            _callback->from_guest_sent(static_cast<char>(value)); // queue length remains same (0), so no interrupt change.
-            // one can argue that queue length becomes 1 transiently, but 1 and 0 are equiv upto
-            // watermark conditions
-        } else {
-            _tx_fifo.enqueue(static_cast<unsigned char>(value));
-        }
-        set_txris(tx_irq_cond());
-        updated_irq_lvl_to_gicd_if_needed(old_irq);
-
-        return true;
-    }
+    case UARTDR:
+        return mmio_write_dr(value);
     case UARTRSR: // READ only register
         return true;
     case UARTILPR:
@@ -289,12 +294,24 @@ Model::Pl011::rx_irq_cond() const {
     uint32 chars = _rx_fifo.cur_size();
     return (chars > 0);
 
-    /* The manual says: the receive timeout interrupt is asserted when the receive FIFO is not
-     * empty, and no further data is received over a 32-bit period. The receive timeout interrupt is
-     * cleared either when the FIFO becomes empty through reading all the data (or by reading the
-     * holding register), or when a 1 is written to the corresponding bit of the UARTICR register.
+    /*
+     * TODO: the code below should be uncommented. it is a hack to workaround the bug that the
+     * code/model do not model "receive timeout interrupt" at all. This is a separate iterrupt
+     * "line", just like the RX and TX lines. all these lines are ORed together to get the one line
+     * to the GICD (see is_irq_asserted()).
+     * the hack is not fully correct because the guest can disable the "receive timeout interrupt"
+     * and then the code below would be doing the wrong thing
+     * see FM-2473
+
+     * The manual says: the receive timeout interrupt is asserted when the receive FIFO
+     * is not empty, and no further data is received over a 32-bit period. The receive timeout
+     * interrupt is cleared either when the FIFO becomes empty through reading all the data (or by
+     * reading the holding register), or when a 1 is written to the corresponding bit of the UARTICR
+     * register.
      *
      * Because timing is irrelvant for vmm, we assume that we are already over the 32-bit period.
+     * so the "receive timeout interrupt" should fire anyway. but because we are not modeling it
+     * currently, we instead fire the RX interrupt
      */
     // switch (get_rx_irq_level()) {
     // case FIFO_1DIV8_FULL:
@@ -336,7 +353,7 @@ bool
 Model::Pl011::write_to_rx_queue(char c) {
     Platform::MutexGuard guard(_state_lock);
 
-    if (_rx_fifo.is_full() || !can_rx())
+    if (wait_to_receive())
         return false;
 
     bool old_irq = is_irq_asserted();

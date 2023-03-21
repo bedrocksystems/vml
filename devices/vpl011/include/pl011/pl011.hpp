@@ -163,12 +163,8 @@ private:
     SeqQueue<uint16, 32> _rx_fifo;
     SeqQueue<uint16, 32> _tx_fifo;
 
-    FIFOIRQLevel get_tx_irq_level() const {
-        return static_cast<FIFOIRQLevel>(bits_in_range(_ifls, 0, 2));
-    }
-    FIFOIRQLevel get_rx_irq_level() const {
-        return static_cast<FIFOIRQLevel>(bits_in_range(_ifls, 3, 5));
-    }
+    FIFOIRQLevel get_tx_irq_level() const { return static_cast<FIFOIRQLevel>(bits_in_range(_ifls, 0, 2)); }
+    FIFOIRQLevel get_rx_irq_level() const { return static_cast<FIFOIRQLevel>(bits_in_range(_ifls, 3, 5)); }
 
     bool mmio_write(uint64 offset, uint8 access_size, uint64 value);
     bool mmio_read(uint64 offset, uint8 access_size, uint64 &value);
@@ -185,10 +181,13 @@ private:
     bool is_fifo_enabled() const { return (FEN & _lcrh) != 0; }
     bool can_tx() const { return ((_cr & UARTEN) != 0) && ((_cr & TXE) != 0); }
     bool can_rx() const { return ((_cr & UARTEN) != 0) && ((_cr & RXE) != 0); }
+    bool wait_to_receive() const { return _rx_fifo.is_full() || !can_rx(); }
     bool is_rx_irq_active() const { return (_imsc & RXIM) != 0; }
     bool is_tx_irq_active() const { return (_imsc & TXIM) != 0; }
     bool is_rx_irq_asserted() const { return is_rx_irq_active() && ((_ris & RXRIS) != 0); }
     bool is_tx_irq_asserted() const { return is_tx_irq_active() && ((_ris & TXRIS) != 0); }
+
+    // see FM-2473. we probably need to || the "receive timeout interrupt" logic here as well
     bool is_irq_asserted() const { return is_rx_irq_asserted() || is_tx_irq_asserted(); }
     void set_rxris(bool b) {
         if (b)
@@ -220,25 +219,26 @@ private:
     bool mmio_write_cr(uint64 value);
     bool mmio_write_ifls(uint64 value);
     bool mmio_write_icr(uint64 value);
+    bool mmio_write_dr(uint64 value);
 
     void wait_for_available_buffer() { _sig_notify_empty_space.wait(); }
 
-    Irq_controller *_irq_ctlr; /*!< Interrupt controller that will receive interrupts */
-    uint16 _irq_id;            /*!< IRQ id when sending an interrupt to the controller */
+    Irq_controller *_irq_ctlr;                /*!< Interrupt controller that will receive interrupts */
+    uint16 _irq_id;                           /*!< IRQ id when sending an interrupt to the controller */
     Platform::Signal _sig_notify_empty_space; /*!< Synchronize/wait on a buffer that is full */
 
     /*
      * Rationale on the locking scheme:
-     * - The concurrency model can be described as: accesses from the guest and accesses from the
-     * outside world that sends characters to the guest.
-     * - We need to synchronize the outside world and the guest. That can be done with atomics but
-     * it complicates the specification of this code.
+     * - The concurrency model can be described as: accesses from the guest and accesses from
+     * the outside world that sends characters to the guest.
+     * - We need to synchronize the outside world and the guest. That can be done with atomics
+     * but it complicates the specification of this code.
      * - Technically, a guest could have several CPUs accessing the pl011 at the same time.
      * Probably, no sane driver would do that but we can still prevent the device to become
      * corrupted by using a global state lock.
-     * - Locking should be cheap here, in most cases, only 2 entities will compete for the lock. The
-     * outside world will also just wait if the FIFO is full, leaving the guest alone to take the
-     * lock.
+     * - Locking should be cheap here, in most cases, only 2 entities will compete for the lock.
+     * The outside world will also just wait if the FIFO is full, leaving the guest alone to
+     * take the lock.
      * - Overall, performance is not a big concern for virtual UARTs.
      *
      * This could be improved in the future if there is a need.
@@ -252,13 +252,10 @@ public:
      *  \param sbsa_uart Follows the SBSA spec, in particular for the initial state
      */
     Pl011(Irq_controller &irq_ctlr, uint16 const irq, bool sbsa_uart = true)
-        : Vuart::Vuart(DEVICE_NAME), _sbsa_uart(sbsa_uart), _irq_ctlr(&irq_ctlr), _irq_id(irq),
-          _sig_notify_empty_space() {}
+        : Vuart::Vuart(DEVICE_NAME), _sbsa_uart(sbsa_uart), _irq_ctlr(&irq_ctlr), _irq_id(irq), _sig_notify_empty_space() {}
 
     // needed for a proof, will be removed soon.
-    /*__UNUSED__*/ void delete_fm_register_in_vbus(Vbus::Bus *vb) {
-        static_cast<void>(vb->register_device(this, 0, 10));
-    }
+    /*__UNUSED__*/ void delete_fm_register_in_vbus(Vbus::Bus *vb) { static_cast<void>(vb->register_device(this, 0, 10)); }
 
     bool init(const Platform_ctx *ctx) {
         if (!_sig_notify_empty_space.init(ctx))
@@ -280,8 +277,8 @@ public:
      *  \param res Input or output value (depending on read or write)
      *  \return status of the access
      */
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx *vctx, Vbus::Space sp, mword off,
-                             uint8 size, uint64 &value) override;
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx *vctx, Vbus::Space sp, mword off, uint8 size,
+                             uint64 &value) override;
 
     /*! \brief Reset the PL011 to its initial state
      */
