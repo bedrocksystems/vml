@@ -106,8 +106,7 @@ Msr::Bus::setup_aarch64_auxiliary() {
 }
 
 bool
-Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
-                                 uint64 id_aa64isar0_el1, uint64 id_aa64isar1_el1,
+Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1, uint64 id_aa64isar0_el1, uint64 id_aa64isar1_el1,
                                  uint64 id_aa64isar2_el1, uint64 id_aa64zfr0_el1) {
     Msr::Register *reg;
 
@@ -122,8 +121,7 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
 
     /* Scalable Matrix Extension - not yet implemented in the VMM.*/
     uint64 id_aa64smfr0_el1 = 0ull;
-    reg = new (nothrow)
-        Msr::Register("ID_AA64SMFR0_EL1", ID_AA64SMFR0_EL1, false, id_aa64smfr0_el1);
+    reg = new (nothrow) Msr::Register("ID_AA64SMFR0_EL1", ID_AA64SMFR0_EL1, false, id_aa64smfr0_el1);
     if (!register_system_reg(reg))
         return false;
 
@@ -132,8 +130,7 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow)
-        Msr::Register("ID_AA64ISAR0_EL1", ID_AA64ISAR0_EL1, false, id_aa64isar0_el1);
+    reg = new (nothrow) Msr::Register("ID_AA64ISAR0_EL1", ID_AA64ISAR0_EL1, false, id_aa64isar0_el1);
     if (!register_system_reg(reg))
         return false;
 
@@ -144,13 +141,11 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
     id_aa64isar1_el1 &= ~(0xffull << 4);  // APA, API
     id_aa64isar1_el1 &= ~(0xffull << 24); // GPA, GPI
 
-    reg = new (nothrow)
-        Msr::Register("ID_AA64ISAR1_EL1", ID_AA64ISAR1_EL1, false, id_aa64isar1_el1);
+    reg = new (nothrow) Msr::Register("ID_AA64ISAR1_EL1", ID_AA64ISAR1_EL1, false, id_aa64isar1_el1);
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow)
-        Msr::Register("ID_AA64ISAR2_EL1", ID_AA64ISAR2_EL1, false, id_aa64isar2_el1);
+    reg = new (nothrow) Msr::Register("ID_AA64ISAR2_EL1", ID_AA64ISAR2_EL1, false, id_aa64isar2_el1);
     if (!register_system_reg(reg))
         return false;
 
@@ -344,14 +339,12 @@ Msr::Bus::setup_aarch32_features(const AA32PlatformInfo &aa32) {
     if (!register_system_reg(reg))
         return false;
 
-    uint32 id_isar4_el1 = aa32.id_isar4_el1
-                          & ~(0xfu << 12); /* SMC has to be zero if we don't support aarch32 el1 */
+    uint32 id_isar4_el1 = aa32.id_isar4_el1 & ~(0xfu << 12); /* SMC has to be zero if we don't support aarch32 el1 */
     reg = new (nothrow) Msr::Register("ID_ISAR4_EL1", ID_ISAR4_EL1, false, id_isar4_el1);
     if (!register_system_reg(reg))
         return false;
 
-    uint32 id_isar5_el1
-        = aa32.id_isar5_el1 & 0xffffful; /* Only the bits[19:0] can have a meaning for ARMv8.0-A */
+    uint32 id_isar5_el1 = aa32.id_isar5_el1 & 0xffffful; /* Only the bits[19:0] can have a meaning for ARMv8.0-A */
     reg = new (nothrow) Msr::Register("ID_ISAR5_EL1", ID_ISAR5_EL1, false, id_isar5_el1);
     if (!register_system_reg(reg))
         return false;
@@ -362,34 +355,29 @@ Msr::Bus::setup_aarch32_features(const AA32PlatformInfo &aa32) {
 }
 
 bool
-Msr::Bus::setup_aarch64_memory_model(uint64 id_aa64mmfr0_el1, uint64 id_aa64mmfr1_el1,
-                                     uint64 id_aa64mmfr2_el1) {
+Msr::Bus::setup_aarch64_memory_model(uint64 id_aa64mmfr0_el1, uint64 id_aa64mmfr1_el1, uint64 id_aa64mmfr2_el1) {
     Msr::Register *reg;
 
     id_aa64mmfr0_el1 &= ~(0xfull << 60); /* Enhanced Virt counter is disabled */
-    reg = new (nothrow) Msr::Register("ID_AA64MMFR0_EL1", Msr::RegisterId::ID_AA64MMFR0_EL1, false,
-                                      id_aa64mmfr0_el1);
+    reg = new (nothrow) Msr::Register("ID_AA64MMFR0_EL1", Msr::RegisterId::ID_AA64MMFR0_EL1, false, id_aa64mmfr0_el1);
     if (!register_system_reg(reg))
         return false;
 
     id_aa64mmfr1_el1 &= ~(0xfull << 8);  /* Virtualization Host Extension is disabled */
     id_aa64mmfr1_el1 &= ~(0xfull << 16); /* LORegions not supported */
-    reg = new (nothrow)
-        Msr::Register("ID_AA64MMFR1_EL1", ID_AA64MMFR1_EL1, false, id_aa64mmfr1_el1);
+    reg = new (nothrow) Msr::Register("ID_AA64MMFR1_EL1", ID_AA64MMFR1_EL1, false, id_aa64mmfr1_el1);
     if (!register_system_reg(reg))
         return false;
 
     id_aa64mmfr2_el1 &= ~(0xfull << 24); /* Nested Virtualization is disabled */
     id_aa64mmfr2_el1 &= ~(0xfull << 56); /* Enhanced Virtualization Traps is disabled */
-    reg = new (nothrow)
-        Msr::Register("ID_AA64MMFR2_EL1", ID_AA64MMFR2_EL1, false, id_aa64mmfr2_el1);
+    reg = new (nothrow) Msr::Register("ID_AA64MMFR2_EL1", ID_AA64MMFR2_EL1, false, id_aa64mmfr2_el1);
     return register_system_reg(reg);
 }
 
 bool
-Msr::Bus::setup_aarch32_memory_model(uint32 id_mmfr0_el1, uint32 id_mmfr1_el1, uint32 id_mmfr2_el1,
-                                     uint32 id_mmfr3_el1, uint32 id_mmfr4_el1,
-                                     uint32 id_mmfr5_el1) {
+Msr::Bus::setup_aarch32_memory_model(uint32 id_mmfr0_el1, uint32 id_mmfr1_el1, uint32 id_mmfr2_el1, uint32 id_mmfr3_el1,
+                                     uint32 id_mmfr4_el1, uint32 id_mmfr5_el1) {
     Msr::Register *reg;
 
     reg = new (nothrow) Msr::Register("ID_MMFR0_EL1", ID_MMFR0_EL1, false, id_mmfr0_el1);
@@ -454,11 +442,9 @@ Msr::Bus::setup_aarch64_caching_info(const CacheTopo &topo) {
 }
 
 bool
-Msr::Bus::setup_aarch32_media_vfp(uint32 mvfr0_el1, uint32 mvfr1_el1, uint32 mvfr2_el1,
-                                  uint64 midr_el1) {
+Msr::Bus::setup_aarch32_media_vfp(uint32 mvfr0_el1, uint32 mvfr1_el1, uint32 mvfr2_el1, uint64 midr_el1) {
     constexpr uint32 FPSID_VFP_VERSION_3_NULL_SUB = 0b0000011;
-    uint32 fpsid
-        = (static_cast<uint32>(midr_el1) & 0xf0000000) | FPSID_VFP_VERSION_3_NULL_SUB << 16;
+    uint32 fpsid = (static_cast<uint32>(midr_el1) & 0xf0000000) | FPSID_VFP_VERSION_3_NULL_SUB << 16;
     Msr::Register *reg;
 
     reg = new (nothrow) Msr::Register("FPSID", FPSID, true, fpsid);
@@ -564,13 +550,11 @@ Msr::Bus::setup_aarch32_msr(const PlatformInfo &info) {
     if (!setup_aarch32_features(info.aa32))
         return false;
 
-    if (!setup_aarch32_memory_model(info.aa32.id_mmfr0_el1, info.aa32.id_mmfr1_el1,
-                                    info.aa32.id_mmfr2_el1, info.aa32.id_mmfr3_el1,
-                                    info.aa32.id_mmfr4_el1, info.aa32.id_mmfr5_el1))
+    if (!setup_aarch32_memory_model(info.aa32.id_mmfr0_el1, info.aa32.id_mmfr1_el1, info.aa32.id_mmfr2_el1,
+                                    info.aa32.id_mmfr3_el1, info.aa32.id_mmfr4_el1, info.aa32.id_mmfr5_el1))
         return false;
 
-    if (!setup_aarch32_media_vfp(info.aa32.mvfr0_el1, info.aa32.mvfr1_el1, info.aa32.mvfr2_el1,
-                                 info.aa64.midr_el1))
+    if (!setup_aarch32_media_vfp(info.aa32.mvfr0_el1, info.aa32.mvfr1_el1, info.aa32.mvfr2_el1, info.aa64.midr_el1))
         return false;
 
     if (!setup_aarch32_debug(info.aa64.id_aa64dfr0_el1, info.aa32.id_dfr0_el1))
@@ -597,13 +581,11 @@ bool
 Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Model::GicD &gicd) {
     Msr::Register *reg;
 
-    if (!setup_aarch64_features(info.aa64.id_aa64pfr0_el1, info.aa64.id_aa64pfr1_el1,
-                                info.aa64.id_aa64isar0_el1, info.aa64.id_aa64isar1_el1,
-                                info.aa64.id_aa64isar2_el1, info.aa64.id_aa64zfr0_el1))
+    if (!setup_aarch64_features(info.aa64.id_aa64pfr0_el1, info.aa64.id_aa64pfr1_el1, info.aa64.id_aa64isar0_el1,
+                                info.aa64.id_aa64isar1_el1, info.aa64.id_aa64isar2_el1, info.aa64.id_aa64zfr0_el1))
         return false;
 
-    if (!setup_aarch64_memory_model(info.aa64.id_aa64mmfr0_el1, info.aa64.id_aa64mmfr1_el1,
-                                    info.aa64.id_aa64mmfr2_el1))
+    if (!setup_aarch64_memory_model(info.aa64.id_aa64mmfr0_el1, info.aa64.id_aa64mmfr1_el1, info.aa64.id_aa64mmfr2_el1))
         return false;
 
     if (!setup_aarch64_setway_flushes(vbus))
@@ -650,10 +632,8 @@ Msr::Bus::setup_arch_msr(const Msr::Bus::PlatformInfo &info, Vbus::Bus &vbus, Mo
 
     Msr::Info::IdAa64pfr0 aa64pfr0(info.aa64.id_aa64pfr0_el1);
 
-    if (aa64pfr0.get_supported_mode(Msr::Info::IdAa64pfr0::EL1_SHIFT)
-            == Msr::Info::IdAa64pfr0::AA64_AA32
-        || aa64pfr0.get_supported_mode(Msr::Info::IdAa64pfr0::EL0_SHIFT)
-               == Msr::Info::IdAa64pfr0::AA64_AA32) {
+    if (aa64pfr0.get_supported_mode(Msr::Info::IdAa64pfr0::EL1_SHIFT) == Msr::Info::IdAa64pfr0::AA64_AA32
+        || aa64pfr0.get_supported_mode(Msr::Info::IdAa64pfr0::EL0_SHIFT) == Msr::Info::IdAa64pfr0::AA64_AA32) {
         return setup_aarch32_msr(info);
     }
 
@@ -763,8 +743,7 @@ Msr::Bus::log_trace_info(const Msr::RegisterBase *reg, Vbus::Access access, uint
             return;
     }
 
-    INFO("%s @%#x %s " FMTx64, reg->name(), reg->id(), (access == Vbus::Access::WRITE ? "W" : "R"),
-         val);
+    INFO("%s @%#x %s " FMTx64, reg->name(), reg->id(), (access == Vbus::Access::WRITE ? "W" : "R"), val);
     _num_accesses = 0;
     _last_access = reg;
 }
