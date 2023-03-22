@@ -408,7 +408,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *src_accessor, void *dst, const Virtio::S
     return copy<char, false, const Virtio::Sg::Buffer>(src_accessor, src, static_cast<char *>(dst), size_bytes, s_off, copier);
 }
 
-Errno // NOLINTNEXTLINE(readability-function-size, readability-function-cognitive-complexity)
+Errno
 Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor, Virtio::Sg::Buffer &dst,
                          const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t d_off, size_t s_off, BulkCopier *copier) {
     if (0 == size_bytes) {

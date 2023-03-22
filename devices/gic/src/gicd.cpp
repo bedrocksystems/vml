@@ -221,7 +221,6 @@ Model::GicD::write_sgir(Vcpu_id cpu_id, uint64 value) {
 }
 
 bool
-// NOLINTNEXTLINE(readability-function-size, readability-function-cognitive-complexity)
 Model::GicD::mmio_write_32_or_less(Vcpu_id cpu_id, IrqMmioAccess &acc, uint64 value) {
     Banked &cpu = _local[cpu_id];
 
