@@ -15,6 +15,8 @@ LIBNAME = $(shell basename `pwd`)
 include deps.mk
 
 CC_SRCS = msr.cpp
+CC_SRCS += arch_msr.cpp
+
 OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
 include $(BHV_ROOT)/support/build/rules.mk
