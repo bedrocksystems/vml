@@ -9,9 +9,8 @@
 #
 
 PLATFORM ?= bedrock
-BHV_ROOT ?= ../../../..
+BHV_ROOT ?= ../../../../..
 LIBNAME = $(shell basename `pwd`)
-
 
 include deps.mk
 
