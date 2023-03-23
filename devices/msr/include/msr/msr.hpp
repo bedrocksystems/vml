@@ -401,14 +401,14 @@ public:
     static Vbus::Bus* get_associated_bus() { return vbus; }
 
 protected:
-    void flush(const VcpuCtx*, uint8, uint32) const;
+    static void flush(const VcpuCtx*, uint8, uint32);
 
     static Vbus::Bus* vbus;
 };
 
 class Msr::IdAa64pfr0 : public Register {
 private:
-    uint64 _reset_value(uint64 value) const {
+    static uint64 _reset_value(uint64 value) {
         value &= ~(0xfull << 32); /* sve - not implemented */
         value &= ~(0xfull << 40); /* MPAM - not implemented */
         value &= ~(0xfull << 44); /* AMU - not implemented */
@@ -421,7 +421,7 @@ public:
 
 class Msr::IdPfr0 : public Register {
 private:
-    uint64 _reset_value(uint32 value) const {
+    static uint64 _reset_value(uint32 value) {
         /* Take the value of the HW for state 0 to 3 (bits[15:0]), the rest is not implemented */
         return value & 0xffffull;
     }
@@ -432,7 +432,7 @@ public:
 
 class Msr::IdPfr1 : public Register {
 private:
-    uint64 _reset_value(uint32 value) const {
+    static uint64 _reset_value(uint32 value) {
         uint64 ret = value;
         /* Disable the features that require aarch32 el1 to be implemented */
         ret &= ~(0xfull);       /* Disable ProgMod */
@@ -575,7 +575,7 @@ public:
 class Msr::MdscrEl1 : public Msr::Register {
 private:
     static constexpr uint64 MDSCREL1_SS = 0x1ull;
-    bool mdscr_ss_enabled(uint64 value) const { return (value & MDSCREL1_SS) != 0; }
+    static bool mdscr_ss_enabled(uint64 value) { return (value & MDSCREL1_SS) != 0; }
 
 public:
     MdscrEl1() : Msr::Register("MDSCR_EL1", MDSCR_EL1, true, 0x0ULL) {}

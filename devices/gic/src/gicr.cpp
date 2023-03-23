@@ -68,8 +68,8 @@ Model::GicR::can_receive_irq() const {
 }
 
 Vbus::Err
-Model::GicR::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset,
-                    uint8 const size, uint64 &value) {
+Model::GicR::access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset, uint8 const size,
+                    uint64 &value) {
 
     bool ok = false;
 
@@ -112,8 +112,7 @@ Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const val
     case GICR_WAKER ... GICR_WAKER_END: {
         Waker w;
         uint32 new_w = 0;
-        GicD::RegAccess reg_acc{
-            .offset = offset, .base_reg = GICR_WAKER, .base_max = GICR_WAKER_END, .bytes = bytes};
+        GicD::RegAccess reg_acc{.offset = offset, .base_reg = GICR_WAKER, .base_max = GICR_WAKER_END, .bytes = bytes};
 
         w.value = static_cast<uint32>(value);
         new_w = (static_cast<uint32>(w.sleeping()) << Waker::CHILDREN_ASLEEP_BIT)
@@ -181,15 +180,13 @@ Model::GicR::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) co
     switch (offset) {
     case GICR_TYPER ... GICR_TYPER_END: {
         uint64 ret = static_cast<uint64>(_aff.aff3()) << 56 | static_cast<uint64>(_aff.aff2()) << 48
-                     | static_cast<uint64>(_aff.aff1()) << 40
-                     | static_cast<uint64>(_aff.aff0()) << 32;
-        ret |= static_cast<uint64>(_aff.aff1()) << 16
-               | static_cast<uint64>(_aff.aff0()) << 8; /* processor id */
-        ret |= (_last ? 1ull : 0ull) << 4;              /* last re-distributor */
-        return gic.read_register(offset, GICR_TYPER, GICR_TYPER_END, bytes, ret, value);
+                     | static_cast<uint64>(_aff.aff1()) << 40 | static_cast<uint64>(_aff.aff0()) << 32;
+        ret |= static_cast<uint64>(_aff.aff1()) << 16 | static_cast<uint64>(_aff.aff0()) << 8; /* processor id */
+        ret |= (_last ? 1ull : 0ull) << 4;                                                     /* last re-distributor */
+        return Model::GicD::read_register(offset, GICR_TYPER, GICR_TYPER_END, bytes, ret, value);
     }
     case GICR_WAKER ... GICR_WAKER_END: {
-        return gic.read_register(offset, GICR_WAKER, GICR_WAKER_END, bytes, _waker.value, value);
+        return Model::GicD::read_register(offset, GICR_WAKER, GICR_WAKER_END, bytes, _waker.value, value);
     }
     }
 
@@ -207,12 +204,11 @@ Model::GicR::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) co
 
     switch (offset) {
     case GICR_CTLR ... GICR_CTLR_END:
-        return gic.read_register(offset, GICR_CTLR, GICR_CTLR_END, bytes, 0ull, value);
+        return Model::GicD::read_register(offset, GICR_CTLR, GICR_CTLR_END, bytes, 0ull, value);
     case GICR_IIDR ... GICR_IIDR_END:
-        return gic.read_register(offset, GICR_IIDR, GICR_IIDR_END, bytes, GICR_IIDR_IMPLEMENTER,
-                                 value);
+        return Model::GicD::read_register(offset, GICR_IIDR, GICR_IIDR_END, bytes, GICR_IIDR_IMPLEMENTER, value);
     case GICR_PIDR2 ... GICR_PIDR2_END:
-        return gic.read_register(offset, GICR_PIDR2, GICR_PIDR2_END, bytes, 3ull << 4, value);
+        return Model::GicD::read_register(offset, GICR_PIDR2, GICR_PIDR2_END, bytes, 3ull << 4, value);
     case GICR_PROPBASER ... GICR_PROPBASER_END:
     case GICR_PENDBASER ... GICR_PENDBASER_END:
     case GICR_IGRPMODR0 ... GICR_IGRPMODR0_END:

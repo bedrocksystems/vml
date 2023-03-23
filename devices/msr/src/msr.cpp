@@ -631,7 +631,7 @@ Msr::IccSgi1rEl1::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, uin
 }
 
 void
-Msr::Set_way_flush_reg::flush(const VcpuCtx *vctx, const uint8, const uint32) const {
+Msr::Set_way_flush_reg::flush(const VcpuCtx *vctx, const uint8, const uint32) {
     /*
      * Set/Way flushing instructions cannot and shouldn't be executed by the VMM.
      * Hence, we choose to replace set/way flushing by VA flushing forcing us to flush
