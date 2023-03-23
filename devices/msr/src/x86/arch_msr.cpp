@@ -19,6 +19,6 @@ Msr::SctlrEl1::access(Vbus::Access access, const VcpuCtx *, uint64 &) {
 }
 
 bool
-Msr::Bus::setup_aarch64_physical_timer(Model::AA64Timer &) {
+Msr::Bus::setup_aarch64_physical_timer(Model::AA64Timer &) { // NOLINT(readability-convert-member-functions-to-static)
     return true;
 }
