@@ -92,16 +92,13 @@ private:
 
     bool is_roundup_pending() const { return _state == EMULATE_ROUNDEDUP; }
 
-    bool is_turned_on_by_guest() const {
-        return !_execution_paused.is_requested_by(Request::Requestor::VMM);
-    }
+    bool is_turned_on_by_guest() const { return !_execution_paused.is_requested_by(Request::Requestor::VMM); }
 
     void resume_vcpu() { _resume_sig.sig(); }
     void switch_on() { _off_sm.release(); }
     void resume();
 
-    void set_reset_parameters(uint64 boot_addr, uint64 const boot_arg[MAX_BOOT_ARGS],
-                              uint64 tmr_off, enum Mode m);
+    void set_reset_parameters(uint64 boot_addr, uint64 const boot_arg[MAX_BOOT_ARGS], uint64 tmr_off, enum Mode m);
     static void roundup(Vcpu_id);
 
     bool block_timeout(uint64 const absolut_timeout) { return _irq_sig.wait(absolut_timeout); }
@@ -156,45 +153,33 @@ public:
 
     // note that the iterator functions do not access the state of the vcpu's directly, only the
     // callback functions access it.
-    static void ctrl_feature_on_vcpu(ctrl_feature_cb cb, Vcpu_id, bool,
-                                     Request::Requestor requestor = Request::Requestor::VMM,
+    static void ctrl_feature_on_vcpu(ctrl_feature_cb cb, Vcpu_id, bool, Request::Requestor requestor = Request::Requestor::VMM,
                                      Reg_selection regs = 0);
     static void ctrl_feature_on_all_but_vcpu(ctrl_feature_cb cb, Vcpu_id, bool,
-                                             Request::Requestor requestor = Request::Requestor::VMM,
-                                             Reg_selection regs = 0);
-    static void ctrl_feature_on_all_vcpus(ctrl_feature_cb cb, bool,
-                                          Request::Requestor requestor = Request::Requestor::VMM,
+                                             Request::Requestor requestor = Request::Requestor::VMM, Reg_selection regs = 0);
+    static void ctrl_feature_on_all_vcpus(ctrl_feature_cb cb, bool, Request::Requestor requestor = Request::Requestor::VMM,
                                           Reg_selection regs = 0);
 
     // these are the functions that are passed to the above functions for:
     // [ctrl_feature_cb].
     // there are more of these defined in subclasses, so this is some sort of extensible
     // enumeration that is represented extensionally.
-    static void ctrl_feature_off(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
-                                 Reg_selection regs);
-    static void ctrl_feature_reset(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
-                                   Reg_selection regs);
-    static void ctrl_feature_tvm(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
-                                 Reg_selection regs);
-    static void ctrl_feature_single_step(Model::Cpu *vcpu, bool enable,
-                                         Request::Requestor requestor, Reg_selection regs);
-    static void ctrl_feature_icache_invalidate(Model::Cpu *vcpu, bool enable,
-                                               Request::Requestor requestor, Reg_selection regs);
-    static void ctrl_feature_hypercall(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
-                                       Reg_selection regs);
-    static void ctrl_feature_regs_dump(Model::Cpu *mcpu, bool enable, Request::Requestor requestor,
-                                       Reg_selection regs);
+    static void ctrl_feature_off(Model::Cpu *vcpu, bool enable, Request::Requestor requestor, Reg_selection regs);
+    static void ctrl_feature_reset(Model::Cpu *vcpu, bool enable, Request::Requestor requestor, Reg_selection regs);
+    static void ctrl_feature_tvm(Model::Cpu *vcpu, bool enable, Request::Requestor requestor, Reg_selection regs);
+    static void ctrl_feature_single_step(Model::Cpu *vcpu, bool enable, Request::Requestor requestor, Reg_selection regs);
+    static void ctrl_feature_icache_invalidate(Model::Cpu *vcpu, bool enable, Request::Requestor requestor, Reg_selection regs);
+    static void ctrl_feature_hypercall(Model::Cpu *vcpu, bool enable, Request::Requestor requestor, Reg_selection regs);
+    static void ctrl_feature_regs_dump(Model::Cpu *mcpu, bool enable, Request::Requestor requestor, Reg_selection regs);
 
     // this is just like the above but it requires threading an extra argument
-    typedef void (*ctrl_feature_ex_cb)(Model::Cpu *, bool, Request::Requestor, uint64,
-                                       Reg_selection);
+    typedef void (*ctrl_feature_ex_cb)(Model::Cpu *, bool, Request::Requestor, uint64, Reg_selection);
 
-    static void ctrl_register_trap_on_vcpu(ctrl_feature_ex_cb cb, Vcpu_id, bool, Request::Requestor,
-                                           uint64, Reg_selection regs);
+    static void ctrl_register_trap_on_vcpu(ctrl_feature_ex_cb cb, Vcpu_id, bool, Request::Requestor, uint64, Reg_selection regs);
 
     // this is a [ctrl_feature_ex_cb]
-    static void ctrl_register_trap_cb(Model::Cpu *vcpu, bool enable, Request::Requestor requestor,
-                                      uint64 trap_id, Reg_selection regs);
+    static void ctrl_register_trap_cb(Model::Cpu *vcpu, bool enable, Request::Requestor requestor, uint64 trap_id,
+                                      Reg_selection regs);
 
     // Query API
     typedef bool (*requested_feature_cb)(Model::Cpu *, Request::Requestor);
@@ -213,10 +198,9 @@ public:
      * in the future if something else is needed.
      */
     enum StartErr { SUCCESS = 0, INVALID_PARAMETERS = -2, ALREADY_ON = -4, INVALID_ADDRESS = -9 };
-    static StartErr start_cpu(Vcpu_id vcpu_id, Vbus::Bus &vbus, uint64 boot_addr,
-                              uint64 boot_args[MAX_BOOT_ARGS], uint64 timer_off, enum Mode);
-    static StartErr reset_cpu(Vcpu_id vcpu_id, uint64 boot_args[MAX_BOOT_ARGS], uint64 boot_addr,
+    static StartErr start_cpu(Vcpu_id vcpu_id, Vbus::Bus &vbus, uint64 boot_addr, uint64 boot_args[MAX_BOOT_ARGS],
                               uint64 timer_off, enum Mode);
+    static StartErr reset_cpu(Vcpu_id vcpu_id, uint64 boot_args[MAX_BOOT_ARGS], uint64 boot_addr, uint64 timer_off, enum Mode);
 
     // VCPU api end
 

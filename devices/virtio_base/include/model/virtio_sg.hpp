@@ -170,9 +170,7 @@ public:
     class ChainWalkingCallback {
     public:
         virtual ~ChainWalkingCallback() {}
-        virtual void chain_walking_cb(Errno err, uint64 address, uint32 length, uint16 flags,
-                                      uint16 next, void *extra)
-            = 0;
+        virtual void chain_walking_cb(Errno err, uint64 address, uint32 length, uint16 flags, uint16 next, void *extra) = 0;
     };
 
     Errno walk_chain(Virtio::Queue &vq);
@@ -182,11 +180,9 @@ public:
     // \pre "[this.reset(_)] has been invoked"
     // \pre "[desc] derived from a [vq->recv] call which returned [Errno::NONE] (i.e. it is the
     //       root of a descriptor chain in [vq])"
-    Errno walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&root_desc, void *extra,
-                              ChainWalkingCallback *callback);
+    Errno walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&root_desc, void *extra, ChainWalkingCallback *callback);
 
-    void add_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags,
-                  uint16 next);
+    void add_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags, uint16 next);
     void add_final_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags);
     // NOTE: This interface does not allow flag/next modifications.
     void modify_link(size_t chain_idx, uint64 address, uint32 length);
@@ -208,33 +204,30 @@ public:
     class ChainAccessor : public GuestPhysicalToVirtual {
     public:
         virtual ~ChainAccessor() {}
-        static Errno copy_between_gpa(BulkCopier *copier, ChainAccessor *dst_accessor,
-                                      ChainAccessor *src_accessor, const GPA &dst_addr,
-                                      const GPA &src_addr, size_t &size_bytes);
-        Errno copy_from_gpa(BulkCopier *copier, char *dst_va, const GPA &src_addr,
-                            size_t &size_bytes);
-        Errno copy_to_gpa(BulkCopier *copier, const GPA &dst_addr, const char *src_va,
-                          size_t &size_bytes);
+        static Errno copy_between_gpa(BulkCopier *copier, ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
+                                      const GPA &dst_addr, const GPA &src_addr, size_t &size_bytes);
+        Errno copy_from_gpa(BulkCopier *copier, char *dst_va, const GPA &src_addr, size_t &size_bytes);
+        Errno copy_to_gpa(BulkCopier *copier, const GPA &dst_addr, const char *src_va, size_t &size_bytes);
     };
 
 public:
     // Copy [size_bytes] bytes from [src] Sg::Buffer to [dst] Sg::Buffer.
-    static Errno copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
-                      Virtio::Sg::Buffer &dst, const Virtio::Sg::Buffer &src, size_t &size_bytes,
-                      size_t d_off = 0, size_t s_off = 0, BulkCopier *copier = nullptr);
+    static Errno copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor, Virtio::Sg::Buffer &dst,
+                      const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t d_off = 0, size_t s_off = 0,
+                      BulkCopier *copier = nullptr);
 
     // Copy [size_bytes] bytes from a linear buffer to an Sg::Buffer.
-    static Errno copy(ChainAccessor *dst_accessor, Virtio::Sg::Buffer &dst, const void *src,
-                      size_t &size_bytes, size_t d_off = 0, BulkCopier *copier = nullptr);
+    static Errno copy(ChainAccessor *dst_accessor, Virtio::Sg::Buffer &dst, const void *src, size_t &size_bytes, size_t d_off = 0,
+                      BulkCopier *copier = nullptr);
 
     // Copt [size_bytes] bytes from an Sg::Buffer to linear buffer.
-    static Errno copy(ChainAccessor *src_accessor, void *dst, const Virtio::Sg::Buffer &src,
-                      size_t &size_bytes, size_t s_off = 0, BulkCopier *copier = nullptr);
+    static Errno copy(ChainAccessor *src_accessor, void *dst, const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t s_off = 0,
+                      BulkCopier *copier = nullptr);
 
 private:
     template<typename T_LINEAR, bool LINEAR_TO_SG, typename SG_MAYBE_CONST>
-    static Errno copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *l, size_t &size_bytes,
-                      size_t off, BulkCopier *copier);
+    static Errno copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *l, size_t &size_bytes, size_t off,
+                      BulkCopier *copier);
 
 public:
     class Iterator {
@@ -258,8 +251,7 @@ public:
 
     private:
         friend Virtio::Sg::Buffer;
-        explicit Iterator(Virtio::Sg::LinearizedDesc *cur_desc,
-                          Virtio::Sg::DescMetadata *cur_desc_metadata)
+        explicit Iterator(Virtio::Sg::LinearizedDesc *cur_desc, Virtio::Sg::DescMetadata *cur_desc_metadata)
             : _cur_desc(cur_desc), _cur_desc_metadata(cur_desc_metadata) {}
 
         Virtio::Sg::LinearizedDesc *_cur_desc;
@@ -268,10 +260,7 @@ public:
 
 public:
     Iterator begin() const { return Iterator{&_desc_chain[0], &_desc_chain_metadata[0]}; }
-    Iterator end() const {
-        return Iterator{&_desc_chain[_active_chain_length],
-                        &_desc_chain_metadata[_active_chain_length]};
-    }
+    Iterator end() const { return Iterator{&_desc_chain[_active_chain_length], &_desc_chain_metadata[_active_chain_length]}; }
     Errno descriptor_offset(size_t descriptor_chain_idx, size_t &offset) const;
 
 private:
@@ -286,15 +275,12 @@ private:
     public:
         BulkCopierDefault() {}
         ~BulkCopierDefault() override {}
-        void bulk_copy(char *dst, const char *src, size_t size_bytes) override {
-            memcpy(dst, src, size_bytes);
-        }
+        void bulk_copy(char *dst, const char *src, size_t size_bytes) override { memcpy(dst, src, size_bytes); }
     };
 
     // Hoist some static checks out of [Sg::Buffer::copy] to reduce cognitive complexity to
     // an acceptable level.
-    Errno check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t &inout_offset,
-                                   Iterator &out_it) const;
+    Errno check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t &inout_offset, Iterator &out_it) const;
 
     // Check whether reading from the descriptor buffer /should/ be allowed based
     // on the supplied [flags].
@@ -302,9 +288,7 @@ private:
     // NOTE: sometimes a payload read /may/ be allowed (e.g. when debugging a
     // [Virtio::DeviceQueue]) even with the incorrect flags.
     // [Virtio::Sg::Buffer::copy] interprets the result of this call appropriately.
-    bool should_only_read(uint16 flags) const {
-        return _chain_for_device ? (flags & VIRTQ_DESC_WRITE_ONLY) == 0 : false;
-    }
+    bool should_only_read(uint16 flags) const { return _chain_for_device ? (flags & VIRTQ_DESC_WRITE_ONLY) == 0 : false; }
 
     // Check whether writing to the descriptor buffer /should/ be allowed based
     // on the supplied [flags].
@@ -313,13 +297,10 @@ private:
     // NOTE: sometimes a payload read /may/ be allowed (e.g. when debugging a
     // [Virtio::DeviceQueue]) even with the incorrect flags.
     // [Virtio::Sg::Buffer::copy] interprets the result of this call appropriately.
-    bool should_only_write(uint16 flags) const {
-        return _chain_for_device ? (flags & VIRTQ_DESC_WRITE_ONLY) != 0 : false;
-    }
+    bool should_only_write(uint16 flags) const { return _chain_for_device ? (flags & VIRTQ_DESC_WRITE_ONLY) != 0 : false; }
 
     // Common addition of descriptors to the chain
-    void add_descriptor(Virtio::Descriptor &&new_desc, uint64 address, uint32 length, uint16 flags,
-                        uint16 next);
+    void add_descriptor(Virtio::Descriptor &&new_desc, uint64 address, uint32 length, uint16 flags, uint16 next);
 
     // Returns an iterator pointing to the node containing the linear data offset /and/
     // modifies [inout_offset] to the appropriate node-specific linear data offset.

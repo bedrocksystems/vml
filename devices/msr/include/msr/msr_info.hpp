@@ -39,10 +39,10 @@ namespace Msr::Info {
         HCR_EL2_RW = 1ull << 31,
     };
 
-    constexpr uint64 HCR_EL2_DEFAULT_VALUE
-        = HCR_EL2_VM | HCR_EL2_SWIO | HCR_EL2_PTW | HCR_EL2_FMO | HCR_EL2_IMO | HCR_EL2_AMO
-          | HCR_EL2_FB | HCR_EL2_BSU_INNER | HCR_EL2_TWI | HCR_EL2_TWE | HCR_EL2_TID0 | HCR_EL2_TID1
-          | HCR_EL2_TID3 | HCR_EL2_TSC | HCR_EL2_TIDCP | HCR_EL2_TACR | HCR_EL2_TSW;
+    constexpr uint64 HCR_EL2_DEFAULT_VALUE = HCR_EL2_VM | HCR_EL2_SWIO | HCR_EL2_PTW | HCR_EL2_FMO | HCR_EL2_IMO | HCR_EL2_AMO
+                                             | HCR_EL2_FB | HCR_EL2_BSU_INNER | HCR_EL2_TWI | HCR_EL2_TWE | HCR_EL2_TID0
+                                             | HCR_EL2_TID1 | HCR_EL2_TID3 | HCR_EL2_TSC | HCR_EL2_TIDCP | HCR_EL2_TACR
+                                             | HCR_EL2_TSW;
 
     enum : uint64 {
         SCLTR_EL1_DZE = 1ull << 14,
@@ -88,12 +88,7 @@ namespace Msr::Info {
         VMRS_SPEC_REG_MVFR2 = 0b0101,
     };
 
-    enum ExceptionClass : uint64 {
-        SAME_EL_SP0 = 0x0,
-        SAME_EL_SPX = 0x200,
-        LOWER_EL_AA64 = 0x400,
-        LOWER_EL_AA32 = 0x600
-    };
+    enum ExceptionClass : uint64 { SAME_EL_SP0 = 0x0, SAME_EL_SPX = 0x200, LOWER_EL_AA64 = 0x400, LOWER_EL_AA32 = 0x600 };
 
     enum ExceptionClass32 {
         A32_RESET = 0x0,         // SVC mode
@@ -187,9 +182,7 @@ public:
 
     enum IcachePolicy { VPIPT = 0b00, AIVIVT = 0b01, VIPT = 0b10, PIPT = 0b11 };
 
-    IcachePolicy get_icache_policy() const {
-        return static_cast<IcachePolicy>(bits_in_range(_value, 14, 15));
-    }
+    IcachePolicy get_icache_policy() const { return static_cast<IcachePolicy>(bits_in_range(_value, 14, 15)); }
 
     bool can_invalidate_guest_icache() const {
         IcachePolicy icp = get_icache_policy();
@@ -232,17 +225,9 @@ public:
         GRANULE_INVALID,
     };
 
-    enum Tg1GranuleSize : uint64 {
-        TG1_GRANULE_16KB = 0b01,
-        TG1_GRANULE_4KB = 0b10,
-        TG1_GRANULE_64KB = 0b11
-    };
+    enum Tg1GranuleSize : uint64 { TG1_GRANULE_16KB = 0b01, TG1_GRANULE_4KB = 0b10, TG1_GRANULE_64KB = 0b11 };
 
-    enum Tg0GranuleSize : uint64 {
-        TG0_GRANULE_16KB = 0b10,
-        TG0_GRANULE_4KB = 0b00,
-        TG0_GRANULE_64KB = 0b01
-    };
+    enum Tg0GranuleSize : uint64 { TG0_GRANULE_16KB = 0b10, TG0_GRANULE_4KB = 0b00, TG0_GRANULE_64KB = 0b01 };
 
     static constexpr uint8 TG1_SHIFT = 30;
     static constexpr uint64 TG1_MASK = 0x3ull << TG1_SHIFT;

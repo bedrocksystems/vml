@@ -107,26 +107,22 @@ public:
         if (_data->num == 0)
             return destruct();
 
-        _desc_addr = Model::SimpleAS::map_guest_mem(
-            bus, GPA(data.descr()),
-            Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)), true);
+        _desc_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.descr()),
+                                                    Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)), true);
         if (_desc_addr == nullptr)
             return destruct();
 
-        _avail_addr = Model::SimpleAS::map_guest_mem(
-            bus, GPA(data.driver()),
-            Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)), true);
+        _avail_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.driver()),
+                                                     Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)), true);
         if (_avail_addr == nullptr)
             return destruct();
 
-        _used_addr = Model::SimpleAS::map_guest_mem(
-            bus, GPA(data.device()),
-            Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)), true);
+        _used_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.device()),
+                                                    Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)), true);
         if (_used_addr == nullptr)
             return destruct();
 
-        _device_queue = cxx::move(Virtio::DeviceQueue(_desc_addr, _avail_addr, _used_addr,
-                                                      static_cast<uint16>(_data->num)));
+        _device_queue = cxx::move(Virtio::DeviceQueue(_desc_addr, _avail_addr, _used_addr, static_cast<uint16>(_data->num)));
 
         _constructed = true;
     }
@@ -136,18 +132,15 @@ public:
         _device_queue = cxx::move(Virtio::DeviceQueue());
 
         if (_desc_addr != nullptr) {
-            Model::SimpleAS::unmap_guest_mem(
-                _desc_addr, Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)));
+            Model::SimpleAS::unmap_guest_mem(_desc_addr, Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)));
             _desc_addr = nullptr;
         }
         if (_avail_addr != nullptr) {
-            Model::SimpleAS::unmap_guest_mem(
-                _avail_addr, Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)));
+            Model::SimpleAS::unmap_guest_mem(_avail_addr, Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)));
             _avail_addr = nullptr;
         }
         if (_used_addr != nullptr) {
-            Model::SimpleAS::unmap_guest_mem(
-                _used_addr, Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)));
+            Model::SimpleAS::unmap_guest_mem(_used_addr, Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)));
             _used_addr = nullptr;
         }
 
@@ -161,11 +154,10 @@ public:
 };
 
 struct Virtio::DeviceState {
-    explicit DeviceState(uint16 const num_max, uint32 vendor, uint32 id, uint32 const feature_lower,
-                         void *config, uint32 config_sz)
-        : queue_num_max(num_max), vendor_id(vendor), device_id(id),
-          device_feature_lower(feature_lower), config_space(static_cast<uint64 *>(config)),
-          config_size(config_sz) {
+    explicit DeviceState(uint16 const num_max, uint32 vendor, uint32 id, uint32 const feature_lower, void *config,
+                         uint32 config_sz)
+        : queue_num_max(num_max), vendor_id(vendor), device_id(id), device_feature_lower(feature_lower),
+          config_space(static_cast<uint64 *>(config)), config_size(config_sz) {
         for (uint16 i = 0; i < static_cast<uint8>(Virtio::Queues::MAX); i++) {
             data[i] = QueueData(queue_num_max);
         }
@@ -254,8 +246,8 @@ struct Virtio::DeviceState {
 };
 
 inline bool
-Virtio::read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
-                      uint8 const bytes, uint64 const value, uint64 &result) {
+Virtio::read_register(uint64 const offset, uint32 const base_reg, uint32 const base_max, uint8 const bytes, uint64 const value,
+                      uint64 &result) {
     if ((bytes == 0u) || (bytes > 8) || (offset + bytes > base_max + 1)) {
         WARN("Register read failure: off " FMTx64 " - base_reg 0x%u - base_max 0x%u - bytes "
 
@@ -272,8 +264,8 @@ Virtio::read_register(uint64 const offset, uint32 const base_reg, uint32 const b
 
 template<typename T>
 inline bool
-Virtio::write_register(uint64 const offset, uint32 const base_reg, uint32 const base_max,
-                       uint8 const bytes, uint64 const value, T &result) {
+Virtio::write_register(uint64 const offset, uint32 const base_reg, uint32 const base_max, uint8 const bytes, uint64 const value,
+                       T &result) {
     unsigned constexpr TSIZE = sizeof(T);
     if (!bytes || (bytes > TSIZE) || (offset + bytes > base_max + 1)) {
         WARN("Register write failure: off " FMTx64 " - base_reg 0x%u - base_max 0x%u - bytes "
@@ -294,23 +286,16 @@ class Virtio::Transport {
 public:
     virtual ~Transport() {}
 
-    virtual bool access(Vbus::Access access, mword offset, uint8 size, uint64 &value,
-                        Virtio::DeviceState &state)
-        = 0;
+    virtual bool access(Vbus::Access access, mword offset, uint8 size, uint64 &value, Virtio::DeviceState &state) = 0;
 
     virtual void assert_queue_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &) = 0;
-    virtual void deassert_queue_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &)
-        = 0;
+    virtual void deassert_queue_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &) = 0;
 
-    virtual void assert_config_change_interrupt(Model::Irq_controller *, uint16,
-                                                Virtio::DeviceState &)
-        = 0;
-    virtual void deassert_config_change_interrupt(Model::Irq_controller *, uint16,
-                                                  Virtio::DeviceState &)
-        = 0;
+    virtual void assert_config_change_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &) = 0;
+    virtual void deassert_config_change_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &) = 0;
 
-    static bool config_space_read(uint64 const offset, uint64 const config_base, uint8 const bytes,
-                                  uint64 &value, const Virtio::DeviceState &state) {
+    static bool config_space_read(uint64 const offset, uint64 const config_base, uint8 const bytes, uint64 &value,
+                                  const Virtio::DeviceState &state) {
         // Config space access can be byte aligned.
         // We reserve upto 256 bytes for config space. So first read the corresponding word from
         // config space.
@@ -324,8 +309,8 @@ public:
         return Virtio::read_register(offset_byte, 0, 8, bytes, v, value);
     }
 
-    static bool config_space_write(uint64 const offset, uint64 const config_base, uint8 const bytes,
-                                   uint64 const value, Virtio::DeviceState &state) {
+    static bool config_space_write(uint64 const offset, uint64 const config_base, uint8 const bytes, uint64 const value,
+                                   Virtio::DeviceState &state) {
         // Config space access can be byte aligned.
         // We reserve upto 256 bytes for config space. So first read the corresponding word from
         // config space.

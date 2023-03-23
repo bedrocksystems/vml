@@ -31,8 +31,7 @@ struct VcpuCtx {
     const Vcpu_id vcpu_id;
     CtxInfo info{CtxInfo::VMEXIT};
 
-    VcpuCtx(const Platform_ctx* ctxv, RegAccessor* regsv, Vcpu_id vcpu_idv)
-        : ctx(ctxv), regs(regsv), vcpu_id(vcpu_idv) {}
+    VcpuCtx(const Platform_ctx* ctxv, RegAccessor* regsv, Vcpu_id vcpu_idv) : ctx(ctxv), regs(regsv), vcpu_id(vcpu_idv) {}
 
     VcpuCtx(VcpuCtx&&) = delete;
     VcpuCtx(const VcpuCtx&) = delete;
@@ -42,9 +41,7 @@ struct VcpuCtx {
 
 class CtxInfoGuard {
 public:
-    CtxInfoGuard(VcpuCtx& ctx, CtxInfo newctx) : _vctx(&ctx), _prev_info(ctx.info) {
-        _vctx->info = newctx;
-    }
+    CtxInfoGuard(VcpuCtx& ctx, CtxInfo newctx) : _vctx(&ctx), _prev_info(ctx.info) { _vctx->info = newctx; }
 
     ~CtxInfoGuard() { _vctx->info = _prev_info; }
 

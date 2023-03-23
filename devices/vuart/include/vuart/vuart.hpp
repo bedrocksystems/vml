@@ -33,16 +33,14 @@ public:
      *  \pre Valid Vuart object, no callback set, q ownership of the callback object
      *  \post Valid Vuart object wit the callback set (keeps ownership of the callback)
      */
-    void register_callback(::Vuart::Tx_callback *callback,
-                           ::Vuart::LifeCycleCallbacks *lifecycle_callbacks) {
+    void register_callback(::Vuart::Tx_callback *callback, ::Vuart::LifeCycleCallbacks *lifecycle_callbacks) {
         _callback = callback;
         _lifecycle_callbacks = lifecycle_callbacks;
     }
 
 protected:
-    ::Vuart::Tx_callback *_callback{nullptr}; /*!< Callback interface used to send chars (TX) */
-    ::Vuart::LifeCycleCallbacks *_lifecycle_callbacks{
-        nullptr}; /*!< Callback interface used for lifecycle */
+    ::Vuart::Tx_callback *_callback{nullptr};                   /*!< Callback interface used to send chars (TX) */
+    ::Vuart::LifeCycleCallbacks *_lifecycle_callbacks{nullptr}; /*!< Callback interface used for lifecycle */
 };
 
 /*! \brief Virtual 'Dummy' UART.
@@ -55,8 +53,7 @@ public:
     Dummy(const char *name, uint64 write_off, uint64 read_default_value)
         : Vuart(name), _write_off(write_off), _read_default_value(read_default_value) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx *, Vbus::Space, mword off, uint8,
-                             uint64 &value) override {
+    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx *, Vbus::Space, mword off, uint8, uint64 &value) override {
         if (access != Vbus::READ && access != Vbus::WRITE)
             return Vbus::ACCESS_ERR;
 

@@ -84,18 +84,16 @@ public:
         uint16 port_id{0};
     };
 
-    Virtio_net(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 irq,
-               uint16 const queue_entries, const UserConfig &config, Platform::Signal *sig)
-        : Virtio::Device("virtio network", Virtio::DeviceID::NET, vbus, irq_ctlr, &_config,
-                         sizeof(_config), irq, queue_entries, config.transport,
-                         config.device_feature),
+    Virtio_net(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 irq, uint16 const queue_entries, const UserConfig &config,
+               Platform::Signal *sig)
+        : Virtio::Device("virtio network", Virtio::DeviceID::NET, vbus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries,
+                         config.transport, config.device_feature),
           _sig(sig) {
         _config.mtu = config.mtu;
         memcpy(&_config.mac, &config.mac, 6);
     }
 
-    void register_callback(Virtio::Callback &callback,
-                           Model::Virtio_net_callback &virtio_net_callback) {
+    void register_callback(Virtio::Callback &callback, Model::Virtio_net_callback &virtio_net_callback) {
         _callback = &callback;
         _virtio_net_callback = &virtio_net_callback;
     }

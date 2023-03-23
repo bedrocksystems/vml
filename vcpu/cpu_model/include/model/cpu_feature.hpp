@@ -40,9 +40,7 @@ public:
         ASSERT(requestor < Request::MAX_REQUESTORS);
         return (_requests[requestor] & ENABLE_MASK) != 0u;
     }
-    bool is_requested() const {
-        return is_requested_by(Request::VMM) || is_requested_by(Request::VMI);
-    }
+    bool is_requested() const { return is_requested_by(Request::VMM) || is_requested_by(Request::VMI); }
 
     /**
      * \brief Reads at the current configuration without committing to

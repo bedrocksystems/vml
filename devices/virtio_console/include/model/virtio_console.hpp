@@ -60,12 +60,11 @@ private:
     Model::VirtioConsoleCallback *_console_callback{nullptr};
 
 public:
-    Virtio_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
-                   uint16 const queue_entries, Virtio::Transport *transport, Platform::Signal *sig)
-        : Virtio::Device("virtio console", Virtio::DeviceID::CONSOLE, bus, irq_ctlr, &_config,
-                         sizeof(_config), irq, queue_entries, transport),
-          _rx_buff(Virtio::Sg::Buffer(queue_entries)), _tx_buff(Virtio::Sg::Buffer(queue_entries)),
-          _sig_notify_event(sig) {}
+    Virtio_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
+                   Virtio::Transport *transport, Platform::Signal *sig)
+        : Virtio::Device("virtio console", Virtio::DeviceID::CONSOLE, bus, irq_ctlr, &_config, sizeof(_config), irq,
+                         queue_entries, transport),
+          _rx_buff(Virtio::Sg::Buffer(queue_entries)), _tx_buff(Virtio::Sg::Buffer(queue_entries)), _sig_notify_event(sig) {}
 
     bool init(const Platform_ctx *ctx) {
         if (Errno::NONE != _rx_buff.init())
@@ -95,8 +94,7 @@ public:
         }
     }
 
-    void register_callback(Virtio::Callback *callback,
-                           Model::VirtioConsoleCallback *console_callback) {
+    void register_callback(Virtio::Callback *callback, Model::VirtioConsoleCallback *console_callback) {
         _callback = callback;
         _console_callback = console_callback;
     }

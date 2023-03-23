@@ -23,6 +23,5 @@ namespace Firmware::Psci {
         /* Future: deeper power saving states could be added */
     };
 
-    Status smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::Bus &vbus,
-                            uint64 function_id, uint64 &res);
+    Status smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::Bus &vbus, uint64 function_id, uint64 &res);
 }

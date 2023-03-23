@@ -44,8 +44,7 @@ protected:
     virtual uint64 get_timeout_abs() const = 0;
 
 public:
-    Timer(Irq_controller &irq_ctlr, Vcpu_id const vcpu_id, uint16 const irq)
-        : _irq_ctlr(&irq_ctlr), _vcpu(vcpu_id), _irq(irq) {}
+    Timer(Irq_controller &irq_ctlr, Vcpu_id const vcpu_id, uint16 const irq) : _irq_ctlr(&irq_ctlr), _vcpu(vcpu_id), _irq(irq) {}
 
     bool init_irq(Vcpu_id const vcpu_id, uint16 const pirq, bool hw, bool edge = true) {
         return _irq_ctlr->config_irq(vcpu_id, _irq, hw, pirq, edge);

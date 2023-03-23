@@ -80,52 +80,45 @@ private:
 public:
     MMIOTransport() {}
 
-    static bool read(uint64 const offset, uint8 const bytes, uint64 &value,
-                     const Virtio::DeviceState &state) {
+    static bool read(uint64 const offset, uint8 const bytes, uint64 &value, const Virtio::DeviceState &state) {
         if (bytes > 4)
             return false;
 
         switch (offset) {
         case RO_MAGIC ... RO_MAGIC_END:
-            return Virtio::read_register(offset, RO_MAGIC, RO_MAGIC_END, bytes, 0x74726976ULL,
-                                         value);
+            return Virtio::read_register(offset, RO_MAGIC, RO_MAGIC_END, bytes, 0x74726976ULL, value);
         case RO_VERSION ... RO_VERSION_END:
             return Virtio::read_register(offset, RO_VERSION, RO_VERSION_END, bytes, 2, value);
         case RO_DEVICE_ID ... RO_DEVICE_ID_END:
-            return Virtio::read_register(offset, RO_DEVICE_ID, RO_DEVICE_ID_END, bytes,
-                                         state.device_id, value);
+            return Virtio::read_register(offset, RO_DEVICE_ID, RO_DEVICE_ID_END, bytes, state.device_id, value);
         case RO_VENDOR_ID ... RO_VENDOR_ID_END:
-            return Virtio::read_register(offset, RO_VENDOR_ID, RO_VENDOR_ID_END, bytes,
-                                         state.vendor_id, value);
+            return Virtio::read_register(offset, RO_VENDOR_ID, RO_VENDOR_ID_END, bytes, state.vendor_id, value);
         case RO_DEVICE_FEATURE ... RO_DEVICE_FEATURE_END:
             if (state.drv_device_sel == 0)
-                return Virtio::read_register(offset, RO_DEVICE_FEATURE, RO_DEVICE_FEATURE_END,
-                                             bytes, state.device_feature_lower, value);
+                return Virtio::read_register(offset, RO_DEVICE_FEATURE, RO_DEVICE_FEATURE_END, bytes, state.device_feature_lower,
+                                             value);
             else
-                return Virtio::read_register(offset, RO_DEVICE_FEATURE, RO_DEVICE_FEATURE_END,
-                                             bytes, 1 /*VIRTIO_F_VERSION_1*/, value);
+                return Virtio::read_register(offset, RO_DEVICE_FEATURE, RO_DEVICE_FEATURE_END, bytes, 1 /*VIRTIO_F_VERSION_1*/,
+                                             value);
         case RW_DEVICE_FEATURE_SEL ... RW_DEVICE_FEATURE_SEL_END:
-            return Virtio::read_register(offset, RW_DEVICE_FEATURE_SEL, RW_DEVICE_FEATURE_SEL_END,
-                                         bytes, state.drv_device_sel, value);
-        case RW_DRIVER_FEATURE_SEL ... RW_DRIVER_FEATURE_SEL_END:
-            return Virtio::read_register(offset, RW_DRIVER_FEATURE_SEL, RW_DRIVER_FEATURE_SEL_END,
-                                         bytes, state.drv_feature_sel, value);
-        case RO_QUEUE_NUM_MAX ... RO_QUEUE_NUM_MAX_END:
-            return Virtio::read_register(offset, RO_QUEUE_NUM_MAX, RO_QUEUE_NUM_MAX_END, bytes,
-                                         state.queue_num_max, value);
-        case RW_QUEUE_READY ... RW_QUEUE_READY_END:
-            return Virtio::read_register(offset, RW_QUEUE_READY, RW_QUEUE_READY_END, bytes,
-                                         state.selected_queue_data().ready, value);
-        case RO_IRQ_STATUS ... RO_IRQ_STATUS_END:
-            return Virtio::read_register(offset, RO_IRQ_STATUS, RO_IRQ_STATUS_END, bytes,
-                                         state.irq_status, value);
-        case RW_STATUS ... RW_STATUS_END:
-            return Virtio::read_register(offset, RW_STATUS, RW_STATUS_END, bytes, state.status,
+            return Virtio::read_register(offset, RW_DEVICE_FEATURE_SEL, RW_DEVICE_FEATURE_SEL_END, bytes, state.drv_device_sel,
                                          value);
+        case RW_DRIVER_FEATURE_SEL ... RW_DRIVER_FEATURE_SEL_END:
+            return Virtio::read_register(offset, RW_DRIVER_FEATURE_SEL, RW_DRIVER_FEATURE_SEL_END, bytes, state.drv_feature_sel,
+                                         value);
+        case RO_QUEUE_NUM_MAX ... RO_QUEUE_NUM_MAX_END:
+            return Virtio::read_register(offset, RO_QUEUE_NUM_MAX, RO_QUEUE_NUM_MAX_END, bytes, state.queue_num_max, value);
+        case RW_QUEUE_READY ... RW_QUEUE_READY_END:
+            return Virtio::read_register(offset, RW_QUEUE_READY, RW_QUEUE_READY_END, bytes, state.selected_queue_data().ready,
+                                         value);
+        case RO_IRQ_STATUS ... RO_IRQ_STATUS_END:
+            return Virtio::read_register(offset, RO_IRQ_STATUS, RO_IRQ_STATUS_END, bytes, state.irq_status, value);
+        case RW_STATUS ... RW_STATUS_END:
+            return Virtio::read_register(offset, RW_STATUS, RW_STATUS_END, bytes, state.status, value);
 
         case RO_CONFIG_GENERATION ... RO_CONFIG_GENERATION_END:
-            return Virtio::read_register(offset, RO_CONFIG_GENERATION, RO_CONFIG_GENERATION_END,
-                                         bytes, state.get_config_gen(), value);
+            return Virtio::read_register(offset, RO_CONFIG_GENERATION, RO_CONFIG_GENERATION_END, bytes, state.get_config_gen(),
+                                         value);
         case RW_CONFIG ... RW_CONFIG_END: {
             if (offset + bytes > RW_CONFIG_END)
                 return false;
@@ -136,35 +129,32 @@ public:
         return false;
     }
 
-    static bool write(uint64 const offset, uint8 const bytes, uint64 const value,
-                      Virtio::DeviceState &state) {
+    static bool write(uint64 const offset, uint8 const bytes, uint64 const value, Virtio::DeviceState &state) {
         if (bytes > 4)
             return false;
 
         switch (offset) {
         case RW_DEVICE_FEATURE_SEL ... RW_DEVICE_FEATURE_SEL_END:
-            return Virtio::write_register(offset, RW_DEVICE_FEATURE_SEL, RW_DEVICE_FEATURE_SEL_END,
-                                          bytes, value, state.drv_device_sel);
+            return Virtio::write_register(offset, RW_DEVICE_FEATURE_SEL, RW_DEVICE_FEATURE_SEL_END, bytes, value,
+                                          state.drv_device_sel);
         case WO_DRIVER_FEATURE ... WO_DRIVER_FEATURE_END:
             if (state.drv_feature_sel == 0)
-                return Virtio::write_register(offset, WO_DRIVER_FEATURE, WO_DRIVER_FEATURE_END,
-                                              bytes, value, state.drv_feature_lower);
+                return Virtio::write_register(offset, WO_DRIVER_FEATURE, WO_DRIVER_FEATURE_END, bytes, value,
+                                              state.drv_feature_lower);
             else
-                return Virtio::write_register(offset, WO_DRIVER_FEATURE, WO_DRIVER_FEATURE_END,
-                                              bytes, value, state.drv_feature_upper);
+                return Virtio::write_register(offset, WO_DRIVER_FEATURE, WO_DRIVER_FEATURE_END, bytes, value,
+                                              state.drv_feature_upper);
         case RW_DRIVER_FEATURE_SEL ... RW_DRIVER_FEATURE_SEL_END:
-            return Virtio::write_register(offset, RW_DRIVER_FEATURE_SEL, RW_DRIVER_FEATURE_SEL_END,
-                                          bytes, value, state.drv_feature_sel);
+            return Virtio::write_register(offset, RW_DRIVER_FEATURE_SEL, RW_DRIVER_FEATURE_SEL_END, bytes, value,
+                                          state.drv_feature_sel);
         case WO_QUEUE_SEL ... WO_QUEUE_SEL_END:
             if (value >= static_cast<uint8>(Virtio::Queues::MAX))
                 return true; /* ignore out of bound */
-            return Virtio::write_register(offset, WO_QUEUE_SEL, WO_QUEUE_SEL_END, bytes, value,
-                                          state.sel_queue);
+            return Virtio::write_register(offset, WO_QUEUE_SEL, WO_QUEUE_SEL_END, bytes, value, state.sel_queue);
         case WO_QUEUE_NUM ... WO_QUEUE_NUM_END:
             if (value > state.queue_num_max)
                 return true; /* ignore out of bound */
-            return Virtio::write_register(offset, WO_QUEUE_NUM, WO_QUEUE_NUM_END, bytes, value,
-                                          state.selected_queue_data().num);
+            return Virtio::write_register(offset, WO_QUEUE_NUM, WO_QUEUE_NUM_END, bytes, value, state.selected_queue_data().num);
         case RW_QUEUE_READY ... RW_QUEUE_READY_END: {
             if (!Virtio::write_register(offset, RW_QUEUE_READY, RW_QUEUE_READY_END, bytes, value,
                                         state.selected_queue_data().ready))
@@ -177,30 +167,29 @@ public:
             return true;
         case RW_STATUS ... RW_STATUS_END:
             state.status_changed = true;
-            return Virtio::write_register(offset, RW_STATUS, RW_STATUS_END, bytes, value,
-                                          state.status);
+            return Virtio::write_register(offset, RW_STATUS, RW_STATUS_END, bytes, value, state.status);
         case WO_QUEUE_NOTIFY:
             state.notify = true;
             state.notify_val = static_cast<uint32>(value);
             return true;
         case WO_QUEUE_DESCR_LOW ... WO_QUEUE_DESCR_LOW_END:
-            return Virtio::write_register(offset, WO_QUEUE_DESCR_LOW, WO_QUEUE_DESCR_LOW_END, bytes,
-                                          value, state.selected_queue_data().descr_low);
+            return Virtio::write_register(offset, WO_QUEUE_DESCR_LOW, WO_QUEUE_DESCR_LOW_END, bytes, value,
+                                          state.selected_queue_data().descr_low);
         case WO_QUEUE_DESCR_HIGH ... WO_QUEUE_DESCR_HIGH_END:
-            return Virtio::write_register(offset, WO_QUEUE_DESCR_HIGH, WO_QUEUE_DESCR_HIGH_END,
-                                          bytes, value, state.selected_queue_data().descr_high);
+            return Virtio::write_register(offset, WO_QUEUE_DESCR_HIGH, WO_QUEUE_DESCR_HIGH_END, bytes, value,
+                                          state.selected_queue_data().descr_high);
         case WO_QUEUE_DRIVER_LOW ... WO_QUEUE_DRIVER_LOW_END:
-            return Virtio::write_register(offset, WO_QUEUE_DRIVER_LOW, WO_QUEUE_DRIVER_LOW_END,
-                                          bytes, value, state.selected_queue_data().driver_low);
+            return Virtio::write_register(offset, WO_QUEUE_DRIVER_LOW, WO_QUEUE_DRIVER_LOW_END, bytes, value,
+                                          state.selected_queue_data().driver_low);
         case WO_QUEUE_DRIVER_HIGH ... WO_QUEUE_DRIVER_HIGH_END:
-            return Virtio::write_register(offset, WO_QUEUE_DRIVER_HIGH, WO_QUEUE_DRIVER_HIGH_END,
-                                          bytes, value, state.selected_queue_data().driver_high);
+            return Virtio::write_register(offset, WO_QUEUE_DRIVER_HIGH, WO_QUEUE_DRIVER_HIGH_END, bytes, value,
+                                          state.selected_queue_data().driver_high);
         case WO_QUEUE_DEVICE_LOW ... WO_QUEUE_DEVICE_LOW_END:
-            return Virtio::write_register(offset, WO_QUEUE_DEVICE_LOW, WO_QUEUE_DEVICE_LOW_END,
-                                          bytes, value, state.selected_queue_data().device_low);
+            return Virtio::write_register(offset, WO_QUEUE_DEVICE_LOW, WO_QUEUE_DEVICE_LOW_END, bytes, value,
+                                          state.selected_queue_data().device_low);
         case WO_QUEUE_DEVICE_HIGH ... WO_QUEUE_DEVICE_HIGH_END:
-            return Virtio::write_register(offset, WO_QUEUE_DEVICE_HIGH, WO_QUEUE_DEVICE_HIGH_END,
-                                          bytes, value, state.selected_queue_data().device_high);
+            return Virtio::write_register(offset, WO_QUEUE_DEVICE_HIGH, WO_QUEUE_DEVICE_HIGH_END, bytes, value,
+                                          state.selected_queue_data().device_high);
         // Config space access can be byte aligned.
         case RW_CONFIG ... RW_CONFIG_END: {
             if (offset + bytes > RW_CONFIG_END)
@@ -212,8 +201,8 @@ public:
         return false;
     }
 
-    virtual bool access(Vbus::Access const access, mword const offset, uint8 const size,
-                        uint64 &value, Virtio::DeviceState &state) override {
+    virtual bool access(Vbus::Access const access, mword const offset, uint8 const size, uint64 &value,
+                        Virtio::DeviceState &state) override {
         if (access == Vbus::Access::WRITE)
             return Virtio::MMIOTransport::write(offset, size, value, state);
         if (access == Vbus::Access::READ)
@@ -222,8 +211,7 @@ public:
         return false;
     }
 
-    virtual void assert_queue_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq,
-                                        Virtio::DeviceState &state) override {
+    virtual void assert_queue_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq, Virtio::DeviceState &state) override {
         /* At this point, the guest has not yet acknowledged the exisiting interrupt OR
            deassert_queue_interrupt is being executed from other context. In both cases, the guest
            still needs to process the queues once it returns from vmexit and it is safe to skip
@@ -252,8 +240,8 @@ public:
         irq_ctrlr->assert_global_line(irq);
     }
 
-    virtual void deassert_config_change_interrupt(Model::Irq_controller *const irq_ctrlr,
-                                                  uint16 irq, Virtio::DeviceState &state) override {
+    virtual void deassert_config_change_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq,
+                                                  Virtio::DeviceState &state) override {
         irq_ctrlr->deassert_global_line(irq);
         state.irq_status.and_fetch(static_cast<uint32>(~0x2));
     }

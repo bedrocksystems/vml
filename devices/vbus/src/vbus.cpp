@@ -24,9 +24,8 @@ Vbus::Bus::lookup(mword addr, uint64 bytes) const {
 }
 
 void
-Vbus::Bus::log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry,
-                          const Vbus::Bus::DeviceEntry* last_entry, Vbus::Access access, mword addr,
-                          uint8 bytes, uint64 val) {
+Vbus::Bus::log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry, const Vbus::Bus::DeviceEntry* last_entry, Vbus::Access access,
+                          mword addr, uint8 bytes, uint64 val) {
     if (last_entry != cur_entry) {
         if (_fold && _num_accesses > 1 && last_entry != nullptr) {
             INFO("%s accessed %llu times", last_entry->device->name(), _num_accesses.load());
@@ -37,16 +36,15 @@ Vbus::Bus::log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry,
             return;
     }
 
-    INFO("%s @ 0x%lx:%u %s " FMTx64, cur_entry->device->name(), addr, bytes,
-         access == EXEC ? "X" : (access == WRITE ? "W" : "R"), val);
+    INFO("%s @ 0x%lx:%u %s " FMTx64, cur_entry->device->name(), addr, bytes, access == EXEC ? "X" : (access == WRITE ? "W" : "R"),
+         val);
     _num_accesses = 0;
 
     return;
 }
 
 Vbus::Err
-Vbus::Bus::access_with_dev(Device* dev, Vbus::Access access, const VcpuCtx& vcpu_ctx, mword off,
-                           uint8 bytes, uint64& val) {
+Vbus::Bus::access_with_dev(Device* dev, Vbus::Access access, const VcpuCtx& vcpu_ctx, mword off, uint8 bytes, uint64& val) {
     clock_t start = 0;
     if (Stats::enabled()) {
         dev->accessed();
@@ -61,8 +59,7 @@ Vbus::Bus::access_with_dev(Device* dev, Vbus::Access access, const VcpuCtx& vcpu
 }
 
 Vbus::Err
-Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 bytes,
-                  uint64& val) {
+Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 bytes, uint64& val) {
     bool absolute_access = _absolute_access; // silly but currently needed to simplify proof
 
     _vbus_lock.renter();
