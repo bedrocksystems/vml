@@ -73,13 +73,7 @@ namespace Log {
 #define ERROR(_FMT_, ...) _LOG(stderr, "ERR", _FMT_, ##__VA_ARGS__)
 #define FATAL(_FMT_, ...) _LOG(stderr, "FTL", _FMT_, ##__VA_ARGS__)
 
-#define ASSERT(_expr_)                                                                                                           \
-    do {                                                                                                                         \
-        if (__UNLIKELY__(!(_expr_))) {                                                                                           \
-            FATAL("Assertion failure.");                                                                                         \
-            cxx::abort();                                                                                                        \
-        }                                                                                                                        \
-    } while (0)
+#define ASSERT(_expr_) assert(_expr_)
 
 #define ABORT_WITH(_FMT_, ...)                                                                                                   \
     do {                                                                                                                         \
