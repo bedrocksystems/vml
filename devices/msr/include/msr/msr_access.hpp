@@ -17,10 +17,10 @@ namespace Msr {
     public:
         static constexpr uint8 INVALID_REG_ACCESS = 0xff;
 
-        Access(uint8 const op0, uint8 const crn, uint8 const op1, uint8 const crm, uint8 const op2,
-               uint8 const gpr_target, bool write)
-            : _write(write), _target(gpr_target), _second_target(INVALID_REG_ACCESS),
-              _id(build_msr_id(op0, crn, op1, crm, op2)) {}
+        Access(uint8 const op0, uint8 const crn, uint8 const op1, uint8 const crm, uint8 const op2, uint8 const gpr_target,
+               bool write)
+            : _write(write), _target(gpr_target), _second_target(INVALID_REG_ACCESS), _id(build_msr_id(op0, crn, op1, crm, op2)) {
+        }
         Access(uint32 id, uint8 const gpr_target, bool write)
             : _write(write), _target(gpr_target), _second_target(INVALID_REG_ACCESS), _id(id) {}
 

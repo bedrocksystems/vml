@@ -27,8 +27,7 @@ namespace Platform::Mem {
     class MemDescr;
     class Cred;
 
-    static inline void *map_mem(const MemDescr &descr, mword offset, size_t size, int flags,
-                                MemSel);
+    static inline void *map_mem(const MemDescr &descr, mword offset, size_t size, int flags, MemSel);
     static inline bool unmap_mem(const void *addr, size_t length);
 };
 
@@ -70,11 +69,9 @@ align_mmap(mword &offset, mword &size) {
 }
 
 static inline void *
-Platform::Mem::map_mem(const Platform::Mem::MemDescr &descr, mword offset, size_t size, int flags,
-                       MemSel) {
+Platform::Mem::map_mem(const Platform::Mem::MemDescr &descr, mword offset, size_t size, int flags, MemSel) {
     mword offset_in_page = align_mmap(offset, size);
-    void *res = mmap(nullptr, size, flags, MAP_SHARED, static_cast<int>(descr.msel()),
-                     static_cast<long>(offset));
+    void *res = mmap(nullptr, size, flags, MAP_SHARED, static_cast<int>(descr.msel()), static_cast<long>(offset));
     if (res == MAP_FAILED) {
         perror("mmap");
         return nullptr;

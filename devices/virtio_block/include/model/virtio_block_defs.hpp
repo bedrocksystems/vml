@@ -40,13 +40,11 @@ enum class Model::VirtioBlockRequestType : uint32 {
     IN = 0,
     OUT = 1,
     FLUSH = 4,
-    GET_ID = 8, // Documented in VirtIO v1.2
-    GET_LIFETIME
-    = 10, // Added in VirtIO v1.2. Requires [VirtioBlockFeatures::LIFETIME] negotiation.
+    GET_ID = 8,        // Documented in VirtIO v1.2
+    GET_LIFETIME = 10, // Added in VirtIO v1.2. Requires [VirtioBlockFeatures::LIFETIME] negotiation.
     DISCARD = 11,
     WRITE_ZEROES = 13,
-    SECURE_ERASE
-    = 14, // Added in VirtIO v1.2. Requires [VirtioBlockFeatures::LIFETIME] negotiation.
+    SECURE_ERASE = 14, // Added in VirtIO v1.2. Requires [VirtioBlockFeatures::LIFETIME] negotiation.
 };
 
 enum class Model::VirtioBlockStatus : uint8 {

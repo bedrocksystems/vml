@@ -30,12 +30,8 @@ public:
     constexpr inline bool intersect(Range<T> &r) const {
         return !empty() && !r.empty() && r.begin() < end() && begin() < r.end();
     }
-    constexpr inline bool contains(T val) const {
-        return empty() ? false : val >= begin() && val < end();
-    }
-    constexpr inline bool contains(const Range<T> &r) const {
-        return (!r.empty()) && contains(r.begin()) && contains(r.last());
-    }
+    constexpr inline bool contains(T val) const { return empty() ? false : val >= begin() && val < end(); }
+    constexpr inline bool contains(const Range<T> &r) const { return (!r.empty()) && contains(r.begin()) && contains(r.last()); }
 
     bool operator<(const Range<T> &r) const { return end() <= r.begin(); }
 

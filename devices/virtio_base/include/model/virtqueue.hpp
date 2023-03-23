@@ -47,8 +47,7 @@ namespace Virtio {
 // [Virtio::Available]
 template typename cxx::remove_reference<Virtio::Available &>::type &&
 cxx::move<Virtio::Available &>(Virtio::Available &t) noexcept;
-template typename cxx::remove_reference<Virtio::Available>::type &&
-cxx::move<Virtio::Available>(Virtio::Available &&t) noexcept;
+template typename cxx::remove_reference<Virtio::Available>::type &&cxx::move<Virtio::Available>(Virtio::Available &&t) noexcept;
 // [Virtio::Descriptor]
 template typename cxx::remove_reference<Virtio::Descriptor &>::type &&
 cxx::move<Virtio::Descriptor &>(Virtio::Descriptor &t) noexcept;
@@ -57,13 +56,10 @@ cxx::move<Virtio::Descriptor>(Virtio::Descriptor &&t) noexcept;
 // [Virtio::UsedEntry]
 template typename cxx::remove_reference<Virtio::UsedEntry &>::type &&
 cxx::move<Virtio::UsedEntry &>(Virtio::UsedEntry &t) noexcept;
-template typename cxx::remove_reference<Virtio::UsedEntry>::type &&
-cxx::move<Virtio::UsedEntry>(Virtio::UsedEntry &&t) noexcept;
+template typename cxx::remove_reference<Virtio::UsedEntry>::type &&cxx::move<Virtio::UsedEntry>(Virtio::UsedEntry &&t) noexcept;
 // [Virtio::Used]
-template typename cxx::remove_reference<Virtio::Used &>::type &&
-cxx::move<Virtio::Used &>(Virtio::Used &t) noexcept;
-template typename cxx::remove_reference<Virtio::Used>::type &&
-cxx::move<Virtio::Used>(Virtio::Used &&t) noexcept;
+template typename cxx::remove_reference<Virtio::Used &>::type &&cxx::move<Virtio::Used &>(Virtio::Used &t) noexcept;
+template typename cxx::remove_reference<Virtio::Used>::type &&cxx::move<Virtio::Used>(Virtio::Used &&t) noexcept;
 // [Virtio::DeviceQueue]
 template typename cxx::remove_reference<Virtio::DeviceQueue &>::type &&
 cxx::move<Virtio::DeviceQueue &>(Virtio::DeviceQueue &t) noexcept;
@@ -157,9 +153,7 @@ public:
     inline bool is_null() const { return _desc_idx == UINT16_MAX; }
     inline uint16 index() const { return _desc_idx; }
     static constexpr size_t entry_size_bytes() { return ENTRY_SIZE_BYTES; }
-    static constexpr size_t region_size_bytes(uint16 num_entries) {
-        return num_entries * entry_size_bytes();
-    }
+    static constexpr size_t region_size_bytes(uint16 num_entries) { return num_entries * entry_size_bytes(); }
 
     inline uint64 address() const { return get_offset<uint64>(_p, ADDR_OFS); }
     inline uint32 length() const { return get_offset<uint32>(_p, LENGTH_OFS); }
@@ -249,12 +243,8 @@ public:
         Barrier::w_before_w();
         return get_offset<uint16>(_p, INDEX_OFS);
     }
-    inline uint16 ring(size_t index) const {
-        return get_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * index);
-    }
-    inline uint16 avail_event() const {
-        return get_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * _size);
-    }
+    inline uint16 ring(size_t index) const { return get_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * index); }
+    inline uint16 avail_event() const { return get_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * _size); }
 
     inline void set_flags(uint16 flags) const {
         set_offset<uint16>(_p, FLAGS_OFS, flags);
@@ -264,12 +254,8 @@ public:
         set_offset<uint16>(_p, INDEX_OFS, index);
         Barrier::w_before_w();
     }
-    inline void set_ring(size_t index, uint16 v) const {
-        set_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * index, v);
-    }
-    inline void set_avail_event(uint16 v) const {
-        set_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * _size, v);
-    }
+    inline void set_ring(size_t index, uint16 v) const { set_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * index, v); }
+    inline void set_avail_event(uint16 v) const { set_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * _size, v); }
 
 private:
     // non-[const] to enable move assignment/construction.
@@ -398,12 +384,8 @@ public:
         Barrier::w_before_w();
         return get_offset<uint16>(_p, INDEX_OFS);
     }
-    inline Virtio::UsedEntry ring(size_t index) const {
-        return UsedEntry(_p + RING_OFS + ENTRY_SIZE_BYTES * index);
-    }
-    inline uint16 avail_event() const {
-        return get_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * _size);
-    }
+    inline Virtio::UsedEntry ring(size_t index) const { return UsedEntry(_p + RING_OFS + ENTRY_SIZE_BYTES * index); }
+    inline uint16 avail_event() const { return get_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * _size); }
 
     inline void set_flags(uint16 flags) const {
         set_offset<uint16>(_p, FLAGS_OFS, flags);
@@ -413,16 +395,12 @@ public:
         set_offset<uint16>(_p, INDEX_OFS, index);
         Barrier::w_before_w();
     }
-    inline void set_ring(size_t index, uint32 id, uint32 length) const {
-        set_ring(ring(index), id, length);
-    }
+    inline void set_ring(size_t index, uint32 id, uint32 length) const { set_ring(ring(index), id, length); }
     static inline void set_ring(Virtio::UsedEntry entry, uint32 id, uint32 length) {
         entry.set_id(id);
         entry.set_length(length);
     }
-    inline void set_avail_event(uint16 v) const {
-        set_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * _size, v);
-    }
+    inline void set_avail_event(uint16 v) const { set_offset<uint16>(_p, RING_OFS + ENTRY_SIZE_BYTES * _size, v); }
 
 private:
     // non-[const] to enable move assignment/construction.
@@ -442,10 +420,9 @@ public:
     Queue() {}
     Queue(void *descriptor_base, void *available_base, void *used_base, uint16 sz)
         : _descriptor_base(descriptor_base), _available_base(available_base), _used_base(used_base),
-          _available(Virtio::Available(available_base, sz)), _used(Virtio::Used(used_base, sz)),
-          _size(sz) {
-        ASSERT(descriptor_base != nullptr && available_base != nullptr && used_base != nullptr
-               && _size != 0 && _size <= 32768 && (_size & (_size - 1)) == 0);
+          _available(Virtio::Available(available_base, sz)), _used(Virtio::Used(used_base, sz)), _size(sz) {
+        ASSERT(descriptor_base != nullptr && available_base != nullptr && used_base != nullptr && _size != 0 && _size <= 32768
+               && (_size & (_size - 1)) == 0);
     }
 
     // [Virtio::Queue]s are *affine* - meaning that they may not be copied
@@ -505,9 +482,7 @@ protected:
         // indicative of buffers available to be processed.
         return (idx >= _idx) ? idx - _idx : (UINT16_MAX - _idx) + 1 + idx;
     }
-    inline uint16 count_free(uint16 idx) const {
-        return static_cast<uint16>(_size - count_available(idx));
-    }
+    inline uint16 count_free(uint16 idx) const { return static_cast<uint16>(_size - count_available(idx)); }
     inline uint16 used_index() const { return _used.index(); }
     inline uint16 available_index() const { return _available.index(); }
 

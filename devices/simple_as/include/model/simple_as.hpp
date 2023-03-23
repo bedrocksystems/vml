@@ -272,27 +272,19 @@ public:
 
     bool operator<=(const PrimitiveTypeWrapper &other) const { return _value <= other._value; }
     bool operator<=(const T other) const { return _value <= other; }
-    friend bool operator<=(T number, const PrimitiveTypeWrapper &prim) {
-        return number <= prim._value;
-    }
+    friend bool operator<=(T number, const PrimitiveTypeWrapper &prim) { return number <= prim._value; }
 
     bool operator>=(const PrimitiveTypeWrapper &other) const { return _value >= other._value; }
     bool operator>=(const T other) const { return _value >= other; }
-    friend bool operator>=(T number, const PrimitiveTypeWrapper &prim) {
-        return number >= prim._value;
-    }
+    friend bool operator>=(T number, const PrimitiveTypeWrapper &prim) { return number >= prim._value; }
 
     bool operator<(const PrimitiveTypeWrapper &other) const { return _value < other._value; }
     bool operator<(const T other) const { return _value < other; }
-    friend bool operator<(T number, const PrimitiveTypeWrapper &prim) {
-        return number < prim._value;
-    }
+    friend bool operator<(T number, const PrimitiveTypeWrapper &prim) { return number < prim._value; }
 
     bool operator>(const PrimitiveTypeWrapper &other) const { return _value > other._value; }
     bool operator>(const T other) const { return _value > other; }
-    friend bool operator>(T number, const PrimitiveTypeWrapper &prim) {
-        return number > prim._value;
-    }
+    friend bool operator>(T number, const PrimitiveTypeWrapper &prim) { return number > prim._value; }
 
     T operator+(const PrimitiveTypeWrapper<T> &other) const { return _value + other._value; }
     T operator+(const T value) const { return _value + value; }
@@ -374,18 +366,14 @@ public:
     // Clients which are indifferent to the read/write parity may simply override
     // [gpa_to_va] (and [gpa_to_va_post], if necessary).
     virtual Errno gpa_to_va(const GPA &gpa, size_t byte_size, char *&va) = 0;
-    virtual Errno gpa_to_va_write(const GPA &gpa, size_t byte_size, char *&va) {
-        return gpa_to_va(gpa, byte_size, va);
-    }
+    virtual Errno gpa_to_va_write(const GPA &gpa, size_t byte_size, char *&va) { return gpa_to_va(gpa, byte_size, va); }
     virtual Errno gpa_to_va_post(const GPA &gpa, size_t byte_size, char *va) {
         (void)(gpa);
         (void)(byte_size);
         (void)(va);
         return Errno::NONE;
     }
-    virtual Errno gpa_to_va_post_write(const GPA &gpa, size_t byte_size, char *va) {
-        return gpa_to_va_post(gpa, byte_size, va);
-    }
+    virtual Errno gpa_to_va_post_write(const GPA &gpa, size_t byte_size, char *va) { return gpa_to_va_post(gpa, byte_size, va); }
 };
 
 /*! \brief Guest Virtual Address
@@ -440,10 +428,9 @@ public:
      *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    explicit SimpleAS(const Platform::Mem::MemDescr &descr, bool read_only, bool flushable = true,
-                      bool flush_on_write = true)
-        : Vbus::Device("SimpleAS"), _read_only(read_only), _flushable(flushable),
-          _flush_on_write(flush_on_write), _mobject(descr) {}
+    explicit SimpleAS(const Platform::Mem::MemDescr &descr, bool read_only, bool flushable = true, bool flush_on_write = true)
+        : Vbus::Device("SimpleAS"), _read_only(read_only), _flushable(flushable), _flush_on_write(flush_on_write),
+          _mobject(descr) {}
 
     /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
@@ -451,10 +438,9 @@ public:
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    SimpleAS(const char *name, const Platform::Mem::MemDescr &descr, bool read_only,
-             bool flushable = true, bool flush_on_write = true)
-        : Vbus::Device(name), _read_only(read_only), _flushable(flushable),
-          _flush_on_write(flush_on_write), _mobject(descr) {}
+    SimpleAS(const char *name, const Platform::Mem::MemDescr &descr, bool read_only, bool flushable = true,
+             bool flush_on_write = true)
+        : Vbus::Device(name), _read_only(read_only), _flushable(flushable), _flush_on_write(flush_on_write), _mobject(descr) {}
 
     bool construct(GPA guest_base, size_t size, bool map);
     bool destruct();
@@ -480,9 +466,7 @@ public:
      *  \param sz Size of the access
      *  \return true if the address belongs to this AS, false otherwise.
      */
-    bool is_gpa_valid(GPA addr, size_t sz) const {
-        return _as.contains(Range<mword>(addr.get_value(), sz));
-    }
+    bool is_gpa_valid(GPA addr, size_t sz) const { return _as.contains(Range<mword>(addr.get_value(), sz)); }
 
     /*! \brief Query the base of the address space from the guest point of view
      *  \pre Partial ownership of the object.
@@ -515,12 +499,9 @@ protected:
     Errno demand_unmap_clean(const GPA &gpa, size_t size_bytes, void *va) const;
 
 public:
-    static Errno demand_map_bus(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes, void *&va,
-                                bool write);
-    static Errno demand_unmap_bus(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes,
-                                  void *va);
-    static Errno demand_unmap_bus_clean(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes,
-                                        void *va);
+    static Errno demand_map_bus(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes, void *&va, bool write);
+    static Errno demand_unmap_bus(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes, void *va);
+    static Errno demand_unmap_bus_clean(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes, void *va);
 
     PagePermission get_original_perms() const {
         PagePermission pp = PagePermission::NONE;
@@ -570,8 +551,7 @@ public:
      *  \note This function can only be called in case of a guest page fault. But, this
      *        address space being static, this function shouldn't be called.
      */
-    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8,
-                             uint64 &) override {
+    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override {
         return Vbus::ACCESS_ERR;
     }
 
@@ -604,8 +584,7 @@ public:
     static Errno read_bus(const Vbus::Bus &bus, GPA addr, char *dst, size_t sz);
     static Errno write_bus(const Vbus::Bus &bus, GPA addr, const char *src, size_t sz);
 
-    static void lookup_mem_ranges(const Vbus::Bus &bus, const Range<uint64> &gpa_range,
-                                  Vector<Model::SimpleAS *> &out);
+    static void lookup_mem_ranges(const Vbus::Bus &bus, const Range<uint64> &gpa_range, Vector<Model::SimpleAS *> &out);
     Errno clean_invalidate(GPA gpa, size_t size) const;
 
     uint64 single_access_read(uint64 off, uint8 size) const;

@@ -51,17 +51,15 @@ public:
         Model::Virtio_block_config block_config;
     };
 
-    Virtio_block(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
-                 uint16 const queue_entries, const UserConfig &config, Platform::Signal *sig)
-        : Virtio::Device("virtio block", Virtio::DeviceID::BLOCK, bus, irq_ctlr, &_config,
-                         sizeof(_config), irq, queue_entries, config.transport,
-                         config.device_feature),
+    Virtio_block(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
+                 const UserConfig &config, Platform::Signal *sig)
+        : Virtio::Device("virtio block", Virtio::DeviceID::BLOCK, bus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries,
+                         config.transport, config.device_feature),
           _sig(sig) {
         memcpy(&_config, &config.block_config, sizeof(Model::Virtio_block_config));
     }
 
-    void register_callback(Virtio::Callback &callback,
-                           Model::Virtio_block_callback &block_callback) {
+    void register_callback(Virtio::Callback &callback, Model::Virtio_block_callback &block_callback) {
         _callback = &callback;
         _virtio_block_callback = &block_callback;
     }

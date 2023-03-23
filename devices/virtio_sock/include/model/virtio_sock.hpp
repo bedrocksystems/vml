@@ -50,16 +50,15 @@ public:
         uint64 cid{0};
     };
 
-    Virtio_sock(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq,
-                uint16 const queue_entries, const UserConfig &config, Platform::Signal *sig)
-        : Virtio::Device("virtio socket", Virtio::DeviceID::SOCKET, bus, irq_ctlr, &_config,
-                         sizeof(_config), irq, queue_entries, config.transport),
+    Virtio_sock(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
+                const UserConfig &config, Platform::Signal *sig)
+        : Virtio::Device("virtio socket", Virtio::DeviceID::SOCKET, bus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries,
+                         config.transport),
           _sig(sig) {
         _config.guest_cid = config.cid;
     }
 
-    void register_callback(Virtio::Callback &callback,
-                           Model::Virtio_sock_callback &virtio_soc_callback) {
+    void register_callback(Virtio::Callback &callback, Model::Virtio_sock_callback &virtio_soc_callback) {
         _callback = &callback;
         _virtio_sock_callback = &virtio_soc_callback;
     }

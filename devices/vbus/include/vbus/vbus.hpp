@@ -77,9 +77,7 @@ public:
      * handlers. The off is relative the to the registered range
      * in the bus.
      */
-    virtual Err access(Access access, const VcpuCtx* vcpu_ctx, Vbus::Space sp, mword off,
-                       uint8 bytes, uint64& res)
-        = 0;
+    virtual Err access(Access access, const VcpuCtx* vcpu_ctx, Vbus::Space sp, mword off, uint8 bytes, uint64& res) = 0;
 
     /*! \brief Reset the device to its initial state
      *  \pre The caller has full ownership of a valid Device object which can be in any state.
@@ -97,7 +95,7 @@ public:
     /*! \brief Type that represents the device
      */
     enum Type {
-        DEVICE = 0, /*!< Opaque Device type - cannot be manipulated as a specific device */
+        DEVICE = 0,                    /*!< Opaque Device type - cannot be manipulated as a specific device */
         GUEST_PHYSICAL_STATIC_MEMORY,  /*!< Behaves as static physical memory for the guest */
         GUEST_PHYSICAL_DYNAMIC_MEMORY, /*!< Behaves as dynamic physical memory for the guest.
                                           Provides mapping APIs */
@@ -235,13 +233,11 @@ private:
 
     static void rm_device_cb(RangeNode<mword>* entry);
 
-    void log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry,
-                        const Vbus::Bus::DeviceEntry* last_entry, Vbus::Access access, mword addr,
-                        uint8 bytes, uint64 val);
+    void log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry, const Vbus::Bus::DeviceEntry* last_entry, Vbus::Access access,
+                        mword addr, uint8 bytes, uint64 val);
 
     const DeviceEntry* lookup(mword addr, uint64 bytes) const;
-    Err access_with_dev(Device* dev, Vbus::Access access, const VcpuCtx& vcpu_ctx, mword off,
-                        uint8 bytes, uint64& val);
+    Err access_with_dev(Device* dev, Vbus::Access access, const VcpuCtx& vcpu_ctx, mword off, uint8 bytes, uint64& val);
 
     RangeMap<mword> _devices;
     Space _space;

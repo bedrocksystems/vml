@@ -64,8 +64,7 @@ protected:
 
             if (_dev_state.status == static_cast<uint32>(Virtio::DeviceStatus::DEVICE_RESET)) {
                 _dev_state.reset();
-            } else if ((_dev_state.status & static_cast<uint32>(Virtio::DeviceStatus::DRIVER_OK))
-                       != 0u) {
+            } else if ((_dev_state.status & static_cast<uint32>(Virtio::DeviceStatus::DRIVER_OK)) != 0u) {
                 driver_ok();
             }
         }
@@ -81,8 +80,8 @@ protected:
         }
     }
 
-    virtual Vbus::Err access(Vbus::Access const access, const VcpuCtx *, Vbus::Space,
-                             mword const offset, uint8 const size, uint64 &value) override {
+    virtual Vbus::Err access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset, uint8 const size,
+                             uint64 &value) override {
 
         bool ok = _transport->access(access, offset, size, value, _dev_state);
         if (ok)
@@ -95,18 +94,14 @@ protected:
     virtual void driver_ok() = 0;
 
 public:
-    Device(const char *name, Virtio::DeviceID device_id, const Vbus::Bus &bus,
-           Model::Irq_controller &irq_ctlr, void *config_space, uint32 config_size,
-           uint16 const irq, uint16 const queue_num, Virtio::Transport *transport,
+    Device(const char *name, Virtio::DeviceID device_id, const Vbus::Bus &bus, Model::Irq_controller &irq_ctlr,
+           void *config_space, uint32 config_size, uint16 const irq, uint16 const queue_num, Virtio::Transport *transport,
            uint32 const device_feature_lower = 0)
         : Vbus::Device(name), _irq_ctlr(&irq_ctlr), _vbus(&bus), _irq(irq),
-          _dev_state(queue_num, VENDOR_ID, static_cast<uint32>(device_id), device_feature_lower,
-                     config_space, config_size),
+          _dev_state(queue_num, VENDOR_ID, static_cast<uint32>(device_id), device_feature_lower, config_space, config_size),
           _transport(transport) {}
 
-    uint64 drv_feature() const {
-        return combine_low_high(_dev_state.drv_feature_lower, _dev_state.drv_feature_upper);
-    }
+    uint64 drv_feature() const { return combine_low_high(_dev_state.drv_feature_lower, _dev_state.drv_feature_upper); }
 
     // [GuestPhysicalToVirtual] overrides inherited by [Virtio::Sg::Buffer::ChainAccessor]
     //

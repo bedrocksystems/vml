@@ -85,9 +85,7 @@ public:
         return *this;
     }
 
-    ForeignPtr operator+(size_t index) const {
-        return ForeignPtr(static_cast<volatile char *>(_p) + index);
-    }
+    ForeignPtr operator+(size_t index) const { return ForeignPtr(static_cast<volatile char *>(_p) + index); }
 
     ForeignData operator*() const { return ForeignData(_p); }
 
