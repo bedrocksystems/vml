@@ -29,8 +29,6 @@ namespace Msr {
     class IccSgi1rEl1;
     class CntpCtl;
     class CntpCval;
-    class CntpTval;
-    class CntpctEl0;
     class Set_way_flush_reg;
     class WtrappedMsr;
     class SctlrEl1;
@@ -294,38 +292,30 @@ namespace Msr {
     };
 
     static constexpr uint32 DBGBVR_EL1[]
-        = {DBGBVR0_EL1,  DBGBVR1_EL1,  DBGBVR2_EL1,  DBGBVR3_EL1, DBGBVR4_EL1,  DBGBVR5_EL1,
-           DBGBVR6_EL1,  DBGBVR7_EL1,  DBGBVR8_EL1,  DBGBVR9_EL1, DBGBVR10_EL1, DBGBVR11_EL1,
-           DBGBVR12_EL1, DBGBVR13_EL1, DBGBVR14_EL1, DBGBVR15_EL1};
+        = {DBGBVR0_EL1, DBGBVR1_EL1, DBGBVR2_EL1,  DBGBVR3_EL1,  DBGBVR4_EL1,  DBGBVR5_EL1,  DBGBVR6_EL1,  DBGBVR7_EL1,
+           DBGBVR8_EL1, DBGBVR9_EL1, DBGBVR10_EL1, DBGBVR11_EL1, DBGBVR12_EL1, DBGBVR13_EL1, DBGBVR14_EL1, DBGBVR15_EL1};
 
     static constexpr uint32 DBGBCR_EL1[]
-        = {DBGBCR0_EL1,  DBGBCR1_EL1,  DBGBCR2_EL1,  DBGBCR3_EL1, DBGBCR4_EL1,  DBGBCR5_EL1,
-           DBGBCR6_EL1,  DBGBCR7_EL1,  DBGBCR8_EL1,  DBGBCR9_EL1, DBGBCR10_EL1, DBGBCR11_EL1,
-           DBGBCR12_EL1, DBGBCR13_EL1, DBGBCR14_EL1, DBGBCR15_EL1};
+        = {DBGBCR0_EL1, DBGBCR1_EL1, DBGBCR2_EL1,  DBGBCR3_EL1,  DBGBCR4_EL1,  DBGBCR5_EL1,  DBGBCR6_EL1,  DBGBCR7_EL1,
+           DBGBCR8_EL1, DBGBCR9_EL1, DBGBCR10_EL1, DBGBCR11_EL1, DBGBCR12_EL1, DBGBCR13_EL1, DBGBCR14_EL1, DBGBCR15_EL1};
 
     static constexpr uint32 DBGWVR_EL1[]
-        = {DBGWVR0_EL1,  DBGWVR1_EL1,  DBGWVR2_EL1,  DBGWVR3_EL1, DBGWVR4_EL1,  DBGWVR5_EL1,
-           DBGWVR6_EL1,  DBGWVR7_EL1,  DBGWVR8_EL1,  DBGWVR9_EL1, DBGWVR10_EL1, DBGWVR11_EL1,
-           DBGWVR12_EL1, DBGWVR13_EL1, DBGWVR14_EL1, DBGWVR15_EL1};
+        = {DBGWVR0_EL1, DBGWVR1_EL1, DBGWVR2_EL1,  DBGWVR3_EL1,  DBGWVR4_EL1,  DBGWVR5_EL1,  DBGWVR6_EL1,  DBGWVR7_EL1,
+           DBGWVR8_EL1, DBGWVR9_EL1, DBGWVR10_EL1, DBGWVR11_EL1, DBGWVR12_EL1, DBGWVR13_EL1, DBGWVR14_EL1, DBGWVR15_EL1};
 
     static constexpr uint32 DBGWCR_EL1[]
-        = {DBGWCR0_EL1,  DBGWCR1_EL1,  DBGWCR2_EL1,  DBGWCR3_EL1, DBGWCR4_EL1,  DBGWCR5_EL1,
-           DBGWCR6_EL1,  DBGWCR7_EL1,  DBGWCR8_EL1,  DBGWCR9_EL1, DBGWCR10_EL1, DBGWCR11_EL1,
-           DBGWCR12_EL1, DBGWCR13_EL1, DBGWCR14_EL1, DBGWCR15_EL1};
+        = {DBGWCR0_EL1, DBGWCR1_EL1, DBGWCR2_EL1,  DBGWCR3_EL1,  DBGWCR4_EL1,  DBGWCR5_EL1,  DBGWCR6_EL1,  DBGWCR7_EL1,
+           DBGWCR8_EL1, DBGWCR9_EL1, DBGWCR10_EL1, DBGWCR11_EL1, DBGWCR12_EL1, DBGWCR13_EL1, DBGWCR14_EL1, DBGWCR15_EL1};
 
     static constexpr uint8 NUM_PMEVCNTR_REGS = 31;
     static constexpr uint32 pmevcntrn_el0(uint8 id) {
-        return build_msr_id(3, 14, 3, static_cast<uint8>((0b10 << 2) | ((id >> 3) & 0b11)),
-                            id & 0b111);
+        return build_msr_id(3, 14, 3, static_cast<uint8>((0b10 << 2) | ((id >> 3) & 0b11)), id & 0b111);
     }
 
     static constexpr uint8 NUM_PMEVTYPER_REGS = 31;
     static constexpr uint32 pmevtypern_el0(uint8 id) {
-        return build_msr_id(3, 14, 3, static_cast<uint8>((0b11 << 2) | ((id >> 3) & 0b11)),
-                            id & 0b111);
+        return build_msr_id(3, 14, 3, static_cast<uint8>((0b11 << 2) | ((id >> 3) & 0b11)), id & 0b111);
     }
-
-    void flush_on_cache_toggle(const VcpuCtx* vcpu, uint64 new_value);
 }
 
 namespace Model {
@@ -370,10 +360,8 @@ private:
     bool const _writable;
 
 public:
-    Register(const char* name, Id const reg_id, bool const writable, uint64 const reset_value,
-             uint64 const mask = ~0ULL)
-        : RegisterBase(name, reg_id), _value(reset_value), _reset_value(reset_value),
-          _write_mask(mask), _writable(writable) {}
+    Register(const char* name, Id const reg_id, bool const writable, uint64 const reset_value, uint64 const mask = ~0ULL)
+        : RegisterBase(name, reg_id), _value(reset_value), _reset_value(reset_value), _write_mask(mask), _writable(writable) {}
 
     virtual Err access(Vbus::Access access, const VcpuCtx*, uint64& value) override {
         if (access == Vbus::WRITE && !_writable)
@@ -428,8 +416,7 @@ private:
     }
 
 public:
-    explicit IdAa64pfr0(uint64 value)
-        : Register("ID_AA64PFR0_EL1", ID_AA64PFR0_EL1, false, _reset_value(value)) {}
+    explicit IdAa64pfr0(uint64 value) : Register("ID_AA64PFR0_EL1", ID_AA64PFR0_EL1, false, _reset_value(value)) {}
 };
 
 class Msr::IdPfr0 : public Register {
@@ -440,8 +427,7 @@ private:
     }
 
 public:
-    explicit IdPfr0(uint32 value)
-        : Register("ID_PFR0_EL1", ID_PFR0_EL1, false, _reset_value(value)) {}
+    explicit IdPfr0(uint32 value) : Register("ID_PFR0_EL1", ID_PFR0_EL1, false, _reset_value(value)) {}
 };
 
 class Msr::IdPfr1 : public Register {
@@ -456,8 +442,7 @@ private:
     }
 
 public:
-    explicit IdPfr1(uint32 value)
-        : Register("ID_PFR1_EL1", ID_PFR1_EL1, false, _reset_value(value)) {}
+    explicit IdPfr1(uint32 value) : Register("ID_PFR1_EL1", ID_PFR1_EL1, false, _reset_value(value)) {}
 };
 
 class Msr::Ccsidr : public RegisterBase {
@@ -522,8 +507,7 @@ private:
     Model::GicD* _gic;
 
 public:
-    explicit IccSgi1rEl1(Model::GicD& gic)
-        : RegisterBase("ICC_SGI1R_EL1", ICC_SGI1R_EL1), _gic(&gic) {}
+    explicit IccSgi1rEl1(Model::GicD& gic) : RegisterBase("ICC_SGI1R_EL1", ICC_SGI1R_EL1), _gic(&gic) {}
 
     virtual Err access(Vbus::Access, const VcpuCtx*, uint64&) override;
 
@@ -535,8 +519,7 @@ private:
     Model::AA64Timer* _ptimer;
 
 public:
-    CntpCtl(const char* name, Msr::RegisterId id, Model::AA64Timer& t)
-        : Register(name, id, true, 0, 0b11), _ptimer(&t) {}
+    CntpCtl(const char* name, Msr::RegisterId id, Model::AA64Timer& t) : Register(name, id, true, 0, 0b11), _ptimer(&t) {}
 
     virtual Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& value) {
         _value = _ptimer->get_ctl();
@@ -555,8 +538,7 @@ private:
     Model::AA64Timer* _ptimer;
 
 public:
-    CntpCval(const char* name, Msr::RegisterId id, Model::AA64Timer& t)
-        : Register(name, id, true, 0), _ptimer(&t) {}
+    CntpCval(const char* name, Msr::RegisterId id, Model::AA64Timer& t) : Register(name, id, true, 0), _ptimer(&t) {}
 
     virtual Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& value) {
         _value = _ptimer->get_cval();
@@ -567,46 +549,6 @@ public:
         }
 
         return err;
-    }
-};
-
-class Msr::CntpctEl0 : public RegisterBase {
-public:
-    explicit CntpctEl0() : RegisterBase("CNTPCT_EL0", CNTPCT_EL0) {}
-
-    virtual Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override {
-        if (access != Vbus::READ)
-            return Err::ACCESS_ERR;
-
-        value = static_cast<uint64>(clock()) - vctx->regs->tmr_cntvoff();
-        return Err::OK;
-    }
-
-    virtual void reset(const VcpuCtx*) override {}
-};
-
-class Msr::CntpTval : public Register {
-private:
-    Model::AA64Timer* _ptimer;
-    static constexpr uint64 CNTP_TVAL_MASK = 0xffffffffull;
-
-public:
-    CntpTval(const char* name, Msr::RegisterId id, Model::AA64Timer& t)
-        : Register(name, id, true, 0, CNTP_TVAL_MASK), _ptimer(&t) {}
-
-    virtual Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) {
-        if (access == Vbus::READ) {
-            uint64 cval = _ptimer->get_cval(),
-                   curr = static_cast<uint64>(clock()) - vctx->regs->tmr_cntvoff();
-            value = (cval - curr) & CNTP_TVAL_MASK;
-            return Err::OK;
-        } else if (access == Vbus::WRITE) {
-            int32 v = static_cast<int32>(value);
-            _ptimer->set_cval(static_cast<uint64>(clock()) + static_cast<uint64>(v));
-            return Err::OK;
-        } else {
-            return Err::ACCESS_ERR;
-        }
     }
 };
 
@@ -751,12 +693,10 @@ public:
     }
 
 private:
-    bool setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
-                                uint64 id_aa64isar0_el1, uint64 id_aa64isar1_el1,
+    bool setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1, uint64 id_aa64isar0_el1, uint64 id_aa64isar1_el1,
                                 uint64 id_aa64isar2_el1, uint64 id_aa64zfr0_el1);
     bool setup_aarch64_setway_flushes(Vbus::Bus& vbus);
-    bool setup_aarch64_memory_model(uint64 id_aa64mmfr0_el1, uint64 id_aa64mmfr1_el1,
-                                    uint64 id_aa64mmfr2_el1);
+    bool setup_aarch64_memory_model(uint64 id_aa64mmfr0_el1, uint64 id_aa64mmfr1_el1, uint64 id_aa64mmfr2_el1);
     bool setup_aarch64_debug(uint64 id_aa64dfr0_el1, uint64 id_aa64dfr1_el1);
     bool setup_aarch64_auxiliary();
     bool setup_aarch64_ras();
@@ -765,10 +705,9 @@ private:
 
     bool setup_aarch32_msr(const PlatformInfo& info);
     bool setup_aarch32_features(const AA32PlatformInfo& aa32);
-    bool setup_aarch32_memory_model(uint32 id_mmfr0_el1, uint32 id_mmfr1_el1, uint32 id_mmfr2_el1,
-                                    uint32 id_mmfr3_el1, uint32 id_mmfr4_el1, uint32 id_mmfr5_el1);
-    bool setup_aarch32_media_vfp(uint32 mvfr0_el1, uint32 mvfr1_el1, uint32 mvfr2_el1,
-                                 uint64 midr_el1);
+    bool setup_aarch32_memory_model(uint32 id_mmfr0_el1, uint32 id_mmfr1_el1, uint32 id_mmfr2_el1, uint32 id_mmfr3_el1,
+                                    uint32 id_mmfr4_el1, uint32 id_mmfr5_el1);
+    bool setup_aarch32_media_vfp(uint32 mvfr0_el1, uint32 mvfr1_el1, uint32 mvfr2_el1, uint64 midr_el1);
     bool setup_aarch32_debug(uint64 id_aa64dfr0_el1, uint32 id_dfr0_el1);
 
     virtual bool setup_page_table_regs();
@@ -815,7 +754,5 @@ public:
     bool setup_arch_msr(const PlatformInfo& info, Vbus::Bus&, Model::GicD&);
     bool setup_aarch64_caching_info(const CacheTopo& topo);
 
-    RegisterBase* get_register_with_id(Msr::Id id) const {
-        return reinterpret_cast<RegisterBase*>(get_device_at(id.id()));
-    }
+    RegisterBase* get_register_with_id(Msr::Id id) const { return reinterpret_cast<RegisterBase*>(get_device_at(id.id())); }
 };
