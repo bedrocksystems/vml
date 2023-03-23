@@ -7,7 +7,6 @@
  */
 #pragma once
 
-#include <model/cpu_feature.hpp>
 #include <platform/atomic.hpp>
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
