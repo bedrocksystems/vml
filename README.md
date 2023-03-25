@@ -33,12 +33,12 @@ This will compile a default set of libraries along with examples.
 
 VML supports various combinations of platforms and architecture. At the moment, we can pick from:
 
-- x86_64 and aarch64 as the architecture (controlled by the TARGET environment variable)
+- x86_64 and aarch64 as the architecture (controlled by the ARCH environment variable)
 - POSIX
 
 For example:
 ```sh
-make PLATFORM=posix TARGET=aarch64
+make PLATFORM=posix ARCH=aarch64
 ```
 
 will build for a POSIX system running under an aarch64 architecture. Of course, when cross-compiling, a
