@@ -251,11 +251,13 @@ Virtio::Sg::Buffer::ChainAccessor::copy_between_gpa(BulkCopier *copier, ChainAcc
 
     err = dst_accessor->gpa_to_va_write(dst_addr, size_bytes, dst_va);
     if (Errno::NONE != err) {
+        dst_accessor->handle_translation_failure(false /* !is_src */, err, dst_addr.value(), size_bytes);
         return err;
     }
 
     err = src_accessor->gpa_to_va(src_addr, size_bytes, src_va);
     if (Errno::NONE != err) {
+        src_accessor->handle_translation_failure(true /* is_src */, err, src_addr.value(), size_bytes);
         return err;
     }
 
@@ -263,11 +265,13 @@ Virtio::Sg::Buffer::ChainAccessor::copy_between_gpa(BulkCopier *copier, ChainAcc
 
     err = src_accessor->gpa_to_va_post(src_addr, size_bytes, src_va);
     if (Errno::NONE != err) {
+        src_accessor->handle_translation_post_failure(true /* is_src */, err, src_addr.value(), size_bytes);
         return err;
     }
 
     err = dst_accessor->gpa_to_va_post_write(dst_addr, size_bytes, dst_va);
     if (Errno::NONE != err) {
+        dst_accessor->handle_translation_post_failure(false /* !is_src */, err, dst_addr.value(), size_bytes);
         return err;
     }
 
@@ -285,6 +289,7 @@ Virtio::Sg::Buffer::ChainAccessor::copy_from_gpa(BulkCopier *copier, char *dst_v
 
     err = gpa_to_va(src_addr, size_bytes, src_va);
     if (Errno::NONE != err) {
+        this->handle_translation_failure(true /* is_src */, err, src_addr.value(), size_bytes);
         return err;
     }
 
@@ -292,6 +297,7 @@ Virtio::Sg::Buffer::ChainAccessor::copy_from_gpa(BulkCopier *copier, char *dst_v
 
     err = gpa_to_va_post(src_addr, size_bytes, src_va);
     if (Errno::NONE != err) {
+        this->handle_translation_post_failure(true /* is_src */, err, src_addr.value(), size_bytes);
         return err;
     }
 
@@ -309,6 +315,7 @@ Virtio::Sg::Buffer::ChainAccessor::copy_to_gpa(BulkCopier *copier, const GPA &ds
 
     err = gpa_to_va_write(dst_addr, size_bytes, dst_va);
     if (Errno::NONE != err) {
+        this->handle_translation_failure(false /* !is_src */, err, dst_addr.value(), size_bytes);
         return err;
     }
 
@@ -316,6 +323,7 @@ Virtio::Sg::Buffer::ChainAccessor::copy_to_gpa(BulkCopier *copier, const GPA &ds
 
     err = gpa_to_va_post_write(dst_addr, size_bytes, dst_va);
     if (Errno::NONE != err) {
+        this->handle_translation_post_failure(false /* !is_src */, err, dst_addr.value(), size_bytes);
         return err;
     }
 

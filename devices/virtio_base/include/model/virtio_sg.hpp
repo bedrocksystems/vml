@@ -208,6 +208,19 @@ public:
                                       const GPA &dst_addr, const GPA &src_addr, size_t &size_bytes);
         Errno copy_from_gpa(BulkCopier *copier, char *dst_va, const GPA &src_addr, size_t &size_bytes);
         Errno copy_to_gpa(BulkCopier *copier, const GPA &dst_addr, const char *src_va, size_t &size_bytes);
+
+        // The follow methods are used in [copy_XXX_gpa] when the underlying
+        // [GuestPhysicalToVirtual] methods return [err != Errno::NONE].
+    private:
+        virtual void handle_translation_failure(bool is_src, Errno err, mword address, size_t sz) {
+            (void)is_src;
+            (void)err;
+            (void)address;
+            (void)sz;
+        }
+        virtual void handle_translation_post_failure(bool is_src, Errno err, mword address, size_t sz) {
+            handle_translation_failure(is_src, err, address, sz);
+        }
     };
 
 public:
