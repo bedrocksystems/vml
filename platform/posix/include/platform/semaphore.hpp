@@ -42,6 +42,11 @@ public:
         return true;
     }
 
+    Errno destroy([[maybe_unused]] const Platform_ctx* ctx = nullptr) {
+        _count = 0;
+        return Errno::NONE;
+    }
+
     /*! \brief Acquire the semaphore - returns immediately if release was called
      */
     void acquire() {

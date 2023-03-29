@@ -95,6 +95,14 @@ public:
         return Errno::NONE;
     }
 
+    Errno cleanup(const Platform_ctx* ctx) {
+        Errno err = _sig_emulating.destroy(ctx);
+        if (Errno::NONE != err)
+            return err;
+
+        return _waiter_mutex.destroy(ctx);
+    }
+
     void wait_for_emulation_end() { _sig_emulating.wait(); }
     void signal_emulation_end() { _sig_emulating.sig(); }
 
@@ -133,6 +141,8 @@ public:
         return Errno::NONE;
     }
 
+    Errno cleanup(const Platform_ctx* ctx) { return _sm_all_initialized.destroy(ctx); }
+
     void wait_for_all_vcpus_initialized() { _sm_all_initialized.acquire(); }
     void signal_all_vcpus_initialized() { _sm_all_initialized.release(); }
 
@@ -164,6 +174,18 @@ Vcpu::Roundup::init(const Platform_ctx* ctx, uint16 num_vcpus) {
         return err;
 
     return roundup_info.init(ctx, num_vcpus);
+}
+
+Errno
+Vcpu::Roundup::cleanup(const Platform_ctx* ctx) {
+    if (Errno::NONE != parallel_info.count_sem.destroy(ctx) || Errno::NONE != parallel_info.resume_waiter_sem.destroy(ctx))
+        return Errno::BADR;
+
+    Errno err = initialized_info.cleanup(ctx);
+    if (err != Errno::NONE)
+        return err;
+
+    return roundup_info.cleanup(ctx);
 }
 
 void

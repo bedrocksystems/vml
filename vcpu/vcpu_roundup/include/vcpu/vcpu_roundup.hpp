@@ -14,6 +14,8 @@
 
 namespace Vcpu::Roundup {
     Errno init(const Platform_ctx* ctx, uint16 num_vcpus);
+    Errno cleanup(const Platform_ctx* ctx);
+
     void roundup();
     void resume();
 
