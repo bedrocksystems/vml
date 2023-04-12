@@ -96,10 +96,7 @@ public:
     }
 
     Errno cleanup(const Platform_ctx* ctx) {
-        Errno err = _sig_emulating.destroy(ctx);
-        if (Errno::NONE != err)
-            return err;
-
+        _sig_emulating.destroy();
         return _waiter_mutex.destroy(ctx);
     }
 

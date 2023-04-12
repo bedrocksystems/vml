@@ -34,10 +34,23 @@ public:
      *  \param ctx The platform-specific context
      *  \return true - no failure possible at the moment
      */
-    bool init(const Platform_ctx*) { return true; }
+    bool init(const Platform_ctx*) {
+        _valid = true;
+        return true;
+    }
 
-    Errno create(const Platform_ctx*) { return Errno::NONE; }
-    Errno destroy(const Platform_ctx*) { return Errno::NONE; }
+    Errno create(const Platform_ctx*) {
+        _valid = true;
+        return Errno::NONE;
+    }
+
+    void destroy() { _valid = false; }
+
+    // To stay compatible with zeta, we can accept a ctx
+    Errno destroy(const Platform_ctx*) {
+        destroy();
+        return Errno::NONE;
+    }
 
     /*! \brief Wait for a signal
      */
@@ -77,8 +90,11 @@ public:
         _cv.notify_one();
     }
 
+    bool is_valid() const { return _valid; }
+
 private:
     std::mutex _mutex;
     std::condition_variable _cv;
     bool _signaled;
+    bool _valid{false};
 };
