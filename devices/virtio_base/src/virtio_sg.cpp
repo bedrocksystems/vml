@@ -13,7 +13,7 @@ Virtio::Sg::DescMetadata::heuristically_track_written_bytes(size_t off, size_t s
     size_t local_prefix_written_bytes = _prefix_written_bytes;
 
     if (off <= local_prefix_written_bytes) {
-        local_prefix_written_bytes += off + size_bytes - local_prefix_written_bytes;
+        local_prefix_written_bytes = off + size_bytes;
         if (local_prefix_written_bytes < _prefix_written_bytes || UINT32_MAX < local_prefix_written_bytes) {
             local_prefix_written_bytes = UINT32_MAX;
         }
