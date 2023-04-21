@@ -60,7 +60,7 @@ namespace VmmAbort {
         VmmAbort::abort_hw_not_supported();                                                                                      \
     } while (0)
 
-#define ABORT_BAD_CONFIG(_BEHAVIOR_, _FMT_, ...)                                                                                 \
+#define ABORT_BAD_CONFIG(_FEATURE_NAME_, _FMT_, ...)                                                                             \
     do {                                                                                                                         \
         FATAL("'%s' is not a valid configuration. " _FMT_, _FEATURE_NAME_, ##__VA_ARGS__);                                       \
         VmmAbort::abort_bad_config();                                                                                            \
