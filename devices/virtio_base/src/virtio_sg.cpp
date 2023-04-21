@@ -24,13 +24,8 @@ Virtio::Sg::DescMetadata::heuristically_track_written_bytes(size_t off, size_t s
 }
 
 Errno
-Virtio::Sg::Buffer::check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t &inout_offset,
+Virtio::Sg::Buffer::check_copy_configuration(size_t size_bytes, size_t &inout_offset,
                                              Virtio::Sg::Buffer::Iterator &out_it) const {
-    if (accessor == nullptr) {
-        ASSERT(false);
-        return Errno::INVAL;
-    }
-
     if (this->size_bytes() < inout_offset + size_bytes) {
         ASSERT(false);
         return Errno::NOMEM;
@@ -239,9 +234,9 @@ Virtio::Sg::Buffer::modify_link(size_t chain_idx, uint64 address, uint32 length)
 }
 
 Errno
-Virtio::Sg::Buffer::ChainAccessor::copy_between_gpa(BulkCopier *copier, ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
+Virtio::Sg::Buffer::ChainAccessor::copy_between_gpa(BulkCopier *copier, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
                                                     const GPA &dst_addr, const GPA &src_addr, size_t &size_bytes) {
-    if ((copier == nullptr) || (dst_accessor == nullptr) || (src_accessor == nullptr)) {
+    if (copier == nullptr) {
         return Errno::INVAL;
     }
 
@@ -249,29 +244,29 @@ Virtio::Sg::Buffer::ChainAccessor::copy_between_gpa(BulkCopier *copier, ChainAcc
     char *src_va{nullptr};
     Errno err;
 
-    err = dst_accessor->gpa_to_va_write(dst_addr, size_bytes, dst_va);
+    err = dst_accessor.gpa_to_va_write(dst_addr, size_bytes, dst_va);
     if (Errno::NONE != err) {
-        dst_accessor->handle_translation_failure(false /* !is_src */, err, dst_addr.value(), size_bytes);
+        dst_accessor.handle_translation_failure(false /* !is_src */, err, dst_addr.value(), size_bytes);
         return err;
     }
 
-    err = src_accessor->gpa_to_va(src_addr, size_bytes, src_va);
+    err = src_accessor.gpa_to_va(src_addr, size_bytes, src_va);
     if (Errno::NONE != err) {
-        src_accessor->handle_translation_failure(true /* is_src */, err, src_addr.value(), size_bytes);
+        src_accessor.handle_translation_failure(true /* is_src */, err, src_addr.value(), size_bytes);
         return err;
     }
 
     copier->bulk_copy(dst_va, src_va, size_bytes);
 
-    err = src_accessor->gpa_to_va_post(src_addr, size_bytes, src_va);
+    err = src_accessor.gpa_to_va_post(src_addr, size_bytes, src_va);
     if (Errno::NONE != err) {
-        src_accessor->handle_translation_post_failure(true /* is_src */, err, src_addr.value(), size_bytes);
+        src_accessor.handle_translation_post_failure(true /* is_src */, err, src_addr.value(), size_bytes);
         return err;
     }
 
-    err = dst_accessor->gpa_to_va_post_write(dst_addr, size_bytes, dst_va);
+    err = dst_accessor.gpa_to_va_post_write(dst_addr, size_bytes, dst_va);
     if (Errno::NONE != err) {
-        dst_accessor->handle_translation_post_failure(false /* !is_src */, err, dst_addr.value(), size_bytes);
+        dst_accessor.handle_translation_post_failure(false /* !is_src */, err, dst_addr.value(), size_bytes);
         return err;
     }
 
@@ -332,14 +327,14 @@ Virtio::Sg::Buffer::ChainAccessor::copy_to_gpa(BulkCopier *copier, const GPA &ds
 
 template<typename T_LINEAR, bool LINEAR_TO_SG, typename SG_MAYBE_CONST>
 Errno
-Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *l, size_t &size_bytes, size_t off,
+Virtio::Sg::Buffer::copy(ChainAccessor &accessor, SG_MAYBE_CONST &sg, T_LINEAR *l, size_t &size_bytes, size_t off,
                          BulkCopier *copier) {
     if (0 == size_bytes) {
         return Errno::NONE;
     }
 
     Virtio::Sg::Buffer::Iterator it = sg.end();
-    Errno err = sg.check_copy_configuration(accessor, size_bytes, off, it);
+    Errno err = sg.check_copy_configuration(size_bytes, off, it);
     if (Errno::NONE != err) {
         return err;
     }
@@ -370,7 +365,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
             // itself. Clients who need access to the particular translation
             // which failed can instrument custom tracking within their overload(s)
             // of [Sg::Buffer::ChainAccessor].
-            if (Errno::NONE != accessor->copy_to_gpa(copier, desc->address + off, l, n_copy)) {
+            if (Errno::NONE != accessor.copy_to_gpa(copier, desc->address + off, l, n_copy)) {
                 return Errno::BADR;
             }
 
@@ -386,7 +381,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
             // itself. Clients who need access to the particular translation
             // which failed can instrument custom tracking within their overload(s)
             // of [Sg::Buffer::ChainAccessor].
-            if (Errno::NONE != accessor->copy_from_gpa(copier, l, desc->address + off, n_copy)) {
+            if (Errno::NONE != accessor.copy_from_gpa(copier, l, desc->address + off, n_copy)) {
                 return Errno::BADR;
             }
         }
@@ -404,33 +399,33 @@ Virtio::Sg::Buffer::copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *
 }
 
 Errno
-Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, Virtio::Sg::Buffer &dst, const void *src, size_t &size_bytes, size_t d_off,
+Virtio::Sg::Buffer::copy(ChainAccessor &dst_accessor, Virtio::Sg::Buffer &dst, const void *src, size_t &size_bytes, size_t d_off,
                          BulkCopier *copier) {
     return copy<const char, true, Virtio::Sg::Buffer>(dst_accessor, dst, static_cast<const char *>(src), size_bytes, d_off,
                                                       copier);
 }
 
 Errno
-Virtio::Sg::Buffer::copy(ChainAccessor *src_accessor, void *dst, const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t s_off,
+Virtio::Sg::Buffer::copy(ChainAccessor &src_accessor, void *dst, const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t s_off,
                          BulkCopier *copier) {
     return copy<char, false, const Virtio::Sg::Buffer>(src_accessor, src, static_cast<char *>(dst), size_bytes, s_off, copier);
 }
 
 Errno
-Virtio::Sg::Buffer::copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor, Virtio::Sg::Buffer &dst,
+Virtio::Sg::Buffer::copy(ChainAccessor &dst_accessor, ChainAccessor &src_accessor, Virtio::Sg::Buffer &dst,
                          const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t d_off, size_t s_off, BulkCopier *copier) {
     if (0 == size_bytes) {
         return Errno::NONE;
     }
 
     Virtio::Sg::Buffer::Iterator d = dst.end();
-    Errno err = dst.check_copy_configuration(dst_accessor, size_bytes, d_off, d);
+    Errno err = dst.check_copy_configuration(size_bytes, d_off, d);
     if (Errno::NONE != err) {
         return err;
     }
 
     Virtio::Sg::Buffer::Iterator s = src.end();
-    err = src.check_copy_configuration(src_accessor, size_bytes, s_off, s);
+    err = src.check_copy_configuration(size_bytes, s_off, s);
     if (Errno::NONE != err) {
         return err;
     }

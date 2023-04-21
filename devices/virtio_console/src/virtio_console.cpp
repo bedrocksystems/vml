@@ -42,7 +42,7 @@ Model::Virtio_console::to_guest(const char *buff, size_t size_bytes) {
 
         // NOTE: [Model::Virtio_console] is a concrete instantiation of
         // [Virtio::Sg::Buffer::ChainAccessor].
-        err = Virtio::Sg::Buffer::copy(this, _rx_buff, buff + buf_idx, n_copy);
+        err = Virtio::Sg::Buffer::copy(*this, _rx_buff, buff + buf_idx, n_copy);
         _rx_buff.conclude_chain_use(device_queue(RX));
         assert_irq();
 
@@ -81,7 +81,7 @@ Model::Virtio_console::from_guest(char *out_buf, size_t size_bytes) {
         if (n_copy > 0) {
             // NOTE: [Model::Virtio_console] is a concrete instantiation of
             // [Virtio::Sg::Buffer::ChainAccessor].
-            err = Virtio::Sg::Buffer::copy(this, out_buf + was_read, _tx_buff, n_copy, _tx_buff_progress);
+            err = Virtio::Sg::Buffer::copy(*this, out_buf + was_read, _tx_buff, n_copy, _tx_buff_progress);
         }
         if (Errno::NONE != err || 0 == n_copy) {
             _tx_buff.conclude_chain_use(device_queue(TX));

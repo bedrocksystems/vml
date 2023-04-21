@@ -204,7 +204,7 @@ public:
     class ChainAccessor : public GuestPhysicalToVirtual {
     public:
         virtual ~ChainAccessor() {}
-        static Errno copy_between_gpa(BulkCopier *copier, ChainAccessor *dst_accessor, ChainAccessor *src_accessor,
+        static Errno copy_between_gpa(BulkCopier *copier, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
                                       const GPA &dst_addr, const GPA &src_addr, size_t &size_bytes);
         Errno copy_from_gpa(BulkCopier *copier, char *dst_va, const GPA &src_addr, size_t &size_bytes);
         Errno copy_to_gpa(BulkCopier *copier, const GPA &dst_addr, const char *src_va, size_t &size_bytes);
@@ -225,21 +225,21 @@ public:
 
 public:
     // Copy [size_bytes] bytes from [src] Sg::Buffer to [dst] Sg::Buffer.
-    static Errno copy(ChainAccessor *dst_accessor, ChainAccessor *src_accessor, Virtio::Sg::Buffer &dst,
+    static Errno copy(ChainAccessor &dst_accessor, ChainAccessor &src_accessor, Virtio::Sg::Buffer &dst,
                       const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t d_off = 0, size_t s_off = 0,
                       BulkCopier *copier = nullptr);
 
     // Copy [size_bytes] bytes from a linear buffer to an Sg::Buffer.
-    static Errno copy(ChainAccessor *dst_accessor, Virtio::Sg::Buffer &dst, const void *src, size_t &size_bytes, size_t d_off = 0,
+    static Errno copy(ChainAccessor &dst_accessor, Virtio::Sg::Buffer &dst, const void *src, size_t &size_bytes, size_t d_off = 0,
                       BulkCopier *copier = nullptr);
 
     // Copt [size_bytes] bytes from an Sg::Buffer to linear buffer.
-    static Errno copy(ChainAccessor *src_accessor, void *dst, const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t s_off = 0,
+    static Errno copy(ChainAccessor &src_accessor, void *dst, const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t s_off = 0,
                       BulkCopier *copier = nullptr);
 
 private:
     template<typename T_LINEAR, bool LINEAR_TO_SG, typename SG_MAYBE_CONST>
-    static Errno copy(ChainAccessor *accessor, SG_MAYBE_CONST &sg, T_LINEAR *l, size_t &size_bytes, size_t off,
+    static Errno copy(ChainAccessor &accessor, SG_MAYBE_CONST &sg, T_LINEAR *l, size_t &size_bytes, size_t off,
                       BulkCopier *copier);
 
 public:
@@ -293,7 +293,7 @@ private:
 
     // Hoist some static checks out of [Sg::Buffer::copy] to reduce cognitive complexity to
     // an acceptable level.
-    Errno check_copy_configuration(ChainAccessor *accessor, size_t size_bytes, size_t &inout_offset, Iterator &out_it) const;
+    Errno check_copy_configuration(size_t size_bytes, size_t &inout_offset, Iterator &out_it) const;
 
     // Check whether reading from the descriptor buffer /should/ be allowed based
     // on the supplied [flags].
