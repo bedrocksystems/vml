@@ -676,7 +676,7 @@ public:
     GicD(IRQCtlrVersion const version, uint16 num_vcpus, uint16 conf_irqs = MAX_IRQ)
         : Irq_controller("GICD"), _version(version), _num_vcpus(num_vcpus), _configured_irqs(compute_irq_lines(conf_irqs)) {}
 
-    ~GicD() {
+    ~GicD() override {
         delete[] _local;
         delete[] _spi;
     }
@@ -707,22 +707,22 @@ public:
         return true;
     }
 
-    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
-    virtual void reset(const VcpuCtx *) override;
-    virtual Type type() const override { return IRQ_CONTROLLER; }
+    Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
+    void reset(const VcpuCtx *) override;
+    Type type() const override { return IRQ_CONTROLLER; }
 
-    virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
-    virtual bool config_spi(uint32 vintid, bool hw, uint16 pintid, bool edge) override;
-    virtual bool assert_ppi(Vcpu_id, uint32) override;
-    virtual bool assert_global_line(uint32) override;
-    virtual void deassert_line_ppi(Vcpu_id, uint32) override;
-    virtual void deassert_global_line(uint32) override;
-    virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id) override;
-    virtual void disable_cpu(Vcpu_id) override;
-    virtual void assert_msi(uint64, uint32) override { ABORT_WITH("GICD: no support for MSI yet"); }
+    bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
+    bool config_spi(uint32 vintid, bool hw, uint16 pintid, bool edge) override;
+    bool assert_ppi(Vcpu_id, uint32) override;
+    bool assert_global_line(uint32) override;
+    void deassert_line_ppi(Vcpu_id, uint32) override;
+    void deassert_global_line(uint32) override;
+    void enable_cpu(Cpu_irq_interface *, Vcpu_id) override;
+    void disable_cpu(Vcpu_id) override;
+    void assert_msi(uint64, uint32) override { ABORT_WITH("GICD: no support for MSI yet"); }
 
-    virtual bool signal_eoi(uint8) override { return false; }
-    virtual bool wait_for_eoi(uint8) override { return false; }
+    bool signal_eoi(uint8) override { return false; }
+    bool wait_for_eoi(uint8) override { return false; }
 
     bool any_irq_active(Vcpu_id);
     bool has_irq_to_inject(Vcpu_id cpu_id) { return highest_irq(cpu_id, false) != nullptr; }
@@ -814,21 +814,19 @@ public:
     GicR(GicD &gic, Vcpu_id cpu_id, CpuAffinity aff, bool last)
         : Local_Irq_controller("GICR"), _gic_d(&gic), _vcpu_id(cpu_id), _aff(aff), _last(last) {}
 
-    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
+    Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
 
-    virtual void reset(const VcpuCtx *) override {}
-    virtual Type type() const override { return IRQ_CONTROLLER; }
+    void reset(const VcpuCtx *) override {}
+    Type type() const override { return IRQ_CONTROLLER; }
 
-    virtual bool can_receive_irq() const override;
+    bool can_receive_irq() const override;
 
-    virtual void assert_vector(uint8 irq_id, bool) override { _gic_d->assert_ppi(_vcpu_id, irq_id); }
-    virtual uint8 int_ack() override { ABORT_WITH("interrupt ACK shouldn't be called on the GICR"); }
-    virtual bool int_pending(uint8 *) override {
-        return _gic_d->has_irq_in_injection(_vcpu_id) or _gic_d->has_irq_to_inject(_vcpu_id);
-    }
+    void assert_vector(uint8 irq_id, bool) override { _gic_d->assert_ppi(_vcpu_id, irq_id); }
+    uint8 int_ack() override { ABORT_WITH("interrupt ACK shouldn't be called on the GICR"); }
+    bool int_pending(uint8 *) override { return _gic_d->has_irq_in_injection(_vcpu_id) or _gic_d->has_irq_to_inject(_vcpu_id); }
 
-    virtual void nmi_ack() override { ABORT_WITH("NMI ACK shouldn't be called on the GICR"); }
-    virtual bool nmi_pending() override {
+    void nmi_ack() override { ABORT_WITH("NMI ACK shouldn't be called on the GICR"); }
+    bool nmi_pending() override {
         return false; // no NMI on ARM
     }
 };

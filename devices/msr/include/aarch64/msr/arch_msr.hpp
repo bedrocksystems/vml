@@ -19,7 +19,7 @@ class Msr::CntpctEl0 : public RegisterBase {
 public:
     explicit CntpctEl0() : RegisterBase("CNTPCT_EL0", CNTPCT_EL0) {}
 
-    virtual Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override {
+    Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override {
         if (access != Vbus::READ)
             return Err::ACCESS_ERR;
 
@@ -27,7 +27,7 @@ public:
         return Err::OK;
     }
 
-    virtual void reset(const VcpuCtx*) override {}
+    void reset(const VcpuCtx*) override {}
 };
 
 class Msr::CntpTval : public Register {
@@ -39,7 +39,7 @@ public:
     CntpTval(const char* name, Msr::RegisterId id, Model::AA64Timer& t)
         : Register(name, id, true, 0, CNTP_TVAL_MASK), _ptimer(&t) {}
 
-    virtual Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) {
+    Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override {
         if (access == Vbus::READ) {
             uint64 cval = _ptimer->get_cval(), curr = static_cast<uint64>(clock()) - vctx->regs->tmr_cntvoff();
             value = (cval - curr) & CNTP_TVAL_MASK;

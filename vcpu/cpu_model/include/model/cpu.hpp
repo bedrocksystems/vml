@@ -241,7 +241,7 @@ public:
     void wait_for_interrupt(bool will_timeout, uint64 timeout_absolut);
     void notify_interrupt_pending() override;
 
-    virtual Model::Local_Irq_controller *local_irq_ctlr() override { return _lirq_ctlr; }
+    Model::Local_Irq_controller *local_irq_ctlr() override { return _lirq_ctlr; }
 
     virtual void ctrl_register_trap(bool, Request::Requestor, uint64, Reg_selection) {}
 

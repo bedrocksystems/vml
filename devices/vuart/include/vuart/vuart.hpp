@@ -53,7 +53,7 @@ public:
     Dummy(const char *name, uint64 write_off, uint64 read_default_value)
         : Vuart(name), _write_off(write_off), _read_default_value(read_default_value) {}
 
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx *, Vbus::Space, mword off, uint8, uint64 &value) override {
+    Vbus::Err access(Vbus::Access access, const VcpuCtx *, Vbus::Space, mword off, uint8, uint64 &value) override {
         if (access != Vbus::READ && access != Vbus::WRITE)
             return Vbus::ACCESS_ERR;
 
@@ -67,7 +67,7 @@ public:
         return Vbus::OK;
     }
 
-    virtual void reset(const VcpuCtx *) override {}
+    void reset(const VcpuCtx *) override {}
 
 private:
     const uint64 _write_off;

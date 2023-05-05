@@ -100,10 +100,10 @@ public:
     }
 
 private:
-    virtual bool can_fire() const override { return _cntv_ctl.can_fire(); }
-    virtual bool is_irq_status_set() const override { return _cntv_ctl.status(); };
-    virtual void set_irq_status(bool set) override { _cntv_ctl.set_status(set); }
-    virtual uint64 get_timeout_abs() const override { return get_cval(); }
+    bool can_fire() const override { return _cntv_ctl.can_fire(); }
+    bool is_irq_status_set() const override { return _cntv_ctl.status(); };
+    void set_irq_status(bool set) override { _cntv_ctl.set_status(set); }
+    uint64 get_timeout_abs() const override { return get_cval(); }
 
     CntvCtl _cntv_ctl;
     uint64 _cval;

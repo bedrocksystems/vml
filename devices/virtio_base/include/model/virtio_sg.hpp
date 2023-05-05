@@ -203,7 +203,7 @@ public:
 
     class ChainAccessor : public GuestPhysicalToVirtual {
     public:
-        virtual ~ChainAccessor() {}
+        ~ChainAccessor() override {}
         static Errno copy_between_gpa(BulkCopier *copier, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
                                       const GPA &dst_addr, const GPA &src_addr, size_t &size_bytes);
         Errno copy_from_gpa(BulkCopier *copier, char *dst_va, const GPA &src_addr, size_t &size_bytes);
