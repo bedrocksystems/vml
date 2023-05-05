@@ -34,12 +34,12 @@ public:
      *  \param ctx The platform-specific context
      *  \return true - no failure possible at the moment
      */
-    bool init(const Platform_ctx*) {
+    bool init(const Platform_ctx *) {
         _valid = true;
         return true;
     }
 
-    Errno create(const Platform_ctx*) {
+    Errno create(const Platform_ctx *) {
         _valid = true;
         return Errno::NONE;
     }
@@ -47,7 +47,7 @@ public:
     void destroy() { _valid = false; }
 
     // To stay compatible with zeta, we can accept a ctx
-    Errno destroy(const Platform_ctx*) {
+    Errno destroy(const Platform_ctx *) {
         destroy();
         return Errno::NONE;
     }
