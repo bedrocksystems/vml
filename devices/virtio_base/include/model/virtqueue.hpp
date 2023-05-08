@@ -421,8 +421,12 @@ public:
     Queue(void *descriptor_base, void *available_base, void *used_base, uint16 sz)
         : _descriptor_base(descriptor_base), _available_base(available_base), _used_base(used_base),
           _available(Virtio::Available(available_base, sz)), _used(Virtio::Used(used_base, sz)), _size(sz) {
-        ASSERT(descriptor_base != nullptr && available_base != nullptr && used_base != nullptr && _size != 0 && _size <= 32768
-               && (_size & (_size - 1)) == 0);
+        ASSERT(descriptor_base != nullptr);
+        ASSERT(available_base != nullptr);
+        ASSERT(used_base != nullptr);
+        ASSERT(_size != 0);
+        ASSERT(_size <= 32768);
+        ASSERT((_size & (_size - 1)) == 0);
     }
 
     // [Virtio::Queue]s are *affine* - meaning that they may not be copied

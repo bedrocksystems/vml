@@ -266,7 +266,7 @@ public:
         return true;
     }
 
-    virtual void to_guest(char) override;
+    void to_guest(char) override;
 
     /*! \brief MMIO access function - adhere to the Virtual bus interface
      *  \param access type of access (R/W/X)
@@ -277,12 +277,11 @@ public:
      *  \param res Input or output value (depending on read or write)
      *  \return status of the access
      */
-    virtual Vbus::Err access(Vbus::Access access, const VcpuCtx *vctx, Vbus::Space sp, mword off, uint8 size,
-                             uint64 &value) override;
+    Vbus::Err access(Vbus::Access access, const VcpuCtx *vctx, Vbus::Space sp, mword off, uint8 size, uint64 &value) override;
 
     /*! \brief Reset the PL011 to its initial state
      */
-    virtual void reset(const VcpuCtx *vctx) override {
+    void reset(const VcpuCtx *vctx) override {
         Platform::MutexGuard guard(_state_lock);
 
         _ilpr = 0;
@@ -316,7 +315,7 @@ public:
         }
     }
 
-    virtual void shutdown() override {
+    void shutdown() override {
         if (_lifecycle_callbacks != nullptr) {
             _lifecycle_callbacks->shutdown();
         }

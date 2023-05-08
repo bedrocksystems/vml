@@ -14,8 +14,8 @@ Msr::Err
 Msr::SctlrEl1::access(Vbus::Access access, const VcpuCtx *, uint64 &) {
     ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
 
-    return Msr::Err::UPDATE_REGISTER; // Tell the VCPU to update the relevant physical
-                                      // register
+    return Msr::Err::UPDATE_REGISTER;      // Tell the VCPU to update the relevant physical
+                                           // register
 }
 
 bool

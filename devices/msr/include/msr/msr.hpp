@@ -363,7 +363,7 @@ public:
     Register(const char* name, Id const reg_id, bool const writable, uint64 const reset_value, uint64 const mask = ~0ULL)
         : RegisterBase(name, reg_id), _value(reset_value), _reset_value(reset_value), _write_mask(mask), _writable(writable) {}
 
-    virtual Err access(Vbus::Access access, const VcpuCtx*, uint64& value) override {
+    Err access(Vbus::Access access, const VcpuCtx*, uint64& value) override {
         if (access == Vbus::WRITE && !_writable)
             return Err::ACCESS_ERR;
 
@@ -377,7 +377,7 @@ public:
         return Err::OK;
     }
 
-    virtual void reset(const VcpuCtx*) override { _value = _reset_value; }
+    void reset(const VcpuCtx*) override { _value = _reset_value; }
 };
 
 class Msr::Set_way_flush_reg : public Msr::Register {
@@ -388,7 +388,7 @@ public:
             vbus = &b;
     }
 
-    virtual Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override {
+    Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override {
         Err ret = Register::access(access, vctx, value);
 
         if (access == Vbus::Access::WRITE) {
@@ -470,7 +470,7 @@ public:
         }
     }
 
-    virtual Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& value) override {
+    Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& value) override {
         if (access == Vbus::WRITE)
             return Err::ACCESS_ERR;
 
@@ -499,7 +499,7 @@ public:
         return Err::OK;
     }
 
-    virtual void reset(const VcpuCtx*) override {}
+    void reset(const VcpuCtx*) override {}
 };
 
 class Msr::IccSgi1rEl1 : public RegisterBase {
@@ -509,9 +509,9 @@ private:
 public:
     explicit IccSgi1rEl1(Model::GicD& gic) : RegisterBase("ICC_SGI1R_EL1", ICC_SGI1R_EL1), _gic(&gic) {}
 
-    virtual Err access(Vbus::Access, const VcpuCtx*, uint64&) override;
+    Err access(Vbus::Access, const VcpuCtx*, uint64&) override;
 
-    virtual void reset(const VcpuCtx*) override {}
+    void reset(const VcpuCtx*) override {}
 };
 
 class Msr::CntpCtl : public Register {
@@ -521,7 +521,7 @@ private:
 public:
     CntpCtl(const char* name, Msr::RegisterId id, Model::AA64Timer& t) : Register(name, id, true, 0, 0b11), _ptimer(&t) {}
 
-    virtual Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& value) {
+    Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& value) override {
         _value = _ptimer->get_ctl();
 
         Err err = Register::access(access, vcpu_ctx, value);
@@ -540,7 +540,7 @@ private:
 public:
     CntpCval(const char* name, Msr::RegisterId id, Model::AA64Timer& t) : Register(name, id, true, 0), _ptimer(&t) {}
 
-    virtual Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& value) {
+    Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& value) override {
         _value = _ptimer->get_cval();
 
         Err err = Register::access(access, vcpu_ctx, value);
@@ -556,20 +556,20 @@ class Msr::WtrappedMsr : public Msr::RegisterBase {
 public:
     using Msr::RegisterBase::RegisterBase;
 
-    virtual Err access(Vbus::Access access, const VcpuCtx*, uint64&) override {
+    Err access(Vbus::Access access, const VcpuCtx*, uint64&) override {
         ASSERT(access == Vbus::Access::WRITE); // We only trap writes at the moment
         return Err::UPDATE_REGISTER;           // Tell the VCPU to update the relevant physical
                                                // register
     }
-    virtual void reset(const VcpuCtx*) override {}
+    void reset(const VcpuCtx*) override {}
 };
 
 class Msr::SctlrEl1 : public Msr::RegisterBase {
 public:
     SctlrEl1(const char* name, Msr::Id reg_id) : Msr::RegisterBase(name, reg_id) {}
 
-    virtual Err access(Vbus::Access access, const VcpuCtx* vcpu, uint64& res) override;
-    virtual void reset(const VcpuCtx*) override {}
+    Err access(Vbus::Access access, const VcpuCtx* vcpu, uint64& res) override;
+    void reset(const VcpuCtx*) override {}
 };
 
 class Msr::MdscrEl1 : public Msr::Register {
@@ -580,7 +580,7 @@ private:
 public:
     MdscrEl1() : Msr::Register("MDSCR_EL1", MDSCR_EL1, true, 0x0ULL) {}
 
-    virtual Err access(Vbus::Access access, const VcpuCtx* vcpu, uint64& value) override {
+    Err access(Vbus::Access access, const VcpuCtx* vcpu, uint64& value) override {
 
         if (access == Vbus::WRITE && mdscr_ss_enabled(value)) {
             if (!mdscr_ss_enabled(_value)) {

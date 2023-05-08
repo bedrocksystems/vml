@@ -14,9 +14,9 @@
 #include <model/vcpu_types.hpp>
 
 namespace Lifecycle {
-    void notify_system_reset(const VcpuCtx&) {
+    void notify_system_reset(const VcpuCtx &) {
     }
-    void notify_system_off(const VcpuCtx&) {
+    void notify_system_off(const VcpuCtx &) {
     }
 
     /* Those intefaces are not yet implemented */

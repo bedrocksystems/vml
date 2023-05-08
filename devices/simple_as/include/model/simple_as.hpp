@@ -542,7 +542,7 @@ public:
      *  \post Ownership unchanged
      *  \return GUEST_PHYSICAL_STATIC_MEMORY
      */
-    virtual Type type() const override { return GUEST_PHYSICAL_STATIC_MEMORY; }
+    Type type() const override { return GUEST_PHYSICAL_STATIC_MEMORY; }
 
     /*! \brief Access function inherited from the parent class
      *  \pre Partial ownership of this device
@@ -551,15 +551,13 @@ public:
      *  \note This function can only be called in case of a guest page fault. But, this
      *        address space being static, this function shouldn't be called.
      */
-    virtual Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override {
-        return Vbus::ACCESS_ERR;
-    }
+    Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override { return Vbus::ACCESS_ERR; }
 
     /*! \brief Reset the AS - nothing is performed for now
      *  \pre Partial ownership of this device
      *  \post Ownership unchanged
      */
-    virtual void reset(const VcpuCtx *) override {}
+    void reset(const VcpuCtx *) override {}
 
     /*! \brief Converts a GPA to an address valid for the VMM
      *  \pre Partial ownership of this device
@@ -601,11 +599,11 @@ protected:
     void flush_guest_as();
     bool mapped() const { return (_vmm_view != nullptr); }
 
-    const bool _read_only;      /*!< Is the AS read-only from the guest point of view? */
-    const bool _flushable;      /*!< Are full AS flush operations needed/allowed? */
-    const bool _flush_on_write; /*!< Do we need to flush on write? */
-    char *_vmm_view{nullptr};   /*!< base host mapping of base gpa. */
-    Range<mword> _as;           /*!< Range(gpa RAM base, guest RAM size) */
+    const bool _read_only;            /*!< Is the AS read-only from the guest point of view? */
+    const bool _flushable;            /*!< Are full AS flush operations needed/allowed? */
+    const bool _flush_on_write;       /*!< Do we need to flush on write? */
+    char *_vmm_view{nullptr};         /*!< base host mapping of base gpa. */
+    Range<mword> _as;                 /*!< Range(gpa RAM base, guest RAM size) */
 
     Platform::Mem::MemDescr _mobject; /*!< BHV Memory Range object behind this guest range */
 };

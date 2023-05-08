@@ -270,7 +270,7 @@ Vcpu::Roundup::roundup_parallel(Vcpu_id id) {
             parallel_callers--;
         }
     } else {
-        roundup_info.yield(); // Signal that we are waiting and not progressing anymore
+        roundup_info.yield();   // Signal that we are waiting and not progressing anymore
         parallel_info.count_sem.acquire();
         roundup_info.unyield(); // Progress resumed, we are not waiting anymore
     }

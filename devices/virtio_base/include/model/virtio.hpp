@@ -80,8 +80,8 @@ protected:
         }
     }
 
-    virtual Vbus::Err access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset, uint8 const size,
-                             uint64 &value) override {
+    Vbus::Err access(Vbus::Access const access, const VcpuCtx *, Vbus::Space, mword const offset, uint8 const size,
+                     uint64 &value) override {
 
         bool ok = _transport->access(access, offset, size, value, _dev_state);
         if (ok)
@@ -132,5 +132,5 @@ public:
         return Errno::NONE;
     }
 
-    virtual Errno deinit() override { return Errno::NONE; }
+    Errno deinit() override { return Errno::NONE; }
 };

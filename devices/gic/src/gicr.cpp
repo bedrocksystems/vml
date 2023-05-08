@@ -54,7 +54,7 @@ enum {
     GICR_ICFGR1_END = 0x10c07,
     GICR_IGRPMODR0 = 0x10d00, // Secure state only, we can ignore writes
     GICR_IGRPMODR0_END = 0x10d03,
-    GICR_NSACR = 0x10e00, // Secure state only, we can ignore writes
+    GICR_NSACR = 0x10e00,     // Secure state only, we can ignore writes
     GICR_NSACR_END = 0x10e03,
 };
 
@@ -97,7 +97,7 @@ Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const val
                             .irq_max = MAX_SGI + MAX_PPI,
                             .offset = offset,
                             .bytes = bytes,
-                            .irq_per_bytes = 8, // Work with a bitfield by default
+                            .irq_per_bytes = 8,           // Work with a bitfield by default
                             .configured_irqs = gic.configured_irqs()};
     acc.configure_access(GicD::AccessType::PRIVATE_ONLY); // default
 
@@ -198,7 +198,7 @@ Model::GicR::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) co
                             .irq_max = MAX_SGI + MAX_PPI,
                             .offset = offset,
                             .bytes = bytes,
-                            .irq_per_bytes = 8, // Work with a bitfield by default
+                            .irq_per_bytes = 8,           // Work with a bitfield by default
                             .configured_irqs = gic.configured_irqs()};
     acc.configure_access(GicD::AccessType::PRIVATE_ONLY); // default
 

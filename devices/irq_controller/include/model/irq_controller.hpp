@@ -53,7 +53,7 @@ namespace Model {
 class Model::Irq_controller : public Vbus::Device {
 public:
     explicit Irq_controller(const char *name) : Vbus::Device(name) {}
-    virtual ~Irq_controller() {}
+    ~Irq_controller() override {}
 
     virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) = 0;
     virtual bool config_spi(uint32 irq_id, bool hw, uint16 pintid, bool edge) = 0;
@@ -73,7 +73,7 @@ public:
 class Model::Local_Irq_controller : public Vbus::Device {
 public:
     explicit Local_Irq_controller(const char *name) : Vbus::Device(name) {}
-    virtual ~Local_Irq_controller() {}
+    ~Local_Irq_controller() override {}
 
     virtual bool can_receive_irq() const = 0;
 
