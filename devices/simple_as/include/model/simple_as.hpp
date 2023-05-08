@@ -599,11 +599,11 @@ protected:
     void flush_guest_as();
     bool mapped() const { return (_vmm_view != nullptr); }
 
-    const bool _read_only;      /*!< Is the AS read-only from the guest point of view? */
-    const bool _flushable;      /*!< Are full AS flush operations needed/allowed? */
-    const bool _flush_on_write; /*!< Do we need to flush on write? */
-    char *_vmm_view{nullptr};   /*!< base host mapping of base gpa. */
-    Range<mword> _as;           /*!< Range(gpa RAM base, guest RAM size) */
+    const bool _read_only;            /*!< Is the AS read-only from the guest point of view? */
+    const bool _flushable;            /*!< Are full AS flush operations needed/allowed? */
+    const bool _flush_on_write;       /*!< Do we need to flush on write? */
+    char *_vmm_view{nullptr};         /*!< base host mapping of base gpa. */
+    Range<mword> _as;                 /*!< Range(gpa RAM base, guest RAM size) */
 
     Platform::Mem::MemDescr _mobject; /*!< BHV Memory Range object behind this guest range */
 };

@@ -345,7 +345,7 @@ Model::GicD::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const b
                       .irq_max = MAX_SGI + MAX_SPI + MAX_PPI,
                       .offset = offset,
                       .bytes = bytes,
-                      .irq_per_bytes = 8, // Work with a bitfield by default
+                      .irq_per_bytes = 8,        // Work with a bitfield by default
                       .configured_irqs = configured_irqs()};
     acc.configure_access(GicD::AccessType::ALL); // default
 
@@ -501,7 +501,7 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
                       .irq_max = MAX_SGI + MAX_SPI + MAX_PPI,
                       .offset = offset,
                       .bytes = bytes,
-                      .irq_per_bytes = 8, // Work with a bitfield by default
+                      .irq_per_bytes = 8,        // Work with a bitfield by default
                       .configured_irqs = configured_irqs()};
     acc.configure_access(GicD::AccessType::ALL); // default
 
