@@ -475,8 +475,12 @@ public:
     virtual bool is_device_queue() const = 0;
     inline bool is_driver_queue() const { return not(is_device_queue()); }
 
-    // NOTE: [Virtio::DriverQueue] will ignore the [len] parameter
     virtual void send(Virtio::Descriptor &&desc, uint32 len) = 0;
+    /** This overload of [send] is useful for [Virtio::DriverQueue]s - which ignore the [len]
+     *  argument - or [Virtio::DeviceQueue]s returning a read-only chain.
+     */
+    void send(Virtio::Descriptor &&desc) { send(cxx::move(desc), 0); }
+
     virtual Errno recv(Virtio::Descriptor &desc) = 0;
 
 protected:
