@@ -535,6 +535,7 @@ public:
     DeviceQueue &operator=(DeviceQueue &&other) = default;
     DeviceQueue(DeviceQueue &&other) = default;
 
+    using Queue::send;
     void send(Virtio::Descriptor &&desc, uint32 len) override;
     Errno recv(Virtio::Descriptor &desc) override;
 
@@ -581,6 +582,7 @@ public:
     // only be invoked once per entry within the virtio queue.
     Virtio::Descriptor initialize_descriptor(uint16 desc_idx) const;
 
+    using Queue::send;
     // NOTE: [Virtio::DriverQueue] will ignore the [len] parameter
     void send(Virtio::Descriptor &&desc, uint32) override;
     Errno recv(Virtio::Descriptor &desc) override;
