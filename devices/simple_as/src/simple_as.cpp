@@ -22,6 +22,13 @@ Model::SimpleAS::single_mapped_read(void* ptr, uint8 size) {
     ASSERT(ptr != nullptr);
 
     uint64 ret;
+
+    if (__UNLIKELY__((reinterpret_cast<mword>(ptr) % size) != 0)) {
+        // Unaligned data
+        memcpy(&ret, ptr, size);
+        return ret;
+    }
+
     switch (size) {
     case sizeof(uint8):
         ret = *(reinterpret_cast<uint8*>(ptr));
@@ -48,22 +55,27 @@ Model::SimpleAS::single_mapped_write(void* ptr, uint8 size, uint64 value) {
     ASSERT(size <= sizeof(uint64));
     ASSERT(ptr != nullptr);
 
-    switch (size) {
-    case sizeof(uint8):
-        *(reinterpret_cast<uint8*>(ptr)) = static_cast<uint8>(value);
-        break;
-    case sizeof(uint16):
-        *(reinterpret_cast<uint16*>(ptr)) = static_cast<uint16>(value);
-        break;
-    case sizeof(uint32):
-        *(reinterpret_cast<uint32*>(ptr)) = static_cast<uint32>(value);
-        break;
-    case sizeof(uint64):
-        *(reinterpret_cast<uint64*>(ptr)) = static_cast<uint64>(value);
-        break;
-    default:
-        ABORT_WITH("Write size %u is not supported", size);
-        __UNREACHED__;
+    if (__UNLIKELY__((reinterpret_cast<mword>(ptr) % size) != 0)) {
+        // Unaligned data
+        memcpy(ptr, &value, size);
+    } else {
+        switch (size) {
+        case sizeof(uint8):
+            *(reinterpret_cast<uint8*>(ptr)) = static_cast<uint8>(value);
+            break;
+        case sizeof(uint16):
+            *(reinterpret_cast<uint16*>(ptr)) = static_cast<uint16>(value);
+            break;
+        case sizeof(uint32):
+            *(reinterpret_cast<uint32*>(ptr)) = static_cast<uint32>(value);
+            break;
+        case sizeof(uint64):
+            *(reinterpret_cast<uint64*>(ptr)) = static_cast<uint64>(value);
+            break;
+        default:
+            ABORT_WITH("Write size %u is not supported", size);
+            __UNREACHED__;
+        }
     }
 
     icache_sync_range(ptr, size);
@@ -72,7 +84,6 @@ Model::SimpleAS::single_mapped_write(void* ptr, uint8 size, uint64 value) {
 
 uint64
 Model::SimpleAS::single_access_read(uint64 off, uint8 size) const {
-    ASSERT(off % size == 0);
     ASSERT(size <= sizeof(uint64));
 
     uint64 ret;
@@ -93,7 +104,6 @@ Model::SimpleAS::single_access_read(uint64 off, uint8 size) const {
 
 void
 Model::SimpleAS::single_access_write(uint64 off, uint8 size, uint64 value) const {
-    ASSERT(off % size == 0);
     ASSERT(size <= sizeof(uint64));
 
     void* ptr;
