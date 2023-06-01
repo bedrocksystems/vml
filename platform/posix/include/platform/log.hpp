@@ -30,7 +30,7 @@
 #include <platform/compiler.hpp>
 
 namespace Log {
-    enum Log_level {
+    enum LogLevel {
         DEBUG,
         VERBOSE,
         INFO,
@@ -39,7 +39,7 @@ namespace Log {
         FATAL,
     };
 
-    __attribute__((format(printf, 3, 4))) inline void _log(Log_level, bool enabled, const char *fmt, ...) {
+    __attribute__((format(printf, 3, 4))) inline void _log(LogLevel, bool enabled, const char *fmt, ...) {
         if (!enabled)
             return;
 
@@ -49,7 +49,7 @@ namespace Log {
         va_end(args);
     }
 
-    __attribute__((format(printf, 3, 0))) inline void _vlog(Log_level, bool enabled, const char *fmt, va_list vap) {
+    __attribute__((format(printf, 3, 0))) inline void _vlog(LogLevel, bool enabled, const char *fmt, va_list vap) {
         if (!enabled)
             return;
 
