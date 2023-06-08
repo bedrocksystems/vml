@@ -196,7 +196,7 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
 
         callback->chain_walking_cb(err, desc.address, desc.length, desc.flags, meta._original_next, extra);
 
-        if (err != Errno::NONE) {
+        if (Errno::NONE != err) {
             conclude_chain_use(vq, true);
             return err;
         }
@@ -325,122 +325,36 @@ Virtio::Sg::Buffer::ChainAccessor::copy_to_gpa(BulkCopier *copier, const GPA &ds
     return Errno::NONE;
 }
 
-template<typename T_LINEAR, bool LINEAR_TO_SG, typename SG_MAYBE_CONST>
 Errno
-Virtio::Sg::Buffer::copy(ChainAccessor &accessor, SG_MAYBE_CONST &sg, T_LINEAR *l, size_t &size_bytes, size_t off,
-                         BulkCopier *copier) {
-    if (0 == size_bytes) {
-        return Errno::NONE;
-    }
-
-    Virtio::Sg::Buffer::Iterator it = sg.end();
-    Errno err = sg.check_copy_configuration(size_bytes, off, it);
-    if (Errno::NONE != err) {
-        return err;
-    }
-
-    auto default_copier = BulkCopierDefault();
-    if (not copier) {
-        copier = &default_copier;
-    }
-
-    size_t rem = size_bytes;
-    size_bytes = 0;
-
-    while (rem and it != sg.end()) {
-        auto *desc = it.desc_ptr();
-        auto *meta = it.meta_ptr();
-
-        size_t n_copy = min(desc->length - off, rem);
-
-        // Register the read/write to the [sg] buffer (depending on whether it is
-        // a copy /from/ or /to/ the buffer).
-        if constexpr (LINEAR_TO_SG) {
-            if (sg.should_only_read(desc->flags)) {
-                return Errno::PERM;
-            }
-
-            // NOTE: this function ensures that [copier] is non-null which means
-            // that any non-[Errno::NONE] error code came from the address translation
-            // itself. Clients who need access to the particular translation
-            // which failed can instrument custom tracking within their overload(s)
-            // of [Sg::Buffer::ChainAccessor].
-            if (Errno::NONE != accessor.copy_to_gpa(copier, desc->address + off, l, n_copy)) {
-                return Errno::BADR;
-            }
-
-            meta->heuristically_track_written_bytes(off, n_copy);
-        } else {
-            if (sg.should_only_write(desc->flags)) {
-                WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
-                     "debugging purposes.");
-            }
-
-            // NOTE: this function ensures that [copier] is non-null which means
-            // that any non-[Errno::NONE] error code came from the address translation
-            // itself. Clients who need access to the particular translation
-            // which failed can instrument custom tracking within their overload(s)
-            // of [Sg::Buffer::ChainAccessor].
-            if (Errno::NONE != accessor.copy_from_gpa(copier, l, desc->address + off, n_copy)) {
-                return Errno::BADR;
-            }
-        }
-
-        off = 0;
-        rem -= n_copy;
-
-        size_bytes += n_copy;
-        l += n_copy;
-
-        ++it;
-    }
-
+Virtio::Sg::Buffer::start_copy_to_sg_impl(Virtio::Sg::Buffer &dst) const {
+    // NOTE: [try_end_copy_to_impl] does all of the work
+    (void)dst;
     return Errno::NONE;
 }
 
 Errno
-Virtio::Sg::Buffer::copy(ChainAccessor &dst_accessor, Virtio::Sg::Buffer &dst, const void *src, size_t &size_bytes, size_t d_off,
-                         BulkCopier *copier) {
-    return copy<const char, true, Virtio::Sg::Buffer>(dst_accessor, dst, static_cast<const char *>(src), size_bytes, d_off,
-                                                      copier);
-}
-
-Errno
-Virtio::Sg::Buffer::copy(ChainAccessor &src_accessor, void *dst, const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t s_off,
-                         BulkCopier *copier) {
-    return copy<char, false, const Virtio::Sg::Buffer>(src_accessor, src, static_cast<char *>(dst), size_bytes, s_off, copier);
-}
-
-Errno
-Virtio::Sg::Buffer::copy(ChainAccessor &dst_accessor, ChainAccessor &src_accessor, Virtio::Sg::Buffer &dst,
-                         const Virtio::Sg::Buffer &src, size_t &size_bytes, size_t d_off, size_t s_off, BulkCopier *copier) {
-    if (0 == size_bytes) {
-        return Errno::NONE;
-    }
+Virtio::Sg::Buffer::try_end_copy_to_sg_impl(Virtio::Sg::Buffer &dst, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
+                                            size_t &bytes_copied, BulkCopier &copier) const {
+    // We need to copy as much as asked.
+    size_t rem = dst._async_copy_cookie->req_sz();
+    size_t d_off = dst._async_copy_cookie->req_d_off();
+    size_t s_off = dst._async_copy_cookie->req_s_off();
+    bytes_copied = 0;
 
     Virtio::Sg::Buffer::Iterator d = dst.end();
-    Errno err = dst.check_copy_configuration(size_bytes, d_off, d);
+    Errno err = dst.check_copy_configuration(rem, d_off, d);
     if (Errno::NONE != err) {
         return err;
     }
 
-    Virtio::Sg::Buffer::Iterator s = src.end();
-    err = src.check_copy_configuration(size_bytes, s_off, s);
+    Virtio::Sg::Buffer::Iterator s = this->end();
+    err = this->check_copy_configuration(rem, s_off, s);
     if (Errno::NONE != err) {
         return err;
     }
-
-    auto default_copier = BulkCopierDefault();
-    if (copier == nullptr) {
-        copier = &default_copier;
-    }
-
-    // We need to copy as much as asked.
-    size_t rem = size_bytes;
-    size_bytes = 0;
 
     // Iterate over both till we have copied all or any of the buffers is exhausted.
-    while ((rem != 0u) and (d != dst.end()) and (s != src.end())) {
+    while ((rem != 0u) and (d != dst.end()) and (s != this->end())) {
         auto *d_desc = d.desc_ptr();
         auto *d_meta = d.meta_ptr();
         auto *s_desc = s.desc_ptr();
@@ -449,7 +363,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor &dst_accessor, ChainAccessor &src_accesso
 
         if (dst.should_only_read(d_desc->flags)) {
             return Errno::PERM;
-        } else if (src.should_only_write(s_desc->flags)) {
+        } else if (this->should_only_write(s_desc->flags)) {
             WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
                  "debugging purposes.");
         }
@@ -459,7 +373,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor &dst_accessor, ChainAccessor &src_accesso
         // address translation itself. Clients who need access to the particular
         // translation which failed can instrument custom tracking within their
         // overload(s) of [Sg::Buffer::ChainAccessor].
-        err = ChainAccessor::copy_between_gpa(copier, dst_accessor, src_accessor, d_desc->address + d_off,
+        err = ChainAccessor::copy_between_gpa(&copier, dst_accessor, src_accessor, d_desc->address + d_off,
                                               s_desc->address + s_off, n_copy);
         if (Errno::NONE != err) {
             return Errno::BADR;
@@ -468,7 +382,7 @@ Virtio::Sg::Buffer::copy(ChainAccessor &dst_accessor, ChainAccessor &src_accesso
         d_meta->heuristically_track_written_bytes(d_off, n_copy);
 
         rem -= n_copy;
-        size_bytes += n_copy;
+        bytes_copied += n_copy;
 
         // Update the destination offset and check if we need to move to next node.
         d_off += n_copy;
@@ -489,6 +403,302 @@ Virtio::Sg::Buffer::copy(ChainAccessor &dst_accessor, ChainAccessor &src_accesso
 }
 
 Errno
+Virtio::Sg::Buffer::start_copy_to_sg(Virtio::Sg::Buffer &dst, size_t size_bytes, size_t d_off, size_t s_off) const {
+    // NOTE: This error code isn't rich enough to determine the precise mismatch.
+    if (_async_copy_cookie->is_dst() || dst._async_copy_cookie->in_use()) {
+        return Errno::RBUSY;
+    }
+
+    // NOTE: the [&dst] and [this] pointers are only used for later equality testing,
+    // so the [_async_copy_cookie] only needs to track [valid_ptr] for each.
+    _async_copy_cookie->init_sg_src_to_sg_dst(&dst);
+    dst._async_copy_cookie->init_sg_dst_from_sg_src(this, size_bytes, d_off, s_off);
+
+    Errno err = start_copy_to_sg_impl(dst);
+
+    if (Errno::NONE != err) {
+        dst._async_copy_cookie->conclude_dst();
+        _async_copy_cookie->conclude_src();
+    }
+
+    return err;
+}
+
+Errno
+Virtio::Sg::Buffer::try_end_copy_to_sg(Virtio::Sg::Buffer &dst, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
+                                       size_t &bytes_copied, BulkCopier *copier) const {
+    // NOTE: This error code isn't rich enough to determine the precise mismatch.
+    if (!_async_copy_cookie->is_src_to_matching_sg(&dst)) {
+        return Errno::BADR;
+    }
+
+    Errno err;
+    if (0 < dst._async_copy_cookie->req_sz()) {
+        auto default_copier = BulkCopierDefault();
+        if (copier == nullptr) {
+            copier = &default_copier;
+        }
+
+        err = try_end_copy_to_sg_impl(dst, dst_accessor, src_accessor, bytes_copied, *copier);
+    } else {
+        err = Errno::NONE;
+    }
+
+    if (Errno::AGAIN != err) {
+        dst._async_copy_cookie->conclude_dst();
+        _async_copy_cookie->conclude_src();
+    }
+
+    return err;
+}
+
+Errno
+Virtio::Sg::Buffer::copy_to_sg(Virtio::Sg::Buffer &dst, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
+                               size_t &size_bytes, size_t d_off, size_t s_off, BulkCopier *copier) const {
+    Errno err;
+
+    err = start_copy_to_sg(dst, size_bytes, d_off, s_off);
+    if (Errno::NONE != err) {
+        return err;
+    }
+
+    /** NOTE: once we start working with "real" asynchronous implementations we'll likely need more than a fixed number of retries
+     * **/
+    size_t retries = 10;
+    do {
+        err = try_end_copy_to_sg(dst, dst_accessor, src_accessor, size_bytes, copier);
+    } while (retries-- != 0ul && Errno::AGAIN == err);
+
+    return err;
+}
+
+template<typename T_LINEAR, bool LINEAR_TO_SG, typename T_SG>
+Errno
+Virtio::Sg::Buffer::copy_fromto_linear_impl(T_SG *sg, ChainAccessor &accessor, T_LINEAR *l, size_t &bytes_copied,
+                                            BulkCopier &copier) {
+    // We need to copy as much as asked.
+    size_t rem = sg->_async_copy_cookie->req_sz();
+    size_t sg_off = LINEAR_TO_SG ? sg->_async_copy_cookie->req_d_off() : sg->_async_copy_cookie->req_s_off();
+    bytes_copied = 0;
+
+    Virtio::Sg::Buffer::Iterator it = sg->end();
+    Errno err = sg->check_copy_configuration(rem, sg_off, it);
+    if (Errno::NONE != err) {
+        return err;
+    }
+
+    while (rem and it != sg->end()) {
+        auto *desc = it.desc_ptr();
+        auto *meta = it.meta_ptr();
+
+        size_t n_copy = min(desc->length - sg_off, rem);
+
+        // Register the read/write to the [sg] buffer (depending on whether it is
+        // a copy /from/ or /to/ the buffer).
+        if constexpr (LINEAR_TO_SG) {
+            if (sg->should_only_read(desc->flags)) {
+                return Errno::PERM;
+            }
+
+            // NOTE: this function ensures that [copier] is non-null which means
+            // that any non-[Errno::NONE] error code came from the address translation
+            // itself. Clients who need access to the particular translation
+            // which failed can instrument custom tracking within their overload(s)
+            // of [Sg::Buffer::ChainAccessor].
+            if (Errno::NONE != accessor.copy_to_gpa(&copier, desc->address + sg_off, l, n_copy)) {
+                return Errno::BADR;
+            }
+
+            meta->heuristically_track_written_bytes(sg_off, n_copy);
+        } else {
+            if (sg->should_only_write(desc->flags)) {
+                WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
+                     "debugging purposes.");
+            }
+
+            // NOTE: this function ensures that [copier] is non-null which means
+            // that any non-[Errno::NONE] error code came from the address translation
+            // itself. Clients who need access to the particular translation
+            // which failed can instrument custom tracking within their overload(s)
+            // of [Sg::Buffer::ChainAccessor].
+            if (Errno::NONE != accessor.copy_from_gpa(&copier, l, desc->address + sg_off, n_copy)) {
+                return Errno::BADR;
+            }
+        }
+
+        sg_off = 0;
+        rem -= n_copy;
+
+        bytes_copied += n_copy;
+        l += n_copy;
+
+        ++it;
+    }
+
+    return Errno::NONE;
+}
+
+Errno
+Virtio::Sg::Buffer::start_copy_to_linear_impl(void *dst) const {
+    // NOTE: [try_end_copy_to_impl] does all of the work
+    (void)dst;
+    return Errno::NONE;
+}
+
+Errno
+Virtio::Sg::Buffer::try_end_copy_to_linear_impl(void *dst, ChainAccessor &src_accessor, size_t &bytes_copied,
+                                                BulkCopier &copier) const {
+    return Virtio::Sg::Buffer::copy_fromto_linear_impl<char, false, const Virtio::Sg::Buffer>(
+        this, src_accessor, static_cast<char *>(dst), bytes_copied, copier);
+}
+
+Errno
+Virtio::Sg::Buffer::start_copy_to_linear(void *dst, size_t size_bytes, size_t s_off) const {
+    if (_async_copy_cookie->is_dst()) {
+        return Errno::RBUSY;
+    }
+
+    // NOTE: the [&dst] and [this] pointers are only used for later equality testing,
+    // so the [_async_copy_cookie] only needs to track [valid_ptr] for each.
+    _async_copy_cookie->init_sg_src_to_linear_dst(dst, size_bytes, s_off);
+
+    Errno err = start_copy_to_linear_impl(dst);
+
+    if (Errno::NONE != err) {
+        _async_copy_cookie->conclude_src();
+    }
+
+    return err;
+}
+
+Errno
+Virtio::Sg::Buffer::try_end_copy_to_linear(void *dst, ChainAccessor &src_accessor, size_t &bytes_copied,
+                                           BulkCopier *copier) const {
+    // NOTE: This error code isn't rich enough to determine the precise mismatch.
+    if (!_async_copy_cookie->is_src_to_matching_linear(dst)) {
+        return Errno::BADR;
+    }
+
+    Errno err;
+    if (0 < _async_copy_cookie->req_sz()) {
+        auto default_copier = BulkCopierDefault();
+        if (copier == nullptr) {
+            copier = &default_copier;
+        }
+
+        err = try_end_copy_to_linear_impl(dst, src_accessor, bytes_copied, *copier);
+    } else {
+        err = Errno::NONE;
+    }
+
+    if (Errno::AGAIN != err) {
+        _async_copy_cookie->conclude_src();
+    }
+
+    return err;
+}
+
+Errno
+Virtio::Sg::Buffer::copy_to_linear(void *dst, ChainAccessor &src_accessor, size_t &size_bytes, size_t s_off,
+                                   BulkCopier *copier) const {
+    Errno err;
+
+    err = start_copy_to_linear(dst, size_bytes, s_off);
+    if (Errno::NONE != err) {
+        return err;
+    }
+
+    /** NOTE: once we start working with "real" asynchronous implementations we'll likely need more than a fixed number of retries
+     * **/
+    size_t retries = 10;
+    do {
+        err = try_end_copy_to_linear(dst, src_accessor, size_bytes, copier);
+    } while (retries-- != 0ul && Errno::AGAIN == err);
+
+    return err;
+}
+
+Errno
+Virtio::Sg::Buffer::start_copy_from_linear_impl(const void *src) {
+    // NOTE: [try_end_copy_to_impl] does all of the work
+    (void)src;
+    return Errno::NONE;
+}
+
+Errno
+Virtio::Sg::Buffer::try_end_copy_from_linear_impl(const void *src, ChainAccessor &dst_accessor, size_t &bytes_copied,
+                                                  BulkCopier &copier) {
+    return Virtio::Sg::Buffer::copy_fromto_linear_impl<const char, true, Virtio::Sg::Buffer>(
+        this, dst_accessor, static_cast<const char *>(src), bytes_copied, copier);
+}
+
+Errno
+Virtio::Sg::Buffer::start_copy_from_linear(const void *src, size_t size_bytes, size_t d_off) {
+    if (_async_copy_cookie->is_dst()) {
+        return Errno::RBUSY;
+    }
+
+    // NOTE: the [&dst] and [this] pointers are only used for later equality testing,
+    // so the [_async_copy_cookie] only needs to track [valid_ptr] for each.
+    _async_copy_cookie->init_sg_dst_from_linear_src(src, size_bytes, d_off);
+
+    Errno err = start_copy_from_linear_impl(src);
+
+    if (Errno::NONE != err) {
+        _async_copy_cookie->conclude_dst();
+    }
+
+    return err;
+}
+
+Errno
+Virtio::Sg::Buffer::try_end_copy_from_linear(const void *src, ChainAccessor &dst_accessor, size_t &bytes_copied,
+                                             BulkCopier *copier) {
+    // NOTE: This error code isn't rich enough to determine the precise mismatch.
+    if (!_async_copy_cookie->is_dst_from_matching_linear(src)) {
+        return Errno::BADR;
+    }
+
+    Errno err;
+    if (0 < _async_copy_cookie->req_sz()) {
+        auto default_copier = BulkCopierDefault();
+        if (copier == nullptr) {
+            copier = &default_copier;
+        }
+
+        err = try_end_copy_from_linear_impl(src, dst_accessor, bytes_copied, *copier);
+    } else {
+        err = Errno::NONE;
+    }
+
+    if (Errno::AGAIN != err) {
+        _async_copy_cookie->conclude_dst();
+    }
+
+    return err;
+}
+
+Errno
+Virtio::Sg::Buffer::copy_from_linear(const void *src, ChainAccessor &dst_accessor, size_t &size_bytes, size_t d_off,
+                                     BulkCopier *copier) {
+    Errno err;
+
+    err = start_copy_from_linear(src, size_bytes, d_off);
+    if (Errno::NONE != err) {
+        return err;
+    }
+
+    /** NOTE: once we start working with "real" asynchronous implementations we'll likely need more than a fixed number of retries
+     * **/
+    size_t retries = 10;
+    do {
+        err = try_end_copy_from_linear(src, dst_accessor, size_bytes, copier);
+    } while (retries-- != 0ul && Errno::AGAIN == err);
+
+    return err;
+}
+
+Errno
 Virtio::Sg::Buffer::descriptor_offset(size_t descriptor_chain_idx, size_t &offset) const {
     size_t off = 0;
     for (Virtio::Sg::Buffer::Iterator i = begin(); 0 < descriptor_chain_idx; ++i) {
@@ -504,14 +714,34 @@ Virtio::Sg::Buffer::descriptor_offset(size_t descriptor_chain_idx, size_t &offse
     return Errno::NONE;
 }
 
+Virtio::Sg::Buffer::~Buffer() {
+    ASSERT(!_async_copy_cookie || !_async_copy_cookie->in_use());
+
+    delete _async_copy_cookie;
+    _async_copy_cookie = nullptr;
+
+    delete[] _desc_chain;
+    _desc_chain = nullptr;
+
+    delete[] _desc_chain_metadata;
+    _desc_chain_metadata = nullptr;
+}
+
 Errno
 Virtio::Sg::Buffer::init() {
-    _desc_chain = new (nothrow) Virtio::Sg::LinearizedDesc[_max_chain_length];
-    if (_desc_chain == nullptr)
+    _async_copy_cookie = new (nothrow) Virtio::Sg::Buffer::AsyncCopyCookie();
+    if (_async_copy_cookie == nullptr)
         return Errno::NOMEM;
+
+    _desc_chain = new (nothrow) Virtio::Sg::LinearizedDesc[_max_chain_length];
+    if (_desc_chain == nullptr) {
+        delete _async_copy_cookie;
+        return Errno::NOMEM;
+    }
 
     _desc_chain_metadata = new (nothrow) Virtio::Sg::DescMetadata[_max_chain_length];
     if (_desc_chain_metadata == nullptr) {
+        delete _async_copy_cookie;
         delete[] _desc_chain;
         return Errno::NOMEM;
     }
