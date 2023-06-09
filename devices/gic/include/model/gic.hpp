@@ -29,6 +29,8 @@ namespace Model {
     static constexpr uint32 SPECIAL_INTID_NONE = 1023;
     static constexpr uint8 PRIORITY_ANY = 0xff;
     static constexpr uint8 GICV2_MAX_CPUS = 8;
+    // Must a multiple of 32, bigger than 32 (to fit PPIs and SGIs)
+    static constexpr uint8 GICD_MIN_LINES = 64;
 }
 
 class Model::GicD : public Model::Irq_controller {
