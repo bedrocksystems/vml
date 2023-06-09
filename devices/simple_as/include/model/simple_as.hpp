@@ -43,6 +43,8 @@ enum class PagePermission : uint8 {
     READ_WRITE_EXEC_USER = READ | WRITE | EXEC_USER,
     READ_WRITE_EXEC_SUPERVISOR = READ | WRITE | EXEC_SUPERVISOR,
     READ_WRITE_EXEC = READ | WRITE | EXEC,
+    // Last bit is reserved for custom use.
+    USER_DEFINED = (1 << 7)
 };
 
 inline const char *
