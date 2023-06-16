@@ -387,6 +387,9 @@ public:
     // NOTE: This interface does not allow flag/next modifications.
     void modify_link(size_t chain_idx, uint64 address, uint32 length);
 
+protected:
+    const Virtio::Sg::LinearizedDesc *desc_chain(void) const { return _desc_chain; }
+
 private:
     // Common addition of descriptors to the chain
     void add_descriptor(Virtio::Descriptor &&new_desc, uint64 address, uint32 length, uint16 flags, uint16 next);
