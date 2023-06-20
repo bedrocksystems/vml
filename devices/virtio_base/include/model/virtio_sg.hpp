@@ -389,6 +389,21 @@ public:
 
 protected:
     const Virtio::Sg::LinearizedDesc *desc_chain(void) const { return _desc_chain; }
+    Errno get_copy_arguments_from_cookie(size_t &out_sz, size_t &out_d_off, size_t &out_s_off) const {
+        if (!_async_copy_cookie->in_use()) {
+            return Errno::NOINIT;
+        }
+
+        if (_async_copy_cookie->is_src_to_sg()) {
+            return Errno::BADR;
+        }
+
+        out_sz = _async_copy_cookie->req_sz();
+        out_d_off = _async_copy_cookie->req_d_off();
+        out_s_off = _async_copy_cookie->req_s_off();
+
+        return Errno::NONE;
+    }
 
 private:
     // Common addition of descriptors to the chain
