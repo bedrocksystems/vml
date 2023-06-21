@@ -300,6 +300,19 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
     return _irq_sig.init(ctx);
 }
 
+bool
+Model::Cpu::cleanup(const Platform_ctx* ctx) {
+    Errno err = _irq_sig.destroy(ctx);
+    if (Errno::NONE != err)
+        return false;
+
+    err = _resume_sig.destroy(ctx);
+    if (Errno::NONE != err)
+        return false;
+
+    return Errno::NONE == _off_sm.destroy(ctx);
+}
+
 /*! \brief Request the VCPU to round (i.e. stop its progress)
  *
  * If the VCPU was in ON or OFF, the strong recall from NOVA already guarantees
