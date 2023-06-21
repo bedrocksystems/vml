@@ -20,6 +20,7 @@ class Model::Timer {
 private:
     Platform::Signal _ready_sig;
     Platform::Signal _wait_timer;
+    Platform::Signal _terminated_sig;
 
     atomic<bool> _terminate{false};
 
@@ -32,6 +33,7 @@ protected:
     bool timer_wait_timeout(uint64 timeout_abs) { return _wait_timer.wait(timeout_abs); }
     void timer_wait() { return _wait_timer.wait(); }
     void timer_wakeup() { _wait_timer.sig(); }
+    void set_terminated() { _terminated_sig.sig(); }
 
     void clear_irq_status() {
         set_irq_status(false);
@@ -85,4 +87,8 @@ public:
     static void timer_loop(const Platform_ctx *ctx, Model::Timer *timer);
 
     void terminate();
+
+    void wait_for_loop_terminated() { _terminated_sig.wait(); }
+
+    bool cleanup_timer_loop_resources(const Platform_ctx *ctx);
 };

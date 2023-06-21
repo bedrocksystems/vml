@@ -39,15 +39,31 @@ Model::Timer::timer_loop(const Platform_ctx*, Model::Timer* timer) {
                 timer->set_irq_status(true);
         }
     }
+
+    timer->set_terminated();
 }
 
 bool
 Model::Timer::init_timer_loop(const Platform_ctx* ctx) {
-    return _wait_timer.init(ctx) && _ready_sig.init(ctx);
+    return _wait_timer.init(ctx) && _ready_sig.init(ctx) && _terminated_sig.init(ctx);
 }
 
 void
 Model::Timer::terminate() {
     _terminate = true;
     timer_wakeup();
+}
+
+bool
+Model::Timer::cleanup_timer_loop_resources(const Platform_ctx* ctx) {
+    if (Errno::NONE != _terminated_sig.destroy(ctx))
+        return false;
+
+    if (Errno::NONE != _ready_sig.destroy(ctx))
+        return false;
+
+    if (Errno::NONE != _wait_timer.destroy(ctx))
+        return false;
+
+    return true;
 }
