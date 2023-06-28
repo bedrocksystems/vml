@@ -430,8 +430,9 @@ public:
      *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    explicit SimpleAS(const Platform::Mem::MemDescr &descr, bool read_only, bool flushable = true, bool flush_on_write = true)
-        : Vbus::Device("SimpleAS"), _read_only(read_only), _flushable(flushable), _flush_on_write(flush_on_write),
+    explicit SimpleAS(const Platform::Mem::MemDescr &descr, bool read_only, bool flush_on_reset = true,
+                      bool flush_on_write = true)
+        : Vbus::Device("SimpleAS"), _read_only(read_only), _flush_on_reset(flush_on_reset), _flush_on_write(flush_on_write),
           _mobject(descr) {}
 
     /*! \brief Construct a Simple AS
@@ -440,9 +441,10 @@ public:
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    SimpleAS(const char *name, const Platform::Mem::MemDescr &descr, bool read_only, bool flushable = true,
+    SimpleAS(const char *name, const Platform::Mem::MemDescr &descr, bool read_only, bool flush_on_reset = true,
              bool flush_on_write = true)
-        : Vbus::Device(name), _read_only(read_only), _flushable(flushable), _flush_on_write(flush_on_write), _mobject(descr) {}
+        : Vbus::Device(name), _read_only(read_only), _flush_on_reset(flush_on_reset), _flush_on_write(flush_on_write),
+          _mobject(descr) {}
 
     bool construct(GPA guest_base, size_t size, bool map);
     bool destruct();
@@ -602,7 +604,7 @@ protected:
     bool mapped() const { return (_vmm_view != nullptr); }
 
     const bool _read_only;            /*!< Is the AS read-only from the guest point of view? */
-    const bool _flushable;            /*!< Are full AS flush operations needed/allowed? */
+    const bool _flush_on_reset;       /*!< Do we flush on memory state change? Reboot or cache toggle */
     const bool _flush_on_write;       /*!< Do we need to flush on write? */
     char *_vmm_view{nullptr};         /*!< base host mapping of base gpa. */
     Range<mword> _as;                 /*!< Range(gpa RAM base, guest RAM size) */
