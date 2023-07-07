@@ -105,6 +105,7 @@ private:
     void block() { _irq_sig.wait(); }
     void unblock() { _irq_sig.sig(); }
     void roundup_impl();
+    void wait_if_exec_paused();
 
 protected:
     Pcpu_id const _pcpu_id;
