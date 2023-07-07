@@ -431,6 +431,15 @@ Model::Cpu::switch_state_to_off() {
         INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state], state_printable_name[new_state]);
 }
 
+void
+Model::Cpu::wait_if_exec_paused() {
+    while (_execution_paused.is_requested()) {
+        switch_state_to_off();
+        wait_for_switch_on();
+        switch_state_to_on();
+    }
+}
+
 /*! \brief Enter an emulation section in the VMM. This may fail.
  *
  * This is an interesting function with two cases:
@@ -443,12 +452,7 @@ Model::Cpu::switch_state_to_off() {
  */
 bool
 Model::Cpu::switch_state_to_emulating() {
-    while (_execution_paused.is_requested()) {
-        switch_state_to_off();
-        wait_for_switch_on();
-        switch_state_to_on();
-    }
-
+    wait_if_exec_paused();
     enum State new_state, cur_state = _state;
 
     do {
