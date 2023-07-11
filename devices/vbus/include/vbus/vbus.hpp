@@ -56,6 +56,18 @@ namespace Vbus {
  */
 class Vbus::Device {
 public:
+    /*! \brief Type that represents the device
+     */
+    enum Typ {
+        DEVICE = 0,                    /*!< Opaque Device type - cannot be manipulated as a specific device */
+        GUEST_PHYSICAL_STATIC_MEMORY,  /*!< Behaves as static physical memory for the guest */
+        GUEST_PHYSICAL_DYNAMIC_MEMORY, /*!< Behaves as dynamic physical memory for the guest.
+                                          Provides mapping APIs */
+        IRQ_CONTROLLER,                /*!< Interrupt Controller */
+    };
+    using Type = Typ;
+
+public:
     /*! \brief Construct a device with given name
      *  \pre The caller must provide a pointer to a string with at least a fractional ownership
      *  \post A valid Device object is constructed with name set correctly
@@ -91,17 +103,6 @@ public:
      *  \post The ownership of the object is returned to the caller.
      */
     virtual void shutdown() {} // Not all devices may need to make use of it
-
-    /*! \brief Type that represents the device
-     */
-    enum Typ {
-        DEVICE = 0,                    /*!< Opaque Device type - cannot be manipulated as a specific device */
-        GUEST_PHYSICAL_STATIC_MEMORY,  /*!< Behaves as static physical memory for the guest */
-        GUEST_PHYSICAL_DYNAMIC_MEMORY, /*!< Behaves as dynamic physical memory for the guest.
-                                          Provides mapping APIs */
-        IRQ_CONTROLLER,                /*!< Interrupt Controller */
-    };
-    using Type = Typ;
 
     /*! \brief Query the type of the device
      *  \pre The caller has partial ownership of a valid Device object
