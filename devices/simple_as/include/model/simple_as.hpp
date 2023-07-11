@@ -432,8 +432,7 @@ public:
      */
     explicit SimpleAS(const Platform::Mem::MemDescr &descr, bool read_only, bool flush_on_reset = true,
                       bool flush_on_write = true)
-        : Vbus::Device("SimpleAS"), _read_only(read_only), _flush_on_reset(flush_on_reset), _flush_on_write(flush_on_write),
-          _mobject(descr) {}
+        : SimpleAS("SimpleAS", descr, read_only, flush_on_reset, flush_on_write) {}
 
     /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
