@@ -711,7 +711,6 @@ public:
 
     Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
     void reset(const VcpuCtx *) override;
-    Type type() const override { return IRQ_CONTROLLER; }
 
     bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
     bool config_spi(uint32 vintid, bool hw, uint16 pintid, bool edge) override;
@@ -819,7 +818,6 @@ public:
     Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
 
     void reset(const VcpuCtx *) override {}
-    Type type() const override { return IRQ_CONTROLLER; }
 
     bool can_receive_irq() const override;
 

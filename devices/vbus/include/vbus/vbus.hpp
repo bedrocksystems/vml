@@ -56,12 +56,27 @@ namespace Vbus {
  */
 class Vbus::Device {
 public:
+    /*! \brief Type that represents the device
+     */
+    enum Typ {
+        DEVICE = 0,                    /*!< Opaque Device type - cannot be manipulated as a specific device */
+        GUEST_PHYSICAL_STATIC_MEMORY,  /*!< Behaves as static physical memory for the guest */
+        GUEST_PHYSICAL_DYNAMIC_MEMORY, /*!< Behaves as dynamic physical memory for the guest.
+                                          Provides mapping APIs */
+        IRQ_CONTROLLER,                /*!< Interrupt Controller */
+    };
+    using Type = Typ;
+
+protected:
+    explicit Device(const char* name, Type dev_type) : _name(name), _dev_type(dev_type) {}
+
+public:
     /*! \brief Construct a device with given name
      *  \pre The caller must provide a pointer to a string with at least a fractional ownership
      *  \post A valid Device object is constructed with name set correctly
      *  \param name Name of the device
      */
-    explicit Device(const char* name) : _name(name) {}
+    explicit Device(const char* name) : Device(name, DEVICE) {}
     virtual ~Device() {}
 
     /*! \brief Query the name of the device
@@ -92,22 +107,12 @@ public:
      */
     virtual void shutdown() {} // Not all devices may need to make use of it
 
-    /*! \brief Type that represents the device
-     */
-    enum Type {
-        DEVICE = 0,                    /*!< Opaque Device type - cannot be manipulated as a specific device */
-        GUEST_PHYSICAL_STATIC_MEMORY,  /*!< Behaves as static physical memory for the guest */
-        GUEST_PHYSICAL_DYNAMIC_MEMORY, /*!< Behaves as dynamic physical memory for the guest.
-                                          Provides mapping APIs */
-        IRQ_CONTROLLER,                /*!< Interrupt Controller */
-    };
-
     /*! \brief Query the type of the device
      *  \pre The caller has partial ownership of a valid Device object
      *  \post The return value contains 'DEVICE'. Ownership and state of the device is unchanged.
      *  \return The 'DEVICE' type
      */
-    virtual Type type() const { return DEVICE; }
+    Type type() const { return _dev_type; }
     uint64 num_accesses() const { return _accesses.load(); }
     uint64 time_spent() const { return _time_spent.load(); }
 
@@ -118,6 +123,7 @@ public:
 
 private:
     const char* _name; /*!< Name of the device - cannot be changed at run-time */
+    const Type _dev_type;
     atomic<uint64> _accesses{0};
     atomic<uint64> _time_spent{0};
 };

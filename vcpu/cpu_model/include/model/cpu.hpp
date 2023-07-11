@@ -229,13 +229,10 @@ public:
     virtual VcpuVHWId vhw_id() const { return id(); } // virtual HW ID, can be non-linear
 
     // higher level API for CPU emulation
-    bool begin_emulation() {
-        bool roundedup = false;
+    void begin_emulation() {
         while (!switch_state_to_emulating()) {
-            roundedup = true;
             wait_for_resume();
         }
-        return roundedup;
     }
     void end_emulation() { switch_state_to_on(); }
 
