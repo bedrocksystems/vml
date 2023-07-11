@@ -714,36 +714,70 @@ Virtio::Sg::Buffer::descriptor_offset(size_t descriptor_chain_idx, size_t &offse
     return Errno::NONE;
 }
 
-Virtio::Sg::Buffer::~Buffer() {
+void
+Virtio::Sg::Buffer::deinit_async_copy_cookie() {
     ASSERT(!_async_copy_cookie || !_async_copy_cookie->in_use());
 
     delete _async_copy_cookie;
     _async_copy_cookie = nullptr;
-
+}
+void
+Virtio::Sg::Buffer::deinit_desc_chain() {
     delete[] _desc_chain;
     _desc_chain = nullptr;
-
+}
+void
+Virtio::Sg::Buffer::deinit_desc_chain_metadata() {
     delete[] _desc_chain_metadata;
     _desc_chain_metadata = nullptr;
 }
 
+Virtio::Sg::Buffer::~Buffer() {
+    deinit_async_copy_cookie();
+    deinit_desc_chain();
+    deinit_desc_chain_metadata();
+}
+
 Errno
-Virtio::Sg::Buffer::init() {
+Virtio::Sg::Buffer::init_async_copy_cookie() {
     _async_copy_cookie = new (nothrow) Virtio::Sg::Buffer::AsyncCopyCookie();
     if (_async_copy_cookie == nullptr)
         return Errno::NOMEM;
 
+    return Errno::NONE;
+}
+Errno
+Virtio::Sg::Buffer::init_desc_chain() {
     _desc_chain = new (nothrow) Virtio::Sg::LinearizedDesc[_max_chain_length];
-    if (_desc_chain == nullptr) {
-        delete _async_copy_cookie;
+    if (_desc_chain == nullptr)
         return Errno::NOMEM;
+
+    return Errno::NONE;
+}
+Errno
+Virtio::Sg::Buffer::init_desc_chain_metadata() {
+    _desc_chain_metadata = new (nothrow) Virtio::Sg::DescMetadata[_max_chain_length];
+    if (_desc_chain_metadata == nullptr)
+        return Errno::NOMEM;
+
+    return Errno::NONE;
+}
+
+Errno
+Virtio::Sg::Buffer::init() {
+    TRY_ERRNO(init_async_copy_cookie());
+
+    Errno err = init_desc_chain();
+    if (err != Errno::NONE) {
+        deinit_async_copy_cookie();
+        return err;
     }
 
-    _desc_chain_metadata = new (nothrow) Virtio::Sg::DescMetadata[_max_chain_length];
-    if (_desc_chain_metadata == nullptr) {
-        delete _async_copy_cookie;
-        delete[] _desc_chain;
-        return Errno::NOMEM;
+    err = init_desc_chain_metadata();
+    if (err != Errno::NONE) {
+        deinit_async_copy_cookie();
+        deinit_desc_chain();
+        return err;
     }
 
     return Errno::NONE;

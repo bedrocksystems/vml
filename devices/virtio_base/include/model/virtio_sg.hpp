@@ -301,11 +301,7 @@ private:
 public:
     explicit Buffer(uint16 max_chain_length) : _max_chain_length(max_chain_length) {}
 
-    /** Derived implementations might use alternative schemes to manage the memory
-     *  backing the [_desc_chain] and [_desc_chain_metadata] arrays - which must
-     *  have lengths matching [_max_chain_length].
-     */
-    virtual Errno init();
+    Errno init();
     virtual ~Buffer();
 
     // Copying is forbidden since [Sg::Buffer]s manage affine resources
@@ -335,6 +331,19 @@ public:
         cxx::swap(_desc_chain_metadata, other._desc_chain_metadata);
         cxx::swap(_async_copy_cookie, other._async_copy_cookie);
     }
+
+protected:
+    /** Derived implementations might use alternative schemes to manage the memory
+     *  backing the [_desc_chain] and [_desc_chain_metadata] arrays - which must
+     *  have lengths matching [_max_chain_length].
+     */
+    virtual Errno init_async_copy_cookie();
+    virtual Errno init_desc_chain();
+    virtual Errno init_desc_chain_metadata();
+
+    virtual void deinit_async_copy_cookie();
+    virtual void deinit_desc_chain();
+    virtual void deinit_desc_chain_metadata();
 
     /** General Utilities */
 public:
@@ -391,7 +400,7 @@ protected:
     const Virtio::Sg::LinearizedDesc *desc_chain(void) const { return _desc_chain; }
     Errno get_copy_arguments_from_cookie(size_t &out_sz, size_t &out_d_off, size_t &out_s_off) const {
         if (!_async_copy_cookie->in_use()) {
-            return Errno::NOINIT;
+            return Errno::NOENT;
         }
 
         if (_async_copy_cookie->is_src_to_sg()) {
