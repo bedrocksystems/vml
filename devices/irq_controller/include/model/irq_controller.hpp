@@ -68,6 +68,7 @@ public:
 
     virtual bool signal_eoi(uint8 vector) = 0;
     virtual bool wait_for_eoi(uint8 line) = 0;
+    Type type() const override { return IRQ_CONTROLLER; }
 };
 
 class Model::Local_Irq_controller : public Vbus::Device {
@@ -85,4 +86,5 @@ public:
 
     virtual void nmi_ack() = 0;
     virtual bool nmi_pending() = 0;
+    Type type() const override { return IRQ_CONTROLLER; }
 };
