@@ -67,13 +67,16 @@ public:
     };
     using Type = Typ;
 
+protected:
+    explicit Device(const char* name, Type dev_type) : _name(name), _dev_type(dev_type) {}
+
 public:
     /*! \brief Construct a device with given name
      *  \pre The caller must provide a pointer to a string with at least a fractional ownership
      *  \post A valid Device object is constructed with name set correctly
      *  \param name Name of the device
      */
-    explicit Device(const char* name) : _name(name) {}
+    explicit Device(const char* name) : Device(name, DEVICE) {}
     virtual ~Device() {}
 
     /*! \brief Query the name of the device
@@ -109,7 +112,7 @@ public:
      *  \post The return value contains 'DEVICE'. Ownership and state of the device is unchanged.
      *  \return The 'DEVICE' type
      */
-    virtual Type type() const { return DEVICE; }
+    Type type() const { return _dev_type; }
     uint64 num_accesses() const { return _accesses.load(); }
     uint64 time_spent() const { return _time_spent.load(); }
 
@@ -120,6 +123,7 @@ public:
 
 private:
     const char* _name; /*!< Name of the device - cannot be changed at run-time */
+    const Type _dev_type;
     atomic<uint64> _accesses{0};
     atomic<uint64> _time_spent{0};
 };
