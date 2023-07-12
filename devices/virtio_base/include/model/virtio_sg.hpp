@@ -289,7 +289,7 @@ private:
     bool _complete_chain{false};
     // NOTE: Only meaningful when [_complete_chain] is [true]
     bool _chain_for_device{false};
-/** v-- NOTE: protected so that clients who override [init_XXX] can set these fields */
+    /** v-- NOTE: protected so that clients who override [init_XXX] can set these fields */
 protected:
     /** After [init] returns [Errno::NONE], [_desc_chain] and [_desc_chain_metadata]
      *  both point to arrays with lengths equal to [_max_chain_length]
