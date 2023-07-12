@@ -765,9 +765,12 @@ Virtio::Sg::Buffer::init_desc_chain_metadata() {
 
 Errno
 Virtio::Sg::Buffer::init() {
-    TRY_ERRNO(init_async_copy_cookie());
+    Errno err = init_async_copy_cookie();
+    if (err != Errno::NONE) {
+        return err;
+    }
 
-    Errno err = init_desc_chain();
+    err = init_desc_chain();
     if (err != Errno::NONE) {
         deinit_async_copy_cookie();
         return err;
