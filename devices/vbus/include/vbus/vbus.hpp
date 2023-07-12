@@ -225,12 +225,22 @@ public:
      */
     template<typename T>
     void iter_devices(void (*f)(Vbus::Bus::DeviceEntry* de, T*), T* arg) const {
-        _devices.iter(f, arg);
+        _vbus_lock.renter();
+        iter_devices_unlocked(f, arg);
+        _vbus_lock.rexit();
     }
 
     Errno deinit();
 
 private:
+    /*! \brief Like [iter_devices], but with an additional assumption
+     * \prepost [_vbus_lock] is read-locked (via [RWLock::renter()]).
+     */
+    template<typename T>
+    void iter_devices_unlocked(void (*f)(Vbus::Bus::DeviceEntry* de, T*), T* arg) const {
+        _devices.iter(f, arg);
+    }
+
     static void reset_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
 
     static void reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);

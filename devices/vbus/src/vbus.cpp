@@ -150,8 +150,8 @@ Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg) 
 void
 Vbus::Bus::reset(const VcpuCtx& vcpu_ctx) const {
     _vbus_lock.renter();
-    iter_devices(Vbus::Bus::reset_device_cb, &vcpu_ctx);
-    iter_devices(Vbus::Bus::reset_irq_ctlr_cb, &vcpu_ctx);
+    iter_devices_unlocked(Vbus::Bus::reset_device_cb, &vcpu_ctx);
+    iter_devices_unlocked(Vbus::Bus::reset_irq_ctlr_cb, &vcpu_ctx);
     _vbus_lock.rexit();
 }
 
@@ -163,9 +163,7 @@ Vbus::Bus::shutdown_device_cb(Vbus::Bus::DeviceEntry* entry, const void*) {
 void
 Vbus::Bus::shutdown() const {
     VERBOSE("Vbus::Bus::shutdown %p", this);
-    _vbus_lock.renter();
     iter_devices(Vbus::Bus::shutdown_device_cb, static_cast<const void*>(nullptr));
-    _vbus_lock.rexit();
 }
 
 void
