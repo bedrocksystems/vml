@@ -448,7 +448,14 @@ public:
     bool construct(GPA guest_base, size_t size, bool map);
     bool destruct();
 
-    /*! \brief Get the size of this AS
+    /*! \brief Get the beginning of this AS's GPA range
+     *  \pre Partial ownership of this object
+     *  \post Ownership unchanged. The stored size is returned.
+     *  \return the beginning of the AS
+     */
+    GPA get_begin() const { return GPA(_as.begin()); }
+
+    /*! \brief Get the size of this AS's GPA range
      *  \pre Partial ownership of this object
      *  \post Ownership unchanged. The stored size is returned.
      *  \return the size of the AS
