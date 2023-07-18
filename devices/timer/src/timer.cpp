@@ -14,7 +14,6 @@ void
 Model::Timer::timer_loop(const Platform_ctx*, Model::Timer* timer) {
     ASSERT(timer != nullptr);
 
-    INFO("The physical timer is ready");
     timer->set_ready();
 
     while (not timer->_terminate) {
