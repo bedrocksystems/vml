@@ -455,17 +455,20 @@ Model::Cpu::switch_state_to_emulating() {
     wait_if_exec_paused();
     enum State new_state, cur_state = _state;
 
-    do {
-        switch (cur_state) {
-        case ON_ROUNDEDUP:
-            return false;
-        case ON:
-            new_state = EMULATE;
-            break;
-        default:
-            ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(), state_printable_name[cur_state]);
-        }
-    } while (!_state.cas(cur_state, new_state));
+    switch (cur_state) {
+    case ON_ROUNDEDUP:
+        return false;
+    case ON:
+        new_state = EMULATE;
+        break;
+    default:
+        ABORT_WITH("Unexpected state for VCPU " FMTu64 ": %s", id(), state_printable_name[cur_state]);
+    }
+
+    if (!_state.cas(cur_state, new_state)) {
+        ASSERT(cur_state == ON_ROUNDEDUP);
+        return false;
+    }
 
     if (__UNLIKELY__(Debug::current_level == Debug::FULL))
         INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state], state_printable_name[new_state]);
