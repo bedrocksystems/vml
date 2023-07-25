@@ -383,14 +383,14 @@ Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size
 }
 
 bool
-Model::SimpleAS::construct(GPA guest_base, const mword size, bool map) {
-    _as = Range<mword>(guest_base.get_value(), size);
+Model::SimpleAS::construct(bool map) {
     if (!map) {
         return true;
     }
 
-    _vmm_view = reinterpret_cast<char*>(Platform::Mem::map_mem(
-        _mobject, 0, size, Platform::Mem::READ | (_mobject.cred().write() ? Platform::Mem::WRITE : 0), get_mem_fd().msel()));
+    _vmm_view = reinterpret_cast<char*>(
+        Platform::Mem::map_mem(_mobject, 0, _as.size(),
+                               Platform::Mem::READ | (_mobject.cred().write() ? Platform::Mem::WRITE : 0), get_mem_fd().msel()));
     return (_vmm_view != nullptr);
 }
 
