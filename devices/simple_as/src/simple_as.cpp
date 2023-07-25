@@ -396,12 +396,12 @@ Model::SimpleAS::construct(GPA guest_base, const mword size, bool map) {
 
 bool
 Model::SimpleAS::destruct() {
-    bool b = true;
     if (mapped()) {
-        b = Platform::Mem::unmap_mem(reinterpret_cast<void*>(_vmm_view), _as.size());
         _vmm_view = nullptr;
+        return Platform::Mem::unmap_mem(reinterpret_cast<void*>(_vmm_view), _as.size());
+    } else {
+        return true;
     }
-    return b;
 }
 
 char*
