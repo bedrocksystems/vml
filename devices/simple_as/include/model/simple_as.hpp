@@ -431,13 +431,14 @@ public:
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    SimpleAS(const Platform::Mem::MemDescr &descr, bool read_only, Vbus::Device::Type type = GUEST_PHYSICAL_STATIC_MEMORY,
-             const char *name = "SimpleAS", bool flush_on_reset = true, bool flush_on_write = true)
+    SimpleAS(const Range<mword> &guest_range, const Platform::Mem::MemDescr &descr, bool read_only,
+             Vbus::Device::Type type = GUEST_PHYSICAL_STATIC_MEMORY, const char *name = "SimpleAS", bool flush_on_reset = true,
+             bool flush_on_write = true)
         : Vbus::Device(name, type), _read_only(read_only), _flush_on_reset(flush_on_reset), _flush_on_write(flush_on_write),
-          _mobject(descr) {}
+          _as(guest_range), _mobject(descr) {}
     SimpleAS(const SimpleAS &) = delete;
 
-    bool construct(GPA guest_base, size_t size, bool map);
+    bool construct(bool map);
     bool destruct();
 
     /*! \brief Get the beginning of this AS's GPA range
