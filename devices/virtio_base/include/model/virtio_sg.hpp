@@ -304,6 +304,8 @@ public:
     explicit Buffer(uint16 max_chain_length) : _max_chain_length(max_chain_length) {}
 
     Errno init();
+    /** v-- NOTE: [deinit()] is idempotent */
+    void deinit();
     virtual ~Buffer();
 
     // Copying is forbidden since [Sg::Buffer]s manage affine resources
