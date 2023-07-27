@@ -9,7 +9,6 @@
 
 #include <msr/msr_id.hpp>
 #include <platform/log.hpp>
-#include <platform/types.hpp>
 
 namespace Msr {
 
