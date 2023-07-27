@@ -130,8 +130,8 @@ private:
 
 class VcpuInitializedInfo {
 public:
-    Errno init(const Platform_ctx* ctx, uint16 nvcpus) {
-        vcpus_pending_init = nvcpus;
+    Errno init(const Platform_ctx* ctx) {
+        vcpus_startup_done = 0;
         if (!_sm_all_initialized.init(ctx))
             return Errno::NOMEM;
 
@@ -143,7 +143,7 @@ public:
     void wait_for_all_vcpus_initialized() { _sm_all_initialized.acquire(); }
     void signal_all_vcpus_initialized() { _sm_all_initialized.release(); }
 
-    atomic<uint16> vcpus_pending_init; /*!< VCPU(s) that are not yet fully initialized */
+    atomic<uint16> vcpus_startup_done; /*!< VCPU(s) that are not yet fully initialized */
 
 private:
     Semaphore _sm_all_initialized;
@@ -166,7 +166,7 @@ Vcpu::Roundup::init(const Platform_ctx* ctx, uint16 num_vcpus) {
         return Errno::NOMEM;
     parallel_info.count = 0;
 
-    Errno err = initialized_info.init(ctx, num_vcpus);
+    Errno err = initialized_info.init(ctx);
     if (err != Errno::NONE)
         return err;
 
@@ -240,16 +240,11 @@ Vcpu::Roundup::resume_from_vcpu(Vcpu_id) {
 
 void
 Vcpu::Roundup::vcpu_notify_initialized() {
-    uint16 total = initialized_info.vcpus_pending_init.add_fetch(1);
+    uint16 total = initialized_info.vcpus_startup_done.add_fetch(1);
 
     if (total == roundup_info.num_vcpus) {
         initialized_info.signal_all_vcpus_initialized();
     }
-}
-
-void
-Vcpu::Roundup::vcpu_notify_switched_on() {
-    initialized_info.vcpus_pending_init--;
 }
 
 void

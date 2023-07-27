@@ -403,9 +403,6 @@ Model::Cpu::switch_state_to_on() {
     if (cur_state == EMULATE_ROUNDEDUP)
         Vcpu::Roundup::vcpu_notify_done_progressing();
 
-    if (cur_state == OFF || cur_state == OFF_ROUNDEDUP)
-        Vcpu::Roundup::vcpu_notify_switched_on();
-
     if (__UNLIKELY__(Debug::current_level == Debug::FULL))
         INFO("VCPU " FMTu64 " state %s -> %s", id(), state_printable_name[cur_state], state_printable_name[new_state]);
 }

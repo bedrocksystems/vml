@@ -51,7 +51,7 @@ public:
 
 private:
     Platform::Signal _resume_sig;
-    Semaphore _off_sm;
+    Platform::Signal _off_sm;
 
     // Boot configuration
     uint64 _boot_addr{0};
@@ -95,7 +95,7 @@ private:
     bool is_turned_on_by_guest() const { return !_execution_paused.is_requested_by(Request::Requestor::VMM); }
 
     void resume_vcpu() { _resume_sig.sig(); }
-    void switch_on() { _off_sm.release(); }
+    void switch_on() { _off_sm.sig(); }
     void resume();
 
     void set_reset_parameters(uint64 boot_addr, uint64 const boot_arg[MAX_BOOT_ARGS], uint64 tmr_off, enum Mode m);
@@ -112,7 +112,7 @@ protected:
     Model::Irq_controller *const _girq_ctlr;
     Model::Local_Irq_controller *_lirq_ctlr{nullptr};
 
-    void wait_for_switch_on() { _off_sm.acquire(); }
+    void wait_for_switch_on() { _off_sm.wait(); }
     uint64 boot_addr() const { return _boot_addr; }
     const uint64 *boot_args() const { return _boot_args; }
     void switch_state_to_off();
