@@ -733,9 +733,7 @@ Virtio::Sg::Buffer::deinit_desc_chain_metadata() {
 }
 
 Virtio::Sg::Buffer::~Buffer() {
-    deinit_async_copy_cookie();
-    deinit_desc_chain();
-    deinit_desc_chain_metadata();
+    deinit();
 }
 
 Errno
@@ -784,6 +782,13 @@ Virtio::Sg::Buffer::init() {
     }
 
     return Errno::NONE;
+}
+
+void
+Virtio::Sg::Buffer::deinit() {
+    deinit_desc_chain_metadata();
+    deinit_desc_chain();
+    deinit_async_copy_cookie();
 }
 
 Errno
