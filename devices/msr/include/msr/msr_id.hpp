@@ -12,6 +12,7 @@
 namespace Msr {
     class Id;
 
+    // x86 does not utilize this build_msr_id() function.
     static constexpr uint32 build_msr_id(uint8 const op0, uint8 const crn, uint8 const op1, uint8 const crm, uint8 const op2) {
         return (((static_cast<uint32>(crm) & 0xfu) << 3) | ((static_cast<uint32>(crn) & 0xfu) << 7)
                 | ((static_cast<uint32>(op1) & 0x7u) << 10) | ((static_cast<uint32>(op2) & 0x7u) << 13)
@@ -24,7 +25,7 @@ private:
     uint32 _id;
 
 public:
-    /* align id 8 byte for vbus usage */
+    /*Only utilized in AARCH64. Align id 8 byte for vbus usage */
     Id(uint8 const op0, uint8 const crn, uint8 const op1, uint8 const crm, uint8 const op2)
         : _id(build_msr_id(op0, crn, op1, crm, op2)) {}
 
