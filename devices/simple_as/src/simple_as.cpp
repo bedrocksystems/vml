@@ -383,7 +383,7 @@ Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size
 }
 
 bool
-Model::SimpleAS::construct(bool map) {
+Model::SimpleAS::maybe_map(bool map) {
     if (!map) {
         return true;
     }

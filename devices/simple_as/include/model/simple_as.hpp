@@ -437,7 +437,7 @@ public:
           _as(guest_range), _mobject(descr) {}
     SimpleAS(const SimpleAS &) = delete;
 
-    bool construct(bool map);
+    bool maybe_map(bool map);
     bool destruct();
 
     /*! \brief Get the beginning of this AS's GPA range
