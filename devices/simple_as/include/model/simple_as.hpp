@@ -426,26 +426,23 @@ public:
 class Model::SimpleAS : public Vbus::Device {
 public:
     /*! \brief Construct a Simple AS
-     *  \pre Nothing
-     *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
-     *  \param read_only is the AS read-only from the guest point of view?
-     */
-    explicit SimpleAS(const Platform::Mem::MemDescr &descr, bool read_only, bool flush_on_reset = true,
-                      bool flush_on_write = true)
-        : SimpleAS("SimpleAS", GUEST_PHYSICAL_STATIC_MEMORY, descr, read_only, flush_on_reset, flush_on_write) {}
-
-    /*! \brief Construct a Simple AS
      *  \pre Gives up ownership of the name string
      *  \post Full ownership of Simple AS. The Vbus::Device is initialized and read_only is stored.
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    SimpleAS(const char *name, Vbus::Device::Type type, const Platform::Mem::MemDescr &descr, bool read_only,
-             bool flush_on_reset = true, bool flush_on_write = true)
+    SimpleAS(const Range<mword> &guest_range, const Platform::Mem::MemDescr &descr, bool read_only, bool flush_on_reset = true,
+             bool flush_on_write = true, Vbus::Device::Type type = GUEST_PHYSICAL_STATIC_MEMORY, const char *name = "SimpleAS")
         : Vbus::Device(name, type), _read_only(read_only), _flush_on_reset(flush_on_reset), _flush_on_write(flush_on_write),
-          _mobject(descr) {}
+          _as(guest_range), _mobject(descr) {}
+    SimpleAS(const SimpleAS &) = delete;
 
-    bool construct(GPA guest_base, size_t size, bool map);
+    /**
+     * @brief Map to host address space for direct access via get_vmm_view(), and return true on success.
+     * \pre Full ownership of this object.
+     * \post Full ownership back. If and only if this succeeds, then and only then [get_vmm_view() != nullptr].
+     */
+    bool map_host();
     bool destruct();
 
     /*! \brief Get the beginning of this AS's GPA range

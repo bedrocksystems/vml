@@ -157,7 +157,7 @@ main() {
 
     Vbus::Bus bus;
     off_t file_size = VIRTIO_RAM_SIZE;
-    static constexpr char *TMP_FILE = "vml-virtio-example";
+    static const char *TMP_FILE = "vml-virtio-example";
 
     shm_unlink(TMP_FILE); // In case there was a file left behind
     int fd = shm_open(TMP_FILE, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
@@ -172,8 +172,8 @@ main() {
         exit(1);
     }
 
-    Model::SimpleAS sas(Platform::Mem::MemDescr(fd), false);
-    ok = sas.construct(GPA(VIRTIO_GUEST_BASE), VIRTIO_RAM_SIZE, true);
+    Model::SimpleAS sas(Range<mword>{VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE}, Platform::Mem::MemDescr(fd), false);
+    ok = sas.map_host();
     ASSERT(ok);
     ok = bus.register_device(&sas, VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);
     ASSERT(ok);
