@@ -86,7 +86,7 @@ main() {
     ASSERT(ok == true);
 
     off_t file_size = 4096;
-    static constexpr char* TMP_FILE = "vml-vbus-example";
+    static const char* TMP_FILE = "vml-vbus-example";
 
     shm_unlink(TMP_FILE); // In case there was a file left behind
     int fd = shm_open(TMP_FILE, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
@@ -101,10 +101,8 @@ main() {
         exit(1);
     }
 
-    Model::SimpleAS as(Platform::Mem::MemDescr(fd), false);
     GPA gpa(0x10000000);
-    ok = as.construct(gpa, size_t(file_size), false);
-    ASSERT(ok == true);
+    Model::SimpleAS as(Range<mword>{gpa.get_value(), size_t(file_size)}, Platform::Mem::MemDescr(fd), false);
     ok = vbus.register_device(&as, gpa.get_value(), mword(file_size));
     ASSERT(ok == true);
 
