@@ -13,12 +13,12 @@
 #include <model/aa64_timer.hpp>
 #include <model/cpu.hpp>
 #include <model/gic.hpp>
-#include <model/psci.hpp>
 #include <model/simple_as.hpp>
-#include <msr/msr.hpp>
 #include <pl011/pl011.hpp>
 #include <platform/context.hpp>
 #include <platform/log.hpp>
+#include <platform/memory.hpp>
+#include <platform/reg_accessor.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
@@ -44,7 +44,6 @@ main() {
     Platform_ctx ctx;
     Vbus::Bus vbus;
     Model::GicD gicd(Model::GIC_V2, 1);
-    Msr::Bus msr_bus;
 
     bool ok = gicd.init();
     ASSERT(ok);
@@ -63,12 +62,6 @@ main() {
     ok = pl011.init(&ctx);
     ASSERT(ok);
     ok = ptimer.init_irq(0, 0x12, false, true);
-    ASSERT(ok);
-
-    Msr::Bus::PlatformInfo info;
-    ok = msr_bus.setup_arch_msr(info, vbus, gicd);
-    ASSERT(ok);
-    ok = msr_bus.setup_aarch64_physical_timer(ptimer);
     ASSERT(ok);
 
     INFO("== Virtual Bus Testing/Demo app ==");
@@ -125,9 +118,6 @@ main() {
 
     ptimer.terminate();
     timer_thread.join();
-
-    uint64 res;
-    Firmware::Psci::smc_call_service(vctx, regs, vbus, 0x84000003u, res);
 
     INFO("Done");
     rc = shm_unlink(TMP_FILE);
