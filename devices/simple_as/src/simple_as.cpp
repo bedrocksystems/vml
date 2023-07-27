@@ -383,11 +383,7 @@ Model::SimpleAS::write_bus(const Vbus::Bus& bus, GPA addr, const char* src, size
 }
 
 bool
-Model::SimpleAS::maybe_map(bool map) {
-    if (!map) {
-        return true;
-    }
-
+Model::SimpleAS::map_host() {
     _vmm_view = reinterpret_cast<char*>(
         Platform::Mem::map_mem(_mobject, 0, _as.size(),
                                Platform::Mem::READ | (_mobject.cred().write() ? Platform::Mem::WRITE : 0), get_mem_fd().msel()));
