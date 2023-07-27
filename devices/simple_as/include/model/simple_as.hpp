@@ -437,7 +437,12 @@ public:
           _as(guest_range), _mobject(descr) {}
     SimpleAS(const SimpleAS &) = delete;
 
-    bool maybe_map(bool map);
+    /**
+     * @brief Map to host address space for direct access via get_vmm_view(), and return true on success.
+     * \pre Full ownership of this object.
+     * \post Full ownership back. If and only if this succeeds, then and only then [get_vmm_view() != nullptr].
+     */
+    bool map_host();
     bool destruct();
 
     /*! \brief Get the beginning of this AS's GPA range

@@ -103,8 +103,6 @@ main() {
 
     GPA gpa(0x10000000);
     Model::SimpleAS as(Range<mword>{gpa.get_value(), size_t(file_size)}, Platform::Mem::MemDescr(fd), false);
-    ok = as.maybe_map(false);
-    ASSERT(ok == true);
     ok = vbus.register_device(&as, gpa.get_value(), mword(file_size));
     ASSERT(ok == true);
 
