@@ -14,8 +14,7 @@ LIBNAME = $(shell basename `pwd`)
 
 include deps.mk
 
-CC_SRCS = msr.cpp
-CC_SRCS += arch_msr.cpp
+CC_SRCS = msr.cpp msr_base.cpp
 
 OBJS    = $(CC_SRCS:%.cpp=$(OBJDIR)%.o)
 
