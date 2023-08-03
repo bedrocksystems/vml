@@ -224,6 +224,19 @@ Msr::Bus::setup_power_msrs() {
 }
 
 bool
+Msr::Bus::setup_caps_msr(uint64 arch_caps, uint64 core_caps) {
+    Msr::Register* reg;
+
+    reg = new (nothrow) Msr::Register("IA32_ARCH_CAPABILITIES", IA32_ARCH_CAPABILITIES, false, arch_caps);
+    if (not register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("IA32_CORE_CAPABILITIES", IA32_CORE_CAPABILITIES, false, core_caps);
+
+    return register_system_reg(reg);
+}
+
+bool
 Msr::Bus::setup_arch_msr(bool x2apic_msrs) {
     Msr::Register* reg;
 
@@ -256,10 +269,6 @@ Msr::Bus::setup_arch_msr(bool x2apic_msrs) {
         return false;
 
     reg = new (nothrow) Msr::Register("IA32_MTRRCAPP", IA32_MTRRCAPP, false, 0x0ULL);
-    if (not register_system_reg(reg))
-        return false;
-
-    reg = new (nothrow) Msr::Register("IA32_ARCH_CAPABILITIES", IA32_ARCH_CAPABILITIES, false, 0x0ULL);
     if (not register_system_reg(reg))
         return false;
 

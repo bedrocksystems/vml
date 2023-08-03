@@ -150,6 +150,8 @@ private:
 protected:
     bool register_system_reg(RegisterBase* reg) {
         ASSERT(reg != nullptr);
+        if (reg == nullptr)
+            return false;
         bool ret;
 
         ret = register_device(reg, reg->id());
