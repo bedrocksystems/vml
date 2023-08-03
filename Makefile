@@ -1,16 +1,15 @@
 #
 # Makefile
 #
-# Copyright (C) 2020 BedRock Systems, Inc.
+# Copyright (C) 2020-2023 BedRock Systems, Inc.
 # All rights reserved.
 #
 # This software is distributed under the terms of the BedRock Open-Source License.
 # See the LICENSE-BedRock file in the repository root for details.
 #
 
-BHV_ROOT ?= ../../..
+.DEFAULT_GOAL := all
 DOXYGEN ?= doxygen
-CMDGOAL = $(if $(strip $(MAKECMDGOALS)),$(MAKECMDGOALS),all)
 export PLATFORM ?= posix
 UNAME_M = $(shell uname -m)
 
@@ -27,6 +26,7 @@ export ARCH
 SUBDIRS = devices/vbus devices/vpl011 devices/gic arch/arch_api devices/timer devices/simple_as
 SUBDIRS += devices/virtio_base devices/virtio_console devices/virtio_net devices/msr
 SUBDIRS += vcpu/vcpu_roundup vcpu/cpu_model devices/virtio_sock
+SUBDIRS += platform/posix_core
 
 ifeq ($(ARCH), aarch64)
 SUBDIRS += devices/firmware
@@ -44,25 +44,39 @@ doc:
 .PHONY: doc
 
 else
-ifeq ($(PLATFORM), posix)
-SUBDIRS += platform/posix_core
 
-export BLDDIR ?= $(CURDIR)/build-$(PLATFORM)-$(ARCH)/
+export BLDDIR ?= build-$(PLATFORM)-$(ARCH)
 
 EXAMPLES = examples/vbus_posix examples/virtio_posix
 
-$(CMDGOAL): $(EXAMPLES)
+define include_bu
+$(eval BU := $(notdir $(1)))
+$(eval CUR_DIR := $(1)/)
+$(eval include $(1)/Makefile)
+$(eval include $(1)/deps.mk)
+$(eval include support/build/bu.mk)
+endef
 
-ifeq ($(CMDGOAL),test)
-SUBCMDGOAL=all
-else
-SUBCMDGOAL=$(CMDGOAL)
-endif
+define include_bu_lib
+$(eval LIBNAME := $(notdir $(1)))
+$(call include_bu,$(1))
+endef
+$(foreach l,$(SUBDIRS), $(call include_bu_lib,$l))
+ALL_LIB_OUTPUTS := $(foreach e, $(SUBDIRS), $($(notdir $e)_OUTPUT))
 
-$(EXAMPLES) $(SUBDIRS):
-		+$(MAKE) -C $@ BHV_ROOT=$(realpath .)/ VMM_ROOT=$(realpath .)/ $(SUBCMDGOAL)
+define include_bu_app
+$(eval APPNAME := $(notdir $(1)))
+$(call include_bu,$(1))
+endef
+undefine LIBNAME
+$(foreach l,$(EXAMPLES), $(call include_bu_app,$l))
+undefine APPNAME
+undefine CUR_DIR
 
-$(EXAMPLES): $(SUBDIRS)
+all: $(foreach e, $(EXAMPLES), $($(notdir $e)_OUTPUT))
+
+clean:
+	rm -Rf $(BLDDIR)
 
 RUN_TEST_PREFIX=run_test_
 
@@ -71,17 +85,8 @@ test: $(addprefix $(RUN_TEST_PREFIX),$(EXAMPLES))
 
 define run_example
 $(RUN_TEST_PREFIX)$(1): $(1)
-	$(BLDDIR)$(1)/$(notdir $(1))
+	$(BLDDIR)/$(1)/$(notdir $(1))
 endef
 
 $(foreach e,$(EXAMPLES),$(eval $(call run_example,$e)))
-
-else
-# Bedrock platform
-$(CMDGOAL): $(SUBDIRS)
-$(SUBDIRS):
-		+$(MAKE) -C $@ $(CMDGOAL)
 endif
-endif
-
-.PHONY: $(CMDGOAL) $(EXAMPLES) $(SUBDIRS)
