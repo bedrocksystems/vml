@@ -140,13 +140,13 @@ public:
 
     Errno cleanup(const Platform_ctx* ctx) { return _sm_all_initialized.destroy(ctx); }
 
-    void wait_for_all_vcpus_initialized() { _sm_all_initialized.acquire(); }
-    void signal_all_vcpus_initialized() { _sm_all_initialized.release(); }
+    void wait_for_all_vcpus_initialized() { _sm_all_initialized.wait(); }
+    void signal_all_vcpus_initialized() { _sm_all_initialized.sig(); }
 
     atomic<uint16> vcpus_startup_done; /*!< VCPU(s) that are not yet fully initialized */
 
 private:
-    Semaphore _sm_all_initialized;
+    Platform::Signal _sm_all_initialized;
 };
 
 struct ParallelRoundupInfo {
