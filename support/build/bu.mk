@@ -10,7 +10,7 @@
 
 $(BU)_DIR := $(CUR_DIR)
 $(BU)_SRCDIR := $(CUR_DIR)src/
-$(BU)_OBJDIR := $(BLDDIR)/$(CUR_DIR)
+$(BU)_OBJDIR := $(BLDDIR)$(CUR_DIR)
 $(BU)_INCDIR := $(CUR_DIR)include/
 $(BU)_SRCS := $(CC_SRCS)
 $(BU)_DIR  := $(CUR_DIR)
