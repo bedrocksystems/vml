@@ -45,7 +45,7 @@ doc:
 
 else
 
-export BLDDIR ?= build-$(PLATFORM)-$(ARCH)
+export BLDDIR ?= build-$(PLATFORM)-$(ARCH)/
 
 EXAMPLES = examples/vbus_posix examples/virtio_posix
 
@@ -85,7 +85,7 @@ test: $(addprefix $(RUN_TEST_PREFIX),$(EXAMPLES))
 
 define run_example
 $(RUN_TEST_PREFIX)$(1): $(1)
-	$(BLDDIR)/$(1)/$(notdir $(1))
+	$(BLDDIR)$(1)/$(notdir $(1))
 endef
 
 $(foreach e,$(EXAMPLES),$(eval $(call run_example,$e)))
