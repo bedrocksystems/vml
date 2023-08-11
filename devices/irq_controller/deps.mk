@@ -1,7 +1,3 @@
-LIBS = vbus cpu_model $(PLATFORM)
-
-ifeq ($(PLATFORM), bedrock)
-LIBS += lang cxx
-endif
+LIBS = vbus $(PLATFORM) cpu_model
 
 $(eval $(call dep_hook,irq_controller,$(LIBS)))
