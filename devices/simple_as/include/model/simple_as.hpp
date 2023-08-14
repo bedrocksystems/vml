@@ -483,6 +483,11 @@ public:
      */
     GPA get_guest_view() const { return GPA(_as.begin()); }
 
+    uint64 gpa_to_page_idx(GPA addr) const {
+        ASSERT(is_gpa_valid(addr, 1));
+        return (addr.get_value() - _as.begin()) / PAGE_SIZE;
+    }
+
     /*! \brief Query the base of the address space from the VMM point of view
      *  \pre Partial ownership of the object.
      *  \post Ownership unchanged.
