@@ -47,6 +47,19 @@ public:
         T32,
     };
 
+    enum SpaceIdx {
+        SIDX_GST = 0,
+
+        // ARM only
+        SIDX_NESTED = 1,
+
+        // x86 only
+        SIDX_PIO = 1,
+        SIDX_MSR = 2,
+
+        SIDX_MAX,
+    };
+
     enum : unsigned { MAX_BOOT_ARGS = 4 };
 
 private:
