@@ -444,6 +444,7 @@ public:
      */
     bool map_host();
     bool destruct();
+    const Range<mword> &get_range() const { return _as; }
 
     /*! \brief Get the beginning of this AS's GPA range
      *  \pre Partial ownership of this object
