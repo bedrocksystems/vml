@@ -65,7 +65,7 @@ namespace Log {
 #define FMTd32 "%" PRId32
 
 #define _LOG(_FILE_STREAM_, _LVL_STR_, _FMT_, ...)                                                                               \
-    fprintf(_FILE_STREAM_, "[%s][%s:%u] " _FMT_ "\n", _LVL_STR_, __FILE__, __LINE__, ##__VA_ARGS__);
+    fprintf(_FILE_STREAM_, "[%s][%s:%u] " _FMT_ "\n", _LVL_STR_, __FILE_NAME__, __LINE__, ##__VA_ARGS__);
 #define DEBUG(_FMT_, ...) _LOG(stdout, "DBG", _FMT_, ##__VA_ARGS__)
 #define VERBOSE(_FMT_, ...) _LOG(stdout, "VRB", _FMT_, ##__VA_ARGS__)
 #define INFO(_FMT_, ...) _LOG(stdout, "INF", _FMT_, ##__VA_ARGS__)
