@@ -172,7 +172,7 @@ main() {
         exit(1);
     }
 
-    Model::SimpleAS sas(Range<mword>{VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE}, Platform::Mem::MemDescr(fd), false);
+    Model::SimpleAS sas(Range<mword>{VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE}, Platform::Mem::MemDescr(fd), Platform::Mem::Cred{});
     ok = sas.map_host();
     ASSERT(ok);
     ok = bus.register_device(&sas, VIRTIO_GUEST_BASE, VIRTIO_RAM_SIZE);

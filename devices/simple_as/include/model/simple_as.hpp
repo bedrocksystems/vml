@@ -431,9 +431,10 @@ public:
      *  \param name name of the virtual device
      *  \param read_only is the AS read-only from the guest point of view?
      */
-    SimpleAS(const Range<mword> &guest_range, const Platform::Mem::MemDescr &descr, bool read_only, bool flush_on_reset = true,
-             bool flush_on_write = true, Vbus::Device::Type type = GUEST_PHYSICAL_STATIC_MEMORY, const char *name = "SimpleAS")
-        : Vbus::Device(name, type), _read_only(read_only), _flush_on_reset(flush_on_reset), _flush_on_write(flush_on_write),
+    SimpleAS(const Range<mword> &guest_range, const Platform::Mem::MemDescr &descr, Platform::Mem::Cred guest_cred,
+             bool flush_on_reset = true, bool flush_on_write = true, Vbus::Device::Type type = GUEST_PHYSICAL_STATIC_MEMORY,
+             const char *name = "SimpleAS")
+        : Vbus::Device(name, type), _guest_cred(guest_cred), _flush_on_reset(flush_on_reset), _flush_on_write(flush_on_write),
           _as(guest_range), _mobject(descr) {}
     SimpleAS(const SimpleAS &) = delete;
 
@@ -577,7 +578,8 @@ public:
 
     void *map_view(mword offset, size_t size, bool write) const;
 
-    bool is_read_only() const { return _read_only; }
+    /*! \brief Is the AS read-only from the guest point of view? */
+    bool is_read_only() const { return !_guest_cred.write(); }
 
     static char *gpa_to_vmm_view(const Vbus::Bus &bus, GPA addr, size_t sz);
     static char *map_guest_mem(const Vbus::Bus &bus, GPA gpa, size_t sz, bool write);
@@ -605,7 +607,7 @@ protected:
     void flush_guest_as();
     bool mapped() const { return (_vmm_view != nullptr); }
 
-    const bool _read_only;            /*!< Is the AS read-only from the guest point of view? */
+    Platform::Mem::Cred _guest_cred;  /*!< Permissions for guest mappings to this range. */
     const bool _flush_on_reset;       /*!< Do we flush on memory state change? Reboot or cache toggle */
     const bool _flush_on_write;       /*!< Do we need to flush on write? */
     char *_vmm_view{nullptr};         /*!< base host mapping of base gpa. */
