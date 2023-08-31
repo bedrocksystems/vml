@@ -95,7 +95,7 @@ main() {
     }
 
     GPA gpa(0x10000000);
-    Model::SimpleAS as(Range<mword>{gpa.get_value(), size_t(file_size)}, Platform::Mem::MemDescr(fd), false);
+    Model::SimpleAS as(Range<mword>{gpa.get_value(), size_t(file_size)}, Platform::Mem::MemDescr(fd), Platform::Mem::Cred{});
     ok = vbus.register_device(&as, gpa.get_value(), mword(file_size));
     ASSERT(ok == true);
 
