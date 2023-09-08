@@ -33,6 +33,8 @@ namespace Platform::Mem {
 
 class Platform::Mem::Cred {
 public:
+    Cred() = default;
+    Cred([[maybe_unused]] bool read, [[maybe_unused]] bool write, [[maybe_unused]] bool exec = false) {}
     bool write() const { return true; }
     bool read() const { return true; }
     bool uexec() const { return true; }
