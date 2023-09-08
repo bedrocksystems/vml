@@ -220,7 +220,7 @@ Model::SimpleAS::demand_unmap_clean(const GPA&, size_t size_bytes, void* va) con
 
 void*
 Model::SimpleAS::map_view(mword offset, size_t size, bool write) const {
-    if (_read_only && write && !_mobject.cred().write())
+    if (is_read_only() && write && !_mobject.cred().write())
         return nullptr;
 
     void* dst = Platform::Mem::map_mem(_mobject, offset, size, Platform::Mem::READ | (write ? Platform::Mem::WRITE : 0),
@@ -261,7 +261,7 @@ Model::SimpleAS::clean_invalidate(GPA gpa, size_t size) const {
 
 void
 Model::SimpleAS::flush_guest_as() {
-    if (_read_only or not _flush_on_reset or not _mobject.cred().write())
+    if (is_read_only() or not _flush_on_reset or not _mobject.cred().write())
         return;
 
     void* mapped_area;
