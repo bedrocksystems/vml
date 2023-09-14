@@ -96,9 +96,9 @@ protected:
 public:
     Device(const char *name, Virtio::DeviceID device_id, const Vbus::Bus &bus, Model::Irq_controller &irq_ctlr,
            void *config_space, uint32 config_size, uint16 const irq, uint16 const queue_num, Virtio::Transport *transport,
-           uint32 const device_feature_lower = 0)
+           uint64 const device_feature = 0)
         : Vbus::Device(name), _irq_ctlr(&irq_ctlr), _vbus(&bus), _irq(irq),
-          _dev_state(queue_num, VENDOR_ID, static_cast<uint32>(device_id), device_feature_lower, config_space, config_size),
+          _dev_state(queue_num, VENDOR_ID, static_cast<uint32>(device_id), device_feature, config_space, config_size),
           _transport(transport) {}
 
     uint64 drv_feature() const { return combine_low_high(_dev_state.drv_feature_lower, _dev_state.drv_feature_upper); }

@@ -78,7 +78,7 @@ private:
 public:
     struct UserConfig {
         Virtio::Transport *transport;
-        uint32 device_feature{0};
+        uint64 device_feature{0};
         uint64 mac{0};
         uint16 mtu{0};
         uint16 port_id{0};

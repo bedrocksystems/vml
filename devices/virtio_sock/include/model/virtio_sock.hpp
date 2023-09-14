@@ -48,12 +48,13 @@ public:
     struct UserConfig {
         Virtio::Transport *transport;
         uint64 cid{0};
+        uint64 device_features{0};
     };
 
     Virtio_sock(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
                 const UserConfig &config, Platform::Signal *sig)
         : Virtio::Device("virtio socket", Virtio::DeviceID::SOCKET, bus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries,
-                         config.transport),
+                         config.transport, config.device_features),
           _sig(sig) {
         _config.guest_cid = config.cid;
     }
