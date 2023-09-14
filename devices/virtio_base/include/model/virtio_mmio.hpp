@@ -98,7 +98,7 @@ public:
                 return Virtio::read_register(offset, RO_DEVICE_FEATURE, RO_DEVICE_FEATURE_END, bytes, state.device_feature_lower,
                                              value);
             else
-                return Virtio::read_register(offset, RO_DEVICE_FEATURE, RO_DEVICE_FEATURE_END, bytes, 1 /*VIRTIO_F_VERSION_1*/,
+                return Virtio::read_register(offset, RO_DEVICE_FEATURE, RO_DEVICE_FEATURE_END, bytes, state.device_feature_upper,
                                              value);
         case RW_DEVICE_FEATURE_SEL ... RW_DEVICE_FEATURE_SEL_END:
             return Virtio::read_register(offset, RW_DEVICE_FEATURE_SEL, RW_DEVICE_FEATURE_SEL_END, bytes, state.drv_device_sel,

@@ -61,9 +61,9 @@ private:
 
 public:
     Virtio_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
-                   Virtio::Transport *transport, Platform::Signal *sig)
+                   Virtio::Transport *transport, Platform::Signal *sig, uint64 device_features = 0)
         : Virtio::Device("virtio console", Virtio::DeviceID::CONSOLE, bus, irq_ctlr, &_config, sizeof(_config), irq,
-                         queue_entries, transport),
+                         queue_entries, transport, device_features),
           _rx_buff(Virtio::Sg::Buffer(queue_entries)), _tx_buff(Virtio::Sg::Buffer(queue_entries)), _sig_notify_event(sig) {}
 
     bool init(const Platform_ctx *ctx) {

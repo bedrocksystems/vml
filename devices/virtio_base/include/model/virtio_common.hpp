@@ -23,6 +23,7 @@ namespace Virtio {
     class Transport;
     enum class DeviceStatus : uint32;
     enum class Queues : uint32;
+    enum FeatureBits : uint64;
     class QueueState;
     struct QueueData;
     struct DeviceState;
@@ -65,6 +66,21 @@ enum class Virtio::DeviceStatus : uint32 {
 
 enum class Virtio::Queues : uint32 {
     MAX = 3,
+};
+
+// These are device-independent feature bits as per VirtIO specs section [6 Reserved Feature Bits]
+enum Virtio::FeatureBits : uint64 {
+    VIRTIO_F_INDIRECT_DESC = 1ULL << 28,
+    VIRTIO_F_EVENT_IDX = 1ULL << 29,
+    VIRTIO_F_VERSION_1 = 1ULL << 32,
+    VIRTIO_F_ACCESS_PLATFORM = 1ULL << 33,
+    VIRTIO_F_RING_PACKED = 1ULL << 34,
+    VIRTIO_F_IN_ORDER = 1ULL << 35,
+    VIRTIO_F_ORDER_PLATFORM = 1ULL << 36,
+    VIRTIO_F_SR_IOV = 1ULL << 37,
+    VIRTIO_F_NOTIFICATION_DATA = 1ULL << 38,
+    VIRTIO_F_NOTIF_CONFIG_DATA = 1ULL << 39,
+    VIRTIO_F_RING_RESET = 1ULL << 40,
 };
 
 struct Virtio::QueueData {
@@ -154,9 +170,10 @@ public:
 };
 
 struct Virtio::DeviceState {
-    explicit DeviceState(uint16 const num_max, uint32 vendor, uint32 id, uint32 const feature_lower, void *config,
-                         uint32 config_sz)
-        : queue_num_max(num_max), vendor_id(vendor), device_id(id), device_feature_lower(feature_lower),
+    explicit DeviceState(uint16 const num_max, uint32 vendor, uint32 id, uint64 const feature, void *config, uint32 config_sz)
+        : queue_num_max(num_max), vendor_id(vendor), device_id(id), device_feature_lower(static_cast<uint32>(feature)),
+          // We always set [VIRTIO_F_VERSION_1] i.e. no legacy VirtIO emulation.
+          device_feature_upper(static_cast<uint32>((feature | Virtio::FeatureBits::VIRTIO_F_VERSION_1) >> 32)),
           config_space(static_cast<uint64 *>(config)), config_size(config_sz) {
         for (uint16 i = 0; i < static_cast<uint8>(Virtio::Queues::MAX); i++) {
             data[i] = QueueData(queue_num_max);
@@ -198,6 +215,14 @@ struct Virtio::DeviceState {
     uint32 get_config_gen() const { return __atomic_load_n(&config_generation, __ATOMIC_SEQ_CST); }
     void update_config_gen() { __atomic_fetch_add(&config_generation, 1, __ATOMIC_SEQ_CST); }
 
+    bool platform_specific_access_enabled() const {
+        // [device_feature_upper == device(host) offered the feature bit
+        // [drv_feature_upper] == driver(guest) negotiated the feature
+        return 0
+               != (device_feature_upper & drv_feature_upper
+                   & static_cast<uint32>(Virtio::FeatureBits::VIRTIO_F_ACCESS_PLATFORM >> 32));
+    }
+
     bool status_changed{false};
     bool construct_queue{false};
     bool irq_acknowledged{false};
@@ -209,6 +234,7 @@ struct Virtio::DeviceState {
     uint32 const vendor_id;
     uint32 const device_id;
     uint32 const device_feature_lower;
+    uint32 const device_feature_upper;
 
     uint64 *config_space;
     uint32 config_size;
