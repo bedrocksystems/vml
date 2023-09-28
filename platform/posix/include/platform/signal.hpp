@@ -28,7 +28,15 @@ namespace Platform {
  */
 class Platform::Signal {
 public:
-    Signal() : _mutex(), _cv(), _signaled(false) {}
+    Signal() : _signaled(false) {
+        _mutex = new std::mutex();
+        _cv = new std::condition_variable();
+    }
+
+    virtual ~Signal() {
+        delete _mutex;
+        delete _cv;
+    }
 
     /*! \brief Initialize the signal
      *  \param ctx The platform-specific context
@@ -37,6 +45,11 @@ public:
     bool init(const Platform_ctx *) {
         _valid = true;
         return true;
+    }
+
+    Errno create() {
+        _valid = true;
+        return Errno::NONE;
     }
 
     Errno create(const Platform_ctx *) {
@@ -55,22 +68,22 @@ public:
     /*! \brief Wait for a signal
      */
     void wait() {
-        std::unique_lock<decltype(_mutex)> lock(_mutex);
+        std::unique_lock<std::mutex> lock(*_mutex);
         while (!_signaled)
-            _cv.wait(lock);
+            _cv->wait(lock);
 
         _signaled = false;
     }
 
     bool wait(unsigned long long abs_ticks) {
-        std::unique_lock<decltype(_mutex)> lock(_mutex);
+        std::unique_lock<std::mutex> lock(*_mutex);
 
         while (!_signaled) {
             std::chrono::steady_clock::duration end(abs_ticks);
             std::chrono::steady_clock::time_point deadline(end);
             std::cv_status status;
 
-            status = _cv.wait_until(lock, deadline);
+            status = _cv->wait_until(lock, deadline);
             if (status == std::cv_status::timeout)
                 return false;
         }
@@ -83,18 +96,18 @@ public:
     /*! \brief Signal a (future) waiter
      */
     void sig() {
-        std::lock_guard<decltype(_mutex)> lock(_mutex);
+        std::lock_guard<std::mutex> lock(*_mutex);
         if (_signaled)
             return;
         _signaled = true;
-        _cv.notify_one();
+        _cv->notify_one();
     }
 
     bool is_valid() const { return _valid; }
 
 private:
-    std::mutex _mutex;
-    std::condition_variable _cv;
+    std::mutex *_mutex;
+    std::condition_variable *_cv;
     bool _signaled;
     bool _valid{false};
 };
