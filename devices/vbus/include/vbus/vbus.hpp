@@ -116,6 +116,11 @@ public:
     uint64 num_accesses() const { return _accesses.load(); }
     uint64 time_spent() const { return _time_spent.load(); }
 
+    void reset_stats() {
+        _accesses = 0;
+        _time_spent = 0;
+    }
+
     void accessed() { _accesses++; }
     void add_time(uint64 t) { _time_spent += t; }
 
