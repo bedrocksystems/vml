@@ -41,7 +41,7 @@ enum FunctionId : uint32 {
     SYSTEM_SUSPEND_64 = 0xc400000eu,
 };
 
-enum Result : int32 {
+enum PsciResult : int32 {
     SUCCESS = 0,
     NOT_SUPPORTED = -1,
     INVALID_PARAMETERS = -2,
