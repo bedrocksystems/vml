@@ -293,6 +293,8 @@ public:
         _ris = 0;
         _ifls = FIFO_1DIV2_FULL << RXIFLSEL | FIFO_1DIV2_FULL << TXIFLSEL;
         _dmacr = 0;
+        _rx_irq_disabled_by_icr = false;
+        _tx_irq_disabled_by_icr = false;
 
         /*
          * Control and setup of DEN0029D_SBSA_6.0:
