@@ -62,13 +62,13 @@ Vbus::Err
 Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 bytes, uint64& val) {
     bool absolute_access = _absolute_access; // silly but currently needed to simplify proof
 
-    _vbus_lock.renter();
     if (__UNLIKELY__((addr + bytes <= addr)))
         return NO_DEVICE;
 
     Range<mword> target(addr, bytes);
     const DeviceEntry *entry, *previous_entry = nullptr;
 
+    _vbus_lock.renter();
     entry = _last_access;
     if (entry == nullptr || !entry->contains(target)) {
         entry = lookup(addr, bytes);
