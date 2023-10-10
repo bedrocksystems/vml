@@ -481,7 +481,7 @@ private:
                 break;
             case SPI:
                 irq_base = SPI_BASE;
-                irq_max = SPI_BASE + configured_irqs - MAX_SGI - MAX_PPI;
+                irq_max = static_cast<uint16>(SPI_BASE + configured_irqs - MAX_SGI - MAX_PPI);
                 break;
             case PRIVATE_ONLY:
                 irq_base = 0;
@@ -684,7 +684,7 @@ public:
     }
 
     uint16 configured_irqs() const { return _configured_irqs; }
-    uint16 configured_spis() const { return _configured_irqs - MAX_PPI - MAX_SGI; }
+    uint16 configured_spis() const { return static_cast<uint16>(_configured_irqs - MAX_PPI - MAX_SGI); }
 
     bool init() {
         if (_version == GIC_V2 && _num_vcpus > GICV2_MAX_CPUS)
