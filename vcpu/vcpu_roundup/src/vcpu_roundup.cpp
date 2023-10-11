@@ -153,7 +153,7 @@ struct ParallelRoundupInfo {
     Semaphore count_sem;
     Semaphore resume_waiter_sem;
     atomic<uint16> count;
-    uint16 num_waiters;
+    uint16 num_waiters{0};
 };
 
 static GlobalRoundupInfo roundup_info;
@@ -162,15 +162,15 @@ static VcpuInitializedInfo initialized_info;
 
 Errno
 Vcpu::Roundup::init(const Platform_ctx* ctx, uint16 num_vcpus) {
-    if (!parallel_info.count_sem.init(ctx) || !parallel_info.resume_waiter_sem.init(ctx))
-        return Errno::NOMEM;
+    parallel_info.num_waiters = 0;
     parallel_info.count = 0;
-
-    Errno err = initialized_info.init(ctx);
+    Errno err = roundup_info.init(ctx, num_vcpus);
     if (err != Errno::NONE)
         return err;
+    if (!parallel_info.count_sem.init(ctx) || !parallel_info.resume_waiter_sem.init(ctx))
+        return Errno::NOMEM;
 
-    return roundup_info.init(ctx, num_vcpus);
+    return initialized_info.init(ctx);
 }
 
 Errno
