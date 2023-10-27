@@ -7,4 +7,5 @@
 #
 
 LINKLIBS  = vbus simple_as arch_api vpl011 gic msr timer cpu_model vcpu_roundup virtio_console virtio_net posix_core
+LINKLIBS += vmm_debug
 CC_SRCS = vbus_example.cpp

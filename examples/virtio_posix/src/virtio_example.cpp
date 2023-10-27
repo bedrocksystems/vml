@@ -34,9 +34,6 @@ static const uint64 Q1_DEVICE = VIRTIO_GUEST_BASE + 0x5000;
 
 static const uint16 QUEUE_SIZE = 16;
 
-enum Debug::Level Debug::current_level = Debug::NONE;
-bool Stats::requested = false;
-
 static Semaphore wait_sm;
 
 class Dummy_vcpu : public Model::Cpu {
