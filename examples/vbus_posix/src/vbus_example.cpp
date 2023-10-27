@@ -22,9 +22,6 @@
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
-enum Debug::Level Debug::current_level = Debug::NONE;
-bool Stats::requested = false;
-
 static Semaphore wait_sm;
 
 class Dummy_vcpu : public Model::Cpu {

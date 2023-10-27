@@ -25,7 +25,7 @@ export ARCH
 
 SUBDIRS = devices/vbus devices/vpl011 devices/gic arch/arch_api devices/timer devices/simple_as
 SUBDIRS += devices/virtio_base devices/virtio_console devices/virtio_net devices/msr
-SUBDIRS += vcpu/vcpu_roundup vcpu/cpu_model devices/virtio_sock
+SUBDIRS += vcpu/vcpu_roundup vcpu/cpu_model devices/virtio_sock config/vmm_debug
 SUBDIRS += platform/posix_core
 
 ifeq ($(ARCH), aarch64)
