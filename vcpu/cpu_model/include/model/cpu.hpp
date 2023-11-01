@@ -112,7 +112,8 @@ private:
     void resume();
 
     void set_reset_parameters(uint64 boot_addr, uint64 const boot_arg[MAX_BOOT_ARGS], uint64 tmr_off, enum Mode m);
-    static void roundup(Vcpu_id);
+
+    static void roundup(Vcpu_id cpu_id) { get(cpu_id)->roundup_impl(); }
 
     bool block_timeout(uint64 const absolut_timeout) { return _irq_sig.wait(absolut_timeout); }
     void block() { _irq_sig.wait(); }
@@ -140,13 +141,16 @@ protected:
     CpuFlag _icache_invalidate;
     CpuFeature _dump_regs;
 
+    static Model::Cpu *get(Vcpu_id cpu_id);
+
 public:
     // VCPU api start
     static bool init(uint16 vcpus);
     static void deinit();
     static bool is_cpu_turned_on_by_guest(Vcpu_id);
     static bool is_64bit(Vcpu_id);
-    static Errno run(Vcpu_id);
+    static Errno run(Vcpu_id cpu_id) { return get(cpu_id)->run(); }
+
     static uint16 get_num_vcpus();
     static Pcpu_id get_pcpu(Vcpu_id);
     static VcpuVHWId get_vcpu_vhw_id(Vcpu_id);
