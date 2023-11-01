@@ -149,7 +149,6 @@ public:
     static void deinit();
     static bool is_cpu_turned_on_by_guest(Vcpu_id);
     static bool is_64bit(Vcpu_id);
-    static Errno run(Vcpu_id cpu_id) { return get(cpu_id)->run(); }
 
     static uint16 get_num_vcpus();
     static Pcpu_id get_pcpu(Vcpu_id);
@@ -230,7 +229,6 @@ public:
         MAX_REASONS,
     };
     virtual void recall(bool strong, RecallReason reason) = 0;
-    virtual Errno run() = 0;
 
     // Functions that are implemented
     Cpu(Irq_controller *girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id);
