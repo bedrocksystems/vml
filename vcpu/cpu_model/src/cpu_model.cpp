@@ -86,14 +86,14 @@ void
 Model::Cpu::roundup_all() {
     uint64 max = configured_vcpus;
     for (Vcpu_id i = 0; i < max; ++i)
-        vcpus[i]->roundup_impl();
+        get(i)->roundup_impl();
 }
 
 void
 Model::Cpu::resume_all() {
     uint64 max = configured_vcpus;
     for (Vcpu_id i = 0; i < max; ++i)
-        vcpus[i]->resume();
+        get(i)->resume();
 }
 
 void
