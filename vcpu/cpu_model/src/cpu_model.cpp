@@ -76,11 +76,10 @@ Model::Cpu::roundup_impl() {
         Vcpu::Roundup::vcpu_notify_done_progressing();
 }
 
-// is this function still needed?
-void
-Model::Cpu::roundup(Vcpu_id cpu_id) {
+Model::Cpu*
+Model::Cpu::get(Vcpu_id cpu_id) {
     ASSERT(cpu_id < configured_vcpus);
-    vcpus[cpu_id]->roundup_impl();
+    return vcpus[cpu_id];
 }
 
 void
@@ -223,13 +222,6 @@ Model::Cpu::ctrl_feature_regs_dump(Model::Cpu* mcpu, bool enable, Request::Reque
         mcpu->unblock();
         mcpu->recall(false, RECONFIG);
     }
-}
-
-Errno
-Model::Cpu::run(Vcpu_id cpu_id) {
-    ASSERT(cpu_id < configured_vcpus);
-
-    return vcpus[cpu_id]->run();
 }
 
 Model::Cpu::StartErr
