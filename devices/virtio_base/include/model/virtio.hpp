@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <model/iommu_interface.hpp>
 #include <model/irq_controller.hpp>
 #include <model/simple_as.hpp>
 #include <model/virtio_common.hpp>
@@ -22,7 +23,7 @@ namespace Virtio {
     class Device;
 };
 
-class Virtio::Device : public Vbus::Device, public Virtio::Sg::Buffer::ChainAccessor {
+class Virtio::Device : public Vbus::Device, public Model::IOMMUManagedDevice {
 private:
     static constexpr uint32 VENDOR_ID = 0x20564842ULL; // little-endian "BHV "
 
@@ -37,7 +38,10 @@ protected:
     Virtio::QueueData const &queue_data(uint8 index) const { return _dev_state.data[index]; }
     Virtio::DeviceQueue &device_queue(uint8 index) { return queue(index).device_queue(); }
 
-    void reset_virtio() { _dev_state.reset(); }
+    void reset_virtio() {
+        _dev_state.reset();
+        Model::IOMMUManagedDevice::reset();
+    }
 
     void assert_irq() {
         // Currently there is no run-time config change. We'll need to inject config change
@@ -56,7 +60,7 @@ protected:
     void handle_events() {
         if (_dev_state.construct_queue) {
             _dev_state.construct_queue = false;
-            _dev_state.construct_selected(*_vbus);
+            _dev_state.construct_selected(*_vbus, use_io_mappings(), *this);
         }
 
         if (_dev_state.status_changed) {
@@ -93,6 +97,8 @@ protected:
     virtual void notify(uint32) = 0;
     virtual void driver_ok() = 0;
 
+    bool use_io_mappings() const { return iommu_avail and attached and _dev_state.platform_specific_access_enabled(); }
+
 public:
     Device(const char *name, Virtio::DeviceID device_id, const Vbus::Bus &bus, Model::Irq_controller &irq_ctlr,
            void *config_space, uint32 config_size, uint16 const irq, uint16 const queue_num, Virtio::Transport *transport,
@@ -102,35 +108,6 @@ public:
           _transport(transport) {}
 
     uint64 drv_feature() const { return combine_low_high(_dev_state.drv_feature_lower, _dev_state.drv_feature_upper); }
-
-    // [GuestPhysicalToVirtual] overrides inherited by [Virtio::Sg::Buffer::ChainAccessor]
-    //
-    // NOTE: mapping depends on whether or not the the va will be used for reads or writes,
-    // but unmapping is done unconditionally.
-    Errno gpa_to_va(const GPA &gpa, size_t size_bytes, char *&va) override {
-        char *mapped_va = Model::SimpleAS::map_guest_mem(*_vbus, gpa, size_bytes, false);
-
-        if (nullptr == mapped_va) {
-            return Errno::NOENT;
-        }
-
-        va = mapped_va;
-        return Errno::NONE;
-    }
-    Errno gpa_to_va_write(const GPA &gpa, size_t size_bytes, char *&va) override {
-        char *mapped_va = Model::SimpleAS::map_guest_mem(*_vbus, gpa, size_bytes, true);
-
-        if (nullptr == mapped_va) {
-            return Errno::NOENT;
-        }
-
-        va = mapped_va;
-        return Errno::NONE;
-    }
-    Errno gpa_to_va_post(const GPA &, size_t size_bytes, char *va) override {
-        Model::SimpleAS::unmap_guest_mem(va, size_bytes);
-        return Errno::NONE;
-    }
 
     Errno deinit() override { return Errno::NONE; }
 };
