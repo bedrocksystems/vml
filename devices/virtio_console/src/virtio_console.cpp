@@ -13,6 +13,9 @@ void
 Model::Virtio_console::notify(uint32 const) {
     _sig_notify_event->sig();
 
+    if (!queue(RX).constructed() || (!_driver_initialized))
+        return;
+
     if (device_queue(RX).get_free() != 0u)
         _sig_notify_empty_space.sig();
 }

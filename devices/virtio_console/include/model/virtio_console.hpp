@@ -10,6 +10,7 @@
 
 #include <model/virtio.hpp>
 #include <model/virtio_sg.hpp>
+#include <platform/mutex.hpp>
 #include <platform/semaphore.hpp>
 #include <platform/signal.hpp>
 #include <platform/types.hpp>
@@ -39,7 +40,7 @@ public:
 // it overloads the necessary functions using the
 // [Model::SimpleAS::map_guest_mem]/[Model::SimpleAS::unmap_guest_mem] functions. [Virtio_console],
 // however, needs to do demand (un)mapping which means that we must provide custom overrides.
-class Model::Virtio_console : public Virtio::Device {
+class Model::Virtio_console : public Virtio::Device, public Virtio::Sg::Buffer::ChainAccessor {
 private:
     enum { RX = 0, TX = 1 };
     Model::Virtio_console_config _config __attribute__((aligned(8)));
@@ -51,6 +52,7 @@ private:
     Platform::Signal *_sig_notify_event;
     bool _driver_initialized{false};
     Platform::Signal _sig_notify_empty_space;
+    Platform::Mutex _io_lock;
 
     // [Virtio::Device] overrides
     void notify(uint32) override;
@@ -71,7 +73,9 @@ public:
             return false;
         if (Errno::NONE != _tx_buff.init())
             return false;
-        return _sig_notify_empty_space.init(ctx);
+        if (not _sig_notify_empty_space.init(ctx))
+            return false;
+        return _io_lock.init(ctx);
     }
 
     bool to_guest(const char *buff, size_t size_bytes);
@@ -99,11 +103,44 @@ public:
         _console_callback = console_callback;
     }
 
+private:
+    void detach() override {
+        Platform::MutexGuard l{_io_lock};
+        Model::IOMMUManagedDevice::detach();
+    }
+
+    Errno map(const Model::IOMapping &m) override {
+        Platform::MutexGuard l{_io_lock};
+        return Model::IOMMUManagedDevice::map(m);
+    }
+
+    Errno unmap(const Model::IOMapping &m) override {
+        Platform::MutexGuard l{_io_lock};
+        return Model::IOMMUManagedDevice::unmap(m);
+    }
+
+    uint64 translate_io(uint64 io_addr, size_t size_bytes) override {
+        Platform::MutexGuard l{_io_lock};
+        return Model::IOMMUManagedDevice::translate_io(io_addr, size_bytes);
+    }
+
+    GPA translate(uint64 addr, size_t size_bytes) {
+        if (not use_io_mappings()) {
+            return GPA(addr);
+        }
+
+        return GPA(translate_io(addr, size_bytes));
+    }
+
     // [GuestPhysicalToVirtual] overrides inherited by [Virtio::Sg::Buffer::ChainAccessor]
     //
     // NOTE: mapping depends on whether or not the the va will be used for reads or writes,
     // but unmapping is done unconditionally.
-    Errno gpa_to_va(const GPA &gpa, size_t size_bytes, char *&va) override {
+    Errno gpa_to_va(const GPA &g, size_t size_bytes, char *&va) override {
+        GPA gpa = translate(g.get_value(), size_bytes);
+        if (gpa.invalid())
+            return Errno::PERM;
+
         void *temp_va = nullptr;
         Errno err = Model::SimpleAS::demand_map_bus(*_vbus, gpa, size_bytes, temp_va, false);
 
@@ -113,7 +150,11 @@ public:
 
         return err;
     }
-    Errno gpa_to_va_write(const GPA &gpa, size_t size_bytes, char *&va) override {
+    Errno gpa_to_va_write(const GPA &g, size_t size_bytes, char *&va) override {
+        GPA gpa = translate(g.get_value(), size_bytes);
+        if (gpa.invalid()) {
+            return Errno::PERM;
+        }
         void *temp_va = nullptr;
         Errno err = Model::SimpleAS::demand_map_bus(*_vbus, gpa, size_bytes, temp_va, true);
 
@@ -123,10 +164,18 @@ public:
 
         return err;
     }
-    Errno gpa_to_va_post(const GPA &gpa, size_t size_bytes, char *va) override {
+    Errno gpa_to_va_post(const GPA &g, size_t size_bytes, char *va) override {
+        GPA gpa = translate(g.get_value(), size_bytes);
+        if (gpa.invalid()) {
+            return Errno::PERM;
+        }
         return Model::SimpleAS::demand_unmap_bus(*_vbus, gpa, size_bytes, va);
     }
-    Errno gpa_to_va_post_write(const GPA &gpa, size_t size_bytes, char *va) override {
+    Errno gpa_to_va_post_write(const GPA &g, size_t size_bytes, char *va) override {
+        GPA gpa = translate(g.get_value(), size_bytes);
+        if (gpa.invalid()) {
+            return Errno::PERM;
+        }
         return Model::SimpleAS::demand_unmap_bus_clean(*_vbus, gpa, size_bytes, va);
     }
 };

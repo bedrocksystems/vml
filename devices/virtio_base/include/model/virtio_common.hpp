@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <model/iommu_interface.hpp>
 #include <model/irq_controller.hpp>
 #include <model/simple_as.hpp>
 #include <model/virtqueue.hpp>
@@ -115,26 +116,48 @@ private:
     void *_avail_addr{nullptr};
     void *_used_addr{nullptr};
 
+private:
+    static GPA convert(Model::IOMMUManagedDevice &io_translations, uint64 addr, size_t size_bytes, bool use_io_translation) {
+        if (not use_io_translation) {
+            return GPA(addr);
+        }
+
+        return GPA(io_translations.translate_io(addr, size_bytes));
+    }
+
 public:
-    void construct(QueueData &data, Vbus::Bus const &bus) {
-        _data = &data;
+    void construct(QueueData &queue_data, Vbus::Bus const &bus, bool use_io_translation,
+                   Model::IOMMUManagedDevice &io_translations) {
+        _data = &queue_data;
 
         /* don't accept queues with zero elements */
         if (_data->num == 0)
             return destruct();
 
-        _desc_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.descr()),
+        GPA data = convert(io_translations, queue_data.descr(),
+                           Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)), use_io_translation);
+        GPA driver = convert(io_translations, queue_data.driver(),
+                             Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)), use_io_translation);
+        GPA device = convert(io_translations, queue_data.device(),
+                             Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)), use_io_translation);
+
+        if (data.invalid() or driver.invalid() or device.invalid()) {
+            return destruct();
+        }
+
+        _desc_addr = Model::SimpleAS::map_guest_mem(bus, data,
                                                     Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)), true);
         if (_desc_addr == nullptr)
             return destruct();
 
-        _avail_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.driver()),
+        _avail_addr = Model::SimpleAS::map_guest_mem(bus, driver,
                                                      Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)), true);
+
         if (_avail_addr == nullptr)
             return destruct();
 
-        _used_addr = Model::SimpleAS::map_guest_mem(bus, GPA(data.device()),
-                                                    Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)), true);
+        _used_addr
+            = Model::SimpleAS::map_guest_mem(bus, device, Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)), true);
         if (_used_addr == nullptr)
             return destruct();
 
@@ -183,9 +206,9 @@ struct Virtio::DeviceState {
     QueueData const &selected_queue_data() const { return data[sel_queue]; }
     QueueData &selected_queue_data() { return data[sel_queue]; }
 
-    void construct_selected(Vbus::Bus const &bus) {
+    void construct_selected(Vbus::Bus const &bus, bool use_io_translation, Model::IOMMUManagedDevice &io_translations) {
         if (!queue[sel_queue].constructed()) {
-            queue[sel_queue].construct(selected_queue_data(), bus);
+            queue[sel_queue].construct(selected_queue_data(), bus, use_io_translation, io_translations);
         }
     }
 
