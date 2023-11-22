@@ -60,6 +60,12 @@ class Model::Virtio_net_callback {
 public:
     virtual void device_reset(const VcpuCtx *ctx) = 0;
     virtual void shutdown() = 0;
+
+    // IOMMU callbacks
+    virtual void attach() = 0;
+    virtual void detach() = 0;
+    virtual Errno map(const Model::IOMapping &m) = 0;
+    virtual Errno unmap(const Model::IOMapping &m) = 0;
 };
 
 class Model::Virtio_net : public Virtio::Device {
@@ -108,6 +114,12 @@ public:
     void shutdown() override;
 
     Errno deinit() override { return Errno::NONE; }
+
+    // Override [Model::IOMMUManagedDevice] interfaces
+    void attach() override;
+    void detach() override;
+    Errno map(const Model::IOMapping &m) override;
+    Errno unmap(const Model::IOMapping &m) override;
 
     Virtio::QueueData const &queue_data_rx() const { return queue_data(RX); }
     Virtio::QueueData const &queue_data_tx() const { return queue_data(TX); }
