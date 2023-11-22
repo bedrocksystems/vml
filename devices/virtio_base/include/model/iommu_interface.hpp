@@ -20,6 +20,7 @@ namespace Model {
 }
 
 enum class Model::IOMappingFlags : uint32 {
+    NONE = 0,
     READ = 1ull << 0,
     WRITE = 1ull << 1,
 };
@@ -29,6 +30,7 @@ enum class Model::IOMappingFlags : uint32 {
  *
  */
 struct Model::IOMapping {
+    IOMapping() : va(UINT64_MAX), pa(UINT64_MAX), sz(0), flags(Model::IOMappingFlags::NONE) {}
     IOMapping(uint64 virt_addr, uint64 phys_addr, uint64 range_size, IOMappingFlags mapping_flags)
         : va(virt_addr), pa(phys_addr), sz(range_size), flags(mapping_flags) {}
 
@@ -99,7 +101,7 @@ public:
     }
 
     // Translate an IO address based on the mappings available here.
-    virtual uint64 translate_io(uint64 io_addr, size_t size_bytes) {
+    virtual uint64 translate_io(uint64 io_addr, size_t size_bytes) const {
         Range<uint64> r{io_addr, size_bytes};
         Model::IOMappingNode *n = static_cast<Model::IOMappingNode *>(io_mappings.lookup(&r));
         if (nullptr == n) {

@@ -41,3 +41,39 @@ Model::Virtio_sock::shutdown() {
     if (_virtio_sock_callback != nullptr)
         _virtio_sock_callback->shutdown();
 }
+
+void
+Model::Virtio_sock::attach() {
+    Model::IOMMUManagedDevice::attach();
+    if (_virtio_sock_callback != nullptr)
+        _virtio_sock_callback->attach();
+}
+
+void
+Model::Virtio_sock::detach() {
+    Model::IOMMUManagedDevice::detach();
+    if (_virtio_sock_callback != nullptr)
+        _virtio_sock_callback->detach();
+}
+
+Errno
+Model::Virtio_sock::map(const Model::IOMapping &m) {
+    Errno err = Model::IOMMUManagedDevice::map(m);
+    if (Errno::NONE != err)
+        return err;
+    if (_virtio_sock_callback != nullptr)
+        return _virtio_sock_callback->map(m);
+
+    return Errno::NONE;
+}
+
+Errno
+Model::Virtio_sock::unmap(const Model::IOMapping &m) {
+    Errno err = Model::IOMMUManagedDevice::unmap(m);
+    if (Errno::NONE != err)
+        return err;
+    if (_virtio_sock_callback != nullptr)
+        return _virtio_sock_callback->unmap(m);
+
+    return Errno::NONE;
+}

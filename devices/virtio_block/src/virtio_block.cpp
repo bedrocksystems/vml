@@ -41,3 +41,39 @@ Model::Virtio_block::shutdown() {
     if (_virtio_block_callback != nullptr)
         _virtio_block_callback->shutdown();
 }
+
+void
+Model::Virtio_block::attach() {
+    Model::IOMMUManagedDevice::attach();
+    if (_virtio_block_callback != nullptr)
+        _virtio_block_callback->attach();
+}
+
+void
+Model::Virtio_block::detach() {
+    Model::IOMMUManagedDevice::detach();
+    if (_virtio_block_callback != nullptr)
+        _virtio_block_callback->detach();
+}
+
+Errno
+Model::Virtio_block::map(const Model::IOMapping &m) {
+    Errno err = Model::IOMMUManagedDevice::map(m);
+    if (Errno::NONE != err)
+        return err;
+    if (_virtio_block_callback != nullptr)
+        return _virtio_block_callback->map(m);
+
+    return Errno::NONE;
+}
+
+Errno
+Model::Virtio_block::unmap(const Model::IOMapping &m) {
+    Errno err = Model::IOMMUManagedDevice::unmap(m);
+    if (Errno::NONE != err)
+        return err;
+    if (_virtio_block_callback != nullptr)
+        return _virtio_block_callback->unmap(m);
+
+    return Errno::NONE;
+}

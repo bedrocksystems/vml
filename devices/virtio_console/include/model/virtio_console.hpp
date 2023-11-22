@@ -119,16 +119,11 @@ private:
         return Model::IOMMUManagedDevice::unmap(m);
     }
 
-    uint64 translate_io(uint64 io_addr, size_t size_bytes) override {
-        Platform::MutexGuard l{_io_lock};
-        return Model::IOMMUManagedDevice::translate_io(io_addr, size_bytes);
-    }
-
     GPA translate(uint64 addr, size_t size_bytes) {
         if (not use_io_mappings()) {
             return GPA(addr);
         }
-
+        Platform::MutexGuard l{_io_lock};
         return GPA(translate_io(addr, size_bytes));
     }
 
