@@ -9,6 +9,7 @@
 
 #include <model/vcpu_types.hpp>
 #include <platform/types.hpp>
+#include <platform/unique_ptr.hpp>
 #include <vbus/vbus.hpp>
 
 namespace Model {
@@ -48,6 +49,23 @@ namespace Model {
         APIC,
         X2APIC,
     };
+
+    // Data structure to track the VCPUs that an asserted IRQ can be routed to.
+    // This can be used by passthrough code to rebalance IRQ handlers on the host side.
+    // Updated by [assert_msi()].
+    struct IrqAssertionRecord {
+        // Array indexed by VCPU IDs. routed[i] is true if the IRQ is routed to VCPU i.
+        unique_ptr<bool[]> routed;
+        // Set by [Irq_controller] if [routed] changes.
+        bool dirty{false};
+
+        void update_routed(Vcpu_id vcpu, bool state) {
+            if (routed[vcpu] == state)
+                return;
+            routed[vcpu] = state;
+            dirty = true;
+        }
+    };
 }
 
 class Model::Irq_controller : public Vbus::Device {
@@ -58,7 +76,7 @@ public:
     virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) = 0;
     virtual bool config_spi(uint32 irq_id, bool hw, uint16 pintid, bool edge) = 0;
     virtual bool assert_ppi(Vcpu_id, uint32) = 0;
-    virtual void assert_msi(uint64 address, uint32 data) = 0;
+    virtual void assert_msi(uint64 address, uint32 data, IrqAssertionRecord *record = nullptr) = 0;
     virtual void deassert_line_ppi(Vcpu_id, uint32) = 0;
     virtual void enable_cpu(Cpu_irq_interface *, Vcpu_id) = 0;
     virtual void disable_cpu(Vcpu_id id) = 0;
