@@ -19,6 +19,11 @@
 
 namespace Platform {
     class RWLock;
+    class shared_lock;
+    class unique_lock;
+
+    using std::defer_lock;
+    using std::defer_lock_t;
 }
 
 class Platform::RWLock {
@@ -77,4 +82,118 @@ private:
     atomic<size_t> _rw;
 
     atomic<bool> _rwlock_signal;
+};
+
+class Platform::shared_lock {
+public:
+    shared_lock(void) = delete;
+    explicit shared_lock(Platform::RWLock& rwlock) : _rwlock(&rwlock), _owns_mutex(false) { lock(); }
+    shared_lock(Platform::RWLock& rwlock, Platform::defer_lock_t) : _rwlock(&rwlock), _owns_mutex(false) {}
+
+    shared_lock(const shared_lock&) = delete;
+    shared_lock(shared_lock&& other) : _rwlock(other._rwlock), _owns_mutex(other._owns_mutex) {
+        other._rwlock = nullptr;
+        other._owns_mutex = false;
+    }
+
+    ~shared_lock(void) { unlock(); }
+
+    shared_lock& operator=(const shared_lock& other) = delete;
+    shared_lock& operator=(shared_lock&& other) {
+        if (&other != this) {
+            unlock();
+            _rwlock = other._rwlock;
+            _owns_mutex = other._owns_mutex;
+            other._rwlock = nullptr;
+            other._owns_mutex = false;
+        }
+        return *this;
+    }
+
+    void lock(void) {
+        assert(not owns_lock());
+        _lock_shared();
+    }
+
+    void unlock(void) {
+        if (owns_lock()) {
+            _unlock_shared();
+        }
+    }
+
+    bool owns_lock(void) const { return _owns_mutex; }
+
+private:
+    void _lock_shared(void) {
+        assert(not owns_lock());
+        _rwlock->renter();
+        _owns_mutex = true;
+    }
+
+    void _unlock_shared(void) {
+        assert(owns_lock());
+        _rwlock->rexit();
+        _owns_mutex = false;
+    }
+
+private:
+    Platform::RWLock* _rwlock;
+    bool _owns_mutex;
+};
+
+class Platform::unique_lock {
+public:
+    unique_lock(void) = delete;
+    explicit unique_lock(Platform::RWLock& rwlock) : _rwlock(&rwlock), _owns_mutex(false) { lock(); }
+    unique_lock(Platform::RWLock& rwlock, Platform::defer_lock_t) : _rwlock(&rwlock), _owns_mutex(false) {}
+
+    unique_lock(const unique_lock&) = delete;
+    unique_lock(unique_lock&& other) : _rwlock(other._rwlock), _owns_mutex(other._owns_mutex) {
+        other._rwlock = nullptr;
+        other._owns_mutex = false;
+    }
+
+    ~unique_lock(void) { unlock(); }
+
+    unique_lock& operator=(const unique_lock&) = delete;
+    unique_lock& operator=(unique_lock&& other) {
+        if (&other != this) {
+            unlock();
+            _rwlock = other._rwlock;
+            _owns_mutex = other._owns_mutex;
+            other._rwlock = nullptr;
+            other._owns_mutex = false;
+        }
+        return *this;
+    }
+
+    void lock(void) {
+        assert(not owns_lock());
+        _lock();
+    }
+
+    void unlock(void) {
+        if (owns_lock()) {
+            _unlock();
+        }
+    }
+
+    bool owns_lock(void) const { return _owns_mutex; }
+
+private:
+    void _lock(void) {
+        assert(not owns_lock());
+        _rwlock->wenter();
+        _owns_mutex = true;
+    }
+
+    void _unlock(void) {
+        assert(owns_lock());
+        _rwlock->wexit();
+        _owns_mutex = false;
+    }
+
+private:
+    Platform::RWLock* _rwlock;
+    bool _owns_mutex;
 };
