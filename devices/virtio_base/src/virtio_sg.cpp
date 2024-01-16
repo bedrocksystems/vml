@@ -469,6 +469,11 @@ Virtio::Sg::Buffer::copy_to_sg(Virtio::Sg::Buffer &dst, ChainAccessor &dst_acces
         err = try_end_copy_to_sg(dst, dst_accessor, src_accessor, size_bytes, copier);
     } while (retries-- != 0ul && Errno::AGAIN == err);
 
+    if (Errno::AGAIN == err) {
+        dst._async_copy_cookie->conclude_dst();
+        _async_copy_cookie->conclude_src();
+    }
+
     return err;
 }
 
@@ -615,6 +620,10 @@ Virtio::Sg::Buffer::copy_to_linear(void *dst, ChainAccessor &src_accessor, size_
         err = try_end_copy_to_linear(dst, src_accessor, size_bytes, copier);
     } while (retries-- != 0ul && Errno::AGAIN == err);
 
+    if (Errno::AGAIN == err) {
+        _async_copy_cookie->conclude_src();
+    }
+
     return err;
 }
 
@@ -694,6 +703,10 @@ Virtio::Sg::Buffer::copy_from_linear(const void *src, ChainAccessor &dst_accesso
     do {
         err = try_end_copy_from_linear(src, dst_accessor, size_bytes, copier);
     } while (retries-- != 0ul && Errno::AGAIN == err);
+
+    if (Errno::AGAIN == err) {
+        _async_copy_cookie->conclude_dst();
+    }
 
     return err;
 }
