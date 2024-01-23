@@ -574,7 +574,7 @@ Model::GicD::has_irq_in_injection(Vcpu_id const cpu_id) {
     Banked &cpu = _local[cpu_id];
     size_t irq_id = cpu.in_injection_irqs.first_set(0, configured_irqs() - 1);
 
-    return irq_id != Bitset<MAX_IRQ>::NOT_FOUND;
+    return irq_id != AtomicBitset<MAX_IRQ>::NOT_FOUND;
 }
 
 Model::GicD::Irq *
@@ -586,7 +586,7 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id, bool redirect_irq) {
 
     do {
         irq_id = cpu.pending_irqs.first_set(irq_id, configured_irqs() - 1);
-        if (irq_id == Bitset<MAX_IRQ>::NOT_FOUND)
+        if (irq_id == AtomicBitset<MAX_IRQ>::NOT_FOUND)
             break;
 
         Irq &irq = irq_object(cpu, irq_id);
@@ -659,8 +659,8 @@ Model::GicD::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
     Banked &cpu = _local[cpu_id];
     IrqState state = IrqState::PENDING;
 
-    cpu.in_injection_irqs.atomic_set(irq->id());
-    cpu.pending_irqs.atomic_clr(irq->id());
+    cpu.in_injection_irqs.set(irq->id());
+    cpu.pending_irqs.clr(irq->id());
 
     /*
      * The spec says that a hypervisor should never set the active and pending state
@@ -715,7 +715,7 @@ Model::GicD::update_inj_status_inactive(Vcpu_id const cpu_id, uint32 irq_id) {
     } while (!irq.injection_info.cas(cur, desired));
 
     if (irq.pending())
-        cpu.pending_irqs.atomic_set(irq.id());
+        cpu.pending_irqs.set(irq.id());
 }
 
 void
@@ -748,7 +748,7 @@ Model::GicD::update_inj_status_active_or_pending(Vcpu_id const cpu_id, IrqState 
     } while (!irq.injection_info.cas(cur, desired));
 
     if (irq.pending())
-        cpu.pending_irqs.atomic_set(irq.id());
+        cpu.pending_irqs.set(irq.id());
 }
 
 void
@@ -760,7 +760,7 @@ Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState sta
 
     if (!in_injection) {
         ASSERT(state == PENDING or state == INACTIVE);
-        cpu.in_injection_irqs.atomic_clr(irq.id());
+        cpu.in_injection_irqs.clr(irq.id());
     }
 
     switch (state) {
@@ -788,7 +788,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
             Banked *target_cpu = &_local[i];
             const Local_Irq_controller *gic_r = target_cpu->notify->local_irq_ctlr();
 
-            target_cpu->pending_irqs.atomic_set(irq.id());
+            target_cpu->pending_irqs.set(irq.id());
 
             // Avoid recalling a VCPU that has silenced IRQs
             if (__LIKELY__(vcpu_can_receive_irq(gic_r)))
@@ -798,7 +798,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
         Banked *target_cpu = &_local[target.target()];
         const Local_Irq_controller *gic_r = target_cpu->notify->local_irq_ctlr();
 
-        target_cpu->pending_irqs.atomic_set(irq.id());
+        target_cpu->pending_irqs.set(irq.id());
 
         if (__LIKELY__(vcpu_can_receive_irq(gic_r)))
             target_cpu->notify->notify_interrupt_pending();
@@ -1132,10 +1132,10 @@ Model::GicD::reset_status_bitfields_on_vcpu(uint16 vcpu_idx) {
 
         if (irq.hw()) {
             if (_local[vcpu_idx].in_injection_irqs.is_set(i)) {
-                _local[vcpu_idx].pending_irqs.atomic_set(i);
+                _local[vcpu_idx].pending_irqs.set(i);
             }
         } else {
-            _local[vcpu_idx].pending_irqs.atomic_clr(i);
+            _local[vcpu_idx].pending_irqs.clr(i);
         }
     }
 

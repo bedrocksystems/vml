@@ -368,8 +368,8 @@ private:
         Irq sgi[MAX_SGI];
         Irq ppi[MAX_PPI];
 
-        Bitset<MAX_IRQ> pending_irqs;
-        Bitset<MAX_IRQ> in_injection_irqs;
+        AtomicBitset<MAX_IRQ> pending_irqs;
+        AtomicBitset<MAX_IRQ> in_injection_irqs;
         Cpu_irq_interface *notify{nullptr};
 
         Banked() {

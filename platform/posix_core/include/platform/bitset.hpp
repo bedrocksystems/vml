@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <bitset>
 #include <cstddef>
 
 /*! \brief Bitfield with atomic operations
@@ -21,9 +22,9 @@
  *  simple. It is possible to make this code faster in the future.
  */
 template<size_t SIZE>
-class Bitset {
+class AtomicBitset {
 public:
-    Bitset() { reset(); }
+    AtomicBitset() { reset(); }
 
     /*! \brief Value returned by 'first_set' when no bit was set
      */
@@ -58,13 +59,16 @@ public:
     /*! \brief Set the bit at index
      *  \param bit index of the bit to set
      */
-    void atomic_set(const size_t bit) { std::atomic_store(&_flags[bit], true); }
+    void set(const size_t bit) { std::atomic_store(&_flags[bit], true); }
 
     /*! \brief Clear the bit at index
      *  \param bit index of the bit to check
      */
-    void atomic_clr(const size_t bit) { std::atomic_store(&_flags[bit], false); }
+    void clr(const size_t bit) { std::atomic_store(&_flags[bit], false); }
 
 private:
     std::atomic<bool> _flags[SIZE];
 };
+
+template<size_t SIZE>
+using Bitset = std::bitset<SIZE>;
