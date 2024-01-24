@@ -7,7 +7,7 @@
  */
 #pragma once
 
-#include <bedrock/types.hpp>
+#include <platform/types.hpp>
 
 static constexpr uint32 PROC_CNTR0_CR3_LOAD = 1u << 15;
 static constexpr uint32 PROC_CNTR0_TPR_SHADOW = 1u << 21;
