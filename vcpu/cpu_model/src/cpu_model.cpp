@@ -6,6 +6,7 @@
  * See the LICENSE-BedRock file in the repository root for details.
  */
 
+#include "platform/context.hpp"
 #include <arch/barrier.hpp>
 #include <debug_switches.hpp>
 #include <model/cpu.hpp>
@@ -35,8 +36,22 @@ Model::Cpu::init(uint16 config_vcpus) {
 
 void
 Model::Cpu::deinit() {
+
     delete[] vcpus;
     vcpus = nullptr;
+}
+
+bool
+Model::Cpu::cleanup_vcpus(const Platform_ctx* ctx) {
+
+    bool ret = true;
+    for (Vcpu_id cpu_id = 0; cpu_id < configured_vcpus; ++cpu_id) {
+        Errno err = Model::Cpu::get(cpu_id)->cleanup(ctx);
+
+        ret &= (Errno::NONE != err);
+    }
+
+    return ret;
 }
 
 bool
@@ -292,17 +307,17 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
     return _irq_sig.init(ctx);
 }
 
-bool
+Errno
 Model::Cpu::cleanup(const Platform_ctx* ctx) {
     Errno err = _irq_sig.destroy(ctx);
     if (Errno::NONE != err)
-        return false;
+        return err;
 
     err = _resume_sig.destroy(ctx);
     if (Errno::NONE != err)
-        return false;
+        return err;
 
-    return Errno::NONE == _off_sm.destroy(ctx);
+    return _off_sm.destroy(ctx);
 }
 
 /*! \brief Request the VCPU to round (i.e. stop its progress)
