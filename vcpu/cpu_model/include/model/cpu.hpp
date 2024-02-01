@@ -147,6 +147,7 @@ public:
     // VCPU api start
     static bool init(uint16 vcpus);
     static void deinit();
+    static bool cleanup_vcpus(const Platform_ctx *ctx);
     static bool is_cpu_turned_on_by_guest(Vcpu_id);
     static bool is_64bit(Vcpu_id);
 
@@ -234,7 +235,7 @@ public:
     Cpu(Irq_controller *girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id);
     virtual ~Cpu();
     bool setup(const Platform_ctx *ctx);
-    bool cleanup(const Platform_ctx *ctx);
+    virtual Errno cleanup(const Platform_ctx *ctx);
 
     bool switch_state_to_roundedup();
     void switch_state_to_on();
