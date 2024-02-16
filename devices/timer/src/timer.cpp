@@ -18,24 +18,36 @@ Model::Timer::timer_loop(const Platform_ctx*, Model::Timer* timer) {
 
     while (not timer->_terminate) {
         bool released;
+        uint64 curr_timer;
 
         /*
          * Use fired to prevent asserting the interrupt several times. We then wait
          * for some timer register to change before firing again.
          */
         if (!timer->can_fire() || timer->is_irq_status_set()) {
+            timer->set_wait_timeout(0);
             timer->timer_wait();
             released = true;
             timer->clear_irq_status();
         } else {
-            released = timer->timer_wait_timeout(timer->get_timeout_abs());
+            uint64 timeout = timer->get_timeout_abs();
+            timer->set_wait_timeout(timeout);
+
+            // Wait for the timer to expire or to be cancelled(using timer_wakeup())
+            released = timer->timer_wait_timeout(timeout);
+
+            // After wakeup, deadline is updated?
+            curr_timer = timer->get_timeout_abs();
+            released = released && !timer->curr_timer_expired(curr_timer);
         }
 
         // false => timeout
         if (!released) {
             bool fired = timer->can_fire() && timer->assert_irq();
-            if (fired)
+            if (fired) {
+                timer->set_wait_timeout(curr_timer);
                 timer->set_irq_status(true);
+            }
         }
     }
 
