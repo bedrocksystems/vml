@@ -23,6 +23,9 @@ private:
     Platform::Signal _terminated_sig;
 
     atomic<bool> _terminate{false};
+    uint64 _curr_timeout{0};
+
+    void set_wait_timeout(uint64 timeout) { _curr_timeout = timeout; }
 
 protected:
     Irq_controller *const _irq_ctlr;
@@ -33,6 +36,7 @@ protected:
     bool timer_wait_timeout(uint64 timeout_abs) { return _wait_timer.wait(timeout_abs); }
     void timer_wait() { return _wait_timer.wait(); }
     void timer_wakeup() { _wait_timer.sig(); }
+
     void set_terminated() { _terminated_sig.sig(); }
 
     void clear_irq_status() {
@@ -44,6 +48,9 @@ protected:
     virtual bool is_irq_status_set() const = 0;
     virtual void set_irq_status(bool set) = 0;
     virtual uint64 get_timeout_abs() const = 0;
+    virtual bool curr_timer_expired(uint64) const { return false; };
+
+    uint64 curr_wait_timeout() const { return _curr_timeout; }
 
 public:
     Timer(Irq_controller &irq_ctlr, Vcpu_id const vcpu_id, uint16 const irq) : _irq_ctlr(&irq_ctlr), _vcpu(vcpu_id), _irq(irq) {}
