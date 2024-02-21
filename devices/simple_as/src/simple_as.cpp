@@ -19,6 +19,7 @@
 uint64
 Model::SimpleAS::single_mapped_read(void* ptr, uint8 size) {
     ASSERT(size <= sizeof(uint64));
+    ASSERT(size != 0); // Guaranteed by the Vbus
     ASSERT(ptr != nullptr);
 
     uint64 ret;
@@ -53,6 +54,7 @@ Model::SimpleAS::single_mapped_read(void* ptr, uint8 size) {
 void
 Model::SimpleAS::single_mapped_write(void* ptr, uint8 size, uint64 value) {
     ASSERT(size <= sizeof(uint64));
+    ASSERT(size != 0); // Guaranteed by the Vbus
     ASSERT(ptr != nullptr);
 
     if (__UNLIKELY__((reinterpret_cast<mword>(ptr) % size) != 0)) {
