@@ -94,6 +94,9 @@ Model::SimpleAS::single_access_read(uint64 off, uint8 size) const {
         ptr = get_vmm_view() + off;
     }
 
+    if (ptr == nullptr)
+        ABORT_WITH("could not map offset 0x%llx sz 0x%x", off, size);
+
     ret = single_mapped_read(ptr, size);
 
     if (!mapped()) {
@@ -112,6 +115,9 @@ Model::SimpleAS::single_access_write(uint64 off, uint8 size, uint64 value) const
     } else {
         ptr = get_vmm_view() + off;
     }
+
+    if (ptr == nullptr)
+        ABORT_WITH("could not map offset 0x%llx sz 0x%x", off, size);
 
     single_mapped_write(ptr, size, value);
 
