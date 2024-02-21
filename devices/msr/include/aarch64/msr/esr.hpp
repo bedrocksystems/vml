@@ -149,6 +149,10 @@ public:
         PERMISSION_FAULT_LVL_1 = 0b001101,
         PERMISSION_FAULT_LVL_2 = 0b001110,
         PERMISSION_FAULT_LVL_3 = 0b001111,
+        // We are not interested in the details of other faults
+        // at the moment, but, we define a max fault to avoid a UB
+        // when casting from a number to this enum
+        MAX_FAULT = 0b111111,
     };
 
     enum FaultType {
