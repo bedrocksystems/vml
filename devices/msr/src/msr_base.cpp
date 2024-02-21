@@ -55,8 +55,11 @@ Msr::BaseBus::access(Vbus::Access access, const VcpuCtx &vcpu_ctx, mword id, uin
 
     if (reg == nullptr)
         return Msr::Err::NO_DEVICE;
+
+    Msr::Err err = reg->access(access, &vcpu_ctx, val);
+
     if (_trace)
         log_trace_info(reg, access, val);
 
-    return reg->access(access, &vcpu_ctx, val);
+    return err;
 }
