@@ -549,6 +549,10 @@ public:
     void disable_notifications();
 
 private:
+    // NOTE: hook for specifying the interesting effect of [_prev = _driven_idx++;], namely,
+    // getting a new [Ghost.used_entry]
+    inline void bump_driven_idx() { _prev = _driven_idx++; }
+
     // Device manipulates avail_event field to suggest driver to suppress notifications till it has
     // added avail_event number of buffers to queue.
     inline void set_avail_event(uint16 index) { _used.set_avail_event(index); }
