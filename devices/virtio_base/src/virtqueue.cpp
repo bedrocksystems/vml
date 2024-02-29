@@ -64,7 +64,10 @@ namespace Virtio {
         //
         // cf. 2.6.12.2 - Driver places the index of the head of the descriptor chain into the
         //                next ring entry of the available ring.
-        _prev = _driven_idx++;
+        //
+        // /-- NOTE: [bump_driven_idx] is a useful hook for specifying an interesting side-effect
+        // v   of an increment.
+        bump_driven_idx(); // _prev = _driven_idx++;
         _used.set_ring(_prev % _size, desc.index(), len);
 
         // cf. 2.6.13.3 - Batching is allowed, but we don't do it
