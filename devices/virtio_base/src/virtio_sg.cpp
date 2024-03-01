@@ -73,9 +73,14 @@ Virtio::Sg::Buffer::print(const char *msg) const {
     }
 }
 
+bool
+Virtio::Sg::Buffer::should_send_head_descriptor(bool send_incomplete) {
+    return _complete_chain || send_incomplete;
+}
+
 void
 Virtio::Sg::Buffer::conclude_chain_use(Virtio::Queue &vq, bool send_incomplete) {
-    if (_complete_chain || send_incomplete) {
+    if (should_send_head_descriptor(send_incomplete)) {
         // NOTE (JH): important to call this member before we move some of the
         // [Virtio::Descriptor] ownership into [vq.send].
         auto lb = written_bytes_lowerbound_heuristic();
