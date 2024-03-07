@@ -82,14 +82,90 @@ namespace Log {
     } while (0)
 
 // DEBUG will add the file and line number, emulating a poor man's stacktrace.
-#define PROPAGATE_ERRNO_FAILURE(_err)                                                                                            \
+// We also print the expression that lead to the failure.
+#define TRY_ERRNO_LOG(_expr_)                                                                                                    \
     do {                                                                                                                         \
-        Errno propagate_errno_failure_err = _err;                                                                                \
-        if (__UNLIKELY__(propagate_errno_failure_err != Errno::NONE)) {                                                          \
-            DEBUG("Propagating errno '%s' to caller", errno2str(propagate_errno_failure_err));                                   \
-            return propagate_errno_failure_err;                                                                                  \
+        Errno ___err = _expr_;                                                                                                   \
+        if (__UNLIKELY__(___err != Errno::NONE)) {                                                                               \
+            DEBUG("Expression failed with %s: `%s`", errno2str(___err), #_expr_);                                                \
+            return ___err;                                                                                                       \
         }                                                                                                                        \
     } while (0)
 
-// Simpler macro to type.
-#define TRY_ERRNO_LOG(x) PROPAGATE_ERRNO_FAILURE(x)
+// Alias for TRY_ERRNO_LOG, which will be renamed in the future
+#define TRY_ERRNO_DBG(_expr_) TRY_ERRNO_LOG(_expr_)
+
+// Legacy macro.
+#define PROPAGATE_ERRNO_FAILURE(_expr_) TRY_ERRNO_LOG(_expr_)
+
+// Evaluate the result of [expr] which should be of type [Errno].
+// If not [NONE] then print an ERROR message and return with that value from the current scope.
+#define TRY_ERRNO_ERR(_expr_)                                                                                                    \
+    do {                                                                                                                         \
+        Errno ___err = _expr_;                                                                                                   \
+        if (__UNLIKELY__(___err != Errno::NONE)) {                                                                               \
+            ERROR("Expression '%s' failed: %s", #_expr_, errno2str(___err));                                                     \
+            return ___err;                                                                                                       \
+        }                                                                                                                        \
+    } while (0)
+
+// Evaluate the result of [expr] which should be of type [Errno].
+// If not [NONE] then print a custom ERROR message and return with that value from the current scope.
+#define TRY_ERRNO_ERR_MSG(_expr_, _fmt_, ...)                                                                                    \
+    do {                                                                                                                         \
+        Errno ___err = _expr_;                                                                                                   \
+        if (__UNLIKELY__(___err != Errno::NONE)) {                                                                               \
+            ERROR(_fmt_, ##__VA_ARGS__);                                                                                         \
+            return ___err;                                                                                                       \
+        }                                                                                                                        \
+    } while (0)
+
+// Evaluate the result of [expr] which should be of type [pointer].
+// If not [nullptr] then return with that value from the current scope.
+// Otherwise ABORT_WITH an error message.
+#define TRY_PTR_ABORT(_expr_)                                                                                                    \
+    ({                                                                                                                           \
+        auto *___ptr = _expr_;                                                                                                   \
+        if (___ptr == nullptr) {                                                                                                 \
+            ABORT_WITH("Could not allocate memory!");                                                                            \
+        }                                                                                                                        \
+        ___ptr;                                                                                                                  \
+    })
+
+// Evaluate the result of [expr] which should be of type [Result].
+// If not [Result.is_err()] then return with the value of the [Result] from the current scope.
+// Otherwise print an ERROR and return from the function with [Errno].
+#define TRY_RESULT_ERR(_expr_)                                                                                                   \
+    ({                                                                                                                           \
+        auto ___res = _expr_;                                                                                                    \
+        if (___res.is_err()) {                                                                                                   \
+            ERROR("Expression '%s' failed: %s", #_expr_, errno2str(___res.take_err()));                                          \
+            return ___res.take_err();                                                                                            \
+        }                                                                                                                        \
+        ___res.take();                                                                                                           \
+    })
+
+// Evaluate the result of [expr] which should be of type [Result].
+// If not [Result.is_err()] then return the value of the [Result] from the current scope.
+// Otherwise print a custom ERROR message and return from the function with [Errno].
+#define TRY_RESULT_ERR_MSG(_expr_, _fmt_, ...)                                                                                   \
+    ({                                                                                                                           \
+        auto ___res = _expr_;                                                                                                    \
+        if (___res.is_err()) {                                                                                                   \
+            ERROR(_fmt_, ##__VA_ARGS__);                                                                                         \
+            return ___res.take_err();                                                                                            \
+        }                                                                                                                        \
+        ___res.take();                                                                                                           \
+    })
+
+// Evaluate the result of [expr] which should be of type [Result].
+// If not [Result.is_err()] then return the value of the [Result] from the current scope.
+// Otherwise ABORT_WITH a custom message.
+#define TRY_RESULT_ABORT_MSG(_expr_, _fmt_, ...)                                                                                 \
+    ({                                                                                                                           \
+        auto ___res = _expr_;                                                                                                    \
+        if (___res.is_err()) {                                                                                                   \
+            ABORT_WITH(_fmt_, ##__VA_ARGS__);                                                                                    \
+        }                                                                                                                        \
+        ___res.take();                                                                                                           \
+    })
