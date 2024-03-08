@@ -74,7 +74,7 @@ Virtio::Sg::Buffer::print(const char *msg) const {
 }
 
 bool
-Virtio::Sg::Buffer::should_send_head_descriptor(bool send_incomplete) {
+Virtio::Sg::Buffer::should_send_head_descriptor(bool send_incomplete) const {
     return _complete_chain || send_incomplete;
 }
 

@@ -444,7 +444,7 @@ public:
 private:
     uint32 written_bytes_lowerbound_heuristic() const;
     // v-- NOTE: serves as a hook for adding a specification
-    bool inline should_send_head_descriptor(bool send_incomplete);
+    bool inline should_send_head_descriptor(bool send_incomplete) const;
     void conclude_chain_use(Virtio::Queue &vq, bool send_incomplete);
 
     /** Chain Walking */
