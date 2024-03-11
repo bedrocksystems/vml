@@ -40,8 +40,32 @@ Virtio::Sg::Buffer::check_copy_configuration(size_t size_bytes, size_t &inout_of
     return Errno::NONE;
 }
 
+void
+Virtio::Sg::Buffer::heuristically_track_written_bytes(size_t off, size_t size_bytes) {
+    // NOTE: [off] will contain the descriptor-local offset after [find] returns.
+    Virtio::Sg::Buffer::Iterator it = find(off);
+    // NOTE: caller ensures that [off]/[size_bytes] are compatible with [this]
+    // chain and that the following loop terminates without error.
+    while (size_bytes != 0ul) {
+        auto *desc = it.desc_ptr();
+        auto *meta = it.meta_ptr();
+
+        uint32 desc_copy_sz = desc->length - static_cast<uint32>(off);
+        if (desc_copy_sz <= size_bytes) {
+            meta->heuristically_track_written_bytes(off, desc_copy_sz);
+            size_bytes -= desc_copy_sz;
+        } else {
+            meta->heuristically_track_written_bytes(off, size_bytes);
+            size_bytes = 0;
+        }
+        ++it;
+        off = 0;
+    }
+}
+
 uint32
 Virtio::Sg::Buffer::written_bytes_lowerbound_heuristic() const {
+    // NOTE: [walk_chain] ensures that chain lengths are no greater than [UINT32_MAX].
     uint32 lb = 0;
 
     for (auto it = begin(); it != end(); ++it) {
@@ -53,6 +77,7 @@ Virtio::Sg::Buffer::written_bytes_lowerbound_heuristic() const {
 
         lb += meta->_prefix_written_bytes;
 
+        // stop once a break in the written bytes is encountered
         if (meta->_prefix_written_bytes != desc->length)
             break;
     }
@@ -191,6 +216,10 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
         if ((desc.flags & VIRTQ_DESC_WRITE_ONLY) != 0) {
             seen_writable = true;
         } else if (seen_writable) {
+            err = Errno::NOTRECOVERABLE;
+        }
+
+        if (static_cast<size_t>(UINT32_MAX) < _size_bytes) {
             err = Errno::NOTRECOVERABLE;
         }
 
@@ -356,7 +385,6 @@ Virtio::Sg::Buffer::try_end_copy_to_sg_impl(Virtio::Sg::Buffer &dst, ChainAccess
     // Iterate over both till we have copied all or any of the buffers is exhausted.
     while ((rem != 0u) and (d != dst.end()) and (s != this->end())) {
         auto *d_desc = d.desc_ptr();
-        auto *d_meta = d.meta_ptr();
         auto *s_desc = s.desc_ptr();
 
         size_t n_copy = min(rem, min(s_desc->length - s_off, d_desc->length - d_off));
@@ -378,8 +406,6 @@ Virtio::Sg::Buffer::try_end_copy_to_sg_impl(Virtio::Sg::Buffer &dst, ChainAccess
         if (Errno::NONE != err) {
             return Errno::BADR;
         }
-
-        d_meta->heuristically_track_written_bytes(d_off, n_copy);
 
         rem -= n_copy;
         bytes_copied += n_copy;
@@ -427,6 +453,8 @@ Virtio::Sg::Buffer::start_copy_to_sg(Virtio::Sg::Buffer &dst, size_t size_bytes,
 Errno
 Virtio::Sg::Buffer::try_end_copy_to_sg(Virtio::Sg::Buffer &dst, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
                                        size_t &bytes_copied, BulkCopier *copier) const {
+    bytes_copied = 0;
+
     // NOTE: This error code isn't rich enough to determine the precise mismatch.
     if (!_async_copy_cookie->is_src_to_matching_sg(&dst)) {
         return Errno::BADR;
@@ -445,6 +473,13 @@ Virtio::Sg::Buffer::try_end_copy_to_sg(Virtio::Sg::Buffer &dst, ChainAccessor &d
     }
 
     if (Errno::AGAIN != err) {
+        // Track the successfully written bytes
+        //
+        // NOTE: if clients don't write bytes in a strict prefix order then [Virtio::Sg::Buffer] will
+        // under-report how many bytes were written.
+        dst.heuristically_track_written_bytes(dst._async_copy_cookie->req_d_off(), bytes_copied);
+
+        // Cleanup the async cookies
         dst._async_copy_cookie->conclude_dst();
         _async_copy_cookie->conclude_src();
     }
@@ -494,7 +529,6 @@ Virtio::Sg::Buffer::copy_fromto_linear_impl(T_SG *sg, ChainAccessor &accessor, T
 
     while (rem and it != sg->end()) {
         auto *desc = it.desc_ptr();
-        auto *meta = it.meta_ptr();
 
         size_t n_copy = min(desc->length - sg_off, rem);
 
@@ -513,8 +547,6 @@ Virtio::Sg::Buffer::copy_fromto_linear_impl(T_SG *sg, ChainAccessor &accessor, T
             if (Errno::NONE != accessor.copy_to_gpa(&copier, desc->address + sg_off, l, n_copy)) {
                 return Errno::BADR;
             }
-
-            meta->heuristically_track_written_bytes(sg_off, n_copy);
         } else {
             if (sg->should_only_write(desc->flags)) {
                 WARN("[Virtio::Sg::Buffer] Devices should only read from a writable descriptor for "
@@ -579,6 +611,8 @@ Virtio::Sg::Buffer::start_copy_to_linear(void *dst, size_t size_bytes, size_t s_
 Errno
 Virtio::Sg::Buffer::try_end_copy_to_linear(void *dst, ChainAccessor &src_accessor, size_t &bytes_copied,
                                            BulkCopier *copier) const {
+    bytes_copied = 0;
+
     // NOTE: This error code isn't rich enough to determine the precise mismatch.
     if (!_async_copy_cookie->is_src_to_matching_linear(dst)) {
         return Errno::BADR;
@@ -663,6 +697,8 @@ Virtio::Sg::Buffer::start_copy_from_linear(const void *src, size_t size_bytes, s
 Errno
 Virtio::Sg::Buffer::try_end_copy_from_linear(const void *src, ChainAccessor &dst_accessor, size_t &bytes_copied,
                                              BulkCopier *copier) {
+    bytes_copied = 0;
+
     // NOTE: This error code isn't rich enough to determine the precise mismatch.
     if (!_async_copy_cookie->is_dst_from_matching_linear(src)) {
         return Errno::BADR;
@@ -681,6 +717,13 @@ Virtio::Sg::Buffer::try_end_copy_from_linear(const void *src, ChainAccessor &dst
     }
 
     if (Errno::AGAIN != err) {
+        // Track the successfully written bytes
+        //
+        // NOTE: if clients don't write bytes in a strict prefix order then [Virtio::Sg::Buffer] will
+        // under-report how many bytes were written.
+        heuristically_track_written_bytes(_async_copy_cookie->req_d_off(), bytes_copied);
+
+        // Cleanup the async cookie
         _async_copy_cookie->conclude_dst();
     }
 
