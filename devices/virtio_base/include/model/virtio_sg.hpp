@@ -442,6 +442,9 @@ public:
     void conclude_chain_use(Virtio::Queue &vq) { conclude_chain_use(vq, false); }
 
 private:
+    // NOTE: called after the copy succeeds - which means that the flag validation/size
+    // checks have already been completed.
+    void heuristically_track_written_bytes(size_t off, size_t size_bytes);
     uint32 written_bytes_lowerbound_heuristic() const;
     void conclude_chain_use(Virtio::Queue &vq, bool send_incomplete);
 
