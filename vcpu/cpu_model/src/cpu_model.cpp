@@ -301,10 +301,19 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
         return false;
 
     ok = _resume_sig.init(ctx);
-    if (!ok)
+    if (!ok) {
+        _off_sm.destroy(ctx);
         return false;
+    }
 
-    return _irq_sig.init(ctx);
+    ok = _irq_sig.init(ctx);
+    if (!ok) {
+        _off_sm.destroy(ctx);
+        _resume_sig.destroy(ctx);
+        return false;
+    }
+
+    return ok;
 }
 
 Errno
