@@ -77,7 +77,7 @@ namespace Log {
 
 #define ABORT_WITH(_FMT_, ...)                                                                                                   \
     do {                                                                                                                         \
-        FATAL(_FMT_, ##__VA_ARGS__);                                                                                             \
+        FATAL("ABORT_WITH: " _FMT_, ##__VA_ARGS__);                                                                              \
         cxx::abort();                                                                                                            \
     } while (0)
 
