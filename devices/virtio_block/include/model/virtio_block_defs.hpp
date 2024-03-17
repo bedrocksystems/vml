@@ -109,9 +109,9 @@ struct Model::Virtio_block_config {
 static_assert(sizeof(Model::Virtio_block_config) == 60);
 
 struct Model::Virtio_block_request_header {
-    uint32 type;
-    uint32 reserved;
-    uint64 sector;
+    uint32 type{0};
+    uint32 reserved{0};
+    uint64 sector{0};
 };
 
 static_assert(sizeof(Model::Virtio_block_request_header) == 16);
