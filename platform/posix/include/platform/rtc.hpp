@@ -24,5 +24,6 @@ namespace RTC {
     class Rtc {
     public:
         Errno get_date(Date &) { return Errno::NODEV; }
+        Errno set_date(Date &) { return Errno::NODEV; }
     };
 };
