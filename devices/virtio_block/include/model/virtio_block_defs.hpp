@@ -76,34 +76,34 @@ enum class Model::VirtioBlockGetID : size_t {
 
 #pragma pack(1)
 struct Model::Virtio_block_config {
-    uint64 capacity;
-    uint32 size_max;
-    uint32 seg_max;
+    uint64 capacity{0};
+    uint32 size_max{0};
+    uint32 seg_max{0};
 
     struct {
-        uint16 cylinder;
-        uint8 heads;
-        uint8 sectors;
+        uint16 cylinder{0};
+        uint8 heads{0};
+        uint8 sectors{0};
     } geometry;
 
-    uint32 blk_size;
+    uint32 blk_size{0};
 
     struct {
-        uint8 physical_block_exp;
-        uint8 alignment_offset;
-        uint16 min_io_size;
-        uint32 opt_io_size;
+        uint8 physical_block_exp{0};
+        uint8 alignment_offset{0};
+        uint16 min_io_size{0};
+        uint32 opt_io_size{0};
     } topology;
 
-    uint8 writeback;
-    uint8 reserved0[3];
-    uint32 max_discard_sectors;
-    uint32 max_discard_seg;
-    uint32 discard_sector_alignment;
-    uint32 max_write_zeroes_sectors;
-    uint32 max_write_zeroes_seg;
-    uint8 write_zeroes_may_unmap;
-    uint8 reserved1[3];
+    uint8 writeback{0};
+    uint8 reserved0[3]{0};
+    uint32 max_discard_sectors{0};
+    uint32 max_discard_seg{0};
+    uint32 discard_sector_alignment{0};
+    uint32 max_write_zeroes_sectors{0};
+    uint32 max_write_zeroes_seg{0};
+    uint8 write_zeroes_may_unmap{0};
+    uint8 reserved1[3]{0};
 };
 
 static_assert(sizeof(Model::Virtio_block_config) == 60);

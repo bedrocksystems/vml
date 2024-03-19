@@ -195,7 +195,7 @@ private:
     static constexpr uint64 IDC_MASK = 1ull << 28;
     static constexpr uint64 DIC_MASK = 1ull << 29;
 
-    uint64 _value;
+    uint64 _value{0};
 };
 
 class Msr::Info::SctlrEl1 {

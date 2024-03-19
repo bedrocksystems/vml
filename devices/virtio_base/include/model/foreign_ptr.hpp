@@ -69,10 +69,10 @@ template ForeignData::operator uint64();
 
 class ForeignPtr {
 private:
-    volatile void *_p;
+    volatile void *_p{nullptr};
 
 public:
-    ForeignPtr() : _p(nullptr) {}
+    ForeignPtr() {}
     explicit ForeignPtr(volatile void *p) : _p(p) {}
     explicit ForeignPtr(void *p) : ForeignPtr(static_cast<volatile void *>(p)) {}
 

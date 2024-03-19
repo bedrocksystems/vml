@@ -619,7 +619,7 @@ protected:
 class MappingGuard {
 public:
     MappingGuard(const Vbus::Bus &bus, const GPA &gpa, size_t size_bytes, bool write = false)
-        : _bus(&bus), _gpa(gpa), _size_bytes(size_bytes), _va(nullptr), _write(write) {}
+        : _bus(&bus), _gpa(gpa), _size_bytes(size_bytes), _write(write) {}
 
     Errno map(void *&va) {
         ASSERT(_va == nullptr);
@@ -648,6 +648,6 @@ private:
     const Vbus::Bus *_bus;
     const GPA _gpa;
     size_t _size_bytes;
-    void *_va;
+    void *_va{nullptr};
     bool _write;
 };
