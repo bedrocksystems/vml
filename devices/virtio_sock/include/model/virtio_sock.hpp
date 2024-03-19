@@ -22,7 +22,7 @@ namespace Model {
 }
 
 struct Model::Virtio_sock_config {
-    uint64 guest_cid;
+    uint64 guest_cid{UINT64_MAX};
 };
 
 class Model::Virtio_sock_callback {
@@ -52,7 +52,7 @@ private:
 
 public:
     struct UserConfig {
-        Virtio::Transport *transport;
+        Virtio::Transport *transport{nullptr};
         uint64 cid{0};
         uint64 device_features{0};
     };

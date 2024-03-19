@@ -130,10 +130,7 @@ public:
         }
         return *this;
     }
-    Descriptor(Virtio::Descriptor &&other) {
-        _p = cxx::move(other._p);
-        cxx::swap(_desc_idx, other._desc_idx);
-    }
+    Descriptor(Virtio::Descriptor &&other) : _p(cxx::move(other._p)) { cxx::swap(_desc_idx, other._desc_idx); }
 
     // Dummy [Virtio::Descriptor]s are created to reserve space locally for
     // a [Virtio::Descriptor] created by a [Virtio::DeviceQueue]/[Virtio::DriverQueue]
@@ -142,7 +139,7 @@ public:
     // NOTE: valid descriptor indices only exist in the range [0, 2^15-1) (when the maximum
     // queue size is used). Therefore, we can use [UINT16_MAX] as a sentinel for the "null"
     // [Descriptor].
-    Descriptor() : _p(ForeignPtr()), _desc_idx(UINT16_MAX) {}
+    Descriptor() : _p(ForeignPtr()) {}
 
 private:
     // \pre <virtio queue protocol gives access to descriptor located at [desc_idx]>
@@ -168,7 +165,7 @@ public:
 private:
     // non-[const] to enable move assignment/construction.
     ForeignPtr _p;
-    uint16 _desc_idx;
+    uint16 _desc_idx{UINT16_MAX};
 
     static constexpr size_t ADDR_OFS = 0;
     static constexpr size_t LENGTH_OFS = ADDR_OFS + sizeof(uint64);
@@ -214,10 +211,7 @@ public:
         }
         return *this;
     }
-    Available(Available &&other) {
-        _p = cxx::move(other._p);
-        cxx::swap(_size, other._size);
-    };
+    Available(Available &&other) : _p(cxx::move(other._p)) { cxx::swap(_size, other._size); };
 
 private:
     // For both:
@@ -294,7 +288,7 @@ public:
         }
         return *this;
     }
-    UsedEntry(UsedEntry &&other) { _p = cxx::move(other._p); }
+    UsedEntry(UsedEntry &&other) : _p(cxx::move(other._p)) {}
 
 private:
     // For both:
@@ -357,10 +351,7 @@ public:
         }
         return *this;
     }
-    Used(Used &&other) {
-        _p = cxx::move(other._p);
-        cxx::swap(_size, other._size);
-    }
+    Used(Used &&other) : _p(cxx::move(other._p)) { cxx::swap(_size, other._size); }
 
 private:
     Used(void *p, uint16 size) : _p(ForeignPtr(p)), _size(size) {}
@@ -451,12 +442,11 @@ public:
         }
         return *this;
     }
-    Queue(Queue &&other) {
+    Queue(Queue &&other) : _available(cxx::move(other._available)), _used(cxx::move(other._used)) {
         cxx::swap(_descriptor_base, other._descriptor_base);
         cxx::swap(_available_base, other._available_base);
         cxx::swap(_used_base, other._used_base);
-        _available = cxx::move(other._available);
-        _used = cxx::move(other._used);
+
         cxx::swap(_size, other._size);
         cxx::swap(_idx, other._idx);
         cxx::swap(_prev, other._prev);

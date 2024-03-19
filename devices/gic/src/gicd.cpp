@@ -154,12 +154,7 @@ Model::GicD::write_ctlr(uint64 offset, uint8 bytes, uint64 value) {
     constexpr uint32 const GICD_ARE = 1 << 4;
     constexpr uint32 const ENFORCE_ZERO_V2 = ~(GICD_GRP0 | GICD_GRP1);
     constexpr uint32 const ENFORCE_ZERO = ~(GICD_ARE | GICD_GRP0 | GICD_GRP1);
-    RegAccess acc;
-
-    acc.offset = offset;
-    acc.base_reg = GICD_CTLR;
-    acc.base_max = GICD_CTLR_END;
-    acc.bytes = bytes;
+    RegAccess acc{offset, GICD_CTLR, GICD_CTLR_END, bytes};
 
     return write_register(acc, value, _ctlr.value, (_version >= 3) ? ENFORCE_ZERO : ENFORCE_ZERO_V2);
 }

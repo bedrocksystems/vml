@@ -78,8 +78,8 @@ public:
         }
         return *this;
     }
-    DescMetadata(DescMetadata &&other) {
-        _desc = cxx::move(other._desc);
+    DescMetadata(DescMetadata &&other) : _desc(cxx::move(other._desc)) {
+
         cxx::swap(_original_next, other._original_next);
         cxx::swap(_prefix_written_bytes, other._prefix_written_bytes);
     }

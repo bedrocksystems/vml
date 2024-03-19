@@ -22,6 +22,8 @@
 #define __UNLIKELY__(x) __builtin_expect(!!(x), 0)
 #define __UNREACHED__ __builtin_unreachable()
 
+#define ARRAY_LENGTH(x) (sizeof(x) / sizeof((x)[0]))
+
 static inline int
 ffs(unsigned int val) {
     return __builtin_ffs(static_cast<int>(val));

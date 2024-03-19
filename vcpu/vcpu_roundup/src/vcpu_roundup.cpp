@@ -37,7 +37,7 @@
  */
 class GlobalRoundupInfo {
 public:
-    uint16 num_vcpus;                 /*!< Number of VCPU(s) for this virtual machine */
+    uint16 num_vcpus{0};              /*!< Number of VCPU(s) for this virtual machine */
     atomic<uint16> vcpus_progressing; /*!< VCPU(s) currently making progress (emulation or not) */
 
     void yield() {
