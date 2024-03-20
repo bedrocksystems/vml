@@ -12,9 +12,9 @@
  */
 
 #include <algorithm>
-#include <atomic>
 #include <bitset>
 #include <cstddef>
+#include <platform/atomic.hpp>
 
 /*! \brief Bitfield with atomic operations
  *

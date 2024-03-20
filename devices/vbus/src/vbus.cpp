@@ -69,7 +69,7 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
     const DeviceEntry *entry, *previous_entry = nullptr;
 
     _vbus_lock.renter();
-    entry = _last_access;
+    entry = _last_access.load(std::memory_order_relaxed);
     if (entry == nullptr || !entry->contains(target)) {
         entry = lookup(addr, bytes);
         if (entry == nullptr) {
@@ -79,13 +79,13 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
     }
 
     if (_trace) {
-        previous_entry = _last_access;
+        previous_entry = _last_access.load(std::memory_order_relaxed);
         if (access == Vbus::READ)
             val = 0ull; // Initialize to zero for logging purposes
     }
 
-    if (_last_access != entry) {
-        _last_access = entry;
+    if (_last_access.load(std::memory_order_relaxed) != entry) {
+        _last_access.store(entry, std::memory_order_relaxed);
     }
 
     mword off = absolute_access ? addr : addr - entry->begin();
@@ -188,8 +188,8 @@ Vbus::Bus::unregister_device(mword addr, mword bytes) {
     _vbus_lock.wenter();
     DeviceEntry* rm_dev = static_cast<DeviceEntry*>(_devices.remove(range));
 
-    if (rm_dev == _last_access) {
-        _last_access = nullptr;
+    if (rm_dev == _last_access.load(std::memory_order_relaxed)) {
+        _last_access.store(nullptr, std::memory_order_relaxed);
     }
     _vbus_lock.wexit();
 
