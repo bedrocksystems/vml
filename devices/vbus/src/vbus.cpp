@@ -60,8 +60,6 @@ Vbus::Bus::access_with_dev(Device* dev, Vbus::Access access, const VcpuCtx& vcpu
 
 Vbus::Err
 Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint8 bytes, uint64& val) {
-    bool absolute_access = _absolute_access; // silly but currently needed to simplify proof
-
     if (__UNLIKELY__((addr + bytes <= addr)))
         return NO_DEVICE;
 
@@ -88,7 +86,7 @@ Vbus::Bus::access(Vbus::Access access, const VcpuCtx& vcpu_ctx, mword addr, uint
         _last_access.store(entry, std::memory_order_relaxed);
     }
 
-    mword off = absolute_access ? addr : addr - entry->begin();
+    mword off = _absolute_access ? addr : addr - entry->begin();
     _vbus_lock.rexit();
 
     Err err = access_with_dev(entry->device, access, vcpu_ctx, off, bytes, val);
