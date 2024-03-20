@@ -265,7 +265,7 @@ private:
     bool _trace{false};
     bool _fold{true};
     const bool _absolute_access{false};
-    const DeviceEntry* _last_access{nullptr};
+    atomic<const DeviceEntry*> _last_access{nullptr};
     atomic<uint64> _num_accesses{0};
     mutable Platform::RWLock _vbus_lock;
 };
