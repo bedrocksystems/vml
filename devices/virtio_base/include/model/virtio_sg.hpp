@@ -284,11 +284,30 @@ private:
     size_t _size_bytes{0};
 
     // Track whether or not the contents of [_desc_chain]/[_desc_chain_metadata]
-    // correspond to a complete or partial chain of descriptors; [reset] uses this
-    // to determine how to properly clean up.
+    // correspond to a complete or partial chain of descriptors; [conclude_chain_use] uses
+    // this to determine how to properly clean up.
     bool _complete_chain{false};
     // NOTE: Only meaningful when [_complete_chain] is [true]
     bool _chain_for_device{false};
+
+    // Track which portions of the descriptor chain are readable and which portions are writable.
+    //
+    // NOTE: if [walk_chain] returns [Errno::NONE] then we know that the R/W permissions for the
+    // chain are reasonable, namely, an (optional) readable prefix is followed by an (optional)
+    // writable suffix. This well-formedness means that we only need to track:
+    // 1) whether a readable and/or writable portion of the chain was encountered
+    // 2) the index into the [_desc_chain]/[_desc_ahin_metadata] which separates the readable
+    //    and writable portions of the chain.
+    //
+    // VIRTIO Standard:
+    // "The driver MUST place any device-writable descriptor elements after any device-readable
+    // descriptor elements." cf. 2.6.4.2
+    // <https://docs.oasis-open.org/virtio/virtio/v1.1/cs01/virtio-v1.1-cs01.html#x1-280004>
+    bool _seen_readable_desc{false};
+    bool _seen_writable_desc{false};
+    // v-- NOTE: this field is only meaningful when [_seen_writable_desc == true]
+    uint16 _first_writable_desc{UINT16_MAX};
+
     /** v-- NOTE: protected so that clients who override [init_XXX] can set these fields */
 protected:
     /** After [init] returns [Errno::NONE], [_desc_chain] and [_desc_chain_metadata]
@@ -319,6 +338,9 @@ public:
             cxx::swap(_size_bytes, other._size_bytes);
             cxx::swap(_complete_chain, other._complete_chain);
             cxx::swap(_chain_for_device, other._chain_for_device);
+            cxx::swap(_seen_readable_desc, other._seen_readable_desc);
+            cxx::swap(_seen_writable_desc, other._seen_writable_desc);
+            cxx::swap(_first_writable_desc, other._first_writable_desc);
             cxx::swap(_desc_chain, other._desc_chain);
             cxx::swap(_desc_chain_metadata, other._desc_chain_metadata);
             cxx::swap(_async_copy_cookie, other._async_copy_cookie);
@@ -331,6 +353,9 @@ public:
         cxx::swap(_size_bytes, other._size_bytes);
         cxx::swap(_complete_chain, other._complete_chain);
         cxx::swap(_chain_for_device, other._chain_for_device);
+        cxx::swap(_seen_readable_desc, other._seen_readable_desc);
+        cxx::swap(_seen_writable_desc, other._seen_writable_desc);
+        cxx::swap(_first_writable_desc, other._first_writable_desc);
         cxx::swap(_desc_chain, other._desc_chain);
         cxx::swap(_desc_chain_metadata, other._desc_chain_metadata);
         cxx::swap(_async_copy_cookie, other._async_copy_cookie);
@@ -354,6 +379,29 @@ public:
     inline size_t max_chain_length(void) const { return _max_chain_length; }
     inline size_t active_chain_length(void) const { return _active_chain_length; }
     inline size_t size_bytes(void) const { return _size_bytes; }
+
+    inline bool is_readable(void) const { return _seen_readable_desc; }
+    inline bool is_writable(void) const { return _seen_writable_desc; }
+    // v-- NOTE: [is_writable() && !is_readable() -> _first_writable_desc == 0]
+    inline Errno first_writable_desc(uint16 &first_writable_desc) const {
+        if (is_writable()) {
+            first_writable_desc = _first_writable_desc;
+            return Errno::NONE;
+        } else {
+            return Errno::PERM;
+        }
+    }
+    inline Errno first_writable_byte(size_t &byte_offset) const {
+        uint16 writable_linearized_desc_idx{UINT16_MAX};
+        Errno err = first_writable_desc(writable_linearized_desc_idx);
+        if (Errno::NONE == err) {
+            byte_offset = 0;
+            for (uint16 idx = 0; idx < writable_linearized_desc_idx; idx++) {
+                byte_offset += _desc_chain[idx].length;
+            }
+        }
+        return err;
+    }
 
     // Print a message followed by the contents of any chain
     void print(const char *msg) const;
@@ -395,10 +443,12 @@ public:
     // arrays are no longer needed.
     void reset(void);
 
-    void add_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags, uint16 next);
-    void add_final_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags);
+    // NOTE: [Virtio::Sg::Buffer] enforces that constructed-chains don't violate driver obligations,
+    // cf. comment above [Virtio::Sg::Buffer::add_descriptor]
+    Errno add_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags, uint16 next);
+    Errno add_final_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags);
     // NOTE: This interface does not allow flag/next modifications.
-    void modify_link(size_t chain_idx, uint64 address, uint32 length);
+    Errno modify_link(size_t chain_idx, uint64 address, uint32 length);
 
 protected:
     const Virtio::Sg::LinearizedDesc *desc_chain(void) const { return _desc_chain; }
@@ -420,7 +470,12 @@ protected:
 
 private:
     // Common addition of descriptors to the chain
-    void add_descriptor(Virtio::Descriptor &&new_desc, uint64 address, uint32 length, uint16 flags, uint16 next);
+    //
+    // NOTE: [Virtio::Sg::Buffer] enforces that constructed-chains don't violate driver obligations:
+    // 1) chain-length <= Queue size -> no loops
+    // 2) total byte size <= 2^32
+    // 3) readable prefix; writable suffix
+    Errno add_descriptor(Virtio::Descriptor &&new_desc, uint64 address, uint32 length, uint16 flags, uint16 next);
 
     // Returns an iterator pointing to the node containing the linear data offset /and/
     // modifies [inout_offset] to the appropriate node-specific linear data offset.
