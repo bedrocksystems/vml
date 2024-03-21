@@ -49,9 +49,12 @@ enum : uint64 {
 
 #pragma pack(1)
 struct Model::Virtio_net_config {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) - tidy misses the memcpy
+    Virtio_net_config(const uint8 *pmac, uint16 pmtu) : mtu(pmtu) { memcpy(mac, pmac, ARRAY_LENGTH(mac)); }
+
     uint8 mac[6];
-    uint16 status;
-    uint16 num_virtqueue_pairs;
+    uint16 status{0};
+    uint16 num_virtqueue_pairs{0};
     uint16 mtu;
 };
 #pragma pack()
@@ -83,7 +86,7 @@ private:
 
 public:
     struct UserConfig {
-        Virtio::Transport *transport;
+        Virtio::Transport *transport{nullptr};
         uint64 device_feature{0};
         uint64 mac{0};
         uint16 mtu{0};
@@ -94,10 +97,7 @@ public:
                Platform::Signal *sig)
         : Virtio::Device("virtio network", Virtio::DeviceID::NET, vbus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries,
                          config.transport, config.device_feature),
-          _sig(sig) {
-        _config.mtu = config.mtu;
-        memcpy(&_config.mac, &config.mac, 6);
-    }
+          _config{reinterpret_cast<const uint8 *>(&config.mac), config.mtu}, _sig(sig) {}
 
     void register_callback(Virtio::Callback &callback, Model::Virtio_net_callback &virtio_net_callback) {
         _callback = &callback;

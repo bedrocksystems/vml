@@ -148,17 +148,17 @@ private:
     };
 
     const bool _sbsa_uart; /*!< Initialize the state following the SBSA UART spec */
-    uint8 _ilpr;           /*!< IrDA Low power counter register */
-    uint16 _ibrd;          /*!< Integer Baud Rate register */
-    uint16 _fbrd;          /*!< Fractional Baud Rate register */
-    uint16 _lcrh;          /*!< Line control register */
-    uint16 _imsc;          /*!< Interrupt Mask Set/Clear register */
-    uint16 _cr;            /*!< Control register */
-    uint16 _ifls;          /*!< Interrupt FIFO Level select register */
-    uint16 _ris;           /*!< Raw interrupt register */
-    uint16 _dmacr;         /*!< DMA control register */
-    bool _rx_irq_disabled_by_icr;
-    bool _tx_irq_disabled_by_icr;
+    uint8 _ilpr{0};        /*!< IrDA Low power counter register */
+    uint16 _ibrd{0};       /*!< Integer Baud Rate register */
+    uint16 _fbrd{0};       /*!< Fractional Baud Rate register */
+    uint16 _lcrh{0};       /*!< Line control register */
+    uint16 _imsc{0};       /*!< Interrupt Mask Set/Clear register */
+    uint16 _cr{RXE | TXE}; /*!< Control register */
+    uint16 _ifls{FIFO_1DIV2_FULL << RXIFLSEL | FIFO_1DIV2_FULL << TXIFLSEL}; /*!< Interrupt FIFO Level select register */
+    uint16 _ris{0};                                                          /*!< Raw interrupt register */
+    uint16 _dmacr{0};                                                        /*!< DMA control register */
+    bool _rx_irq_disabled_by_icr{false};
+    bool _tx_irq_disabled_by_icr{false};
 
     SeqQueue<uint16, 32> _rx_fifo;
     SeqQueue<uint16, 32> _tx_fifo;

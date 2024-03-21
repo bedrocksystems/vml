@@ -581,42 +581,42 @@ public:
     Bus() {}
 
     struct AA64PlatformInfo {
-        uint64 id_aa64pfr0_el1;
-        uint64 id_aa64pfr1_el1;
-        uint64 id_aa64dfr0_el1;
-        uint64 id_aa64dfr1_el1;
-        uint64 id_aa64isar0_el1;
-        uint64 id_aa64isar1_el1;
-        uint64 id_aa64isar2_el1;
-        uint64 id_aa64mmfr0_el1;
-        uint64 id_aa64mmfr1_el1;
-        uint64 id_aa64mmfr2_el1;
-        uint64 id_aa64zfr0_el1;
-        uint64 midr_el1;
+        uint64 id_aa64pfr0_el1{0};
+        uint64 id_aa64pfr1_el1{0};
+        uint64 id_aa64dfr0_el1{0};
+        uint64 id_aa64dfr1_el1{0};
+        uint64 id_aa64isar0_el1{0};
+        uint64 id_aa64isar1_el1{0};
+        uint64 id_aa64isar2_el1{0};
+        uint64 id_aa64mmfr0_el1{0};
+        uint64 id_aa64mmfr1_el1{0};
+        uint64 id_aa64mmfr2_el1{0};
+        uint64 id_aa64zfr0_el1{0};
+        uint64 midr_el1{0};
     };
 
     struct AA32PlatformInfo {
-        uint32 id_pfr0_el1;
-        uint32 id_pfr1_el1;
-        uint32 id_pfr2_el1;
-        uint32 id_dfr0_el1;
-        uint32 id_dfr1_el1;
-        uint32 id_isar0_el1;
-        uint32 id_isar1_el1;
-        uint32 id_isar2_el1;
-        uint32 id_isar3_el1;
-        uint32 id_isar4_el1;
-        uint32 id_isar5_el1;
-        uint32 id_isar6_el1;
-        uint32 id_mmfr0_el1;
-        uint32 id_mmfr1_el1;
-        uint32 id_mmfr2_el1;
-        uint32 id_mmfr3_el1;
-        uint32 id_mmfr4_el1;
-        uint32 id_mmfr5_el1;
-        uint32 mvfr0_el1;
-        uint32 mvfr1_el1;
-        uint32 mvfr2_el1;
+        uint32 id_pfr0_el1{0};
+        uint32 id_pfr1_el1{0};
+        uint32 id_pfr2_el1{0};
+        uint32 id_dfr0_el1{0};
+        uint32 id_dfr1_el1{0};
+        uint32 id_isar0_el1{0};
+        uint32 id_isar1_el1{0};
+        uint32 id_isar2_el1{0};
+        uint32 id_isar3_el1{0};
+        uint32 id_isar4_el1{0};
+        uint32 id_isar5_el1{0};
+        uint32 id_isar6_el1{0};
+        uint32 id_mmfr0_el1{0};
+        uint32 id_mmfr1_el1{0};
+        uint32 id_mmfr2_el1{0};
+        uint32 id_mmfr3_el1{0};
+        uint32 id_mmfr4_el1{0};
+        uint32 id_mmfr5_el1{0};
+        uint32 mvfr0_el1{0};
+        uint32 mvfr1_el1{0};
+        uint32 mvfr2_el1{0};
     };
 
     struct PlatformInfo {
@@ -650,9 +650,9 @@ public:
     bool setup_aarch64_physical_timer(Model::AA64Timer& ptimer);
 
     struct CacheTopo {
-        uint64 ctr_el0;
-        uint64 clidr_el1;
-        uint64 ccsidr_el1[CCSIDR_NUM * 2];
+        uint64 ctr_el0{0};
+        uint64 clidr_el1{0};
+        uint64 ccsidr_el1[CCSIDR_NUM * 2] = {0};
     };
 
     bool setup_arch_msr(const PlatformInfo& info, Vbus::Bus&, Model::GicD&);

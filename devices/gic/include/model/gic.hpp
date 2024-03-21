@@ -607,6 +607,8 @@ private:
     }
 
     struct RegAccess {
+        RegAccess() = delete;
+        RegAccess(uint64 off, uint32 breg, uint32 bmax, uint8 lenb) : offset(off), base_reg(breg), base_max(bmax), bytes(lenb) {}
         uint64 offset;
         uint32 base_reg;
         uint32 base_max;
