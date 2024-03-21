@@ -112,7 +112,7 @@ Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const val
     case GICR_WAKER ... GICR_WAKER_END: {
         Waker w;
         uint32 new_w = 0;
-        GicD::RegAccess reg_acc{.offset = offset, .base_reg = GICR_WAKER, .base_max = GICR_WAKER_END, .bytes = bytes};
+        GicD::RegAccess reg_acc{offset, GICR_WAKER, GICR_WAKER_END, bytes};
 
         w.value = static_cast<uint32>(value);
         new_w = (static_cast<uint32>(w.sleeping()) << Waker::CHILDREN_ASLEEP_BIT)

@@ -29,6 +29,7 @@ private:
 
 class CpuCluster {
 public:
+    // NOLINTNEXTLINE (cppcoreguidelines-pro-type-member-init) - tidy is wrong there
     CpuCluster() {
         for (auto& e : _vcpus)
             e = INVALID_VCPU_ID;

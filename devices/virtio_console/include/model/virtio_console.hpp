@@ -24,10 +24,10 @@ namespace Model {
 }
 
 struct Model::Virtio_console_config {
-    uint16 cols;
-    uint16 rows;
-    uint32 num_ports;
-    uint32 emerg_wr;
+    uint16 cols{0};
+    uint16 rows{0};
+    uint32 num_ports{0};
+    uint32 emerg_wr{0};
 };
 
 class Model::VirtioConsoleCallback {

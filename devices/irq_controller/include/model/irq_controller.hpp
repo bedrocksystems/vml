@@ -29,15 +29,15 @@ namespace Model {
     };
 
     struct IrqInfo {
-        bool active;
-        bool pending;
-        bool enabled;
-        bool in_injection;
-        uint8 priority;
-        uint32 target;
-        uint64 num_asserted;
-        uint64 num_acked;
-        uint64 num_handled;
+        bool active{false};
+        bool pending{false};
+        bool enabled{false};
+        bool in_injection{false};
+        uint8 priority{0};
+        uint32 target{UINT32_MAX};
+        uint64 num_asserted{0};
+        uint64 num_acked{0};
+        uint64 num_handled{0};
     };
 
     enum IRQCtlrVersion {
