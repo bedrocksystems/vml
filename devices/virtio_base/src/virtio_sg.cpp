@@ -68,18 +68,25 @@ Virtio::Sg::Buffer::written_bytes_lowerbound_heuristic() const {
     // NOTE: [walk_chain] ensures that chain lengths are no greater than [UINT32_MAX].
     uint32 lb = 0;
 
-    for (auto it = begin(); it != end(); ++it) {
-        auto *desc = it.desc_ptr();
-        auto *meta = it.meta_ptr();
+    if (is_writable()) {
+        uint16 idx{UINT16_MAX};
+        // NOTE: [is_writable() == true] ensures that [first_writable_desc]
+        // return [Errno::NONE]
+        (void)first_writable_desc(idx);
+        while (idx < _active_chain_length) {
+            auto &desc = _desc_chain[idx];
+            auto &meta = _desc_chain_metadata[idx];
+            idx++;
 
-        if ((desc->flags & VIRTQ_DESC_WRITE_ONLY) == 0)
-            continue;
+            // NOTE: [walk_chain] ensured that the entire suffix is writable (if
+            // [is_writable() == true]).
 
-        lb += meta->_prefix_written_bytes;
+            lb += meta._prefix_written_bytes;
 
-        // stop once a break in the written bytes is encountered
-        if (meta->_prefix_written_bytes != desc->length)
-            break;
+            // stop once a break in the written bytes is encountered
+            if (meta._prefix_written_bytes != desc.length)
+                break;
+        }
     }
 
     return lb;
@@ -151,11 +158,6 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
                                         ChainWalkingCallback *callback) {
     // Use a more meaningful name internally
     Virtio::Descriptor &tmp_desc = root_desc;
-    // This flag tracks whether a writable buffer has been encountered within this chain already;
-    // "The driver MUST place any device-writable descriptor elements after any device-readable
-    // descriptor elements." cf. 2.6.4.2
-    // <https://docs.oasis-open.org/virtio/virtio/v1.1/cs01/virtio-v1.1-cs01.html#x1-280004>
-    bool seen_writable = false;
     // This flag tracks whether there is a [next] descriptor in the chain
     bool next_en = false;
     Errno err;
@@ -203,9 +205,12 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
         }
 
         // Grab the nodes for this [entry] and linearize the link for [desc.next]
-        auto &desc = _desc_chain[_active_chain_length];
-        auto &meta = _desc_chain_metadata[_active_chain_length];
-        desc.linear_next = ++_active_chain_length;
+        auto current_desc_idx = _active_chain_length;
+        auto next_desc_idx = ++_active_chain_length;
+        auto &desc = _desc_chain[current_desc_idx];
+        auto &meta = _desc_chain_metadata[current_desc_idx];
+
+        desc.linear_next = next_desc_idx;
 
         meta._desc = cxx::move(tmp_desc);
         meta._prefix_written_bytes = 0;
@@ -218,13 +223,35 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
         // Walk the chain - storing the "real" next index in the [meta._original_next] field
         err = vq.next_in_chain(meta._desc, desc.flags, next_en, meta._original_next, tmp_desc);
 
-        if ((desc.flags & VIRTQ_DESC_WRITE_ONLY) != 0) {
-            seen_writable = true;
-        } else if (seen_writable) {
-            err = Errno::NOTRECOVERABLE;
+        // Validate VIRTIO requirements & store info about readable/writable portions of the chain
+        // "The driver MUST place any device-writable descriptor elements after any device-readable
+        // descriptor elements." cf. 2.6.4.2
+        // <https://docs.oasis-open.org/virtio/virtio/v1.1/cs01/virtio-v1.1-cs01.html#x1-280004>
+        const bool desc_readable = (desc.flags & VIRTQ_DESC_WRITE_ONLY) == 0;
+        if (Errno::NONE == err && desc_readable) {
+            if (_seen_writable_desc) {
+                err = Errno::NOTRECOVERABLE;
+            } else {
+                _seen_readable_desc = true;
+            }
+        } else if (Errno::NONE == err) { // [(desc.flags & VIRTQ_DESC_WRITE_ONLY) != 0] ==> [desc_writable]
+            if (!_seen_writable_desc)
+                _first_writable_desc = current_desc_idx;
+            _seen_writable_desc = true;
         }
 
-        if (static_cast<size_t>(UINT32_MAX) < _size_bytes) {
+        // /-- NOTE: the VIRTIO standard doesn't explicitly forbid 0-length descriptors. However,
+        // |   it does mention within "2.7.4 Message Framing" that:
+        // |   > little sympathy will be given to drivers which create unreasonably-sized
+        // |   > descriptors such as by dividing a network packet into 1500 single-byte
+        // |   > descriptors!
+        // |
+        // |  Forbidding 0-length descriptors greatly simplifies the specification of this VIRTIO
+        // |  code; our VIRTIO implementation "gives little sympathy" to drivers which include
+        // |  0-length descriptors, something akin to creating 1-length descriptors.
+        // |
+        // v  (cf. <https://docs.oasis-open.org/virtio/virtio/v1.3/csd01/virtio-v1.3-csd01.pdf> 2.7.4)
+        if (0 == desc.length || static_cast<size_t>(UINT32_MAX) < _size_bytes) {
             err = Errno::NOTRECOVERABLE;
         }
 
@@ -240,31 +267,69 @@ Virtio::Sg::Buffer::walk_chain_callback(Virtio::Queue &vq, Virtio::Descriptor &&
     return Errno::NONE;
 }
 
-void
+Errno
 Virtio::Sg::Buffer::add_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags, uint16 next) {
-    ASSERT(flags & VIRTQ_DESC_CONT_NEXT);
-    add_descriptor(cxx::move(desc), address, length, flags, next);
+    const bool next_enabled = (flags & VIRTQ_DESC_CONT_NEXT) != 0;
+    if (!next_enabled)
+        return Errno::PERM;
+
+    return add_descriptor(cxx::move(desc), address, length, flags, next);
 }
 
-void
+Errno
 Virtio::Sg::Buffer::add_final_link(Virtio::Descriptor &&desc, uint64 address, uint32 length, uint16 flags) {
-    ASSERT(not(flags & VIRTQ_DESC_CONT_NEXT));
-    add_descriptor(cxx::move(desc), address, length, flags, 0);
-    _complete_chain = true;
+    const bool next_enabled = (flags & VIRTQ_DESC_CONT_NEXT) != 0;
+    if (next_enabled)
+        return Errno::PERM;
+
+    Errno err = add_descriptor(cxx::move(desc), address, length, flags, 0);
+    if (Errno::NONE == err) {
+        _complete_chain = true;
+    }
+    return err;
 }
 
 // NOTE: This interface does not allow flag/next modifications.
-void
+Errno
 Virtio::Sg::Buffer::modify_link(size_t chain_idx, uint64 address, uint32 length) {
-    ASSERT(chain_idx < _active_chain_length);
+    // Sanity check arguments
+    if (_active_chain_length <= chain_idx) {
+        return Errno::NOENT;
+    }
+
+    // /-- NOTE: the VIRTIO standard doesn't explicitly forbid 0-length descriptors. However,
+    // |   it does mention within "2.7.4 Message Framing" that:
+    // |   > little sympathy will be given to drivers which create unreasonably-sized
+    // |   > descriptors such as by dividing a network packet into 1500 single-byte
+    // |   > descriptors!
+    // |
+    // |  Forbidding 0-length descriptors greatly simplifies the specification of this VIRTIO
+    // |  code; our VIRTIO implementation "gives little sympathy" to drivers which include
+    // |  0-length descriptors, something akin to creating 1-length descriptors.
+    // |
+    // v  (cf. <https://docs.oasis-open.org/virtio/virtio/v1.3/csd01/virtio-v1.3-csd01.pdf> 2.7.4)
+    if (0 == length) {
+        return Errno::BADR;
+    }
+
     auto &desc = _desc_chain[chain_idx];
     auto &meta = _desc_chain_metadata[chain_idx];
 
+    // Validate VIRTIO requirements
+    _size_bytes -= desc.length;
+    if (static_cast<size_t>(UINT32_MAX) < _size_bytes || static_cast<size_t>(UINT32_MAX) < _size_bytes + length) {
+        return Errno::BADR;
+    }
+    _size_bytes += length;
+
+    // Update the descriptor
     desc.address = address;
     desc.length = length;
 
     meta._desc.set_address(address);
     meta._desc.set_length(length);
+
+    return Errno::NONE;
 }
 
 Errno
@@ -863,8 +928,46 @@ Virtio::Sg::Buffer::root_desc_idx(uint16 &root_desc_idx) const {
     }
 }
 
-void
+Errno
 Virtio::Sg::Buffer::add_descriptor(Virtio::Descriptor &&new_desc, uint64 address, uint32 length, uint16 flags, uint16 next) {
+    // Validate the arguments
+
+    // /-- NOTE: the VIRTIO standard doesn't explicitly forbid 0-length descriptors. However,
+    // |   it does mention within "2.7.4 Message Framing" that:
+    // |   > little sympathy will be given to drivers which create unreasonably-sized
+    // |   > descriptors such as by dividing a network packet into 1500 single-byte
+    // |   > descriptors!
+    // |
+    // |  Forbidding 0-length descriptors greatly simplifies the specification of this VIRTIO
+    // |  code; our VIRTIO implementation "gives little sympathy" to drivers which include
+    // |  0-length descriptors, something akin to creating 1-length descriptors.
+    // |
+    // v  (cf. <https://docs.oasis-open.org/virtio/virtio/v1.3/csd01/virtio-v1.3-csd01.pdf> 2.7.4)
+    if (0 == length) {
+        return Errno::BADR;
+    }
+
+    // NOTE: we should be able to prove that [_size_bytes <= static_cast<size_t>(UINT32_MAX)]
+    // as an invariant on the [Virtio::Sg::Buffer] class.
+    if (static_cast<size_t>(UINT32_MAX) < _size_bytes || static_cast<size_t>(UINT32_MAX) < _size_bytes + length) {
+        return Errno::BADR;
+    }
+
+    const bool readable = (flags & VIRTQ_DESC_WRITE_ONLY) == 0;
+    if (_seen_writable_desc && readable) {
+        return Errno::PERM;
+    }
+
+    // update [_size_bytes] and R/W information tracking
+    _size_bytes += length;
+    if (readable) {
+        _seen_readable_desc = true;
+    } else {
+        if (!_seen_writable_desc)
+            _first_writable_desc = _active_chain_length;
+        _seen_writable_desc = true;
+    }
+
     // Grab a reference to the next node
     auto &desc = _desc_chain[_active_chain_length];
     auto &meta = _desc_chain_metadata[_active_chain_length];
@@ -884,6 +987,8 @@ Virtio::Sg::Buffer::add_descriptor(Virtio::Descriptor &&new_desc, uint64 address
     desc.address = address;
     desc.length = length;
     desc.flags = flags;
+
+    return Errno::NONE;
 }
 
 void
@@ -891,6 +996,9 @@ Virtio::Sg::Buffer::reset(void) {
     _active_chain_length = 0;
     _size_bytes = 0;
     _complete_chain = false;
+    _seen_readable_desc = false;
+    _seen_writable_desc = false;
+    _first_writable_desc = UINT16_MAX;
 }
 
 Virtio::Sg::Buffer::Iterator
