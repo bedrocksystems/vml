@@ -276,15 +276,15 @@ struct Virtio::DeviceState {
     uint32 config_msix_vector{0};
 
     struct PCIMSIXTBL {
-        uint64 msg_addr;
-        uint32 msg_data;
-        uint32 vec_ctrl;
-        PCIMSIXTBL() : msg_addr(0), msg_data(0), vec_ctrl(0) {}
+        uint64 msg_addr{0};
+        uint32 msg_data{0};
+        uint32 vec_ctrl{0};
+        PCIMSIXTBL() = default;
     };
 
     struct PCIMSIXPBA {
-        uint64 bits;
-        PCIMSIXPBA() : bits(0) {}
+        uint64 bits{0};
+        PCIMSIXPBA() = default;
     };
 
     PCIMSIXTBL tbl_data[64];
