@@ -49,8 +49,7 @@ public:
      *  \param cpu The id of the VCPU that owns this physical timer
      *  \param irq The IRQ number associated with the timer (should be a PPI)
      */
-    AA64Timer(Irq_controller &irq_ctlr, Vcpu_id const cpu, uint16 const irq)
-        : Timer(irq_ctlr, cpu, irq), _cntv_ctl(0), _cval(0) {}
+    AA64Timer(Irq_controller &irq_ctlr, Vcpu_id const cpu, uint16 const irq) : Timer(irq_ctlr, cpu, irq) {}
 
     /*! \brief Set the compare value of the timer
      *  \pre Fractional ownership of an initialized timer object.
@@ -105,6 +104,6 @@ private:
     void set_irq_status(bool set) override { _cntv_ctl.set_status(set); }
     uint64 get_timeout_abs() const override { return get_cval(); }
 
-    CntvCtl _cntv_ctl;
-    uint64 _cval;
+    CntvCtl _cntv_ctl{0};
+    uint64 _cval{0};
 };
