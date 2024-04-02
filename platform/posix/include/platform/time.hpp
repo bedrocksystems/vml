@@ -10,4 +10,7 @@
 /*! \brief Wrapper around the platform
  */
 
+#include <platform/types.hpp>
 #include <time.h>
+
+typedef uint64 Tsc;

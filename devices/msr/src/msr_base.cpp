@@ -50,16 +50,27 @@ Msr::BaseBus::log_trace_info(const Msr::RegisterBase *reg, Vbus::Access access, 
 Msr::Err
 Msr::BaseBus::access(Vbus::Access access, const VcpuCtx &vcpu_ctx, mword id, uint64 &val) {
     RegisterBase *reg = _devices[id];
+    Tsc start_tsc{0ull};
 
     ASSERT(access != Vbus::Access::EXEC);
 
     if (reg == nullptr)
         return Msr::Err::NO_DEVICE;
 
+    if (__UNLIKELY__(_stats_enabled)) {
+        start_tsc = reg->msr_stats_start(access);
+        _msrs_stats.last_access = reg;
+        _msrs_stats.last_seen = start_tsc;
+        _msrs_stats.total_access++;
+    }
+
     Msr::Err err = reg->access(access, &vcpu_ctx, val);
 
     if (_trace)
         log_trace_info(reg, access, val);
+
+    if (__UNLIKELY__(_stats_enabled))
+        reg->msr_stats_end(start_tsc);
 
     return err;
 }
