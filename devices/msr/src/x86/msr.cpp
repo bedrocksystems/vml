@@ -171,28 +171,6 @@ Msr::Bus::setup_guest_state_msrs() {
 }
 
 bool
-Msr::Bus::setup_guest_effective_msrs() {
-    Msr::SysRegister* reg;
-
-    // Setup all MSRs that requires NOVA MSR Space updation
-    // Reference: NOVA Microhypervisor Interface Specification
-    //            Section 8.2 Protected Resources [Model-Specific Registers]
-    reg = new (nothrow) Msr::SysRegister("IA32_XSS", IA32_XSS, true, 0x0ULL);
-    if (not register_system_reg(reg))
-        return false;
-
-    reg = new (nothrow) Msr::SysRegister("IA32_TSC_AUX", IA32_TSC_AUX, true, 0x0ULL);
-    if (not register_system_reg(reg))
-        return false;
-
-    if (not setup_guest_state_msrs()) {
-        return false;
-    }
-
-    return setup_syscall_msrs();
-}
-
-bool
 Msr::Bus::setup_apic_msrs(bool x2apic_msrs) {
     Msr::ApicBaseRegister* reg;
     reg = new (nothrow) Msr::ApicBaseRegister(x2apic_msrs);
@@ -233,6 +211,14 @@ Msr::Bus::setup_caps_msr(uint64 arch_caps, uint64 core_caps) {
 
     reg = new (nothrow) Msr::Register("IA32_CORE_CAPABILITIES", IA32_CORE_CAPABILITIES, false, core_caps);
 
+    return register_system_reg(reg);
+}
+
+bool
+Msr::Bus::setup_tsc_deadline_msr() {
+    Msr::Register* reg;
+
+    reg = new (nothrow) Msr::SysRegister("IA32_TSC_DEADLINE", IA32_TSC_DEADLINE, true, 0x0ULL);
     return register_system_reg(reg);
 }
 
@@ -294,10 +280,6 @@ Msr::Bus::setup_arch_msr(bool x2apic_msrs) {
     if (not register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::SysRegister("IA32_TSC_DEADLINE", IA32_TSC_DEADLINE, true, 0x0ULL);
-    if (not register_system_reg(reg))
-        return false;
-
     // Ignore write
     reg = new (nothrow) Msr::Register("UNCORE_PERF_GLOBAL_CTL", UNCORE_PERF_GLOBAL_CTL, false, 0x0ULL);
     if (not register_system_reg(reg))
@@ -318,10 +300,6 @@ Msr::Bus::setup_arch_msr(bool x2apic_msrs) {
     reg = new (nothrow) Msr::TscAdjust();
     if (not register_system_reg(reg))
         return false;
-
-    if (not setup_guest_effective_msrs()) {
-        return false;
-    }
 
     if (not setup_power_msrs()) {
         return false;
