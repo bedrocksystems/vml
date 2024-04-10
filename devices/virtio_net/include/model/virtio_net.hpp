@@ -77,7 +77,7 @@ private:
     enum { RX = 0, TX = 1 };
     Virtio::Callback *_callback{nullptr};
     Model::Virtio_net_callback *_virtio_net_callback{nullptr};
-    Virtio_net_config _config __attribute__((aligned(8)));
+    Virtio_net_config _config;
     Platform::Signal *_sig;
     bool _backend_connected{false};
 

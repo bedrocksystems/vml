@@ -43,7 +43,7 @@ public:
 class Model::Virtio_console : public Virtio::Device, public Virtio::Sg::Buffer::ChainAccessor {
 private:
     enum { RX = 0, TX = 1 };
-    Model::Virtio_console_config _config __attribute__((aligned(8)));
+    Model::Virtio_console_config _config;
 
     Virtio::Sg::Buffer _rx_buff;
     Virtio::Sg::Buffer _tx_buff;
