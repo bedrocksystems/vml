@@ -127,50 +127,47 @@ private:
         return GPA(translate_io(addr, size_bytes));
     }
 
-    // [GuestPhysicalToVirtual] overrides inherited by [Virtio::Sg::Buffer::ChainAccessor]
-    //
-    // NOTE: mapping depends on whether or not the the va will be used for reads or writes,
-    // but unmapping is done unconditionally.
-    Errno gpa_to_va(const GPA &g, size_t size_bytes, char *&va) override {
-        GPA gpa = translate(g.get_value(), size_bytes);
+    // [Virtio::Queue::AddressTranslator] overrides inherited by [Virtio::Sg::Buffer::ChainAccessor]
+    Errno vq_addr_to_r_hva(uint64 vqa, size_t size_bytes, char *&hva) override {
+        GPA gpa = translate(vqa, size_bytes);
         if (gpa.invalid())
             return Errno::PERM;
 
-        void *temp_va = nullptr;
-        Errno err = Model::SimpleAS::demand_map_bus(*_vbus, gpa, size_bytes, temp_va, false);
+        void *temp_hva = nullptr;
+        Errno err = Model::SimpleAS::demand_map_bus(*_vbus, gpa, size_bytes, temp_hva, false);
 
         if (Errno::NONE == err) {
-            va = static_cast<char *>(temp_va);
+            hva = static_cast<char *>(temp_hva);
         }
 
         return err;
     }
-    Errno gpa_to_va_write(const GPA &g, size_t size_bytes, char *&va) override {
-        GPA gpa = translate(g.get_value(), size_bytes);
+    Errno vq_addr_to_w_hva(uint64 vqa, size_t size_bytes, char *&hva) override {
+        GPA gpa = translate(vqa, size_bytes);
         if (gpa.invalid()) {
             return Errno::PERM;
         }
-        void *temp_va = nullptr;
-        Errno err = Model::SimpleAS::demand_map_bus(*_vbus, gpa, size_bytes, temp_va, true);
+        void *temp_hva = nullptr;
+        Errno err = Model::SimpleAS::demand_map_bus(*_vbus, gpa, size_bytes, temp_hva, true);
 
         if (Errno::NONE == err) {
-            va = static_cast<char *>(temp_va);
+            hva = static_cast<char *>(temp_hva);
         }
 
         return err;
     }
-    Errno gpa_to_va_post(const GPA &g, size_t size_bytes, char *va) override {
-        GPA gpa = translate(g.get_value(), size_bytes);
+    Errno vq_addr_to_r_hva_post(uint64 vqa, size_t size_bytes, char *hva) override {
+        GPA gpa = translate(vqa, size_bytes);
         if (gpa.invalid()) {
             return Errno::PERM;
         }
-        return Model::SimpleAS::demand_unmap_bus(*_vbus, gpa, size_bytes, va);
+        return Model::SimpleAS::demand_unmap_bus(*_vbus, gpa, size_bytes, hva);
     }
-    Errno gpa_to_va_post_write(const GPA &g, size_t size_bytes, char *va) override {
-        GPA gpa = translate(g.get_value(), size_bytes);
+    Errno vq_addr_to_w_hva_post(uint64 vqa, size_t size_bytes, char *hva) override {
+        GPA gpa = translate(vqa, size_bytes);
         if (gpa.invalid()) {
             return Errno::PERM;
         }
-        return Model::SimpleAS::demand_unmap_bus_clean(*_vbus, gpa, size_bytes, va);
+        return Model::SimpleAS::demand_unmap_bus_clean(*_vbus, gpa, size_bytes, hva);
     }
 };

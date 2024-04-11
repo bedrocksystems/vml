@@ -136,18 +136,16 @@ private:
 
         // /-- NOTES:
         // |   - when [_copy_started == true] at most one of these pointers will be non-null
-        // |   - whereas [_cookie_src] is always used by destination [Sg::Buffer]s, [_linear_srcdst] might
-        // |     be used by a source /or/ destination [Sg::Buffer].
         // |   - Since the [src] must track the cookie for a linear destination, only a single linear
         // v     destination can be supported currently.
 
         const Virtio::Sg::Buffer::AsyncCopyCookie *_cookie_src{nullptr};
-        const void *_linear_srcdst{nullptr};
+        // v-- NOTE: [_linear_src]/[_linear_dst] pointers maintain ownership of the underlying memory
+        const char *_linear_src{nullptr};
+        char *_linear_dst{nullptr};
 
         /** Construction, Initialization and Destruction */
     public:
-        // NOTE: FM code generation works better with an initializer list as opposed to
-        // calling [reset();].
         AsyncCopyCookie() = default;
         ~AsyncCopyCookie() = default;
 
@@ -180,22 +178,28 @@ private:
             (void)dst;
         }
         /** for [src] in [src->linear] */
-        void init_sg_src_to_linear_dst(const void *dst, size_t sz, size_t s_off) {
-            // NOTE: [d_off] not used since the [const void *] can be directly offset
-            init_metadata(IS_SRC, OTHER_LINEAR, sz, ~0ul, s_off);
-            _linear_srcdst = dst;
+        void init_sg_src_to_linear_dst(char *dst, size_t sz, size_t s_off) {
+            init_metadata(IS_SRC, OTHER_LINEAR, sz, 0ul, s_off);
+            _linear_dst = dst;
         }
         /** for [dst] in [linear->dst] */
-        void init_sg_dst_from_linear_src(const void *src, size_t sz, size_t d_off) {
-            // NOTE: [s_off] not used since the [const void *] can be directly offset
-            init_metadata(IS_DST, OTHER_LINEAR, sz, d_off, ~0ul);
-            _linear_srcdst = src;
+        void init_sg_dst_from_linear_src(const char *src, size_t sz, size_t d_off) {
+            init_metadata(IS_DST, OTHER_LINEAR, sz, d_off, 0ul);
+            _linear_src = src;
         }
 #undef OTHER_LINEAR
 #undef OTHER_SG
 #undef SRC
 #undef DST
         // END macros to make initialization code easier to read
+
+        void record_bytes_copied(size_t bytes_copied) {
+            ASSERT(bytes_copied <= _req_sz);
+            ASSERT(_copy_started);
+            _req_sz -= bytes_copied;
+            _req_d_off += bytes_copied;
+            _req_s_off += bytes_copied;
+        }
 
         void conclude_dst(void) {
             ASSERT(_copy_started);
@@ -223,7 +227,8 @@ private:
             _req_d_off = ~0ul;
             _req_s_off = ~0ul;
             _cookie_src = nullptr;
-            _linear_srcdst = nullptr;
+            _linear_src = nullptr;
+            _linear_dst = nullptr;
         }
 
         void init_status(bool is_src, bool other_sg) {
@@ -254,6 +259,9 @@ private:
         inline size_t req_sz(void) const { return _req_sz; }
         inline size_t req_d_off(void) const { return _req_d_off; }
         inline size_t req_s_off(void) const { return _req_s_off; }
+        // /-- NOTE: [req_linear_src]/[req_linear_dst] bake-in the appropriate offset addition
+        inline const char *req_linear_src(void) { return _linear_src + req_s_off(); }
+        inline char *req_linear_dst(void) { return _linear_dst + req_d_off(); }
         inline bool in_use(void) const { return _copy_started; }
 
         inline bool is_dst_from_sg(void) const { return in_use() && !_copy_is_src && _other_is_sg; }
@@ -264,6 +272,9 @@ private:
         inline bool is_src_to_linear(void) const { return in_use() && _copy_is_src && !_other_is_sg; }
         inline bool is_src(void) const { return is_src_to_sg() || is_src_to_linear(); }
 
+        // NOTE: when the src or dst is a linear buffer there will only be a single ongoing transaction
+        // (and thus the cookie unambiguously determines the src or dst). However, for an [sg->sg] copy
+        // there might be multiple destinations. Therefore, the cookies must be compared.
         bool is_dst_from_matching_cookie(const Virtio::Sg::Buffer::AsyncCopyCookie *src_cookie) const {
             bool candidate = is_dst_from_sg() && src_cookie->is_src_to_sg();
             return candidate && _cookie_src == src_cookie;
@@ -271,11 +282,9 @@ private:
         bool is_dst_from_matching_sg(const Virtio::Sg::Buffer *src) const {
             return is_dst_from_matching_cookie(src->_async_copy_cookie);
         }
-        bool is_dst_from_matching_linear(const void *src) const { return is_dst_from_linear() && _linear_srcdst == src; }
         bool is_src_to_matching_sg(Virtio::Sg::Buffer *dst) const {
             return dst->_async_copy_cookie->is_dst_from_matching_cookie(this);
         }
-        bool is_src_to_matching_linear(void *dst) const { return is_src_to_linear() && _linear_srcdst == dst; }
     };
 
     /** State */
@@ -536,16 +545,16 @@ public:
         virtual void bulk_copy(char *dst, const char *src, size_t size_bytes) = 0;
     };
 
-    class ChainAccessor : public GuestPhysicalToVirtual {
+    class ChainAccessor : public Virtio::Queue::AddressTranslator {
     public:
         ~ChainAccessor() override {}
-        static Errno copy_between_gpa(BulkCopier *copier, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
-                                      const GPA &dst_addr, const GPA &src_addr, size_t &size_bytes);
-        Errno copy_from_gpa(BulkCopier *copier, char *dst_va, const GPA &src_addr, size_t &size_bytes);
-        Errno copy_to_gpa(BulkCopier *copier, const GPA &dst_addr, const char *src_va, size_t &size_bytes);
+        static Errno copy_between_vqa(BulkCopier *copier, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
+                                      uint64 dst_vqa, uint64 src_vqa, size_t &size_bytes);
+        Errno copy_from_vqa(BulkCopier *copier, char *dst_hva, uint64 src_vqa, size_t &size_bytes);
+        Errno copy_to_vqa(BulkCopier *copier, uint64 dst_vqa, const char *src_hva, size_t &size_bytes);
 
         // The follow methods are used in [copy_XXX_gpa] when the underlying
-        // [GuestPhysicalToVirtual] methods return [err != Errno::NONE].
+        // [Virtio::Queue::AddressTranslator] methods return [err != Errno::NONE].
     private:
         virtual void handle_translation_failure(bool is_src, Errno err, mword address, size_t sz) {
             (void)is_src;
@@ -565,7 +574,7 @@ private:
                                           size_t &bytes_copied, BulkCopier &copier) const;
 
 public:
-    Errno start_copy_to_sg(Virtio::Sg::Buffer &dst, size_t size_bytes, size_t d_off = 0, size_t s_off = 0) const;
+    Errno start_copy_to_sg(Virtio::Sg::Buffer &dst, size_t &size_bytes, size_t d_off = 0, size_t s_off = 0) const;
     Errno try_end_copy_to_sg(Virtio::Sg::Buffer &dst, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
                              size_t &bytes_copied, BulkCopier *copier = nullptr) const;
     // END Asynchronous interface for copying from [this] Sg::Buffer to [dst] Sg::Buffer
@@ -578,13 +587,11 @@ public:
     // BEGIN Asynchronous interface for copying from [this] Sg::Buffer to [dst] linear buffer
 private:
     virtual Errno start_copy_to_linear_impl(void *dst) const;
-    virtual Errno try_end_copy_to_linear_impl(void *dst, ChainAccessor &src_accessor, size_t &bytes_copied,
-                                              BulkCopier &copier) const;
+    virtual Errno try_end_copy_to_linear_impl(ChainAccessor &src_accessor, size_t &bytes_copied, BulkCopier &copier) const;
 
 public:
-    Errno start_copy_to_linear(void *dst, size_t size_bytes, size_t s_off = 0) const;
-    Errno try_end_copy_to_linear(void *dst, ChainAccessor &src_accessor, size_t &bytes_copied,
-                                 BulkCopier *copier = nullptr) const;
+    Errno start_copy_to_linear(void *dst, size_t &size_bytes, size_t s_off = 0) const;
+    Errno try_end_copy_to_linear(ChainAccessor &src_accessor, size_t &bytes_copied, BulkCopier *copier = nullptr) const;
     // END Asynchronous interface for copying from [this] Sg::Buffer to [dst] linear buffer
 
     /** (Synchronously) Copy [size_bytes] from [src] Sg::Buffer to [dst] linear buffer. */
@@ -594,13 +601,11 @@ public:
     // BEGIN Asynchronous interface for copying to [this] (dst) Sg::Buffer from [src] linear buffer
 private:
     virtual Errno start_copy_from_linear_impl(const void *src);
-    virtual Errno try_end_copy_from_linear_impl(const void *src, ChainAccessor &dst_accessor, size_t &bytes_copied,
-                                                BulkCopier &copier);
+    virtual Errno try_end_copy_from_linear_impl(ChainAccessor &dst_accessor, size_t &bytes_copied, BulkCopier &copier);
 
 public:
-    Errno start_copy_from_linear(const void *src, size_t size_bytes, size_t d_off = 0);
-    Errno try_end_copy_from_linear(const void *src, ChainAccessor &dst_accessor, size_t &bytes_copied,
-                                   BulkCopier *copier = nullptr);
+    Errno start_copy_from_linear(const void *src, size_t &size_bytes, size_t d_off = 0);
+    Errno try_end_copy_from_linear(ChainAccessor &dst_accessor, size_t &bytes_copied, BulkCopier *copier = nullptr);
     // END Asynchronous interface for copying to [this] (dst) Sg::Buffer from [src] linear buffer
 
     /** (Synchronously) Copy [size_bytes] bytes from [src] linear buffer to [this] (dst) Sg::Buffer. */

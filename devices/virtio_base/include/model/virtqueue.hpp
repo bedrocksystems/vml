@@ -473,6 +473,52 @@ public:
 
     virtual Errno recv(Virtio::Descriptor &desc) = 0;
 
+    /*! \brief Hooks for (effectful) translation from "virtqueue addresses" (e.g. GPA, GVA, offset
+     *  into shared memory, etc...) to "device addresses" (i.e. HVAs).
+     *
+     * The intended usage is:
+     * | char *va = nullptr;
+     * | Errno err;
+     * |
+     * | err = translator->vq_addr_to_{r, w}_hva(addr, sz, va);
+     * | if (Errno::NONE != err) return err;
+     * |
+     * | // use [va] in a readable XOR writable way
+     * |
+     * | err = translator->vq_addr_to_{r, w}_hva_post(addr, sz, va);
+     * | if (Errno::NONE != err) return err;
+     */
+    /** v-- TODOS: use a named wrapper type for [VQA] instead of using [uint64] directly. */
+    class AddressTranslator {
+    public:
+        virtual ~AddressTranslator() {}
+
+        // Address translation for readable and writable chunks of memory might
+        // differ. Therefore, [Virtio::Queue::AddressTranslator] exposes pre-/post-hooks
+        // which are explicitly slated for use in readable and writable translations:
+        // - [vq_addr_to_r_hva]/[vq_addr_to_r_hva_post]: pre-/post-hooks for *readable*
+        //   "virtqueue address" ranges.
+        // - [vq_addr_to_w_hva]/[vq_addr_to_w_hva_post]: pre-/post-hooks for *writable*
+        //   "virtqueue address" ranges.
+        //
+        // Libraries shall use the appropriate parity when translating "virtqueue addresses"
+        // using this interface.
+        //
+        // Clients which are indifferent to the read/write parity may simply override
+        // [vq_addr_to_R_hva] (and [vq_addr_to_R_hva_post], if necessary).
+        virtual Errno vq_addr_to_r_hva(uint64 vqa, size_t byte_size, char *&hva) = 0;
+        virtual Errno vq_addr_to_w_hva(uint64 vqa, size_t byte_size, char *&hva) { return vq_addr_to_r_hva(vqa, byte_size, hva); }
+        virtual Errno vq_addr_to_r_hva_post(uint64 vqa, size_t byte_size, char *hva) {
+            (void)(vqa);
+            (void)(byte_size);
+            (void)(hva);
+            return Errno::NONE;
+        }
+        virtual Errno vq_addr_to_w_hva_post(uint64 vqa, size_t byte_size, char *hva) {
+            return vq_addr_to_r_hva_post(vqa, byte_size, hva);
+        }
+    };
+
 protected:
     inline uint16 count_available(uint16 idx) const {
         // Index is a 16 bit free running counter. The max limit for ring size is 32768. Therefore,
