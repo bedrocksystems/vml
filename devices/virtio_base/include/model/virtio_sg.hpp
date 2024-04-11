@@ -146,10 +146,13 @@ private:
 
         /** Construction, Initialization and Destruction */
     public:
-        AsyncCopyCookie() { reset(); }
+        // NOTE: FM code generation works better with an initializer list as opposed to
+        // calling [reset();].
+        AsyncCopyCookie() = default;
         ~AsyncCopyCookie() = default;
 
-        // Copying not needed since [Sg::Buffer]s can only be moved
+        // Copying not needed since we dynamically allocate cookies and then use pointers
+        // to them.
         AsyncCopyCookie &operator=(const AsyncCopyCookie &) = delete;
         AsyncCopyCookie(const AsyncCopyCookie &) = delete;
 
@@ -632,14 +635,14 @@ private:
 
     /** Default Instantiations  */
 private:
-    class ChainWalkingNop : public ChainWalkingCallback {
+    class ChainWalkingNop final : public ChainWalkingCallback {
     public:
         ChainWalkingNop() {}
         ~ChainWalkingNop() override {}
         void chain_walking_cb(Errno, uint64, uint32, uint16, uint16, void *) override {}
     };
 
-    class BulkCopierDefault : public BulkCopier {
+    class BulkCopierDefault final : public BulkCopier {
     public:
         BulkCopierDefault() {}
         ~BulkCopierDefault() override {}
