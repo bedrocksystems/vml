@@ -197,7 +197,7 @@ struct Virtio::DeviceState {
         : queue_num_max(num_max), vendor_id(vendor), device_id(id), device_feature_lower(static_cast<uint32>(feature)),
           // We always set [VIRTIO_F_VERSION_1] i.e. no legacy VirtIO emulation.
           device_feature_upper(static_cast<uint32>((feature | Virtio::FeatureBits::VIRTIO_F_VERSION_1) >> 32)),
-          config_space(static_cast<uint64 *>(config)), config_size(config_sz) {
+          config_space(static_cast<uint8 *>(config)), config_size(config_sz) {
         for (uint16 i = 0; i < static_cast<uint8>(Virtio::Queues::MAX); i++) {
             data[i] = QueueData(queue_num_max);
         }
@@ -259,7 +259,7 @@ struct Virtio::DeviceState {
     uint32 const device_feature_lower;
     uint32 const device_feature_upper;
 
-    uint64 *config_space;
+    uint8 *config_space;
     uint32 config_size;
 
     uint32 sel_queue{0};
@@ -345,32 +345,21 @@ public:
 
     static bool config_space_read(uint64 const offset, uint64 const config_base, uint8 const bytes, uint64 &value,
                                   const Virtio::DeviceState &state) {
-        // Config space access can be byte aligned.
-        // We reserve upto 256 bytes for config space. So first read the corresponding word from
-        // config space.
-        uint64 v = state.config_space[(offset - config_base) / 8];
+        uint64 off_in_config = (offset - config_base);
+        if (off_in_config + bytes > state.config_size)
+            return false;
 
-        // The required offset within the word
-        uint64 offset_byte = offset % 8;
-
-        // Since the word is already read, [Virtio::read_register' is only used to appropriately
-        // mask and retrieve the required number of bytes.
-        return Virtio::read_register(offset_byte, 0, 8, bytes, v, value);
+        memcpy(&value, state.config_space + off_in_config, bytes);
+        return true;
     }
 
     static bool config_space_write(uint64 const offset, uint64 const config_base, uint8 const bytes, uint64 const value,
                                    Virtio::DeviceState &state) {
-        // Config space access can be byte aligned.
-        // We reserve upto 256 bytes for config space. So first read the corresponding word from
-        // config space.
-        uint64 v = state.config_space[(offset - config_base) / 8];
+        uint64 off_in_config = (offset - config_base);
+        if (off_in_config + bytes > state.config_size)
+            return false;
 
-        // The required offset within the word
-        uint64 offset_byte = offset % 8;
-        auto ok = Virtio::write_register(offset_byte, 0, 8, bytes, value, v);
-        if (ok)
-            state.config_space[(offset - config_base) / 8] = v;
-
-        return ok;
+        memcpy(state.config_space + off_in_config, &value, bytes);
+        return true;
     }
 };
