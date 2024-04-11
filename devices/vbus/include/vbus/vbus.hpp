@@ -150,6 +150,18 @@ public:
         }
     }
 
+    /*! \brief Destructs a virtual bus.
+               This will destory all DeviceEntry resources left in the vbus. However,
+               Vbus::Devices are left untouched. This Could leak Vbus::Devices if the caller
+               is not prepared and does not own a pointer to this Vbus::Device. Note that it
+               is anyway more prudent to not delete a Vbus::Device here as the vbus does not
+               assume the provenance of the device (heap vs others).
+     */
+    ~Bus() {
+        auto rm_list = [](RangeNode<mword>* l) { delete static_cast<DeviceEntry*>(l); };
+        _devices.clear(rm_list);
+    }
+
     /*! \brief Add a device to the virtual bus
      *  \pre Full ownership of a valid virtual bus. Full ownership of a valid Device.
      *  \post Ownership of the vbus is unchanged. The virtual bus adds this device to its
@@ -218,6 +230,7 @@ public:
 
     struct DeviceEntry final : RangeNode<mword> {
         DeviceEntry(Device* d, const Range<mword>& r) : RangeNode(r), device(d) {}
+        virtual ~DeviceEntry() {}
 
         Device* device;
     };
