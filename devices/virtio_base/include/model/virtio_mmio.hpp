@@ -229,18 +229,4 @@ public:
         irq_ctrlr->deassert_global_line(irq);
         state.irq_status.and_fetch(static_cast<uint32>(~0x1));
     }
-
-    void assert_config_change_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq, Virtio::DeviceState &state) override {
-        if ((state.irq_status & 0x2) != 0u)
-            return;
-
-        state.irq_status.or_fetch(0x2);
-        irq_ctrlr->assert_global_line(irq);
-    }
-
-    void deassert_config_change_interrupt(Model::Irq_controller *const irq_ctrlr, uint16 irq,
-                                          Virtio::DeviceState &state) override {
-        irq_ctrlr->deassert_global_line(irq);
-        state.irq_status.and_fetch(static_cast<uint32>(~0x2));
-    }
 };
