@@ -130,8 +130,7 @@ public:
                    Model::IOMMUManagedDevice &io_translations) {
         _data = &queue_data;
 
-        /* don't accept queues with zero elements */
-        if (_data->num == 0)
+        if (not Virtio::Queue::is_size_valid(static_cast<uint16>(_data->num)))
             return destruct();
 
         GPA data = convert(io_translations, queue_data.descr(),
