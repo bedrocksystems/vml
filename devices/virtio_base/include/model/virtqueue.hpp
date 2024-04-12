@@ -415,10 +415,10 @@ public:
         ASSERT(descriptor_base != nullptr);
         ASSERT(available_base != nullptr);
         ASSERT(used_base != nullptr);
-        ASSERT(_size != 0);
-        ASSERT(_size <= 32768);
-        ASSERT((_size & (_size - 1)) == 0);
+        ASSERT(is_size_valid(_size)); // NOLINT(bugprone-assert-side-effect) - false positive
     }
+
+    static constexpr bool is_size_valid(uint16 sz) { return sz != 0 and sz <= 32768 and (sz & (sz - 1)) == 0; }
 
     // [Virtio::Queue]s are *affine* - meaning that they may not be copied
     // and should not be aliased. Therefore we delete copy operators/constructors.
