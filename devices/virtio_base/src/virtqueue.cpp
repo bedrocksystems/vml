@@ -268,6 +268,9 @@ namespace Virtio {
     }
 
     Errno DriverQueue::create_driver_queue(uint16 num_entries, Virtio::DriverQueue &out) {
+        if (not Virtio::Queue::is_size_valid(num_entries))
+            return Errno::INVAL;
+
         // Allocate descriptor region.
         auto *desc = create_region<Virtio::Descriptor>(num_entries);
         if (nullptr == desc)
