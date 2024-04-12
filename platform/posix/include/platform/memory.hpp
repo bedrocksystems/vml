@@ -86,6 +86,8 @@ static inline bool
 Platform::Mem::unmap_mem(const void *addr, size_t size) {
     mword offset = reinterpret_cast<mword>(addr);
     align_mmap(offset, size);
-    int r = munmap(const_cast<void *>(addr), size);
+    int r = munmap(reinterpret_cast<void *>(offset), size);
+    if (r != 0)
+        perror("munmap");
     return r == 0;
 }
