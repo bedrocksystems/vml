@@ -289,6 +289,9 @@ struct Virtio::DeviceState {
     PCIMSIXTBL tbl_data[64];
     PCIMSIXPBA pba_data[64];
 
+    static constexpr size_t MSIX_TBL_SIZE = sizeof(tbl_data);
+    static constexpr size_t MSIX_PBA_SIZE = sizeof(pba_data);
+
     QueueData data[static_cast<uint8>(Virtio::Queues::MAX)];
     QueueState queue[static_cast<uint8>(Virtio::Queues::MAX)];
 };
