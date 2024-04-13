@@ -9,7 +9,6 @@
 #include <msr/msr_base.hpp>
 
 namespace Msr {
-
     enum RegisterId : uint32 {
         IA32_TIME_STAMP_COUNTER = 0x10,
         IA32_PLATFORM_ID = 0x17,
@@ -76,12 +75,13 @@ public:
     static bool is_msr_with_addr(uint32 msrnum);
     static bool is_x2apic_msr(uint32 msrnum);
 
+    bool setup_tsc_deadline_msr();
+    bool setup_guest_state_msrs();
+    bool setup_syscall_msrs();
+    bool setup_sys_msrs();
+
 private:
     bool setup_apic_msrs(bool x2apic_msrs);
 
-    bool setup_guest_effective_msrs();
-    bool setup_guest_state_msrs();
     bool setup_power_msrs();
-    bool setup_syscall_msrs();
-    bool setup_sys_msrs();
 };
