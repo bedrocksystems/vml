@@ -525,7 +525,7 @@ public:
 
         if (access == Vbus::WRITE && mdscr_ss_enabled(value)) {
             if (!mdscr_ss_enabled(_value)) {
-                WARN("Guest as enabled software step control bit which is not supported");
+                WARN("Guest has enabled software step control bit which is not supported");
             }
         }
 
