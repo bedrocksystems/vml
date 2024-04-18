@@ -63,8 +63,8 @@ public:
     enum : unsigned { MAX_BOOT_ARGS = 4 };
 
 private:
-    Platform::Signal _resume_sig;
     Platform::Signal _off_sm;
+    Platform::Signal _resume_sig;
 
     // Boot configuration
     uint64 _boot_addr{0};

@@ -308,8 +308,8 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
 
     ok = _irq_sig.init(ctx);
     if (!ok) {
-        _off_sm.destroy(ctx);
         _resume_sig.destroy(ctx);
+        _off_sm.destroy(ctx);
         return false;
     }
 
