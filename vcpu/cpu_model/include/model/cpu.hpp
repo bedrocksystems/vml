@@ -14,6 +14,7 @@
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/memory.hpp>
+#include <platform/mutex.hpp>
 #include <platform/semaphore.hpp>
 #include <platform/signal.hpp>
 #include <platform/types.hpp>
@@ -66,11 +67,12 @@ private:
     Platform::Signal _off_sm;
     Platform::Signal _resume_sig;
 
-    // Boot configuration
+    // Boot/reset configuration, set in set_reset_parameters()
     uint64 _boot_addr{0};
     uint64 _boot_args[MAX_BOOT_ARGS] = {0, 0, 0, 0};
     uint64 _timer_offset{0};
     Mode _start_mode{BITS_64};
+    Platform::Mutex _reset_mutex;
 
     Vcpu_id const _vcpu_id;
 
@@ -127,6 +129,7 @@ protected:
     Model::Local_Irq_controller *_lirq_ctlr{nullptr};
 
     void wait_for_switch_on() { _off_sm.wait(); }
+    Platform::Mutex &reset_mutex() { return _reset_mutex; }
     uint64 boot_addr() const { return _boot_addr; }
     const uint64 *boot_args() const { return _boot_args; }
     void switch_state_to_off();
