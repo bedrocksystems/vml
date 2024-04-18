@@ -67,14 +67,11 @@ Model::Timer::terminate() {
 
 bool
 Model::Timer::cleanup_timer_loop_resources(const Platform_ctx* ctx) {
-    if (Errno::NONE != _terminated_sig.destroy(ctx))
-        return false;
+    bool ret = true;
 
-    if (Errno::NONE != _ready_sig.destroy(ctx))
-        return false;
+    ret &= Errno::NONE != _terminated_sig.destroy(ctx);
+    ret &= Errno::NONE != _ready_sig.destroy(ctx);
+    ret &= Errno::NONE != _wait_timer.destroy(ctx);
 
-    if (Errno::NONE != _wait_timer.destroy(ctx))
-        return false;
-
-    return true;
+    return ret;
 }

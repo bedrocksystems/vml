@@ -235,7 +235,7 @@ public:
     Cpu(Irq_controller *girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id);
     virtual ~Cpu();
     bool setup(const Platform_ctx *ctx);
-    virtual Errno cleanup(const Platform_ctx *ctx);
+    virtual bool cleanup(const Platform_ctx *ctx);
 
     bool switch_state_to_roundedup();
     void switch_state_to_on();
