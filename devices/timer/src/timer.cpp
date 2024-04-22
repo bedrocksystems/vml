@@ -65,13 +65,9 @@ Model::Timer::terminate() {
     timer_wakeup();
 }
 
-bool
+void
 Model::Timer::cleanup_timer_loop_resources(const Platform_ctx* ctx) {
-    bool ret = true;
-
-    ret &= Errno::NONE != _terminated_sig.destroy(ctx);
-    ret &= Errno::NONE != _ready_sig.destroy(ctx);
-    ret &= Errno::NONE != _wait_timer.destroy(ctx);
-
-    return ret;
+    TRY_ERRNO_LOG_CONTINUE(_terminated_sig.destroy(ctx));
+    TRY_ERRNO_LOG_CONTINUE(_ready_sig.destroy(ctx));
+    TRY_ERRNO_LOG_CONTINUE(_wait_timer.destroy(ctx));
 }

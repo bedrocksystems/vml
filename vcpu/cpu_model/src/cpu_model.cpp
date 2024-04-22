@@ -41,15 +41,11 @@ Model::Cpu::deinit() {
     vcpus = nullptr;
 }
 
-bool
+void
 Model::Cpu::cleanup_vcpus(const Platform_ctx* ctx) {
-
-    bool ret = true;
     for (Vcpu_id cpu_id = 0; cpu_id < configured_vcpus; ++cpu_id) {
-        ret &= Model::Cpu::get(cpu_id)->cleanup(ctx);
+        Model::Cpu::get(cpu_id)->cleanup(ctx);
     }
-
-    return ret;
 }
 
 bool
@@ -322,16 +318,12 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
     return ok;
 }
 
-bool
+void
 Model::Cpu::cleanup(const Platform_ctx* ctx) {
-    bool ret = true;
-
-    ret &= _irq_sig.destroy(ctx) != Errno::NONE;
-    ret &= _reset_mutex.destroy(ctx) != Errno::NONE;
-    ret &= _resume_sig.destroy(ctx) != Errno::NONE;
-    ret &= _off_sm.destroy(ctx) != Errno::NONE;
-
-    return ret;
+    TRY_ERRNO_LOG_CONTINUE(_irq_sig.destroy(ctx));
+    TRY_ERRNO_LOG_CONTINUE(_reset_mutex.destroy(ctx));
+    TRY_ERRNO_LOG_CONTINUE(_resume_sig.destroy(ctx));
+    TRY_ERRNO_LOG_CONTINUE(_off_sm.destroy(ctx));
 }
 
 /*! \brief Request the VCPU to round (i.e. stop its progress)

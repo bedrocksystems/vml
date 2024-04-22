@@ -97,5 +97,5 @@ public:
 
     void wait_for_loop_terminated() { _terminated_sig.wait(); }
 
-    bool cleanup_timer_loop_resources(const Platform_ctx *ctx);
+    void cleanup_timer_loop_resources(const Platform_ctx *ctx);
 };
