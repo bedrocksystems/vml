@@ -32,3 +32,30 @@ enum class Errno {
     BADR = EBADR,
     NOTRECOVERABLE = ENOTRECOVERABLE,
 };
+
+static inline constexpr auto
+errno2str(Errno e) {
+    switch (e) {
+    case Errno::NONE:
+        return "NONE";
+    case Errno::PERM:
+        return "PERM";
+    case Errno::NOENT:
+        return "NOENT";
+    case Errno::AGAIN:
+        return "AGAIN";
+    case Errno::NOMEM:
+        return "NOMEM";
+    case Errno::RBUSY:
+        return "RBUSY";
+    case Errno::EXIST:
+        return "EXIST";
+    case Errno::INVAL:
+        return "INVAL";
+    case Errno::BADR:
+        return "BADR";
+    case Errno::NOTRECOVERABLE:
+        return "NOTRECOVERABLE";
+    }
+    return "(invalid)"; // keep outside so compiler will warn on incomplete switch
+}
