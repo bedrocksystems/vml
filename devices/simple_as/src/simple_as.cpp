@@ -401,11 +401,11 @@ Model::SimpleAS::map_host() {
 bool
 Model::SimpleAS::destruct() {
     if (mapped()) {
+        if (!Platform::Mem::unmap_mem(reinterpret_cast<void*>(_vmm_view), _as.size()))
+            return false;
         _vmm_view = nullptr;
-        return Platform::Mem::unmap_mem(reinterpret_cast<void*>(_vmm_view), _as.size());
-    } else {
-        return true;
     }
+    return true;
 }
 
 char*
