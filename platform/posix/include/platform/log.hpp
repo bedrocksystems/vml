@@ -28,6 +28,7 @@
 #include <cstdlib>
 
 #include <platform/compiler.hpp>
+#include <platform/errno.hpp>
 
 namespace Log {
     enum LogLevel {
@@ -80,6 +81,9 @@ namespace Log {
         FATAL("ABORT_WITH: " _FMT_, ##__VA_ARGS__);                                                                              \
         cxx::abort();                                                                                                            \
     } while (0)
+
+// Derived macros. Keep in sync with zeta/lib/log/include/bedrock/log/log.hpp
+// TODO: dedup
 
 // DEBUG will add the file and line number, emulating a poor man's stacktrace.
 // We also print the expression that lead to the failure.
@@ -169,3 +173,14 @@ namespace Log {
         }                                                                                                                        \
         ___res.take();                                                                                                           \
     })
+
+// Variant of TRY_ERRNO_LOG that does not return.
+// Useful for cleanup methods, since they should continue executing past a
+// failure.
+#define TRY_ERRNO_LOG_CONTINUE(_expr_)                                                                                           \
+    do {                                                                                                                         \
+        Errno ___err = _expr_;                                                                                                   \
+        if (__UNLIKELY__(___err != Errno::NONE)) {                                                                               \
+            DEBUG("Expression failed with %s: `%s`", errno2str(___err), #_expr_);                                                \
+        }                                                                                                                        \
+    } while (0)
