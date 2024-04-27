@@ -67,11 +67,17 @@ private:
     Platform::Signal _off_sm;
     Platform::Signal _resume_sig;
 
-    // Boot/reset configuration, set in set_reset_parameters()
+    // Boot configuration, set in set_reset_parameters() when a CPU boots (or
+    // resets) other CPUs.
     uint64 _boot_addr{0};
     uint64 _boot_args[MAX_BOOT_ARGS] = {0, 0, 0, 0};
     uint64 _timer_offset{0};
     Mode _start_mode{BITS_64};
+    /*! \brief Mutex for boot configuration.
+     * This is necessary: Buggy guests can race on booting certain CPU.
+     * For instance, CPU 1 and CPU 2 might race on booting CPU 3, and VMM must
+     * avoid C++ undefined behavior due to data races.
+     */
     Platform::Mutex _reset_mutex;
 
     Vcpu_id const _vcpu_id;
