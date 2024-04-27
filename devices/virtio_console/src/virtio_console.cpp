@@ -10,7 +10,7 @@
 #include <model/virtqueue.hpp>
 
 void
-Model::Virtio_console::notify(uint32 const) {
+Model::VirtioConsole::notify(uint32 const) {
     _sig_notify_event->sig();
 
     if (!queue(RX).constructed() || (!_driver_initialized))
@@ -21,7 +21,7 @@ Model::Virtio_console::notify(uint32 const) {
 }
 
 void
-Model::Virtio_console::driver_ok() {
+Model::VirtioConsole::driver_ok() {
     _driver_initialized = true;
 
     if (_callback != nullptr)
@@ -29,7 +29,7 @@ Model::Virtio_console::driver_ok() {
 }
 
 bool
-Model::Virtio_console::to_guest(const char *buff, size_t size_bytes) {
+Model::VirtioConsole::to_guest(const char *buff, size_t size_bytes) {
     if (!queue(RX).constructed() || (!_driver_initialized))
         return false;
 
@@ -43,7 +43,7 @@ Model::Virtio_console::to_guest(const char *buff, size_t size_bytes) {
 
         size_t n_copy = min(size_bytes, _rx_buff.size_bytes());
 
-        // NOTE: [Model::Virtio_console] is a concrete instantiation of
+        // NOTE: [Model::VirtioConsole] is a concrete instantiation of
         // [Virtio::Sg::Buffer::ChainAccessor].
         err = _rx_buff.copy_from_linear(buff + buf_idx, *this, n_copy);
         _rx_buff.conclude_chain_use(device_queue(RX));
@@ -61,7 +61,7 @@ Model::Virtio_console::to_guest(const char *buff, size_t size_bytes) {
 }
 
 size_t
-Model::Virtio_console::from_guest(char *out_buf, size_t size_bytes) {
+Model::VirtioConsole::from_guest(char *out_buf, size_t size_bytes) {
     if (!queue(TX).constructed() || (!_driver_initialized))
         return 0;
 
@@ -82,7 +82,7 @@ Model::Virtio_console::from_guest(char *out_buf, size_t size_bytes) {
         size_t n_copy = min(size_bytes, _tx_buff.size_bytes() - _tx_buff_progress);
 
         if (n_copy > 0) {
-            // NOTE: [Model::Virtio_console] is a concrete instantiation of
+            // NOTE: [Model::VirtioConsole] is a concrete instantiation of
             // [Virtio::Sg::Buffer::ChainAccessor].
             err = _tx_buff.copy_to_linear(out_buf + was_read, *this, n_copy, _tx_buff_progress);
         }

@@ -17,13 +17,13 @@
 #include <vbus/vbus.hpp>
 
 namespace Model {
-    class Virtio_console;
-    struct Virtio_console_config;
+    class VirtioConsole;
+    struct VirtioConsoleConfig;
     class VirtioConsoleCallback;
     class Irq_controller;
 }
 
-struct Model::Virtio_console_config {
+struct Model::VirtioConsoleConfig {
     uint16 cols{0};
     uint16 rows{0};
     uint32 num_ports{0};
@@ -38,12 +38,12 @@ public:
 
 // NOTE: while [Virtio::Device] is a concrete instance of [Virtio::Sg::Buffer::ChainAccessor],
 // it overloads the necessary functions using the
-// [Model::SimpleAS::map_guest_mem]/[Model::SimpleAS::unmap_guest_mem] functions. [Virtio_console],
+// [Model::SimpleAS::map_guest_mem]/[Model::SimpleAS::unmap_guest_mem] functions. [VirtioConsole],
 // however, needs to do demand (un)mapping which means that we must provide custom overrides.
-class Model::Virtio_console : public Virtio::Device, public Virtio::Sg::Buffer::ChainAccessor {
+class Model::VirtioConsole : public Virtio::Device, public Virtio::Sg::Buffer::ChainAccessor {
 private:
     enum { RX = 0, TX = 1 };
-    Model::Virtio_console_config _config;
+    Model::VirtioConsoleConfig _config;
 
     Virtio::Sg::Buffer _rx_buff;
     Virtio::Sg::Buffer _tx_buff;
@@ -62,8 +62,8 @@ private:
     Model::VirtioConsoleCallback *_console_callback{nullptr};
 
 public:
-    Virtio_console(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
-                   Virtio::Transport *transport, Platform::Signal *sig, uint64 device_features = 0)
+    VirtioConsole(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
+                  Virtio::Transport *transport, Platform::Signal *sig, uint64 device_features = 0)
         : Virtio::Device("virtio console", Virtio::DeviceID::CONSOLE, bus, irq_ctlr, &_config, sizeof(_config), irq,
                          queue_entries, transport, device_features),
           _rx_buff(Virtio::Sg::Buffer(queue_entries)), _tx_buff(Virtio::Sg::Buffer(queue_entries)), _sig_notify_event(sig) {}
