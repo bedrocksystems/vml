@@ -41,17 +41,11 @@ Model::Cpu::deinit() {
     vcpus = nullptr;
 }
 
-bool
+void
 Model::Cpu::cleanup_vcpus(const Platform_ctx* ctx) {
-
-    bool ret = true;
     for (Vcpu_id cpu_id = 0; cpu_id < configured_vcpus; ++cpu_id) {
-        Errno err = Model::Cpu::get(cpu_id)->cleanup(ctx);
-
-        ret &= (Errno::NONE != err);
+        Model::Cpu::get(cpu_id)->cleanup(ctx);
     }
-
-    return ret;
 }
 
 bool
@@ -306,27 +300,30 @@ Model::Cpu::setup(const Platform_ctx* ctx) {
         return false;
     }
 
+    ok = _reset_mutex.init(ctx);
+    if (!ok) {
+        _resume_sig.destroy(ctx);
+        _off_sm.destroy(ctx);
+        return false;
+    }
+
     ok = _irq_sig.init(ctx);
     if (!ok) {
-        _off_sm.destroy(ctx);
+        _reset_mutex.destroy(ctx);
         _resume_sig.destroy(ctx);
+        _off_sm.destroy(ctx);
         return false;
     }
 
     return ok;
 }
 
-Errno
+void
 Model::Cpu::cleanup(const Platform_ctx* ctx) {
-    Errno err = _irq_sig.destroy(ctx);
-    if (Errno::NONE != err)
-        return err;
-
-    err = _resume_sig.destroy(ctx);
-    if (Errno::NONE != err)
-        return err;
-
-    return _off_sm.destroy(ctx);
+    TRY_ERRNO_LOG_CONTINUE(_irq_sig.destroy(ctx));
+    TRY_ERRNO_LOG_CONTINUE(_reset_mutex.destroy(ctx));
+    TRY_ERRNO_LOG_CONTINUE(_resume_sig.destroy(ctx));
+    TRY_ERRNO_LOG_CONTINUE(_off_sm.destroy(ctx));
 }
 
 /*! \brief Request the VCPU to round (i.e. stop its progress)
@@ -519,10 +516,10 @@ Model::Cpu::notify_interrupt_pending() {
 void
 Model::Cpu::set_reset_parameters(uint64 const boot_addr, uint64 const boot_args[MAX_BOOT_ARGS], uint64 const tmr_off,
                                  enum Mode m) {
+    Platform::MutexGuard guard{_reset_mutex};
     _boot_addr = boot_addr;
     for (unsigned i = 0; i < MAX_BOOT_ARGS; i++)
         _boot_args[i] = boot_args[i];
     _timer_offset = tmr_off;
     _start_mode = m;
-    Barrier::rw_before_rw();
 }

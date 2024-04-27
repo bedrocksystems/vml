@@ -14,6 +14,7 @@
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/memory.hpp>
+#include <platform/mutex.hpp>
 #include <platform/semaphore.hpp>
 #include <platform/signal.hpp>
 #include <platform/types.hpp>
@@ -63,14 +64,21 @@ public:
     enum : unsigned { MAX_BOOT_ARGS = 4 };
 
 private:
-    Platform::Signal _resume_sig;
     Platform::Signal _off_sm;
+    Platform::Signal _resume_sig;
 
-    // Boot configuration
+    // Boot configuration, set in set_reset_parameters() when a CPU boots (or
+    // resets) other CPUs.
     uint64 _boot_addr{0};
     uint64 _boot_args[MAX_BOOT_ARGS] = {0, 0, 0, 0};
     uint64 _timer_offset{0};
     Mode _start_mode{BITS_64};
+    /*! \brief Mutex for boot configuration.
+     * This is necessary: Buggy guests can race on booting certain CPU.
+     * For instance, CPU 1 and CPU 2 might race on booting CPU 3, and VMM must
+     * avoid C++ undefined behavior due to data races.
+     */
+    Platform::Mutex _reset_mutex;
 
     Vcpu_id const _vcpu_id;
 
@@ -127,6 +135,7 @@ protected:
     Model::Local_Irq_controller *_lirq_ctlr{nullptr};
 
     void wait_for_switch_on() { _off_sm.wait(); }
+    Platform::Mutex &reset_mutex() { return _reset_mutex; }
     uint64 boot_addr() const { return _boot_addr; }
     const uint64 *boot_args() const { return _boot_args; }
     void switch_state_to_off();
@@ -147,7 +156,7 @@ public:
     // VCPU api start
     static bool init(uint16 vcpus);
     static void deinit();
-    static bool cleanup_vcpus(const Platform_ctx *ctx);
+    static void cleanup_vcpus(const Platform_ctx *ctx);
     static bool is_cpu_turned_on_by_guest(Vcpu_id);
     static bool is_64bit(Vcpu_id);
 
@@ -235,7 +244,7 @@ public:
     Cpu(Irq_controller *girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id);
     virtual ~Cpu();
     bool setup(const Platform_ctx *ctx);
-    virtual Errno cleanup(const Platform_ctx *ctx);
+    virtual void cleanup(const Platform_ctx *ctx);
 
     bool switch_state_to_roundedup();
     void switch_state_to_on();
