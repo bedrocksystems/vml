@@ -12,13 +12,13 @@
 struct VcpuCtx;
 
 namespace Vuart {
-    class Tx_callback;
+    class TxCallback;
     class LifeCycleCallbacks;
 }
 
 /*! \brief Callback interface to send chars to the backend
  */
-class Vuart::Tx_callback {
+class Vuart::TxCallback {
 public:
     /*! \brief Will be called when the vuart needs to send chars to the outside
      *  \param c character to send
