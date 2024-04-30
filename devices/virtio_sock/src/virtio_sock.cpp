@@ -10,26 +10,26 @@
 #include <platform/types.hpp>
 
 void
-Model::Virtio_sock::notify(uint32 const) {
+Model::VirtioSock::notify(uint32 const) {
     if (_backend_connected) {
         _sig->sig();
     }
 }
 
 void
-Model::Virtio_sock::driver_ok() {
+Model::VirtioSock::driver_ok() {
     if (_callback != nullptr)
         _callback->driver_ok();
 }
 
 void
-Model::Virtio_sock::signal() {
+Model::VirtioSock::signal() {
     if (_backend_connected)
         assert_irq();
 }
 
 void
-Model::Virtio_sock::reset(const VcpuCtx *ctx) {
+Model::VirtioSock::reset(const VcpuCtx *ctx) {
     if (_virtio_sock_callback != nullptr)
         _virtio_sock_callback->device_reset(ctx);
 
@@ -37,27 +37,27 @@ Model::Virtio_sock::reset(const VcpuCtx *ctx) {
 }
 
 void
-Model::Virtio_sock::shutdown() {
+Model::VirtioSock::shutdown() {
     if (_virtio_sock_callback != nullptr)
         _virtio_sock_callback->shutdown();
 }
 
 void
-Model::Virtio_sock::attach() {
+Model::VirtioSock::attach() {
     Model::IOMMUManagedDevice::attach();
     if (_virtio_sock_callback != nullptr)
         _virtio_sock_callback->attach();
 }
 
 void
-Model::Virtio_sock::detach() {
+Model::VirtioSock::detach() {
     Model::IOMMUManagedDevice::detach();
     if (_virtio_sock_callback != nullptr)
         _virtio_sock_callback->detach();
 }
 
 Errno
-Model::Virtio_sock::map(const Model::IOMapping &m) {
+Model::VirtioSock::map(const Model::IOMapping &m) {
     Errno err = Model::IOMMUManagedDevice::map(m);
     if (Errno::NONE != err)
         return err;
@@ -68,7 +68,7 @@ Model::Virtio_sock::map(const Model::IOMapping &m) {
 }
 
 Errno
-Model::Virtio_sock::unmap(const Model::IOMapping &m) {
+Model::VirtioSock::unmap(const Model::IOMapping &m) {
     Errno err = Model::IOMMUManagedDevice::unmap(m);
     if (Errno::NONE != err)
         return err;

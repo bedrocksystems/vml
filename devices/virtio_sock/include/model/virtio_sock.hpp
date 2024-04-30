@@ -15,17 +15,17 @@
 #include <vbus/vbus.hpp>
 
 namespace Model {
-    class Virtio_sock;
-    struct Virtio_sock_config;
-    class Virtio_sock_callback;
+    class VirtioSock;
+    struct VirtioSockConfig;
+    class VirtioSockCallback;
     class Irq_contoller;
 }
 
-struct Model::Virtio_sock_config {
+struct Model::VirtioSockConfig {
     uint64 guest_cid{UINT64_MAX};
 };
 
-class Model::Virtio_sock_callback {
+class Model::VirtioSockCallback {
 public:
     virtual void device_reset(const VcpuCtx *ctx) = 0;
     virtual void shutdown() = 0;
@@ -37,13 +37,13 @@ public:
     virtual Errno unmap(const Model::IOMapping &m) = 0;
 };
 
-class Model::Virtio_sock : public Virtio::Device {
+class Model::VirtioSock : public Virtio::Device {
 
 private:
     enum { RX = 0, TX = 1, EVENT = 2 };
     Virtio::Callback *_callback{nullptr};
-    Model::Virtio_sock_callback *_virtio_sock_callback{nullptr};
-    Virtio_sock_config _config;
+    Model::VirtioSockCallback *_virtio_sock_callback{nullptr};
+    VirtioSockConfig _config;
     Platform::Signal *_sig;
     bool _backend_connected{false};
 
@@ -57,15 +57,15 @@ public:
         uint64 device_features{0};
     };
 
-    Virtio_sock(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
-                const UserConfig &config, Platform::Signal *sig)
+    VirtioSock(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
+               const UserConfig &config, Platform::Signal *sig)
         : Virtio::Device("virtio socket", Virtio::DeviceID::SOCKET, bus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries,
                          config.transport, config.device_features),
           _sig(sig) {
         _config.guest_cid = config.cid;
     }
 
-    void register_callback(Virtio::Callback &callback, Model::Virtio_sock_callback &virtio_soc_callback) {
+    void register_callback(Virtio::Callback &callback, Model::VirtioSockCallback &virtio_soc_callback) {
         _callback = &callback;
         _virtio_sock_callback = &virtio_soc_callback;
     }
