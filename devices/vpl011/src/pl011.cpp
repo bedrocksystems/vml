@@ -114,6 +114,8 @@ Model::Pl011::mmio_write_icr(uint64 const value) {
 bool
 Model::Pl011::mmio_write_dr(uint64 const value) {
     ASSERT(_callback != nullptr);
+    if (!Model::Pl011::uart_enabled())
+        return true;
     bool old_irq = is_irq_asserted();
     if (can_tx()) {
         _callback->from_guest_sent(static_cast<char>(value));

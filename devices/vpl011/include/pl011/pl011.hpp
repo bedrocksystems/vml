@@ -179,8 +179,9 @@ private:
     }
 
     bool is_fifo_enabled() const { return (FEN & _lcrh) != 0; }
-    bool can_tx() const { return ((_cr & UARTEN) != 0) && ((_cr & TXE) != 0); }
-    bool can_rx() const { return ((_cr & UARTEN) != 0) && ((_cr & RXE) != 0); }
+    bool uart_enabled() const { return (_cr & UARTEN) != 0; }
+    bool can_tx() const { return uart_enabled() && ((_cr & TXE) != 0); }
+    bool can_rx() const { return uart_enabled() && ((_cr & RXE) != 0); }
     bool wait_to_receive() const { return _rx_fifo.is_full() || !can_rx(); }
     bool is_rx_irq_active() const { return (_imsc & RXIM) != 0; }
     bool is_tx_irq_active() const { return (_imsc & TXIM) != 0; }
