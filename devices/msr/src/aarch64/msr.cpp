@@ -19,7 +19,7 @@
 #include <platform/types.hpp>
 
 static constexpr uint64 AA64DFR0_DEBUG_V8 = 0x6ull;
-Vbus::Bus *Msr::Set_way_flush_reg::vbus = nullptr;
+Vbus::Bus *Msr::SetWayFlushReg::vbus = nullptr;
 
 bool
 Msr::Bus::setup_aarch64_debug(uint64 id_aa64dfr0_el1, uint64 id_aa64dfr1_el1) {
@@ -410,15 +410,15 @@ bool
 Msr::Bus::setup_aarch64_setway_flushes(Vbus::Bus &vbus) {
     Msr::Register *reg;
 
-    reg = new (nothrow) Msr::Set_way_flush_reg("DC ISW", DCISW_A64, vbus);
+    reg = new (nothrow) Msr::SetWayFlushReg("DC ISW", DCISW_A64, vbus);
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Set_way_flush_reg("DC CSW", DCCSW_A64, vbus);
+    reg = new (nothrow) Msr::SetWayFlushReg("DC CSW", DCCSW_A64, vbus);
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Set_way_flush_reg("DC CISW", DCCISW_A64, vbus);
+    reg = new (nothrow) Msr::SetWayFlushReg("DC CISW", DCCISW_A64, vbus);
     return register_system_reg(reg);
 }
 
@@ -632,7 +632,7 @@ Msr::IccSgi1rEl1::access(Vbus::Access const access, const VcpuCtx *vcpu_ctx, uin
 }
 
 void
-Msr::Set_way_flush_reg::flush(const VcpuCtx *vctx, const uint8, const uint32) {
+Msr::SetWayFlushReg::flush(const VcpuCtx *vctx, const uint8, const uint32) {
     /*
      * Set/Way flushing instructions cannot and shouldn't be executed by the VMM.
      * Hence, we choose to replace set/way flushing by VA flushing forcing us to flush
@@ -670,7 +670,7 @@ Msr::flush_on_cache_toggle(const VcpuCtx *vcpu, uint64 new_value) {
     if (before.cache_enabled() != after.cache_enabled()) {
         INFO("Cache setting toggled - flushing the guest AS");
 
-        Vbus::Bus *bus = Msr::Set_way_flush_reg::get_associated_bus();
+        Vbus::Bus *bus = Msr::SetWayFlushReg::get_associated_bus();
         ASSERT(bus != nullptr);
         bus->iter_devices<const VcpuCtx>(Model::SimpleAS::flush_callback, nullptr);
     }

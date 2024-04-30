@@ -28,7 +28,7 @@ namespace Msr {
     class IccSgi1rEl1;
     class CntpCtl;
     class CntpCval;
-    class Set_way_flush_reg;
+    class SetWayFlushReg;
     class WtrappedMsr;
     class SctlrEl1;
     class MdscrEl1;
@@ -321,10 +321,9 @@ namespace Model {
     class GicD;
 }
 
-class Msr::Set_way_flush_reg : public Msr::Register {
+class Msr::SetWayFlushReg : public Msr::Register {
 public:
-    Set_way_flush_reg(const char* name, Id const reg_id, Vbus::Bus& b)
-        : Register(name, reg_id, true, 0x0, 0x00000000fffffffeull) {
+    SetWayFlushReg(const char* name, Id const reg_id, Vbus::Bus& b) : Register(name, reg_id, true, 0x0, 0x00000000fffffffeull) {
         if (vbus == nullptr)
             vbus = &b;
     }
