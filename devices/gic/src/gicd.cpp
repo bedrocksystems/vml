@@ -577,7 +577,7 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id, bool redirect_irq) {
     Model::GicD::Irq *r = nullptr;
     size_t irq_id = 0;
     Banked &cpu = _local[cpu_id];
-    const Local_Irq_controller *gic_r = _local[cpu_id].notify->local_irq_ctlr();
+    const LocalIrqController *gic_r = _local[cpu_id].notify->local_irq_ctlr();
 
     do {
         irq_id = cpu.pending_irqs.first_set(irq_id, configured_irqs() - 1);
@@ -781,7 +781,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
                 continue;
 
             Banked *target_cpu = &_local[i];
-            const Local_Irq_controller *gic_r = target_cpu->notify->local_irq_ctlr();
+            const LocalIrqController *gic_r = target_cpu->notify->local_irq_ctlr();
 
             target_cpu->pending_irqs.set(irq.id());
 
@@ -791,7 +791,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
         }
     } else {
         Banked *target_cpu = &_local[target.target()];
-        const Local_Irq_controller *gic_r = target_cpu->notify->local_irq_ctlr();
+        const LocalIrqController *gic_r = target_cpu->notify->local_irq_ctlr();
 
         target_cpu->pending_irqs.set(irq.id());
 
@@ -968,10 +968,10 @@ Model::GicD::route_spi(Model::GicD::Irq &irq, Vcpu_id vcpu_hint_start) {
 
         uint64 cpus_tried = 0;
         do {
-            Cpu_irq_interface *const cpu = _local[vcpu_hint_start].notify;
+            CpuIrqInterface *const cpu = _local[vcpu_hint_start].notify;
             ASSERT(cpu);
 
-            const Local_Irq_controller *gicr = cpu->local_irq_ctlr();
+            const LocalIrqController *gicr = cpu->local_irq_ctlr();
             if (gicr->can_receive_irq())
                 return IrqTarget(IrqTarget::CPU_ID, vcpu_hint_start);
 
@@ -1029,7 +1029,7 @@ Model::GicD::config_spi(uint32 const vintid, bool const hw, uint16 const pintid,
 }
 
 void
-Model::GicD::enable_cpu(Cpu_irq_interface *cpu, Vcpu_id const cpu_id) {
+Model::GicD::enable_cpu(CpuIrqInterface *cpu, Vcpu_id const cpu_id) {
     ASSERT(cpu_id < _num_vcpus);
     /* for now only once a cpu can register */
     ASSERT(_local[cpu_id].notify == nullptr);

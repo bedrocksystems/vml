@@ -277,7 +277,7 @@ Model::Cpu::is_cpu_turned_on_by_guest(Vcpu_id cpu_id) {
     return vcpus[cpu_id]->is_turned_on_by_guest();
 }
 
-Model::Cpu::Cpu(Irq_controller* girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id)
+Model::Cpu::Cpu(IrqController* girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id)
     : _vcpu_id(vcpu_id), _pcpu_id(pcpu_id), _girq_ctlr(girq_ctlr) {
     _girq_ctlr->enable_cpu(this, _vcpu_id);
     vcpus[vcpu_id] = this;

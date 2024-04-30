@@ -21,23 +21,23 @@
 #include <platform/vm_types.hpp>
 
 namespace Model {
-    class Cpu_irq_interface;
+    class CpuIrqInterface;
     class Cpu;
-    class Irq_controller;
-    class Local_Irq_controller;
+    class IrqController;
+    class LocalIrqController;
 }
 
 namespace Vbus {
     class Bus;
 }
 
-class Model::Cpu_irq_interface {
+class Model::CpuIrqInterface {
 public:
     virtual void notify_interrupt_pending() = 0;
-    virtual Model::Local_Irq_controller *local_irq_ctlr() = 0;
+    virtual Model::LocalIrqController *local_irq_ctlr() = 0;
 };
 
-class Model::Cpu : public Model::Cpu_irq_interface {
+class Model::Cpu : public Model::CpuIrqInterface {
 public:
     enum Mode {
         // General mode
@@ -131,8 +131,8 @@ private:
 
 protected:
     Pcpu_id const _pcpu_id;
-    Model::Irq_controller *const _girq_ctlr;
-    Model::Local_Irq_controller *_lirq_ctlr{nullptr};
+    Model::IrqController *const _girq_ctlr;
+    Model::LocalIrqController *_lirq_ctlr{nullptr};
 
     void wait_for_switch_on() { _off_sm.wait(); }
     Platform::Mutex &reset_mutex() { return _reset_mutex; }
@@ -241,7 +241,7 @@ public:
     virtual void recall(bool strong, RecallReason reason) = 0;
 
     // Functions that are implemented
-    Cpu(Irq_controller *girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id);
+    Cpu(IrqController *girq_ctlr, Vcpu_id vcpu_id, Pcpu_id pcpu_id);
     virtual ~Cpu();
     bool setup(const Platform_ctx *ctx);
     virtual void cleanup(const Platform_ctx *ctx);
@@ -265,7 +265,7 @@ public:
     void wait_for_interrupt(bool will_timeout, uint64 timeout_absolut);
     void notify_interrupt_pending() override;
 
-    Model::Local_Irq_controller *local_irq_ctlr() override { return _lirq_ctlr; }
+    Model::LocalIrqController *local_irq_ctlr() override { return _lirq_ctlr; }
 
     virtual void ctrl_register_trap(bool, Request::Requestor, uint64, Reg_selection) {}
 

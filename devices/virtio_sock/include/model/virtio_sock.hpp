@@ -57,7 +57,7 @@ public:
         uint64 device_features{0};
     };
 
-    VirtioSock(Irq_controller &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
+    VirtioSock(IrqController &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
                const UserConfig &config, Platform::Signal *sig)
         : Virtio::Device("virtio socket", Virtio::DeviceID::SOCKET, bus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries,
                          config.transport, config.device_features),

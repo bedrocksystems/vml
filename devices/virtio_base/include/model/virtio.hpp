@@ -28,7 +28,7 @@ private:
     static constexpr uint32 VENDOR_ID = 0x20564842ULL; // little-endian "BHV "
 
 protected:
-    Model::Irq_controller *const _irq_ctlr;
+    Model::IrqController *const _irq_ctlr;
     Vbus::Bus const *const _vbus;
     uint16 const _irq;
     Virtio::DeviceState _dev_state;
@@ -100,8 +100,8 @@ protected:
     bool use_io_mappings() const { return iommu_avail and attached and _dev_state.platform_specific_access_enabled(); }
 
 public:
-    Device(const char *name, Virtio::DeviceID device_id, const Vbus::Bus &bus, Model::Irq_controller &irq_ctlr,
-           void *config_space, uint32 config_size, uint16 const irq, uint16 const queue_num, Virtio::Transport *transport,
+    Device(const char *name, Virtio::DeviceID device_id, const Vbus::Bus &bus, Model::IrqController &irq_ctlr, void *config_space,
+           uint32 config_size, uint16 const irq, uint16 const queue_num, Virtio::Transport *transport,
            uint64 const device_feature = 0)
         : Vbus::Device(name), _irq_ctlr(&irq_ctlr), _vbus(&bus), _irq(irq),
           _dev_state(queue_num, VENDOR_ID, static_cast<uint32>(device_id), device_feature, config_space, config_size),

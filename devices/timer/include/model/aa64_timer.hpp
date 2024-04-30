@@ -49,7 +49,7 @@ public:
      *  \param cpu The id of the VCPU that owns this physical timer
      *  \param irq The IRQ number associated with the timer (should be a PPI)
      */
-    AA64Timer(Irq_controller &irq_ctlr, Vcpu_id const cpu, uint16 const irq) : Timer(irq_ctlr, cpu, irq) {}
+    AA64Timer(IrqController &irq_ctlr, Vcpu_id const cpu, uint16 const irq) : Timer(irq_ctlr, cpu, irq) {}
 
     /*! \brief Set the compare value of the timer
      *  \pre Fractional ownership of an initialized timer object.
