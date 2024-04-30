@@ -11,9 +11,9 @@
 #include <platform/types.hpp>
 
 namespace Model {
-    struct Virtio_block_config;
-    struct Virtio_block_request_header;
-    struct Virtio_block_discard_write_zeroes;
+    struct VirtioBlockConfig;
+    struct VirtioBlockRequestHeader;
+    struct VirtioBlockDiscardWriteZeroes;
     enum class VirtioBlockFeatures : uint64;
     enum class VirtioBlockRequestType : uint32;
     enum class VirtioBlockStatus : uint8;
@@ -75,7 +75,7 @@ enum class Model::VirtioBlockGetID : size_t {
 };
 
 #pragma pack(1)
-struct Model::Virtio_block_config {
+struct Model::VirtioBlockConfig {
     uint64 capacity{0};
     uint32 size_max{0};
     uint32 seg_max{0};
@@ -106,19 +106,19 @@ struct Model::Virtio_block_config {
     uint8 reserved1[3]{0};
 };
 
-static_assert(sizeof(Model::Virtio_block_config) == 60);
+static_assert(sizeof(Model::VirtioBlockConfig) == 60);
 
-struct Model::Virtio_block_request_header {
+struct Model::VirtioBlockRequestHeader {
     uint32 type{0};
     uint32 reserved{0};
     uint64 sector{0};
 };
 
-static_assert(sizeof(Model::Virtio_block_request_header) == 16);
+static_assert(sizeof(Model::VirtioBlockRequestHeader) == 16);
 
 #pragma pack()
 
-struct Model::Virtio_block_discard_write_zeroes {
+struct Model::VirtioBlockDiscardWriteZeroes {
     uint64 sector;
     uint32 num_sectors;
     uint32 flags;

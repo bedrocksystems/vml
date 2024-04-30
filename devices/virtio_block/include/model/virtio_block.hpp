@@ -16,12 +16,12 @@
 #include <vbus/vbus.hpp>
 
 namespace Model {
-    class Virtio_block;
-    class Virtio_block_callback;
+    class VirtioBlock;
+    class VirtioBlockCallback;
     class Irq_contoller;
 }
 
-class Model::Virtio_block_callback {
+class Model::VirtioBlockCallback {
 public:
     virtual void device_reset(const VcpuCtx *ctx) = 0;
     virtual void shutdown() = 0;
@@ -33,12 +33,12 @@ public:
     virtual Errno unmap(const Model::IOMapping &m) = 0;
 };
 
-class Model::Virtio_block : public Virtio::Device {
+class Model::VirtioBlock : public Virtio::Device {
 private:
     enum { REQUEST = 0 };
     Virtio::Callback *_callback{nullptr};
-    Model::Virtio_block_callback *_virtio_block_callback{nullptr};
-    Virtio_block_config _config;
+    Model::VirtioBlockCallback *_virtio_block_callback{nullptr};
+    VirtioBlockConfig _config;
     Platform::Signal *_sig;
     bool _backend_connected{false};
 
@@ -54,18 +54,18 @@ public:
         // Used to constrain the block request size from the guest.
         uint64 device_feature{static_cast<uint64>(Model::VirtioBlockFeatures::SEG_MAX)
                               | static_cast<uint64>(Model::VirtioBlockFeatures::BLK_SIZE_MAX)};
-        Model::Virtio_block_config block_config;
+        Model::VirtioBlockConfig block_config;
     };
 
-    Virtio_block(IrqController &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
-                 const UserConfig &config, Platform::Signal *sig)
+    VirtioBlock(IrqController &irq_ctlr, const Vbus::Bus &bus, uint16 const irq, uint16 const queue_entries,
+                const UserConfig &config, Platform::Signal *sig)
         : Virtio::Device("virtio block", Virtio::DeviceID::BLOCK, bus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries,
                          config.transport, config.device_feature),
           _sig(sig) {
-        memcpy(&_config, &config.block_config, sizeof(Model::Virtio_block_config));
+        memcpy(&_config, &config.block_config, sizeof(Model::VirtioBlockConfig));
     }
 
-    void register_callback(Virtio::Callback &callback, Model::Virtio_block_callback &block_callback) {
+    void register_callback(Virtio::Callback &callback, Model::VirtioBlockCallback &block_callback) {
         _callback = &callback;
         _virtio_block_callback = &block_callback;
     }

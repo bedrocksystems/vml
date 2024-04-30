@@ -10,26 +10,26 @@
 #include <platform/types.hpp>
 
 void
-Model::Virtio_block::notify(uint32 const) {
+Model::VirtioBlock::notify(uint32 const) {
     if (_backend_connected) {
         _sig->sig();
     }
 }
 
 void
-Model::Virtio_block::driver_ok() {
+Model::VirtioBlock::driver_ok() {
     if (_callback != nullptr)
         _callback->driver_ok();
 }
 
 void
-Model::Virtio_block::signal() {
+Model::VirtioBlock::signal() {
     if (_backend_connected)
         assert_irq();
 }
 
 void
-Model::Virtio_block::reset(const VcpuCtx *ctx) {
+Model::VirtioBlock::reset(const VcpuCtx *ctx) {
     if (_virtio_block_callback != nullptr)
         _virtio_block_callback->device_reset(ctx);
 
@@ -37,27 +37,27 @@ Model::Virtio_block::reset(const VcpuCtx *ctx) {
 }
 
 void
-Model::Virtio_block::shutdown() {
+Model::VirtioBlock::shutdown() {
     if (_virtio_block_callback != nullptr)
         _virtio_block_callback->shutdown();
 }
 
 void
-Model::Virtio_block::attach() {
+Model::VirtioBlock::attach() {
     Model::IOMMUManagedDevice::attach();
     if (_virtio_block_callback != nullptr)
         _virtio_block_callback->attach();
 }
 
 void
-Model::Virtio_block::detach() {
+Model::VirtioBlock::detach() {
     Model::IOMMUManagedDevice::detach();
     if (_virtio_block_callback != nullptr)
         _virtio_block_callback->detach();
 }
 
 Errno
-Model::Virtio_block::map(const Model::IOMapping &m) {
+Model::VirtioBlock::map(const Model::IOMapping &m) {
     Errno err = Model::IOMMUManagedDevice::map(m);
     if (Errno::NONE != err)
         return err;
@@ -68,7 +68,7 @@ Model::Virtio_block::map(const Model::IOMapping &m) {
 }
 
 Errno
-Model::Virtio_block::unmap(const Model::IOMapping &m) {
+Model::VirtioBlock::unmap(const Model::IOMapping &m) {
     Errno err = Model::IOMMUManagedDevice::unmap(m);
     if (Errno::NONE != err)
         return err;
