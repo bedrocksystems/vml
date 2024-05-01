@@ -24,23 +24,6 @@ namespace Virtio {
     };
 };
 
-// Template specializations for moves
-// [Virtio::Sg::LinearizedDesc]
-template typename cxx::remove_reference<Virtio::Sg::LinearizedDesc &>::type &&
-cxx::move<Virtio::Sg::LinearizedDesc &>(Virtio::Sg::LinearizedDesc &t) noexcept;
-template typename cxx::remove_reference<Virtio::Sg::LinearizedDesc>::type &&
-cxx::move<Virtio::Sg::LinearizedDesc>(Virtio::Sg::LinearizedDesc &&t) noexcept;
-// [Virtio::Sg::DescMetadata]
-template typename cxx::remove_reference<Virtio::Sg::DescMetadata &>::type &&
-cxx::move<Virtio::Sg::DescMetadata &>(Virtio::Sg::DescMetadata &t) noexcept;
-template typename cxx::remove_reference<Virtio::Sg::DescMetadata>::type &&
-cxx::move<Virtio::Sg::DescMetadata>(Virtio::Sg::DescMetadata &&t) noexcept;
-// [Virtio::Sg::Buffer]
-template typename cxx::remove_reference<Virtio::Sg::Buffer &>::type &&
-cxx::move<Virtio::Sg::Buffer &>(Virtio::Sg::Buffer &t) noexcept;
-template typename cxx::remove_reference<Virtio::Sg::Buffer>::type &&
-cxx::move<Virtio::Sg::Buffer>(Virtio::Sg::Buffer &&t) noexcept;
-
 struct Virtio::Sg::LinearizedDesc {
 public:
     LinearizedDesc &operator=(const LinearizedDesc &) = delete;
