@@ -15,9 +15,9 @@
 #include <vbus/vbus.hpp>
 
 namespace Model {
-    class Virtio_net;
-    struct Virtio_net_config;
-    class Virtio_net_callback;
+    class VirtioNet;
+    struct VirtioNetConfig;
+    class VirtioNetCallback;
     class Irq_contoller;
 }
 
@@ -48,9 +48,9 @@ enum : uint64 {
 };
 
 #pragma pack(1)
-struct Model::Virtio_net_config {
+struct Model::VirtioNetConfig {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) - tidy misses the memcpy
-    Virtio_net_config(const uint8 *pmac, uint16 pmtu) : mtu(pmtu) { memcpy(mac, pmac, ARRAY_LENGTH(mac)); }
+    VirtioNetConfig(const uint8 *pmac, uint16 pmtu) : mtu(pmtu) { memcpy(mac, pmac, ARRAY_LENGTH(mac)); }
 
     uint8 mac[6];
     uint16 status{0};
@@ -59,7 +59,7 @@ struct Model::Virtio_net_config {
 };
 #pragma pack()
 
-class Model::Virtio_net_callback {
+class Model::VirtioNetCallback {
 public:
     virtual void device_reset(const VcpuCtx *ctx) = 0;
     virtual void shutdown() = 0;
@@ -71,13 +71,13 @@ public:
     virtual Errno unmap(const Model::IOMapping &m) = 0;
 };
 
-class Model::Virtio_net : public Virtio::Device {
+class Model::VirtioNet : public Virtio::Device {
 
 private:
     enum { RX = 0, TX = 1 };
     Virtio::Callback *_callback{nullptr};
-    Model::Virtio_net_callback *_virtio_net_callback{nullptr};
-    Virtio_net_config _config;
+    Model::VirtioNetCallback *_virtio_net_callback{nullptr};
+    VirtioNetConfig _config;
     Platform::Signal *_sig;
     bool _backend_connected{false};
 
@@ -93,13 +93,13 @@ public:
         uint16 port_id{0};
     };
 
-    Virtio_net(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 irq, uint16 const queue_entries, const UserConfig &config,
-               Platform::Signal *sig)
+    VirtioNet(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 irq, uint16 const queue_entries, const UserConfig &config,
+              Platform::Signal *sig)
         : Virtio::Device("virtio network", Virtio::DeviceID::NET, vbus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries,
                          config.transport, config.device_feature),
           _config{reinterpret_cast<const uint8 *>(&config.mac), config.mtu}, _sig(sig) {}
 
-    void register_callback(Virtio::Callback &callback, Model::Virtio_net_callback &virtio_net_callback) {
+    void register_callback(Virtio::Callback &callback, Model::VirtioNetCallback &virtio_net_callback) {
         _callback = &callback;
         _virtio_net_callback = &virtio_net_callback;
     }
