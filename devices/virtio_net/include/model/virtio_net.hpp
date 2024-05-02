@@ -93,7 +93,7 @@ public:
         uint16 port_id{0};
     };
 
-    VirtioNet(Irq_controller &irq_ctlr, const Vbus::Bus &vbus, uint16 irq, uint16 const queue_entries, const UserConfig &config,
+    VirtioNet(IrqController &irq_ctlr, const Vbus::Bus &vbus, uint16 irq, uint16 const queue_entries, const UserConfig &config,
               Platform::Signal *sig)
         : Virtio::Device("virtio network", Virtio::DeviceID::NET, vbus, irq_ctlr, &_config, sizeof(_config), irq, queue_entries,
                          config.transport, config.device_feature),

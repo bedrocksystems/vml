@@ -339,8 +339,8 @@ public:
 
     virtual bool access(Vbus::Access access, mword offset, uint8 size, uint64 &value, Virtio::DeviceState &state) = 0;
 
-    virtual void assert_queue_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &) = 0;
-    virtual void deassert_queue_interrupt(Model::Irq_controller *, uint16, Virtio::DeviceState &) = 0;
+    virtual void assert_queue_interrupt(Model::IrqController *, uint16, Virtio::DeviceState &) = 0;
+    virtual void deassert_queue_interrupt(Model::IrqController *, uint16, Virtio::DeviceState &) = 0;
 
     static bool config_space_read(uint64 const offset, uint64 const config_base, uint8 const bytes, uint64 &value,
                                   const Virtio::DeviceState &state) {

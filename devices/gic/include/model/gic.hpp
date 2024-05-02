@@ -20,7 +20,7 @@
 #include <vbus/vbus.hpp>
 
 namespace Model {
-    class Cpu_irq_interface;
+    class CpuIrqInterface;
     class GicD;
     class GicR;
 
@@ -33,7 +33,7 @@ namespace Model {
     static constexpr uint8 GICD_MIN_LINES = 64;
 }
 
-class Model::GicD : public Model::Irq_controller {
+class Model::GicD : public Model::IrqController {
     friend GicR;
 
 private:
@@ -370,7 +370,7 @@ private:
 
         AtomicBitset<MAX_IRQ> pending_irqs;
         AtomicBitset<MAX_IRQ> in_injection_irqs;
-        Cpu_irq_interface *notify{nullptr};
+        CpuIrqInterface *notify{nullptr};
 
         Banked() {
             for (uint8 i = 0; i < MAX_SGI; i++)
@@ -658,7 +658,7 @@ private:
     IrqTarget route_spi_no_affinity(Model::GicD::Irq &irq);
     bool redirect_spi(Irq &irq, Vcpu_id vcpu_hint_start);
     Irq *highest_irq(Vcpu_id cpu_id, bool redirect_irq);
-    bool vcpu_can_receive_irq(const Local_Irq_controller *gic_r) const {
+    bool vcpu_can_receive_irq(const LocalIrqController *gic_r) const {
         return !_ctlr.affinity_routing() || gic_r->can_receive_irq();
     }
     void reset_status_bitfields_on_vcpu(uint16 vcpu_idx);
@@ -678,7 +678,7 @@ private:
 
 public:
     GicD(IRQCtlrVersion const version, uint16 num_vcpus, uint16 conf_irqs = MAX_IRQ)
-        : Irq_controller("GICD"), _version(version), _num_vcpus(num_vcpus), _configured_irqs(compute_irq_lines(conf_irqs)) {}
+        : IrqController("GICD"), _version(version), _num_vcpus(num_vcpus), _configured_irqs(compute_irq_lines(conf_irqs)) {}
 
     ~GicD() override {
         delete[] _local;
@@ -720,7 +720,7 @@ public:
     bool assert_global_line(uint32) override;
     void deassert_line_ppi(Vcpu_id, uint32) override;
     void deassert_global_line(uint32) override;
-    void enable_cpu(Cpu_irq_interface *, Vcpu_id) override;
+    void enable_cpu(CpuIrqInterface *, Vcpu_id) override;
     void disable_cpu(Vcpu_id) override;
     void assert_msi(uint64, uint32, uint16, IrqAssertionRecord *) override { ABORT_WITH("GICD: no support for MSI yet"); }
 
@@ -794,7 +794,7 @@ public:
     }
 };
 
-class Model::GicR : public Model::Local_Irq_controller {
+class Model::GicR : public Model::LocalIrqController {
 private:
     GicD *const _gic_d;
     Vcpu_id const _vcpu_id;
@@ -815,7 +815,7 @@ private:
 
 public:
     GicR(GicD &gic, Vcpu_id cpu_id, CpuAffinity aff, bool last)
-        : Local_Irq_controller("GICR"), _gic_d(&gic), _vcpu_id(cpu_id), _aff(aff), _last(last) {}
+        : LocalIrqController("GICR"), _gic_d(&gic), _vcpu_id(cpu_id), _aff(aff), _last(last) {}
 
     Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
 

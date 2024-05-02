@@ -28,7 +28,7 @@ private:
     void set_wait_timeout(uint64 timeout) { _curr_timeout = timeout; }
 
 protected:
-    Irq_controller *const _irq_ctlr;
+    IrqController *const _irq_ctlr;
     Vcpu_id const _vcpu;
     uint16 const _irq;
 
@@ -53,7 +53,7 @@ protected:
     uint64 curr_wait_timeout() const { return _curr_timeout; }
 
 public:
-    Timer(Irq_controller &irq_ctlr, Vcpu_id const vcpu_id, uint16 const irq) : _irq_ctlr(&irq_ctlr), _vcpu(vcpu_id), _irq(irq) {}
+    Timer(IrqController &irq_ctlr, Vcpu_id const vcpu_id, uint16 const irq) : _irq_ctlr(&irq_ctlr), _vcpu(vcpu_id), _irq(irq) {}
 
     bool init_irq(Vcpu_id const vcpu_id, uint16 const pirq, bool hw, bool edge = true) {
         return _irq_ctlr->config_irq(vcpu_id, _irq, hw, pirq, edge);

@@ -24,7 +24,7 @@
 
 namespace Model {
     class Pl011;
-    class Irq_controller;
+    class IrqController;
 }
 
 /*! \brief Virtual PL011 UART Device
@@ -224,7 +224,7 @@ private:
 
     void wait_for_available_buffer() { _sig_notify_empty_space.wait(); }
 
-    Irq_controller *_irq_ctlr;                /*!< Interrupt controller that will receive interrupts */
+    IrqController *_irq_ctlr;                 /*!< Interrupt controller that will receive interrupts */
     uint16 _irq_id;                           /*!< IRQ id when sending an interrupt to the controller */
     Platform::Signal _sig_notify_empty_space; /*!< Synchronize/wait on a buffer that is full */
 
@@ -252,7 +252,7 @@ public:
      *  \param irq IRQ id to use when sending interrupt to the interrupt controller
      *  \param sbsa_uart Follows the SBSA spec, in particular for the initial state
      */
-    Pl011(Irq_controller &irq_ctlr, uint16 const irq, bool sbsa_uart = true)
+    Pl011(IrqController &irq_ctlr, uint16 const irq, bool sbsa_uart = true)
         : Vuart::Vuart(DEVICE_NAME), _sbsa_uart(sbsa_uart), _irq_ctlr(&irq_ctlr), _irq_id(irq), _sig_notify_empty_space() {}
 
     // needed for a proof, will be removed soon.
