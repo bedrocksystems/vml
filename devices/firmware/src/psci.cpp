@@ -175,27 +175,20 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         return OK;
     case SYSTEM_OFF:
         Lifecycle::notify_system_off(vctx);
-        Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
-        Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_off, true);
-        Vcpu::Roundup::resume_from_vcpu(vctx.vcpu_id);
+        Lifecycle::stop_system(vctx);
 
         INFO("System was halted by the guest.");
         return OK;
     case SYSTEM_RESET:
         INFO("System reset requested by the guest.");
-        Vcpu::Roundup::roundup_from_vcpu(vctx.vcpu_id);
-        Model::Cpu::ctrl_feature_on_all_vcpus(Model::Cpu::ctrl_feature_off, true);
-        Vcpu::Roundup::resume_from_vcpu(vctx.vcpu_id);
+        Lifecycle::stop_system(vctx);
         vbus.reset(vctx);
 
         Lifecycle::notify_system_reset(vctx);
 
         INFO("System is now reset. Starting back...");
 
-        // We always restart from VCPU 0 so, this is the only one that won't be off
-        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_reset, 0, true);
-        Model::Cpu::ctrl_feature_on_vcpu(Model::Cpu::ctrl_feature_off, 0, false);
-
+        Lifecycle::start_system();
         return OK;
     case SYSTEM_SUSPEND_32:
     case SYSTEM_SUSPEND_64:

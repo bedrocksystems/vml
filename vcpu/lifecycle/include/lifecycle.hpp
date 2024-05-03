@@ -26,4 +26,9 @@ namespace Lifecycle {
     bool reset_vm() {
         return false;
     }
+
+    void start_system() {
+    }
+    void stop_system(const VcpuCtx &) {
+    }
 }
