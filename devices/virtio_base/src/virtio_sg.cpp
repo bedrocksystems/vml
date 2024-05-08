@@ -664,12 +664,18 @@ Virtio::Sg::Buffer::start_copy_to_linear_impl(void *dst) const {
 
 Errno
 Virtio::Sg::Buffer::try_end_copy_to_linear_impl(ChainAccessor &src_accessor, size_t &bytes_copied, BulkCopier &copier) const {
+    // NOTE: [try_end_copy_to_linear_impl] is only called by [try_end_copy_to_linear] /after/ ensuring
+    // that [_async_copy_cookie->req_linear_dst()] is non-null.
     return Virtio::Sg::Buffer::copy_fromto_linear_impl<char, false, const Virtio::Sg::Buffer>(
         this, src_accessor, _async_copy_cookie->req_linear_dst(), bytes_copied, copier);
 }
 
 Errno
 Virtio::Sg::Buffer::start_copy_to_linear(void *dst, size_t &size_bytes, size_t s_off) const {
+    if (nullptr == dst) {
+        return Errno::BADR;
+    }
+
     if (_async_copy_cookie->is_dst()) {
         return Errno::RBUSY;
     }
@@ -691,6 +697,10 @@ Virtio::Sg::Buffer::start_copy_to_linear(void *dst, size_t &size_bytes, size_t s
 Errno
 Virtio::Sg::Buffer::try_end_copy_to_linear(ChainAccessor &src_accessor, size_t &bytes_copied, BulkCopier *copier) const {
     bytes_copied = 0;
+
+    if (!_async_copy_cookie->is_src_to_linear()) {
+        return Errno::BADR;
+    }
 
     // NOTE: so long as only a single linear src /or/ dst is supported for each buffer simultaneously, the [_async_copy_cookie]
     // information is enought to uniquely determine the relevant [char *] or [const char *] to use for a dereference.
@@ -757,12 +767,18 @@ Virtio::Sg::Buffer::start_copy_from_linear_impl(const void *src) {
 
 Errno
 Virtio::Sg::Buffer::try_end_copy_from_linear_impl(ChainAccessor &dst_accessor, size_t &bytes_copied, BulkCopier &copier) {
+    // NOTE: [try_end_copy_from_linear_impl] is only called by [try_end_copy_from_linear] /after/ ensuring
+    // that [_async_copy_cookie->req_linear_src()] is non-null.
     return Virtio::Sg::Buffer::copy_fromto_linear_impl<const char, true, Virtio::Sg::Buffer>(
         this, dst_accessor, _async_copy_cookie->req_linear_src(), bytes_copied, copier);
 }
 
 Errno
 Virtio::Sg::Buffer::start_copy_from_linear(const void *src, size_t &size_bytes, size_t d_off) {
+    if (nullptr == src) {
+        return Errno::BADR;
+    }
+
     if (_async_copy_cookie->is_dst()) {
         return Errno::RBUSY;
     }
@@ -784,6 +800,10 @@ Virtio::Sg::Buffer::start_copy_from_linear(const void *src, size_t &size_bytes, 
 Errno
 Virtio::Sg::Buffer::try_end_copy_from_linear(ChainAccessor &dst_accessor, size_t &bytes_copied, BulkCopier *copier) {
     bytes_copied = 0;
+
+    if (!_async_copy_cookie->is_dst_from_linear()) {
+        return Errno::BADR;
+    }
 
     // NOTE: so long as only a single linear src /or/ dst is supported for each buffer simultaneously, the [_async_copy_cookie]
     // information is enought to uniquely determine the relevant [char *] or [const char *] to use for a dereference.

@@ -248,11 +248,15 @@ private:
         inline bool in_use(void) const { return _copy_started; }
 
         inline bool is_dst_from_sg(void) const { return in_use() && !_copy_is_src && _other_is_sg; }
-        inline bool is_dst_from_linear(void) const { return in_use() && !_copy_is_src && !_other_is_sg; }
+        // v-- NOTE: [is_dst_from_linear] guards attempts to dereference [_linear_src]
+        inline bool is_dst_from_linear(void) const {
+            return in_use() && !_copy_is_src && !_other_is_sg && _linear_src != nullptr;
+        }
         inline bool is_dst(void) const { return is_dst_from_sg() || is_dst_from_linear(); }
 
         inline bool is_src_to_sg(void) const { return in_use() && _copy_is_src && _other_is_sg; }
-        inline bool is_src_to_linear(void) const { return in_use() && _copy_is_src && !_other_is_sg; }
+        // v-- NOTE: [is_src_to_linear] guards attempts to dereference [_linear_dst]
+        inline bool is_src_to_linear(void) const { return in_use() && _copy_is_src && !_other_is_sg && _linear_dst != nullptr; }
         inline bool is_src(void) const { return is_src_to_sg() || is_src_to_linear(); }
 
         // NOTE: when the src or dst is a linear buffer there will only be a single ongoing transaction
