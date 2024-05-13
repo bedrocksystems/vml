@@ -19,11 +19,11 @@
 
 namespace Platform {
     class RWLock;
-    class shared_lock;
-    class unique_lock;
+    class SharedLock;
+    class UniqueLock;
 
     using std::defer_lock;
-    using std::defer_lock_t;
+    using DeferLockT = std::defer_lock_t;
 }
 
 class Platform::RWLock {
@@ -84,22 +84,22 @@ private:
     atomic<bool> _rwlock_signal;
 };
 
-class Platform::shared_lock {
+class Platform::SharedLock {
 public:
-    shared_lock(void) = delete;
-    explicit shared_lock(Platform::RWLock& rwlock) : _rwlock(&rwlock), _owns_mutex(false) { lock(); }
-    shared_lock(Platform::RWLock& rwlock, Platform::defer_lock_t) : _rwlock(&rwlock), _owns_mutex(false) {}
+    SharedLock(void) = delete;
+    explicit SharedLock(Platform::RWLock& rwlock) : _rwlock(&rwlock), _owns_mutex(false) { lock(); }
+    SharedLock(Platform::RWLock& rwlock, Platform::DeferLockT) : _rwlock(&rwlock), _owns_mutex(false) {}
 
-    shared_lock(const shared_lock&) = delete;
-    shared_lock(shared_lock&& other) : _rwlock(other._rwlock), _owns_mutex(other._owns_mutex) {
+    SharedLock(const SharedLock&) = delete;
+    SharedLock(SharedLock&& other) : _rwlock(other._rwlock), _owns_mutex(other._owns_mutex) {
         other._rwlock = nullptr;
         other._owns_mutex = false;
     }
 
-    ~shared_lock(void) { unlock(); }
+    ~SharedLock(void) { unlock(); }
 
-    shared_lock& operator=(const shared_lock& other) = delete;
-    shared_lock& operator=(shared_lock&& other) {
+    SharedLock& operator=(const SharedLock& other) = delete;
+    SharedLock& operator=(SharedLock&& other) {
         if (&other != this) {
             unlock();
             _rwlock = other._rwlock;
@@ -112,25 +112,25 @@ public:
 
     void lock(void) {
         assert(not owns_lock());
-        _lock_shared();
+        lock_shared();
     }
 
     void unlock(void) {
         if (owns_lock()) {
-            _unlock_shared();
+            unlock_shared();
         }
     }
 
     bool owns_lock(void) const { return _owns_mutex; }
 
 private:
-    void _lock_shared(void) {
+    void lock_shared(void) {
         assert(not owns_lock());
         _rwlock->renter();
         _owns_mutex = true;
     }
 
-    void _unlock_shared(void) {
+    void unlock_shared(void) {
         assert(owns_lock());
         _rwlock->rexit();
         _owns_mutex = false;
@@ -141,22 +141,22 @@ private:
     bool _owns_mutex;
 };
 
-class Platform::unique_lock {
+class Platform::UniqueLock {
 public:
-    unique_lock(void) = delete;
-    explicit unique_lock(Platform::RWLock& rwlock) : _rwlock(&rwlock), _owns_mutex(false) { lock(); }
-    unique_lock(Platform::RWLock& rwlock, Platform::defer_lock_t) : _rwlock(&rwlock), _owns_mutex(false) {}
+    UniqueLock(void) = delete;
+    explicit UniqueLock(Platform::RWLock& rwlock) : _rwlock(&rwlock), _owns_mutex(false) { lock(); }
+    UniqueLock(Platform::RWLock& rwlock, Platform::DeferLockT) : _rwlock(&rwlock), _owns_mutex(false) {}
 
-    unique_lock(const unique_lock&) = delete;
-    unique_lock(unique_lock&& other) : _rwlock(other._rwlock), _owns_mutex(other._owns_mutex) {
+    UniqueLock(const UniqueLock&) = delete;
+    UniqueLock(UniqueLock&& other) : _rwlock(other._rwlock), _owns_mutex(other._owns_mutex) {
         other._rwlock = nullptr;
         other._owns_mutex = false;
     }
 
-    ~unique_lock(void) { unlock(); }
+    ~UniqueLock(void) { unlock(); }
 
-    unique_lock& operator=(const unique_lock&) = delete;
-    unique_lock& operator=(unique_lock&& other) {
+    UniqueLock& operator=(const UniqueLock&) = delete;
+    UniqueLock& operator=(UniqueLock&& other) {
         if (&other != this) {
             unlock();
             _rwlock = other._rwlock;
