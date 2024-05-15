@@ -369,6 +369,10 @@ protected:
     virtual Errno init_desc_chain();
     virtual Errno init_desc_chain_metadata();
 
+    /** NOTE: these methods are idempotent; overriders of [{de}init_XXX] must invoke
+     *  their custom deinitialization code within their derived destructor - after which
+     *  the base destructor will run these default implementations.
+     */
     virtual void deinit_async_copy_cookie();
     virtual void deinit_desc_chain();
     virtual void deinit_desc_chain_metadata();

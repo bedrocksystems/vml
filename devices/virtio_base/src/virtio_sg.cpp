@@ -899,7 +899,16 @@ Virtio::Sg::Buffer::deinit_desc_chain_metadata() {
 }
 
 Virtio::Sg::Buffer::~Buffer() {
-    deinit();
+    /** NOTE: we don't want to use [deinit] directly since it contains virtual
+     *  calls which don't behave nicely during destruction. Instead, we dispatch
+     *  to the (idempotent) implementations from the base; a deriver who overrides
+     *  the [deinit_XXX] methods may handle cleaning up some of the resources
+     *  prior to this code being run.
+     */
+    // deinit();
+    Virtio::Sg::Buffer::deinit_desc_chain_metadata();
+    Virtio::Sg::Buffer::deinit_desc_chain();
+    Virtio::Sg::Buffer::deinit_async_copy_cookie();
 }
 
 Errno
@@ -952,6 +961,9 @@ Virtio::Sg::Buffer::init() {
 
 void
 Virtio::Sg::Buffer::deinit() {
+    /** /-- NOTE: these are virtual calls - which don't behave nicely
+     *  v   when made within a destructor.
+     */
     deinit_desc_chain_metadata();
     deinit_desc_chain();
     deinit_async_copy_cookie();
