@@ -76,6 +76,9 @@ namespace Log {
 
 #define ASSERT(_expr_) assert(_expr_)
 
+/* SYSTEM: Use this for messages that necessarily always display. */
+#define SYSTEM(_FMT_, ...) _LOG(stdout, "SYS", _FMT_, ##__VA_ARGS__)
+
 #define ABORT_WITH(_FMT_, ...)                                                                                                   \
     do {                                                                                                                         \
         FATAL("ABORT_WITH: " _FMT_, ##__VA_ARGS__);                                                                              \
