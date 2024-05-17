@@ -109,7 +109,8 @@ private:
         EMULATE_ROUNDEDUP = 5,
     };
 
-    atomic<State> _state{OFF};
+    // Conceptually, atomic<State>
+    atomic<uint8> _state{OFF};
 
     bool is_roundup_pending() const { return _state == EMULATE_ROUNDEDUP; }
 
