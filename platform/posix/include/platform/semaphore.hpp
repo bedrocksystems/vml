@@ -12,9 +12,9 @@
 
 #include <chrono>
 #include <condition_variable>
-#include <errno_common.hpp>
 #include <mutex>
 #include <platform/context.hpp>
+#include <platform/errno.hpp>
 
 /*! \brief A semaphore class implemented by the platform.
  *
