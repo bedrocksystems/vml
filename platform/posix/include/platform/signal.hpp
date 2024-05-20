@@ -28,10 +28,7 @@ namespace Platform {
  */
 class Platform::Signal {
 public:
-    Signal() : _signaled(false) {
-        _mutex = new std::mutex();
-        _cv = new std::condition_variable();
-    }
+    Signal() : _mutex(new std::mutex()), _cv(new std::condition_variable()) {}
 
     virtual ~Signal() {
         delete _mutex;
@@ -106,8 +103,8 @@ public:
     bool is_valid() const { return _valid; }
 
 private:
-    std::mutex *_mutex;
-    std::condition_variable *_cv;
-    bool _signaled;
+    std::mutex *_mutex{nullptr};
+    std::condition_variable *_cv{nullptr};
+    bool _signaled{false};
     bool _valid{false};
 };

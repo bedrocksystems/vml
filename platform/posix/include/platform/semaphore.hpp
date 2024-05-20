@@ -12,6 +12,7 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <errno_common.hpp>
 #include <mutex>
 #include <platform/context.hpp>
 
@@ -31,7 +32,7 @@ using Platform::Semaphore;
 
 class Platform::Semaphore {
 public:
-    Semaphore() : _mutex(), _cv(), _count(0) {}
+    Semaphore() : _mutex(), _cv() {}
 
     /*! \brief Initialize the semaphore
      *  \param ctx The platform-specific context
@@ -51,7 +52,7 @@ public:
      */
     void acquire() {
         std::unique_lock<decltype(_mutex)> lock(_mutex);
-        while (!_count)
+        while (_count == 0)
             _cv.wait(lock);
         --_count;
     }
@@ -63,7 +64,7 @@ public:
     bool try_acquire_until(unsigned long long abs_ticks) {
         std::unique_lock<decltype(_mutex)> lock(_mutex);
 
-        while (!_count) {
+        while (_count == 0) {
             std::chrono::steady_clock::duration end(abs_ticks);
             std::chrono::steady_clock::time_point deadline(end);
             std::cv_status status;
@@ -88,5 +89,5 @@ public:
 private:
     std::mutex _mutex;
     std::condition_variable _cv;
-    unsigned long long _count;
+    unsigned long long _count{0};
 };

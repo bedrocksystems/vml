@@ -11,6 +11,7 @@
 #include <platform/context.hpp>
 #include <platform/errno.hpp>
 
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 /*! \file Define a mutex class
  */
 
@@ -50,3 +51,5 @@ public:
 private:
     Platform::Mutex& _m;
 };
+
+// NOLINTEND(readability-convert-member-functions-to-static)

@@ -10,6 +10,7 @@
 /*! \file Define a rwlock class
  */
 
+#include <cassert>
 #include <condition_variable>
 #include <cstdio>
 #include <cstring>
@@ -17,6 +18,7 @@
 #include <platform/mutex.hpp>
 #include <platform/types.hpp>
 
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 namespace Platform {
     class RWLock;
     class SharedLock;
@@ -29,7 +31,7 @@ namespace Platform {
 class Platform::RWLock {
 public:
     RWLock() : _rq(), _wq(), _m(), _rw(0), _rwlock_signal(false) {}
-    explicit RWLock(RWLock&&) {}
+    RWLock(RWLock&&) {}
 
     // Uncopyable
     RWLock(const RWLock&) = delete;
@@ -42,7 +44,7 @@ public:
 
     void wenter() {
         _rq.enter();
-        if ((_rw |= 1) >> 1) {
+        if (((_rw |= 1) >> 1) != 0) {
             {
                 std::unique_lock<std::mutex> lock(_m);
                 _wq.wait(lock, [this] { return _rwlock_signal.load(); });
@@ -169,25 +171,25 @@ public:
 
     void lock(void) {
         assert(not owns_lock());
-        _lock();
+        do_lock();
     }
 
     void unlock(void) {
         if (owns_lock()) {
-            _unlock();
+            do_unlock();
         }
     }
 
     bool owns_lock(void) const { return _owns_mutex; }
 
 private:
-    void _lock(void) {
+    void do_lock(void) {
         assert(not owns_lock());
         _rwlock->wenter();
         _owns_mutex = true;
     }
 
-    void _unlock(void) {
+    void do_unlock(void) {
         assert(owns_lock());
         _rwlock->wexit();
         _owns_mutex = false;
@@ -197,3 +199,4 @@ private:
     Platform::RWLock* _rwlock;
     bool _owns_mutex;
 };
+// NOLINTEND(readability-convert-member-functions-to-static)

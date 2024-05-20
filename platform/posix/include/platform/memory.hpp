@@ -8,12 +8,15 @@
 #pragma once
 
 #include <math.h>
+#include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
 #include <platform/bits.hpp>
 #include <platform/mempage.hpp>
 #include <platform/types.hpp>
+
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 
 typedef uint64 GFN;
 
@@ -28,7 +31,7 @@ namespace Platform::Mem {
     class Cred;
 
     static inline void *map_mem(const MemDescr &descr, mword offset, size_t size, int flags, MemSel);
-    static inline bool unmap_mem(const void *addr, size_t length);
+    static inline bool unmap_mem(const void *addr, size_t size);
 };
 
 class Platform::Mem::Cred {
@@ -45,7 +48,7 @@ class Platform::Mem::MemDescr {
 public:
     MemDescr(MemSel fd, Cred) : _memrange_sel(fd) {}
 
-    MemDescr(MemSel fd) : _memrange_sel(fd) {}
+    explicit MemDescr(MemSel fd) : _memrange_sel(fd) {}
 
     MemDescr() : _memrange_sel(~0UL) {}
 
@@ -91,3 +94,5 @@ Platform::Mem::unmap_mem(const void *addr, size_t size) {
         perror("munmap");
     return r == 0;
 }
+
+// NOLINTEND(readability-convert-member-functions-to-static)

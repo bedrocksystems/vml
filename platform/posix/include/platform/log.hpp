@@ -20,6 +20,7 @@
  *  - #define ASSERT(_expr_)
  *  - #define ABORT_WITH(_msg_, ...)
  */
+// NOLINTBEGIN(readability-identifier-naming)
 
 #include <cassert>
 #include <cinttypes>
@@ -187,3 +188,5 @@ namespace Log {
             DEBUG("Expression failed with %s: `%s`", errno2str(___err), #_expr_);                                                \
         }                                                                                                                        \
     } while (0)
+
+// NOLINTEND(readability-identifier-naming)

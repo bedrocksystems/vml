@@ -10,6 +10,7 @@
 
 #include <platform/errno.hpp>
 
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 namespace RTC {
     struct Date {
         uint8 seconds;
@@ -27,3 +28,4 @@ namespace RTC {
         Errno set_date(Date &) { return Errno::NODEV; }
     };
 };
+// NOLINTEND(readability-convert-member-functions-to-static)
