@@ -30,7 +30,7 @@ class Platform::Signal {
 public:
     Signal() : _mutex(new std::mutex()), _cv(new std::condition_variable()) {}
 
-    virtual ~Signal() {
+    ~Signal() {
         delete _mutex;
         delete _cv;
     }
@@ -103,8 +103,8 @@ public:
     bool is_valid() const { return _valid; }
 
 private:
-    std::mutex *_mutex{nullptr};
-    std::condition_variable *_cv{nullptr};
+    std::mutex *_mutex;
+    std::condition_variable *_cv;
     bool _signaled{false};
     bool _valid{false};
 };
