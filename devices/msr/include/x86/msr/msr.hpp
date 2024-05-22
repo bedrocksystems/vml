@@ -30,6 +30,33 @@ namespace Msr {
         IA32_MCG_CAP = 0x179,
         IA32_MCG_STATUS = 0x17a,
         IA32_MISC_ENABLE = 0x1a0,
+        IA32_MTRR_PHYSBASE0 = 0x200,
+        IA32_MTRR_PHYSMASK0 = 0x201,
+        IA32_MTRR_PHYSBASE1 = 0x202,
+        IA32_MTRR_PHYSMASK1 = 0x203,
+        IA32_MTRR_PHYSBASE2 = 0x204,
+        IA32_MTRR_PHYSMASK2 = 0x205,
+        IA32_MTRR_PHYSBASE3 = 0x206,
+        IA32_MTRR_PHYSMASK3 = 0x207,
+        IA32_MTRR_PHYSBASE4 = 0x208,
+        IA32_MTRR_PHYSMASK4 = 0x209,
+        IA32_MTRR_PHYSBASE5 = 0x20a,
+        IA32_MTRR_PHYSMASK5 = 0x20b,
+        IA32_MTRR_PHYSBASE6 = 0x20c,
+        IA32_MTRR_PHYSMASK6 = 0x20d,
+        IA32_MTRR_PHYSBASE7 = 0x20e,
+        IA32_MTRR_PHYSMASK7 = 0x20f,
+        IA32_MTRR_FIX64K_00000 = 0x250,
+        IA32_MTRR_FIX16K_80000 = 0x258,
+        IA32_MTRR_FIX16K_A0000 = 0x259,
+        IA32_MTRR_FIX4K_C0000 = 0x268,
+        IA32_MTRR_FIX4K_C8000 = 0x269,
+        IA32_MTRR_FIX4K_D0000 = 0x26a,
+        IA32_MTRR_FIX4K_D8000 = 0x26b,
+        IA32_MTRR_FIX4K_E0000 = 0x26c,
+        IA32_MTRR_FIX4K_E8000 = 0x26d,
+        IA32_MTRR_FIX4K_F0000 = 0x26e,
+        IA32_MTRR_FIX4K_F8000 = 0x26f,
         IA32_PAT = 0x277,
         IA32_MTRR_DEF_TYPE = 0x2ff,
         UNCORE_CBO_CONFIG = 0x396,
@@ -69,7 +96,7 @@ namespace Msr {
 class Msr::Bus : public Msr::BaseBus {
 public:
     Bus() {}
-    bool setup_arch_msr(bool x2apic_msrs);
+    bool setup_arch_msr(bool x2apic_msrs, bool mtrr = true);
     bool setup_caps_msr(uint64 arch_caps, uint64 core_caps);
 
     static bool is_msr_with_addr(uint32 msrnum);
