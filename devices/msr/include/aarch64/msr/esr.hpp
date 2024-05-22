@@ -179,7 +179,7 @@ public:
     }
 
     bool stage1_page_table_walk() const { return bits(_esr, 1, S1PTW_SHIFT) != 0u; }
-    bool far_not_valid() const { return bits(_esr, 1, FNV_SHIFT) != 0u; };
+    bool far_not_valid() const { return bits(_esr, 1, FNV_SHIFT) != 0u; }
 
     bool hpfar_is_valid() const {
         return (fault_status_code() <= ACCESS_FLAG_FAULT_LVL_3)

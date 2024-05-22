@@ -452,7 +452,7 @@ public:
      *  \post Ownership unchanged.
      *  \return Address representing the beginning of the mapping of the guest AS
      */
-    char *get_vmm_view() const { return _vmm_view; };
+    char *get_vmm_view() const { return _vmm_view; }
 
     /*! \brief Read data from the guest AS
      *  \pre Partial ownership of the object. Full ownership of the destination buffer.

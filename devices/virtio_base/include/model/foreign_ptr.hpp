@@ -38,7 +38,7 @@ private:
 public:
     ForeignData() {}
     ForeignData(const ForeignData &) = delete;
-    ForeignData(ForeignData &&other) { cxx::swap(_p, other._p); };
+    ForeignData(ForeignData &&other) { cxx::swap(_p, other._p); }
     ForeignData &operator=(const ForeignData &) = delete;
     ForeignData &operator=(ForeignData &&other) {
         cxx::swap(_p, other._p);

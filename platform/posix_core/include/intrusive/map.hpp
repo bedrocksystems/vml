@@ -44,8 +44,8 @@ private:
             return *this;
         }
 
-        bool operator==(const iterator &other) { return this->_it == other._it; };
-        bool operator!=(const iterator &other) { return this->_it != other._it; };
+        bool operator==(const iterator &other) { return this->_it == other._it; }
+        bool operator!=(const iterator &other) { return this->_it != other._it; }
 
         V &operator*() { return **_it; }
         V *operator->() { return *_it; }

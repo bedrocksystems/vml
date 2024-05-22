@@ -48,7 +48,7 @@ protected:
     virtual bool is_irq_status_set() const = 0;
     virtual void set_irq_status(bool set) = 0;
     virtual uint64 get_timeout_abs() const = 0;
-    virtual bool curr_timer_expired(uint64) const { return false; };
+    virtual bool curr_timer_expired(uint64) const { return false; }
 
     uint64 curr_wait_timeout() const { return _curr_timeout; }
 

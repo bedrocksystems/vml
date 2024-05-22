@@ -36,7 +36,7 @@ public:
 
     virtual Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& res) = 0;
 
-    uint32 id() const { return _reg_id.id(); };
+    uint32 id() const { return _reg_id.id(); }
 
     /*! \brief Reset the device to its initial state
      *  \pre The caller has full ownership of a valid Device object which can be in any state.

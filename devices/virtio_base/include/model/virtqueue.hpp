@@ -183,7 +183,7 @@ public:
         }
         return *this;
     }
-    Available(Available &&other) : _p(cxx::move(other._p)) { cxx::swap(_size, other._size); };
+    Available(Available &&other) : _p(cxx::move(other._p)) { cxx::swap(_size, other._size); }
 
 private:
     // For both:
