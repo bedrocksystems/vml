@@ -96,11 +96,10 @@ namespace Msr {
 class Msr::Bus : public Msr::BaseBus {
 public:
     Bus() {}
-    bool setup_arch_msr(bool x2apic_msrs, bool mtrr = true);
+    bool setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width);
     bool setup_caps_msr(uint64 arch_caps, uint64 core_caps);
 
     static bool is_msr_with_addr(uint32 msrnum);
-    static bool is_x2apic_msr(uint32 msrnum);
 
     bool setup_tsc_deadline_msr();
     bool setup_guest_state_msrs();

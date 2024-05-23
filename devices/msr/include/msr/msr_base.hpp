@@ -98,16 +98,23 @@ protected:
 private:
     uint64 const _write_mask;
     bool const _writable;
+    bool const _err_on_write_reserved;
 
 public:
-    Register(const char* name, Id const reg_id, bool const writable, uint64 const reset_value, uint64 const mask = ~0ULL)
-        : RegisterBase(name, reg_id), _value(reset_value), _reset_value(reset_value), _write_mask(mask), _writable(writable) {}
+    Register(const char* name, Id const reg_id, bool const writable, uint64 const reset_value, uint64 const mask = ~0ULL,
+             bool err_on_write_reserved = false)
+        : RegisterBase(name, reg_id), _value(reset_value), _reset_value(reset_value), _write_mask(mask), _writable(writable),
+          _err_on_write_reserved(err_on_write_reserved) {}
 
     Err access(Vbus::Access access, const VcpuCtx*, uint64& value) override {
         if (access == Vbus::WRITE && !_writable)
             return Err::ACCESS_ERR;
 
         if (access == Vbus::WRITE) {
+            // If writing 1 to a reserved value is not allowed, error out
+            if (_err_on_write_reserved and ((value & ~_write_mask) != 0))
+                return Err::ACCESS_ERR;
+
             _value |= value & _write_mask;                    // Set the bits at 1
             _value &= ~(_write_mask & (value ^ _write_mask)); // Set the bits at 0
         } else {

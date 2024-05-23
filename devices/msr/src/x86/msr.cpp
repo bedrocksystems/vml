@@ -9,6 +9,7 @@
 #include <model/vcpu_types.hpp>
 #include <msr/msr.hpp>
 #include <msr/msr_base.hpp>
+#include <platform/memory.hpp>
 #include <platform/new.hpp>
 #include <platform/time.hpp>
 
@@ -223,7 +224,7 @@ Msr::Bus::setup_tsc_deadline_msr() {
 }
 
 bool
-Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr) {
+Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width) {
     Msr::Register* reg;
 
     reg = new (nothrow) Msr::Register("IA32_PLATFORM_ID", IA32_PLATFORM_ID, false, 0x0ULL);
@@ -261,18 +262,19 @@ Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr) {
     if (not register_system_reg(reg))
         return false;
 
-    // TODO: deal with GP
-    reg = new (nothrow) Msr::Register("IA32_MTRR_DEF_TYPE", IA32_MTRR_DEF_TYPE, true, 0x0ULL);
+    reg = new (nothrow) Msr::Register("IA32_MTRR_DEF_TYPE", IA32_MTRR_DEF_TYPE, true, 0x0ULL, 0xcff, true);
     if (not register_system_reg(reg))
         return false;
 
-    // TODO: deal with GP
     if (mtrr) {
+        uint64 addr_mask = mask(pa_width - PAGE_BITS, PAGE_BITS);
+
         for (uint8 i = 0; i < NUM_VAR_MTRR; ++i) {
-            reg = new (nothrow) Msr::Register("IA32_MTRR_PHYSBASE", IA32_MTRR_PHYSBASE0 + i * 2, true, 0);
+            reg = new (nothrow) Msr::Register("IA32_MTRR_PHYSBASE", IA32_MTRR_PHYSBASE0 + i * 2, true, 0, addr_mask | 0xff, true);
             if (not register_system_reg(reg))
                 return false;
-            reg = new (nothrow) Msr::Register("IA32_MTRR_PHYSMASK", IA32_MTRR_PHYSMASK0 + i * 2, true, 0);
+            reg = new (nothrow)
+                Msr::Register("IA32_MTRR_PHYSMASK", IA32_MTRR_PHYSMASK0 + i * 2, true, 0, addr_mask | (1 << 11), true);
             if (not register_system_reg(reg))
                 return false;
         }
@@ -338,9 +340,4 @@ bool
 Msr::Bus::is_msr_with_addr(uint32 msrnum) {
     return msrnum == IA32_FS_BASE or msrnum == IA32_GS_BASE or msrnum == IA32_KERNEL_GS_BASE or msrnum == IA32_SYSENTER_CS
            or msrnum == IA32_SYSENTER_ESP or msrnum == IA32_SYSENTER_EIP;
-}
-
-bool
-Msr::Bus::is_x2apic_msr(uint32 msrnum) {
-    return msrnum >= IA32_X2APIC_START and msrnum <= IA32_X2APIC_END;
 }
