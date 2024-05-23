@@ -105,6 +105,7 @@ public:
     bool setup_guest_state_msrs();
     bool setup_syscall_msrs();
     bool setup_sys_msrs();
+    bool setup_mtrrs(bool mtrr, uint8 pa_width);
 
 private:
     bool setup_apic_msrs(bool x2apic_msrs);

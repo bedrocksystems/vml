@@ -224,6 +224,51 @@ Msr::Bus::setup_tsc_deadline_msr() {
 }
 
 bool
+Msr::Bus::setup_mtrrs(bool mtrr, uint8 pa_width) {
+    static constexpr uint8 NUM_VAR_MTRR = 8;
+    static constexpr uint64 MTRRCAP_VAL = 1 << 8 | NUM_VAR_MTRR;
+    Msr::Register* reg;
+
+    // Future: we could expose the WC bit if we want to support that
+    reg = new (nothrow) Msr::Register("IA32_MTRRCAPP", IA32_MTRRCAPP, false, mtrr ? MTRRCAP_VAL : 0);
+    if (not register_system_reg(reg))
+        return false;
+
+    static constexpr uint64 MTRR_DEF_TYPE_WMASK = 0xCFFull;
+    reg = new (nothrow) Msr::Register("IA32_MTRR_DEF_TYPE", IA32_MTRR_DEF_TYPE, true, 0x0ULL, MTRR_DEF_TYPE_WMASK, true);
+    if (not register_system_reg(reg))
+        return false;
+
+    if (mtrr) {
+        uint64 addr_mask = mask(pa_width - PAGE_BITS, PAGE_BITS);
+        static constexpr uint64 MTRR_PHYSMASK_VALID = 1ull << 11;
+
+        for (uint8 i = 0; i < NUM_VAR_MTRR; ++i) {
+            reg = new (nothrow) Msr::Register("IA32_MTRR_PHYSBASE", IA32_MTRR_PHYSBASE0 + i * 2, true, 0, addr_mask | 0xff, true);
+            if (not register_system_reg(reg))
+                return false;
+            reg = new (nothrow)
+                Msr::Register("IA32_MTRR_PHYSMASK", IA32_MTRR_PHYSMASK0 + i * 2, true, 0, addr_mask | MTRR_PHYSMASK_VALID, true);
+            if (not register_system_reg(reg))
+                return false;
+        }
+
+        static constexpr uint32 FIXED_MTRRS[]
+            = {IA32_MTRR_FIX64K_00000, IA32_MTRR_FIX16K_80000, IA32_MTRR_FIX16K_A0000, IA32_MTRR_FIX4K_C0000,
+               IA32_MTRR_FIX4K_C8000,  IA32_MTRR_FIX4K_D0000,  IA32_MTRR_FIX4K_D8000,  IA32_MTRR_FIX4K_E0000,
+               IA32_MTRR_FIX4K_E8000,  IA32_MTRR_FIX4K_F0000,  IA32_MTRR_FIX4K_F8000};
+
+        for (const auto& fixed : FIXED_MTRRS) {
+            reg = new (nothrow) Msr::Register("IA32_MTRR_FIX", fixed, true, 0);
+            if (not register_system_reg(reg))
+                return false;
+        }
+    }
+
+    return true;
+}
+
+bool
 Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width) {
     Msr::Register* reg;
 
@@ -255,41 +300,8 @@ Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width) {
     if (not register_system_reg(reg))
         return false;
 
-    static constexpr uint8 NUM_VAR_MTRR = 8;
-    static constexpr uint64 MTRRCAP_VAL = 1 << 8 | NUM_VAR_MTRR;
-    // Future: we could expose the WC bit if we want to support that
-    reg = new (nothrow) Msr::Register("IA32_MTRRCAPP", IA32_MTRRCAPP, false, mtrr ? MTRRCAP_VAL : 0);
-    if (not register_system_reg(reg))
+    if (not setup_mtrrs(mtrr, pa_width))
         return false;
-
-    reg = new (nothrow) Msr::Register("IA32_MTRR_DEF_TYPE", IA32_MTRR_DEF_TYPE, true, 0x0ULL, 0xcff, true);
-    if (not register_system_reg(reg))
-        return false;
-
-    if (mtrr) {
-        uint64 addr_mask = mask(pa_width - PAGE_BITS, PAGE_BITS);
-
-        for (uint8 i = 0; i < NUM_VAR_MTRR; ++i) {
-            reg = new (nothrow) Msr::Register("IA32_MTRR_PHYSBASE", IA32_MTRR_PHYSBASE0 + i * 2, true, 0, addr_mask | 0xff, true);
-            if (not register_system_reg(reg))
-                return false;
-            reg = new (nothrow)
-                Msr::Register("IA32_MTRR_PHYSMASK", IA32_MTRR_PHYSMASK0 + i * 2, true, 0, addr_mask | (1 << 11), true);
-            if (not register_system_reg(reg))
-                return false;
-        }
-
-        static constexpr uint32 FIXED_MTRRS[]
-            = {IA32_MTRR_FIX64K_00000, IA32_MTRR_FIX16K_80000, IA32_MTRR_FIX16K_A0000, IA32_MTRR_FIX4K_C0000,
-               IA32_MTRR_FIX4K_C8000,  IA32_MTRR_FIX4K_D0000,  IA32_MTRR_FIX4K_D8000,  IA32_MTRR_FIX4K_E0000,
-               IA32_MTRR_FIX4K_E8000,  IA32_MTRR_FIX4K_F0000,  IA32_MTRR_FIX4K_F8000};
-
-        for (auto& fixed : FIXED_MTRRS) {
-            reg = new (nothrow) Msr::Register("IA32_MTRR_FIX", fixed, true, 0);
-            if (not register_system_reg(reg))
-                return false;
-        }
-    }
 
     // Ignore write
     reg = new (nothrow) Msr::Register("MISC_FEATURE_ENABLES", MISC_FEATURE_ENABLES, true, 0x0ULL);
