@@ -334,7 +334,7 @@ Virtio::Sg::Buffer::modify_link(size_t chain_idx, uint64 address, uint32 length)
 
 Errno
 Virtio::Sg::Buffer::ChainAccessor::copy_between_vqa(BulkCopier *copier, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
-                                                    uint64 dst_vqa, uint64 src_vqa, size_t &size_bytes) {
+                                                    uint64 dst_vqa, uint64 src_vqa, size_t size_bytes) {
     if (copier == nullptr) {
         return Errno::INVAL;
     }
@@ -373,7 +373,7 @@ Virtio::Sg::Buffer::ChainAccessor::copy_between_vqa(BulkCopier *copier, ChainAcc
 }
 
 Errno
-Virtio::Sg::Buffer::ChainAccessor::copy_from_vqa(BulkCopier *copier, char *dst_hva, uint64 src_vqa, size_t &size_bytes) {
+Virtio::Sg::Buffer::ChainAccessor::copy_from_vqa(BulkCopier *copier, char *dst_hva, uint64 src_vqa, size_t size_bytes) {
     if (copier == nullptr) {
         return Errno::INVAL;
     }
@@ -399,7 +399,7 @@ Virtio::Sg::Buffer::ChainAccessor::copy_from_vqa(BulkCopier *copier, char *dst_h
 }
 
 Errno
-Virtio::Sg::Buffer::ChainAccessor::copy_to_vqa(BulkCopier *copier, uint64 dst_vqa, const char *src_hva, size_t &size_bytes) {
+Virtio::Sg::Buffer::ChainAccessor::copy_to_vqa(BulkCopier *copier, uint64 dst_vqa, const char *src_hva, size_t size_bytes) {
     if (copier == nullptr) {
         return Errno::INVAL;
     }

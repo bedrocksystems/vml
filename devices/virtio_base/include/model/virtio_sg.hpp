@@ -540,9 +540,9 @@ public:
     public:
         ~ChainAccessor() override {}
         static Errno copy_between_vqa(BulkCopier *copier, ChainAccessor &dst_accessor, ChainAccessor &src_accessor,
-                                      uint64 dst_vqa, uint64 src_vqa, size_t &size_bytes);
-        Errno copy_from_vqa(BulkCopier *copier, char *dst_hva, uint64 src_vqa, size_t &size_bytes);
-        Errno copy_to_vqa(BulkCopier *copier, uint64 dst_vqa, const char *src_hva, size_t &size_bytes);
+                                      uint64 dst_vqa, uint64 src_vqa, size_t size_bytes);
+        Errno copy_from_vqa(BulkCopier *copier, char *dst_hva, uint64 src_vqa, size_t size_bytes);
+        Errno copy_to_vqa(BulkCopier *copier, uint64 dst_vqa, const char *src_hva, size_t size_bytes);
 
         // The follow methods are used in [copy_XXX_gpa] when the underlying
         // [Virtio::Queue::AddressTranslator] methods return [err != Errno::NONE].
