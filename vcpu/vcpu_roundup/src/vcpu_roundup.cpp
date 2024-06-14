@@ -42,7 +42,6 @@ public:
 
     void yield() {
         _vcpu_waiters++;
-        Barrier::rw_before_rw();
         vcpu_notify_done_progressing();
     }
 
@@ -120,7 +119,6 @@ private:
         uint16 num_waiters = _vcpu_waiters;
         ASSERT(num_waiters <= num_vcpus);
         vcpus_progressing = num_vcpus - num_waiters;
-        Barrier::rw_before_rw();
     }
 
     Platform::Mutex _waiter_mutex;
