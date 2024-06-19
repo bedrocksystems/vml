@@ -49,13 +49,14 @@ enum : uint64 {
 
 #pragma pack(1)
 struct Model::VirtioNetConfig {
+    VirtioNetConfig() = default;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) - tidy misses the memcpy
     VirtioNetConfig(const uint8 *pmac, uint16 pmtu) : mtu(pmtu) { memcpy(mac, pmac, ARRAY_LENGTH(mac)); }
 
-    uint8 mac[6];
+    uint8 mac[6] = {0};
     uint16 status{0};
     uint16 num_virtqueue_pairs{0};
-    uint16 mtu;
+    uint16 mtu{0};
 };
 #pragma pack()
 
@@ -123,4 +124,6 @@ public:
 
     Virtio::QueueData const &queue_data_rx() const { return queue_data(RX); }
     Virtio::QueueData const &queue_data_tx() const { return queue_data(TX); }
+
+    void get_device_specific_config(Model::VirtioNetConfig &config) const { config = _config; }
 };
