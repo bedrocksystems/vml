@@ -722,7 +722,7 @@ public:
     void deassert_global_line(uint32) override;
     void enable_cpu(CpuIrqInterface *, Vcpu_id) override;
     void disable_cpu(Vcpu_id) override;
-    void assert_msi(uint64, uint32, uint16, IrqAssertionRecord *) override { ABORT_WITH("GICD: no support for MSI yet"); }
+    void assert_msi(uint64, uint32, uint32, IrqAssertionRecord *) override { ABORT_WITH("GICD: no support for MSI yet"); }
 
     bool signal_eoi(uint8) override { return false; }
     bool wait_for_eoi(uint8) override { return false; }

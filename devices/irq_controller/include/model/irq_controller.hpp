@@ -76,7 +76,7 @@ public:
     virtual bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) = 0;
     virtual bool config_spi(uint32 irq_id, bool hw, uint16 pintid, bool edge) = 0;
     virtual bool assert_ppi(Vcpu_id, uint32) = 0;
-    virtual void assert_msi(uint64 address, uint32 data, uint16 rid, IrqAssertionRecord *record = nullptr) = 0;
+    virtual void assert_msi(uint64 address, uint32 data, uint32 rid, IrqAssertionRecord *record = nullptr) = 0;
     virtual void deassert_line_ppi(Vcpu_id, uint32) = 0;
     virtual void enable_cpu(CpuIrqInterface *, Vcpu_id) = 0;
     virtual void disable_cpu(Vcpu_id id) = 0;
