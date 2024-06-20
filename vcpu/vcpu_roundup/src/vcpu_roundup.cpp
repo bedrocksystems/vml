@@ -67,10 +67,10 @@ public:
 
     /*! \brief Finish the round up, the next one can begin on exit of this function.
      *
-     * One thing to note in this function: 'vcpus_progressing' is reset to 'num_vcpus'.
-     * As a default, we assume everybody makes progress.
+     * One thing to note in this function: 'vcpus_progressing' is reset to 'num_vcpus - _vcpu_waiters'.
+     * As a default, we assume everybody makes progress, except CPUs that are waiting on roundup.
      */
-    void end_roundup(bool from_vcpu = false) {
+    void end_roundup(bool from_vcpu) {
         if (from_vcpu)
             unyield();
         end_roundup_core();
@@ -222,7 +222,7 @@ Vcpu::Roundup::roundup_from_vcpu(Vcpu_id) {
  */
 void
 Vcpu::Roundup::resume() {
-    roundup_info.end_roundup();
+    roundup_info.end_roundup(false);
     Model::Cpu::resume_all();
     roundup_info.signal_next_waiter();
 }
