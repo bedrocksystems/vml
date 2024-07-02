@@ -8,7 +8,11 @@ LIBS += vmm_debug
 LIBS += cpu_model
 
 # vmm libs - platform
+ifneq ($(HOSTED), 1)
 LIBS += $(PLATFORM)
+else
+LIBS += platform_wrapper
+endif
 
 # vmm libs - arch
 LIBS += arch_api
