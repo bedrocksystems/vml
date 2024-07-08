@@ -1,4 +1,4 @@
-VML is an open source project maintained by BedRock Systems and we welcome all contributions. Contributions
+VML is an open source project maintained by BlueRock Security and we welcome all contributions. Contributions
 will need to adhere to the exisiting license of VML.
 
 We would also like to address a special thanks to our contributors:

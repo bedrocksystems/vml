@@ -1,11 +1,11 @@
 #
 # Makefile's rules
 #
-# Copyright (C) 2020 BedRock Systems, Inc.
+# Copyright (C) 2020 BlueRock Security, Inc.
 # All rights reserved.
 #
-# This software is distributed under the terms of the BedRock Open-Source License.
-# See the LICENSE-BedRock file in the repository root for details.
+# This software is distributed under the terms of the BlueRock Open-Source License.
+# See the LICENSE-BlueRock file in the repository root for details.
 #
 # At the moment, this Makefile is allowing us to compile the code of VMM that is independent
 # from Zeta. It is not meant to build a fully functionnal application. For convenience, it is

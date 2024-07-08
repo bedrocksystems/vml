@@ -1,9 +1,9 @@
 /**
- * Copyright (C) 2023 BedRock Systems, Inc.
+ * Copyright (C) 2023 BlueRock Security, Inc.
  * All rights reserved.
  *
- * This software is distributed under the terms of the BedRock Open-Source License.
- * See the LICENSE-BedRock file in the repository root for details.
+ * This software is distributed under the terms of the BlueRock Open-Source License.
+ * See the LICENSE-BlueRock file in the repository root for details.
  */
 
 #include <model/vcpu_types.hpp>
