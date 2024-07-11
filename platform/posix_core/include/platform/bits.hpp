@@ -21,6 +21,16 @@ mask(uint8_t order, unsigned offset = 0) {
     return (order >= (sizeof(uint64_t) * 8) ? ~0ull : ((1ull << order) - 1)) << offset;
 }
 
+inline constexpr uint64
+bit(uint8 bit) {
+    return 1ull << bit;
+}
+
+inline constexpr uint32
+bit32(uint8 bit) {
+    return 1u << bit;
+}
+
 inline constexpr uint64_t
 bits(uint64_t val, uint8_t count, uint8_t from) {
     return (val >> from) & mask(count);
