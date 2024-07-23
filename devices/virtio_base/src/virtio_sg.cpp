@@ -26,7 +26,23 @@ Virtio::Sg::DescMetadata::heuristically_track_written_bytes(size_t off, size_t s
 Errno
 Virtio::Sg::Buffer::check_copy_configuration(size_t size_bytes, size_t &inout_offset,
                                              Virtio::Sg::Buffer::Iterator &out_it) const {
-    if (this->size_bytes() < inout_offset + size_bytes) {
+    if (this->size_bytes() <= inout_offset) {
+        ASSERT(false);
+        return Errno::NOENT;
+    }
+
+    if (this->size_bytes() < size_bytes) {
+        ASSERT(false);
+        return Errno::NOMEM;
+    }
+
+    /** NOTE: in conjunction with the fact that chain-lengths are checked to be less than
+     *  the VIRTIO maximum of 2^32 within [walk_chain_callback], the previous two checks
+     *  are enough to ensure that the following addition doesn't overflow.
+     */
+    auto max_chain_offset = inout_offset + size_bytes;
+
+    if (this->size_bytes() < max_chain_offset) {
         ASSERT(false);
         return Errno::NOMEM;
     }
@@ -528,7 +544,7 @@ Virtio::Sg::Buffer::try_end_copy_to_sg(Virtio::Sg::Buffer &dst, ChainAccessor &d
 
     // NOTE: This error code isn't rich enough to determine the precise mismatch.
     if (!_async_copy_cookie->is_src_to_matching_sg(&dst)) {
-        return Errno::BADR;
+        return Errno::EXIST;
     }
 
     Errno err;
@@ -540,7 +556,12 @@ Virtio::Sg::Buffer::try_end_copy_to_sg(Virtio::Sg::Buffer &dst, ChainAccessor &d
 
         err = try_end_copy_to_sg_impl(dst, dst_accessor, src_accessor, bytes_copied, *copier);
     } else {
-        err = Errno::NONE;
+        // NOTE: 0-sized byte copies are only permitted using in-bounds (or end-of-buffer)
+        // starting payload indices.
+        // NOTE: dst cookie stores src/dst copy information
+        bool in_bounds = (dst._async_copy_cookie->req_d_off() <= dst.size_bytes())
+                         && (dst._async_copy_cookie->req_s_off() <= this->size_bytes());
+        err = in_bounds ? Errno::NONE : Errno::NOENT;
     }
 
     // Track the successfully written bytes
@@ -699,7 +720,7 @@ Virtio::Sg::Buffer::try_end_copy_to_linear(ChainAccessor &src_accessor, size_t &
     bytes_copied = 0;
 
     if (!_async_copy_cookie->is_src_to_linear()) {
-        return Errno::BADR;
+        return Errno::EXIST;
     }
 
     // NOTE: so long as only a single linear src /or/ dst is supported for each buffer simultaneously, the [_async_copy_cookie]
@@ -714,7 +735,10 @@ Virtio::Sg::Buffer::try_end_copy_to_linear(ChainAccessor &src_accessor, size_t &
 
         err = try_end_copy_to_linear_impl(src_accessor, bytes_copied, *copier);
     } else {
-        err = Errno::NONE;
+        // NOTE: 0-sized byte copies are only permitted using in-bounds (or end-of-buffer)
+        // starting payload indices.
+        bool in_bounds = (this->_async_copy_cookie->req_s_off() <= this->size_bytes());
+        err = in_bounds ? Errno::NONE : Errno::NOENT;
     }
 
     // The destination is a linear buffer so we don't need to track information related to the number
@@ -802,7 +826,7 @@ Virtio::Sg::Buffer::try_end_copy_from_linear(ChainAccessor &dst_accessor, size_t
     bytes_copied = 0;
 
     if (!_async_copy_cookie->is_dst_from_linear()) {
-        return Errno::BADR;
+        return Errno::EXIST;
     }
 
     // NOTE: so long as only a single linear src /or/ dst is supported for each buffer simultaneously, the [_async_copy_cookie]
@@ -817,7 +841,10 @@ Virtio::Sg::Buffer::try_end_copy_from_linear(ChainAccessor &dst_accessor, size_t
 
         err = try_end_copy_from_linear_impl(dst_accessor, bytes_copied, *copier);
     } else {
-        err = Errno::NONE;
+        // NOTE: 0-sized byte copies are only permitted using in-bounds (or end-of-buffer)
+        // starting payload indices.
+        bool in_bounds = (this->_async_copy_cookie->req_d_off() <= this->size_bytes());
+        err = in_bounds ? Errno::NONE : Errno::NOENT;
     }
 
     // Track the successfully written bytes
@@ -1045,12 +1072,16 @@ Virtio::Sg::Buffer::add_descriptor(Virtio::Descriptor &&new_desc, uint64 address
 
 void
 Virtio::Sg::Buffer::reset(void) {
+    ASSERT((nullptr == _async_copy_cookie) or not _async_copy_cookie->in_use());
     _active_chain_length = 0;
     _size_bytes = 0;
     _complete_chain = false;
+    _chain_for_device = false;
     _seen_readable_desc = false;
     _seen_writable_desc = false;
     _first_writable_desc = UINT16_MAX;
+    if (nullptr != _async_copy_cookie)
+        _async_copy_cookie->reset();
 }
 
 Virtio::Sg::Buffer::Iterator

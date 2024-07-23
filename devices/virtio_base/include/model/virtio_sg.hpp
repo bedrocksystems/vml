@@ -94,6 +94,8 @@ private:
 class Virtio::Sg::Buffer {
 private:
     class AsyncCopyCookie {
+        friend class Virtio::Sg::Buffer;
+
         /** State */
     private:
         bool _copy_started{false};
@@ -200,7 +202,7 @@ private:
             }
         }
 
-    private:
+    protected:
         void reset(void) {
             _copy_started = false;
             _other_is_sg = false;
@@ -214,6 +216,7 @@ private:
             _linear_dst = nullptr;
         }
 
+    private:
         void init_status(bool is_src, bool other_sg) {
             _copy_started = true;
             _other_is_sg = other_sg;
@@ -254,9 +257,16 @@ private:
         }
         inline bool is_dst(void) const { return is_dst_from_sg() || is_dst_from_linear(); }
 
-        inline bool is_src_to_sg(void) const { return in_use() && _copy_is_src && _other_is_sg; }
+        /** NOTE: [0 < _pending_dsts] is an invariant maintained by all "source" [AsyncCopyCookie]s.
+            From a verification perspective, it is easier to establish this invariant directly within
+            guard as opposed to maintaining it logically within the representation predicate
+            [AsyncCopyCookie.R].
+         */
+        inline bool is_src_to_sg(void) const { return in_use() && _copy_is_src && _other_is_sg && (0 < _pending_dsts); }
         // v-- NOTE: [is_src_to_linear] guards attempts to dereference [_linear_dst]
-        inline bool is_src_to_linear(void) const { return in_use() && _copy_is_src && !_other_is_sg && _linear_dst != nullptr; }
+        inline bool is_src_to_linear(void) const {
+            return in_use() && _copy_is_src && !_other_is_sg && _linear_dst != nullptr && (0 < _pending_dsts);
+        }
         inline bool is_src(void) const { return is_src_to_sg() || is_src_to_linear(); }
 
         // NOTE: when the src or dst is a linear buffer there will only be a single ongoing transaction
@@ -411,8 +421,24 @@ public:
     Errno root_desc_idx(uint16 &root_desc_idx) const;
     Errno descriptor_offset(size_t descriptor_chain_idx, size_t &offset) const;
 
+    /** NOTE: Currently [Iterator] is not exposed to clients which means that certain
+     *  allowances can be made regarding its copyability; while duplicating pointers to
+     *  the underlying [LinearizedDesc]/[DescMetadata] is safe for disciplined clients -
+     *  such as this library, which is being formally verified - it invites potential
+     *  use-after-free issues in general.
+     *
+     *  If [Iterator] is made public the copy ctor/assignment-op should be deleted.
+     */
     class Iterator {
     public:
+        /** BEGIN DELETEME if [Iterator] is exposed for use by clients */
+        Iterator(Iterator &) = default;
+        Iterator &operator=(Iterator &) = default;
+        /** END DELETEME if [Iterator] is exposed for use by clients */
+
+        Iterator(Iterator &&) = default;
+        Iterator &operator=(Iterator &&) = default;
+
         Iterator &operator++() {
             _cur_desc++;
             _cur_desc_metadata++;
