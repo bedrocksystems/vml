@@ -269,7 +269,7 @@ Msr::Bus::setup_mtrrs(bool mtrr, uint8 pa_width) {
 }
 
 bool
-Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width) {
+Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width, bool sgx) {
     Msr::Register* reg;
 
     reg = new (nothrow) Msr::Register("IA32_PLATFORM_ID", IA32_PLATFORM_ID, false, 0x0ULL);
@@ -280,7 +280,8 @@ Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width) {
     if (not register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Register("IA32_FEATURE_CONTROL", IA32_FEATURE_CONTROL, false, 0x1ULL | bit(17) | bit(18));
+    reg = new (nothrow)
+        Msr::Register("IA32_FEATURE_CONTROL", IA32_FEATURE_CONTROL, false, 0x1ULL | (sgx ? (bit(17) | bit(18)) : 0));
     if (not register_system_reg(reg))
         return false;
 
