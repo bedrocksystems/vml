@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 BlueRock Security, Inc.
+ * Copyright (C) 2022-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -10,7 +10,7 @@
 #include <set>
 
 // A wrapper around [std::set] providing (key,value)-based API. [V] should
-// inherit from [Map_key<K>]. When reinserting the *same* value, the key is
+// inherit from [MapKey<K>]. When reinserting the *same* value, the key is
 // overwritten
 
 // That is,
@@ -20,14 +20,14 @@
 // the mapping from 5 to my_elem.
 
 template<typename K>
-class Map_key {
+class MapKey {
 
 public:
     K _key;
 };
 
 template<typename K, typename V>
-class Map_kv {
+class MapKV {
 
 private:
     std::set<V *> _map;
@@ -53,7 +53,7 @@ private:
 
 public:
     V *insert(K key, V *value) {
-        static_cast<Map_key<K> *>(value)->_key = key;
+        static_cast<MapKey<K> *>(value)->_key = key;
 
         V *old = nullptr;
         auto it = _map.find(value);
@@ -80,7 +80,7 @@ public:
 
         for (auto it = _map.begin(); it != _map.end(); ++it) {
 
-            if ((static_cast<Map_key<K> *>(*it))->_key == key)
+            if ((static_cast<MapKey<K> *>(*it))->_key == key)
                 return *it;
         }
 

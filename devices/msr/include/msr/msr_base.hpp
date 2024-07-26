@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2020 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -30,9 +30,9 @@ struct MsrStats {
     Tsc total{0ull};
 };
 
-class Msr::RegisterBase : public Map_key<mword> {
+class Msr::RegisterBase : public MapKey<mword> {
 public:
-    RegisterBase(const char* name, Id reg_id) : Map_key(), _name(name), _reg_id(reg_id) {}
+    RegisterBase(const char* name, Id reg_id) : MapKey(), _name(name), _reg_id(reg_id) {}
 
     virtual Err access(Vbus::Access access, const VcpuCtx* vcpu_ctx, uint64& res) = 0;
 
@@ -129,17 +129,17 @@ public:
 
 class Msr::BusStats {
 public:
-    explicit BusStats(Map_kv<mword, RegisterBase>* devs) : _devices(devs) {}
+    explicit BusStats(MapKV<mword, RegisterBase>* devs) : _devices(devs) {}
 
     uint64 total_access{0ull};
     Tsc last_seen{0ull};
     const RegisterBase* last_access{nullptr};
 
-    Map_kv<mword, RegisterBase>::iterator begin() const { return _devices->begin(); }
-    Map_kv<mword, RegisterBase>::iterator end() const { return _devices->end(); }
+    MapKV<mword, RegisterBase>::iterator begin() const { return _devices->begin(); }
+    MapKV<mword, RegisterBase>::iterator end() const { return _devices->end(); }
 
 private:
-    Map_kv<mword, RegisterBase>* const _devices;
+    MapKV<mword, RegisterBase>* const _devices;
 };
 
 /*
@@ -212,7 +212,7 @@ private:
 
     void log_trace_info(const RegisterBase* reg, Vbus::Access access, uint64 val);
 
-    Map_kv<mword, RegisterBase> _devices;
+    MapKV<mword, RegisterBase> _devices;
 
     bool _trace{false};
     bool _fold{true};
