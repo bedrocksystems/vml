@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2020 BlueRock Security, Inc.
+ * Copyright (C) 2020-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -8,8 +8,6 @@
 
 #include <cstring>
 #include <fcntl.h>
-#include <thread>
-
 #include <model/aa64_timer.hpp>
 #include <model/cpu.hpp>
 #include <model/gic.hpp>
@@ -20,6 +18,7 @@
 #include <platform/memory.hpp>
 #include <platform/reg_accessor.hpp>
 #include <platform/types.hpp>
+#include <thread>
 #include <vbus/vbus.hpp>
 
 static Semaphore wait_sm;

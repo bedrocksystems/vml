@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 BlueRock Security, Inc.
+ * Copyright (C) 2021-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -8,13 +8,12 @@
 #pragma once
 
 #include <math.h>
-#include <stdio.h>
-#include <sys/mman.h>
-#include <unistd.h>
-
 #include <platform/bits.hpp>
 #include <platform/mempage.hpp>
 #include <platform/types.hpp>
+#include <stdio.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 // NOLINTBEGIN(readability-convert-member-functions-to-static)
 
