@@ -135,8 +135,8 @@ public:
     Tsc last_seen{0ull};
     const RegisterBase* last_access{nullptr};
 
-    MapKV<mword, RegisterBase>::iterator begin() const { return _devices->begin(); }
-    MapKV<mword, RegisterBase>::iterator end() const { return _devices->end(); }
+    MapKV<mword, RegisterBase>::Iterator begin() const { return _devices->begin(); }
+    MapKV<mword, RegisterBase>::Iterator end() const { return _devices->end(); }
 
 private:
     MapKV<mword, RegisterBase>* const _devices;

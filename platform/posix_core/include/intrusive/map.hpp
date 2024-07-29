@@ -32,20 +32,20 @@ class MapKV {
 private:
     std::set<V *> _map;
 
-    class iterator {
+    class Iterator {
     private:
         typename std::set<V *>::iterator _it;
 
     public:
-        explicit iterator(typename std::set<V *>::iterator it) : _it(it) {}
+        explicit Iterator(typename std::set<V *>::iterator it) : _it(it) {}
 
-        iterator &operator++() {
+        Iterator &operator++() {
             _it++;
             return *this;
         }
 
-        bool operator==(const iterator &other) { return this->_it == other._it; }
-        bool operator!=(const iterator &other) { return this->_it != other._it; }
+        bool operator==(const Iterator &other) { return this->_it == other._it; }
+        bool operator!=(const Iterator &other) { return this->_it != other._it; }
 
         V &operator*() { return **_it; }
         V *operator->() { return *_it; }
@@ -71,10 +71,10 @@ public:
         return;
     }
 
-    using iterator = iterator; // typename std::set<V>::iterator;
+    using Iterator = Iterator; // typename std::set<V>::iterator;
 
-    iterator begin() { return iterator(_map.begin()); }
-    iterator end() { return iterator(_map.end()); }
+    Iterator begin() { return Iterator(_map.begin()); }
+    Iterator end() { return Iterator(_map.end()); }
 
     V *operator[](const K &key) const {
 
