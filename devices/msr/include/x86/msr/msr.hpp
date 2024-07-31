@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2023 BlueRock Security, Inc.
+ * Copyright (C) 2023-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -19,6 +19,10 @@ namespace Msr {
         IA32_SPEC_CTRL = 0x48,
         IA32_PRED_CMD = 0x49,
         IA32_BIOS_SIGN_ID = 0x8b,
+        IA32_SGXLEPUBKEYHASH0 = 0x8c,
+        IA32_SGXLEPUBKEYHASH1 = 0x8d,
+        IA32_SGXLEPUBKEYHASH2 = 0x8e,
+        IA32_SGXLEPUBKEYHASH3 = 0x8f,
         IA32_FEATURE_INFO = 0xce,
         IA32_CORE_CAPABILITIES = 0xcf,
         IA32_MTRRCAPP = 0xfe,
@@ -96,7 +100,7 @@ namespace Msr {
 class Msr::Bus : public Msr::BaseBus {
 public:
     Bus() {}
-    bool setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width);
+    bool setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width, bool sgx);
     bool setup_caps_msr(uint64 arch_caps, uint64 core_caps);
 
     static bool is_msr_with_addr(uint32 msrnum);

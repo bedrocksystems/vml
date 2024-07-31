@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 BlueRock Security, Inc.
+ * Copyright (C) 2020-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -19,6 +19,16 @@ min(T v1, T v2) {
 inline constexpr uint64_t
 mask(uint8_t order, unsigned offset = 0) {
     return (order >= (sizeof(uint64_t) * 8) ? ~0ull : ((1ull << order) - 1)) << offset;
+}
+
+inline constexpr uint64
+bit(uint8 bit) {
+    return 1ull << bit;
+}
+
+inline constexpr uint32
+bit32(uint8 bit) {
+    return 1u << bit;
 }
 
 inline constexpr uint64_t
