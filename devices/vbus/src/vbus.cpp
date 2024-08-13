@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2020 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -7,8 +7,13 @@
  */
 
 #include <debug_switches.hpp>
+#include <platform/atomic.hpp>
+#include <platform/compiler.hpp>
+#include <platform/errno.hpp>
+#include <platform/log.hpp>
 #include <platform/new.hpp>
 #include <platform/rangemap.hpp>
+#include <platform/rwlock.hpp>
 #include <platform/time.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
