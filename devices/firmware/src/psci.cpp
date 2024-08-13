@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2020 BlueRock Security, Inc.
+ * Copyright (C) 2020-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -10,12 +10,12 @@
 #include <model/cpu.hpp>
 #include <model/cpu_affinity.hpp>
 #include <model/psci.hpp>
-#include <model/simple_as.hpp>
+#include <model/vcpu_types.hpp>
 #include <msr/msr_info.hpp>
-#include <platform/context.hpp>
 #include <platform/log.hpp>
 #include <platform/reg_accessor.hpp>
-#include <vcpu/vcpu_roundup.hpp>
+#include <platform/types.hpp>
+#include <vbus/vbus.hpp>
 
 static constexpr uint32 MAJOR_VERSION = 0x1u << 16;
 static constexpr uint32 MINOR_VERSION = 0x1u;

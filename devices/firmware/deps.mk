@@ -1,4 +1,4 @@
-LIBS = cpu_model simple_as vcpu_roundup msr $(PLATFORM)
+LIBS = cpu_model msr vbus $(PLATFORM)
 
 ifeq ($(HOSTED), 1)
 # Empty lifecycle, just provides the API
