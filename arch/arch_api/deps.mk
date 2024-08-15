@@ -1,10 +1,4 @@
-# platform
-ifneq ($(HOSTED), 1)
-LIBS += $(PLATFORM)
-else
-LIBS += platform_wrapper
-endif
-
+LIBS = $(PLATFORM)
 
 ifeq ($(ARCH), aarch64)
 LIBS += cpu_model msr
