@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2020 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -672,9 +672,7 @@ private:
     void update_inj_status_inactive(Vcpu_id cpu_id, uint32 irq_id);
     void update_inj_status_active_or_pending(Vcpu_id cpu_id, IrqState state, uint32 irq_id, bool in_injection);
 
-    static uint16 compute_irq_lines(uint16 desired) {
-        return static_cast<uint16>(std::min<uint64>(MAX_IRQ, align_up(desired, 32)));
-    }
+    static uint16 compute_irq_lines(uint16 desired) { return static_cast<uint16>(min<uint64>(MAX_IRQ, align_up(desired, 32))); }
 
 public:
     GicD(IRQCtlrVersion const version, uint16 num_vcpus, uint16 conf_irqs = MAX_IRQ)

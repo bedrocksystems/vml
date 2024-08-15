@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2020 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -776,7 +776,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
     }
 
     if (target.is_targeting_a_set()) {
-        for (uint16 i = 0; i < std::min<uint16>(_num_vcpus, Model::GICV2_MAX_CPUS); i++) {
+        for (uint16 i = 0; i < min<uint16>(_num_vcpus, Model::GICV2_MAX_CPUS); i++) {
             if (!target.is_cpu_targeted(i))
                 continue;
 
@@ -940,7 +940,7 @@ Model::GicD::route_spi_no_affinity(Model::GicD::Irq &irq) {
     constexpr uint16 TARGET_MODE_MAX_CPUS = 8U;
     IrqTarget res(IrqTarget::CPU_SET, 0);
 
-    for (Vcpu_id i = 0; i < std::min<uint16>(_num_vcpus, TARGET_MODE_MAX_CPUS); i++) {
+    for (Vcpu_id i = 0; i < min<uint16>(_num_vcpus, TARGET_MODE_MAX_CPUS); i++) {
         if (_local[i].notify == nullptr)
             continue;
 
