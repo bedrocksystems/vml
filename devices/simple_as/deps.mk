@@ -1,7 +1,3 @@
-LIBS = vbus arch_api
-ifneq ($(HOSTED), 1)
-LIBS += $(PLATFORM)
-endif
-
+LIBS = vbus arch_api $(PLATFORM)
 
 $(eval $(call dep_hook,simple_as,$(LIBS)))

@@ -1,7 +1,3 @@
-LIBS = irq_controller cpu_model
-ifneq ($(HOSTED), 1)
-LIBS += $(PLATFORM)
-else
-endif
+LIBS = irq_controller cpu_model $(PLATFORM)
 
 $(eval $(call dep_hook,timer,$(LIBS)))

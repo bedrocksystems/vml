@@ -1,7 +1,3 @@
-LIBS = vbus cpu_model
-ifneq ($(HOSTED), 1)
-LIBS += $(PLATFORM)
-endif
-
+LIBS = vbus cpu_model $(PLATFORM)
 
 $(eval $(call dep_hook,irq_controller,$(LIBS)))

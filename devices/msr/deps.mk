@@ -1,10 +1,7 @@
 LIBS = vbus cpu_model
-
-ifneq ($(HOSTED), 1)
 LIBS += $(PLATFORM)
-endif
 
-ifneq ($(BOARD), x86)
+ifeq ($(ARCH), aarch64)
 LIBS += gic irq_controller simple_as timer
 endif
 
