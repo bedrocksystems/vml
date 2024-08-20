@@ -9,7 +9,9 @@
 
 #include <intrusive/map.hpp>
 #include <msr/msr_id.hpp>
+#include <platform/log.hpp>
 #include <platform/time.hpp>
+#include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
 namespace Msr {

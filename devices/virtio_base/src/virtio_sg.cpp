@@ -1,12 +1,14 @@
 /*
- * Copyright (c) 2021 BlueRock Security, Inc.
+ * Copyright (c) 2021-2024 BlueRock Security, Inc.
  * This software is distributed under the terms of the BlueRock Open-Source License.
  * See the LICENSE-BlueRock file in the repository root for details.
  */
 
 #include <model/virtio_sg.hpp>
+#include <model/virtqueue.hpp>
 #include <platform/bits.hpp>
 #include <platform/log.hpp>
+#include <platform/new.hpp>
 
 void
 Virtio::Sg::DescMetadata::heuristically_track_written_bytes(size_t off, size_t size_bytes) {

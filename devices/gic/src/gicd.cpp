@@ -9,10 +9,15 @@
 #include <model/cpu.hpp>
 #include <model/cpu_affinity.hpp>
 #include <model/gic.hpp>
+#include <model/irq_controller.hpp>
 #include <model/vcpu_types.hpp>
-#include <platform/algorithm.hpp>
+#include <platform/atomic.hpp>
 #include <platform/bits.hpp>
+#include <platform/bitset.hpp>
+#include <platform/compiler.hpp>
 #include <platform/log.hpp>
+#include <platform/types.hpp>
+#include <vbus/vbus.hpp>
 
 enum {
     GICD_CTLR = 0x0,

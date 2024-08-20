@@ -17,6 +17,7 @@
 #include <platform/compiler.hpp>
 #include <platform/log.hpp>
 #include <platform/new.hpp>
+#include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
 namespace Model {

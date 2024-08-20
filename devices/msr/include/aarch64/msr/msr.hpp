@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2020 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -9,10 +9,13 @@
 
 #include <model/aa64_timer.hpp>
 #include <model/vcpu_types.hpp>
-#include <msr/msr_access.hpp>
 #include <msr/msr_base.hpp>
+#include <msr/msr_id.hpp>
+#include <platform/log.hpp>
 #include <platform/reg_accessor.hpp>
 #include <platform/time.hpp>
+#include <platform/types.hpp>
+#include <vbus/vbus.hpp>
 
 namespace Msr {
     void flush_on_cache_toggle(const VcpuCtx* vcpu, uint64 new_value);

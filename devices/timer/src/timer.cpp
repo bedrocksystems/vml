@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2020 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -9,6 +9,7 @@
 #include <model/timer.hpp>
 #include <platform/context.hpp>
 #include <platform/log.hpp>
+#include <platform/signal.hpp>
 
 void
 Model::Timer::timer_loop(const Platform_ctx*, Model::Timer* timer) {

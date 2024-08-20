@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2021 BlueRock Security, Inc.
+ * Copyright (C) 2021-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -14,9 +14,11 @@
 #include <model/virtqueue.hpp>
 #include <platform/atomic.hpp>
 #include <platform/bits.hpp>
-#include <platform/new.hpp>
+#include <platform/log.hpp>
 #include <platform/string.hpp>
+#include <platform/type_traits.hpp>
 #include <platform/types.hpp>
+#include <vbus/vbus.hpp>
 
 namespace Virtio {
     class Callback;

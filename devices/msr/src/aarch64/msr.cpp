@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2020 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -9,14 +9,18 @@
 #include <model/aa64_timer.hpp>
 #include <model/cpu.hpp>
 #include <model/gic.hpp>
+#include <model/irq_controller.hpp>
 #include <model/simple_as.hpp>
+#include <model/vcpu_types.hpp>
 #include <msr/msr.hpp>
 #include <msr/msr_base.hpp>
+#include <msr/msr_id.hpp>
 #include <msr/msr_info.hpp>
-#include <platform/compiler.hpp>
 #include <platform/log.hpp>
 #include <platform/new.hpp>
+#include <platform/reg_accessor.hpp>
 #include <platform/types.hpp>
+#include <vbus/vbus.hpp>
 
 static constexpr uint64 AA64DFR0_DEBUG_V8 = 0x6ull;
 Vbus::Bus *Msr::SetWayFlushReg::vbus = nullptr;

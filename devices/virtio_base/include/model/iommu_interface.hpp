@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2023 BlueRock Security, Inc.
+ * Copyright (C) 2023-2024 BlueRock Security, Inc.
  * All rights reserved.
  */
 
@@ -8,6 +8,7 @@
 #include <platform/errno.hpp>
 #include <platform/new.hpp>
 #include <platform/rangemap.hpp>
+#include <platform/types.hpp>
 
 // This file implements an interface to plug VirtIO device models with a virtual IOMMU implementation
 

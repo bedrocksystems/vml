@@ -7,6 +7,7 @@
  */
 #pragma once
 #include <msr/msr_base.hpp>
+#include <platform/types.hpp>
 
 namespace Msr {
     enum RegisterId : uint32 {

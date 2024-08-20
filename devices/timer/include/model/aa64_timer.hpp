@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 BlueRock Security, Inc.
+ * Copyright (C) 2021-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -7,7 +7,10 @@
  */
 #pragma once
 
+#include <model/irq_controller.hpp>
 #include <model/timer.hpp>
+#include <model/vcpu_types.hpp>
+#include <platform/types.hpp>
 
 namespace Model {
     class AA64Timer;

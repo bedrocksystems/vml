@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019-2022 BlueRock Security, Inc.
+ * Copyright (c) 2019-2024 BlueRock Security, Inc.
  * This software is distributed under the terms of the BlueRock Open-Source License.
  * See the LICENSE-BlueRock file in the repository root for details.
  */
@@ -9,7 +9,9 @@
 #include <model/foreign_ptr.hpp>
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
+#include <platform/type_traits.hpp>
 #include <platform/types.hpp>
+#include <platform/utility.hpp>
 
 template<typename T>
 inline T

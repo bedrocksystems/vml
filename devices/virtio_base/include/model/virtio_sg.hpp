@@ -1,16 +1,17 @@
 /*
- * Copyright (c) 2021 BlueRock Security, Inc.
+ * Copyright (c) 2021-2024 BlueRock Security, Inc.
  * This software is distributed under the terms of the BlueRock Open-Source License.
  * See the LICENSE-BlueRock file in the repository root for details.
  */
 
 #pragma once
 
-#include <model/simple_as.hpp>
 #include <model/virtqueue.hpp>
 #include <platform/errno.hpp>
-#include <platform/new.hpp>
+#include <platform/log.hpp>
 #include <platform/string.hpp>
+#include <platform/type_traits.hpp>
+#include <platform/types.hpp>
 #include <platform/utility.hpp>
 
 namespace Virtio {

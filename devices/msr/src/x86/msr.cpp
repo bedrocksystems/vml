@@ -9,9 +9,14 @@
 #include <model/vcpu_types.hpp>
 #include <msr/msr.hpp>
 #include <msr/msr_base.hpp>
+#include <msr/msr_id.hpp>
+#include <platform/bits.hpp>
+#include <platform/log.hpp>
 #include <platform/memory.hpp>
 #include <platform/new.hpp>
 #include <platform/time.hpp>
+#include <platform/types.hpp>
+#include <vbus/vbus.hpp>
 
 class Msr::ApicBaseRegister : public Msr::Register {
 private:

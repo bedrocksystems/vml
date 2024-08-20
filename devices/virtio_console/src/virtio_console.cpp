@@ -1,13 +1,19 @@
 /**
- * Copyright (C) 2019-2020 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
  * See the LICENSE-BlueRock file in the repository root for details.
  */
 
+#include <model/virtio_common.hpp>
 #include <model/virtio_console.hpp>
+#include <model/virtio_sg.hpp>
 #include <model/virtqueue.hpp>
+#include <platform/bits.hpp>
+#include <platform/errno.hpp>
+#include <platform/signal.hpp>
+#include <platform/types.hpp>
 
 void
 Model::VirtioConsole::notify(uint32 const) {

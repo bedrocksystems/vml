@@ -1,4 +1,4 @@
-LIBS = vbus virtio_base
+LIBS = vbus virtio_base cpu_model irq_controller
 
 ifneq ($(HOSTED), 1)
 LIBS += $(PLATFORM)

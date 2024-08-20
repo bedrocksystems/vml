@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -11,9 +11,8 @@
  *  \brief Model for a PL011 device
  */
 
-#include <debug_switches.hpp>
-#include <platform/atomic.hpp>
 #include <platform/bits.hpp>
+#include <platform/context.hpp>
 #include <platform/mutex.hpp>
 #include <platform/signal.hpp>
 #include <platform/types.hpp>

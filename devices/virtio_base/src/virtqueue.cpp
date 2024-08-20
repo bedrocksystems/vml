@@ -1,13 +1,16 @@
 /*
- * Copyright (c) 2019-2022 BlueRock Security, Inc.
+ * Copyright (c) 2019-2024 BlueRock Security, Inc.
  * This software is distributed under the terms of the BlueRock Open-Source License.
  * See the LICENSE-BlueRock file in the repository root for details.
  */
 
+#include <arch/barrier.hpp>
 #include <model/virtqueue.hpp>
 #include <platform/bits.hpp>
+#include <platform/errno.hpp>
 #include <platform/new.hpp>
 #include <platform/string.hpp>
+#include <platform/types.hpp>
 
 /** [Virtio::Queue] */
 namespace Virtio {

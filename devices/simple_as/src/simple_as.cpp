@@ -10,7 +10,14 @@
 #include <arch/mem_util.hpp>
 #include <model/simple_as.hpp>
 #include <platform/compiler.hpp>
+#include <platform/errno.hpp>
+#include <platform/log.hpp>
+#include <platform/memory.hpp>
+#include <platform/rangemap.hpp>
 #include <platform/string.hpp>
+#include <platform/types.hpp>
+#include <platform/vector.hpp>
+#include <vbus/vbus.hpp>
 
 // Alignment is ensured by the caller but the compiler does not know this
 #pragma GCC diagnostic push

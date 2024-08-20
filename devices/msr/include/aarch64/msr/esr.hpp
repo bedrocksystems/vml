@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include <bits.hpp>
 #include <msr/msr_access.hpp>
-#include <types.hpp>
+#include <platform/bits.hpp>
+#include <platform/types.hpp>
 /**
  * Decoding of ESR_EL2 ARMv8-A register, carrying fault information.
  * See ARM manual DDI0487.I, Sec. D17.2.38 D17.2.38 ESR_EL2, Exception Syndrome Register (EL2).
