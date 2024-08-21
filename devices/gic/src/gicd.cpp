@@ -161,7 +161,7 @@ Model::GicD::write_ctlr(uint64 offset, uint8 bytes, uint64 value) {
     constexpr uint32 const ENFORCE_ZERO = ~(GICD_ARE | GICD_GRP0 | GICD_GRP1);
     RegAccess acc{offset, GICD_CTLR, GICD_CTLR_END, bytes};
 
-    return write_register(acc, value, _ctlr.value, (_version >= 3) ? ENFORCE_ZERO : ENFORCE_ZERO_V2);
+    return write_register(acc, value, _ctlr.value, (_version >= 3) ? ENFORCE_ZERO : ENFORCE_ZERO_V2, Ctlr::CTLR_DS);
 }
 
 bool
@@ -593,11 +593,11 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id, bool redirect_irq) {
         IrqInjectionInfoUpdate cur = irq.injection_info.read();
 
         if (((irq.group0() && _ctlr.group0_enabled()) || (irq.group1() && _ctlr.group1_enabled())) && cur.is_targeting_cpu(cpu_id)
-            && cur.pending() && irq.enabled() && !cpu.in_injection_irqs.is_set(irq_id) && vcpu_can_receive_irq(gic_r)) {
+            && cur.pending() && irq.enabled() && !cpu.in_injection_irqs.is_set(irq_id) && vcpu_can_receive_irq(gic_r, irq_id)) {
 
             if (r == nullptr || irq.prio() > r->prio())
                 r = &irq;
-        } else if (redirect_irq && (irq_id >= SPI_BASE) && !vcpu_can_receive_irq(gic_r)) {
+        } else if (redirect_irq && (irq_id >= SPI_BASE) && !vcpu_can_receive_irq(gic_r, irq_id)) {
             // or (irq.group0() && !vmcr.group0_enabled() && _ctlr.affinity_routing())
             // or (irq.group1() && !vmcr.group1_enabled() && _ctlr.affinity_routing()))) {
             /*
@@ -791,7 +791,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
             target_cpu->pending_irqs.set(irq.id());
 
             // Avoid recalling a VCPU that has silenced IRQs
-            if (__LIKELY__(vcpu_can_receive_irq(gic_r)))
+            if (__LIKELY__(vcpu_can_receive_irq(gic_r, irq.id())))
                 target_cpu->notify->notify_interrupt_pending();
         }
     } else {
@@ -800,7 +800,7 @@ Model::GicD::notify_target(Irq &irq, const IrqTarget &target) {
 
         target_cpu->pending_irqs.set(irq.id());
 
-        if (__LIKELY__(vcpu_can_receive_irq(gic_r)))
+        if (__LIKELY__(vcpu_can_receive_irq(gic_r, irq.id())))
             target_cpu->notify->notify_interrupt_pending();
     }
 

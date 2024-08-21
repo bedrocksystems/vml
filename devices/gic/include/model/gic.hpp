@@ -385,8 +385,10 @@ private:
     uint16 const _num_vcpus;
     uint16 const _configured_irqs;
 
-    struct {
-        uint32 value{0};
+    struct Ctlr {
+        static constexpr uint32 CTLR_DS = 1 << 6;
+        uint32 value{CTLR_DS};
+
         constexpr bool group0_enabled() const { return (value & 0x1) != 0u; }
         constexpr bool group1_enabled() const { return (value & 0x2) != 0u; }
         constexpr bool affinity_routing() const { return (value & 0x10) != 0u; }
@@ -659,8 +661,12 @@ private:
     IrqTarget route_spi_no_affinity(Model::GicD::Irq &irq);
     bool redirect_spi(Irq &irq, Vcpu_id vcpu_hint_start);
     Irq *highest_irq(Vcpu_id cpu_id, bool redirect_irq);
-    bool vcpu_can_receive_irq(const LocalIrqController *gic_r) const {
-        return !_ctlr.affinity_routing() || gic_r->can_receive_irq();
+    bool vcpu_can_receive_irq(const LocalIrqController *gic_r, size_t irq_id) const {
+        if (!_ctlr.affinity_routing())
+            return true;
+        if (irq_id < SPI_BASE)
+            return true; // only SPIs participate in the 1-of-N model
+        return gic_r->can_receive_irq();
     }
     void reset_status_bitfields_on_vcpu(uint16 vcpu_idx);
     uint64 get_typer() const {
