@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2021 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -8,10 +8,7 @@
 #pragma once
 
 #include <platform/atomic.hpp>
-#include <platform/errno.hpp>
 #include <platform/log.hpp>
-#include <platform/semaphore.hpp>
-#include <platform/signal.hpp>
 #include <platform/types.hpp>
 #include <platform/vm_types.hpp>
 

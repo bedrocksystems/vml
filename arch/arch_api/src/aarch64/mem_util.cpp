@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019 BlueRock Security, Inc.
+ * Copyright (C) 2019-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -10,6 +10,7 @@
 #include <arch/mem_util.hpp>
 #include <model/cpu.hpp>
 #include <msr/msr_info.hpp>
+#include <platform/bits.hpp>
 #include <platform/types.hpp>
 
 static inline void
