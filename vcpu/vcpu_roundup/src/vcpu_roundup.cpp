@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2020 BlueRock Security, Inc.
+ * Copyright (C) 2020-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
  * See the LICENSE-BlueRock file in the repository root for details.
  */
 
-#include <arch/barrier.hpp>
 #include <model/cpu.hpp>
+#include <model/vcpu_types.hpp>
 #include <platform/atomic.hpp>
 #include <platform/context.hpp>
 #include <platform/errno.hpp>
@@ -15,6 +15,7 @@
 #include <platform/mutex.hpp>
 #include <platform/semaphore.hpp>
 #include <platform/signal.hpp>
+#include <platform/types.hpp>
 #include <vcpu/vcpu_roundup.hpp>
 
 /*! \file

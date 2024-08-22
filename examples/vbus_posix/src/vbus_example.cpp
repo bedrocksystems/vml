@@ -17,6 +17,7 @@
 #include <platform/log.hpp>
 #include <platform/memory.hpp>
 #include <platform/reg_accessor.hpp>
+#include <platform/semaphore.hpp>
 #include <platform/types.hpp>
 #include <thread>
 #include <vbus/vbus.hpp>
