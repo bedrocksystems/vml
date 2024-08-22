@@ -36,7 +36,7 @@ protected:
 
     void set_ready() { _ready_sig.sig(); }
     bool timer_wait_timeout(uint64 timeout_abs) { return _wait_timer.wait(timeout_abs); }
-    void timer_wait() { return _wait_timer.wait(); }
+    void timer_wait() { _wait_timer.wait(); }
     void timer_wakeup() { _wait_timer.sig(); }
 
     void set_terminated() { _terminated_sig.sig(); }
