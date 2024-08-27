@@ -16,7 +16,7 @@ namespace Model {
     class AA64Timer;
 }
 
-class Model::AA64Timer : public Model::Timer {
+class Model::AA64Timer : public Model::PerCpuTimer {
 private:
     enum : uint8 { ENABLED_BIT = 0x1, MASKED_BIT = 0x2, STATUS_BIT = 0x4 };
 
@@ -52,7 +52,7 @@ public:
      *  \param cpu The id of the VCPU that owns this physical timer
      *  \param irq The IRQ number associated with the timer (should be a PPI)
      */
-    AA64Timer(IrqController &irq_ctlr, Vcpu_id const cpu, uint16 const irq) : Timer(irq_ctlr, cpu, irq) {}
+    AA64Timer(IrqController &irq_ctlr, Vcpu_id const cpu, uint16 const irq) : PerCpuTimer(irq_ctlr, cpu, irq) {}
 
     /*! \brief Set the compare value of the timer
      *  \pre Fractional ownership of an initialized timer object.

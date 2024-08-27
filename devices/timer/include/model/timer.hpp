@@ -16,6 +16,8 @@
 
 namespace Model {
     class Timer;
+    class PerCpuTimer;
+    class GlobalTimer;
 };
 
 class Model::Timer {
@@ -31,7 +33,6 @@ private:
 
 protected:
     IrqController *const _irq_ctlr;
-    Vcpu_id const _vcpu;
     uint16 const _irq;
 
     void set_ready() { _ready_sig.sig(); }
@@ -43,7 +44,7 @@ protected:
 
     void clear_irq_status() {
         set_irq_status(false);
-        _irq_ctlr->deassert_line_ppi(_vcpu, _irq);
+        deassert_irq();
     }
 
     virtual bool can_fire() const = 0;
@@ -55,13 +56,10 @@ protected:
     uint64 curr_wait_timeout() const { return _curr_timeout; }
 
 public:
-    Timer(IrqController &irq_ctlr, Vcpu_id const vcpu_id, uint16 const irq) : _irq_ctlr(&irq_ctlr), _vcpu(vcpu_id), _irq(irq) {}
+    Timer(IrqController &irq_ctlr, uint16 const irq) : _irq_ctlr(&irq_ctlr), _irq(irq) {}
 
-    bool init_irq(Vcpu_id const vcpu_id, uint16 const pirq, bool hw, bool edge = true) {
-        return _irq_ctlr->config_irq(vcpu_id, _irq, hw, pirq, edge);
-    }
-
-    bool assert_irq() { return _irq_ctlr->assert_ppi(_vcpu, _irq); }
+    virtual bool assert_irq() = 0;
+    virtual void deassert_irq() = 0;
 
     uint16 irq_num() const { return _irq; }
 
@@ -100,4 +98,28 @@ public:
     void wait_for_loop_terminated() { _terminated_sig.wait(); }
 
     void cleanup_timer_loop_resources(const Platform_ctx *ctx);
+};
+
+class Model::PerCpuTimer : public Model::Timer {
+private:
+    Vcpu_id const _vcpu;
+
+public:
+    PerCpuTimer(IrqController &irq_ctlr, Vcpu_id const vcpu_id, uint16 const irq) : Model::Timer(irq_ctlr, irq), _vcpu(vcpu_id) {}
+
+    bool init_irq(Vcpu_id const vcpu_id, uint16 const pirq, bool hw, bool edge = true) {
+        return _irq_ctlr->config_irq(vcpu_id, _irq, hw, pirq, edge);
+    }
+    bool assert_irq() override { return _irq_ctlr->assert_ppi(_vcpu, _irq); }
+    void deassert_irq() override { _irq_ctlr->deassert_line_ppi(_vcpu, _irq); }
+};
+
+class Model::GlobalTimer : public Model::Timer {
+private:
+public:
+    GlobalTimer(IrqController &irq_ctlr, uint16 const irq) : Model::Timer(irq_ctlr, irq) {}
+
+    bool init_irq(uint16 const pirq, bool hw, bool edge = true) { return _irq_ctlr->config_spi(_irq, hw, pirq, edge); }
+    bool assert_irq() override { return _irq_ctlr->assert_global_line(_irq); }
+    void deassert_irq() override { _irq_ctlr->deassert_global_line(_irq); }
 };

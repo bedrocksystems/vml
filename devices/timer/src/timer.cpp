@@ -8,6 +8,7 @@
 
 #include <model/timer.hpp>
 #include <platform/context.hpp>
+#include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/signal.hpp>
 
@@ -20,7 +21,6 @@ Model::Timer::timer_loop(const Platform_ctx*, Model::Timer* timer) {
     while (not timer->_terminate) {
         bool released;
         uint64 curr_timer;
-
         /*
          * Use fired to prevent asserting the interrupt several times. We then wait
          * for some timer register to change before firing again.
@@ -57,7 +57,8 @@ Model::Timer::timer_loop(const Platform_ctx*, Model::Timer* timer) {
 
 bool
 Model::Timer::init_timer_loop(const Platform_ctx* ctx) {
-    return _wait_timer.init(ctx) && _ready_sig.init(ctx) && _terminated_sig.init(ctx);
+    return _wait_timer.create(ctx) == Errno::NONE && _ready_sig.create(ctx) == Errno::NONE
+           && _terminated_sig.create(ctx) == Errno::NONE;
 }
 
 void
