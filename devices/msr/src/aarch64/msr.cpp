@@ -124,6 +124,10 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
     if (!register_system_reg(reg))
         return false;
 
+    reg = new (nothrow) Msr::Register("ID_AA64PFR2_EL1", ID_AA64PFR2_EL1, false, 0x0ULL);
+    if (!register_system_reg(reg))
+        return false;
+
     /* Scalable Matrix Extension - not yet implemented in the VMM.*/
     uint64 id_aa64smfr0_el1 = 0ull;
     reg = new (nothrow) Msr::Register("ID_AA64SMFR0_EL1", ID_AA64SMFR0_EL1, false, id_aa64smfr0_el1);
@@ -132,6 +136,10 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
 
     id_aa64zfr0_el1 = 0ull;
     reg = new (nothrow) Msr::Register("ID_AA64ZFR0_EL1", ID_AA64ZFR0_EL1, false, id_aa64zfr0_el1);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("ID_AA64FPFR0_EL1", ID_AA64FPFR0_EL1, false, 0x0ULL);
     if (!register_system_reg(reg))
         return false;
 
@@ -151,6 +159,10 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
         return false;
 
     reg = new (nothrow) Msr::Register("ID_AA64ISAR2_EL1", ID_AA64ISAR2_EL1, false, id_aa64isar2_el1);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("ID_AA64ISAR3_EL1", ID_AA64ISAR3_EL1, false, 0x0ULL);
     if (!register_system_reg(reg))
         return false;
 
@@ -377,6 +389,14 @@ Msr::Bus::setup_aarch64_memory_model(uint64 id_aa64mmfr0_el1, uint64 id_aa64mmfr
     id_aa64mmfr2_el1 &= ~(0xfull << 24); /* Nested Virtualization is disabled */
     id_aa64mmfr2_el1 &= ~(0xfull << 56); /* Enhanced Virtualization Traps is disabled */
     reg = new (nothrow) Msr::Register("ID_AA64MMFR2_EL1", ID_AA64MMFR2_EL1, false, id_aa64mmfr2_el1);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("ID_AA64MMFR3_EL1", ID_AA64MMFR3_EL1, false, 0x0ULL);
+    if (!register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::Register("ID_AA64MMFR4_EL1", ID_AA64MMFR4_EL1, false, 0x0ULL);
     return register_system_reg(reg);
 }
 
