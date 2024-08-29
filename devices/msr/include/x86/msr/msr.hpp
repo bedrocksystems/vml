@@ -106,7 +106,8 @@ public:
 
     static bool is_msr_with_addr(uint32 msrnum);
 
-    bool setup_tsc_deadline_msr();
+    bool setup_tsc_msrs();
+    bool setup_platform_info_msr(uint64 freq_ratio);
     bool setup_guest_state_msrs();
     bool setup_syscall_msrs();
     bool setup_sys_msrs();

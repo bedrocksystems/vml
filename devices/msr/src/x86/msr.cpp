@@ -221,10 +221,14 @@ Msr::Bus::setup_caps_msr(uint64 arch_caps, uint64 core_caps) {
 }
 
 bool
-Msr::Bus::setup_tsc_deadline_msr() {
+Msr::Bus::setup_tsc_msrs() {
     Msr::Register* reg;
 
     reg = new (nothrow) Msr::SysRegister("IA32_TSC_DEADLINE", IA32_TSC_DEADLINE, true, 0x0ULL);
+    if (not register_system_reg(reg))
+        return false;
+
+    reg = new (nothrow) Msr::TSCRegister();
     return register_system_reg(reg);
 }
 
@@ -274,6 +278,14 @@ Msr::Bus::setup_mtrrs(bool mtrr, uint8 pa_width) {
 }
 
 bool
+Msr::Bus::setup_platform_info_msr(uint64 freq_ratio) {
+    uint64 platform_info_val = freq_ratio << 8 | freq_ratio << 40;
+    Msr::Register* reg = new (nothrow) Msr::Register("IA32_FEATURE_INFO", IA32_FEATURE_INFO, false, platform_info_val);
+
+    return register_system_reg(reg);
+}
+
+bool
 Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width, bool sgx) {
     Msr::Register* reg;
 
@@ -299,10 +311,6 @@ Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width, bool sgx) 
         return false;
 
     reg = new (nothrow) Msr::Register("IA32_BIOS_SIGN_ID", IA32_BIOS_SIGN_ID, true, 0x0ULL);
-    if (not register_system_reg(reg))
-        return false;
-
-    reg = new (nothrow) Msr::Register("IA32_FEATURE_INFO", IA32_FEATURE_INFO, false, 0x0ULL);
     if (not register_system_reg(reg))
         return false;
 
@@ -336,10 +344,6 @@ Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width, bool sgx) 
         return false;
 
     reg = new (nothrow) Msr::MiscRegister();
-    if (not register_system_reg(reg))
-        return false;
-
-    reg = new (nothrow) Msr::TSCRegister();
     if (not register_system_reg(reg))
         return false;
 

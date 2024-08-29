@@ -9,6 +9,7 @@
 
 #include <platform/types.hpp>
 
+static constexpr uint32 PROC_CNTR0_RDTSC_EXIT = 1u << 12;
 static constexpr uint32 PROC_CNTR0_CR3_LOAD = 1u << 15;
 static constexpr uint32 PROC_CNTR0_TPR_SHADOW = 1u << 21;
 static constexpr uint32 PROC_CNTR0_MTF = 1u << 27;
