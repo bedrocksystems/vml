@@ -85,7 +85,7 @@ namespace Log {
         cxx::abort();                                                                                                            \
     } while (0)
 
-// Derived macros. Keep in sync with zeta/lib/log/include/bedrock/log/log.hpp
+// Derived macros. Keep in sync with zeta/lib/log/include/bluerock/log/log.hpp
 // TODO: dedup
 
 // DEBUG will add the file and line number, emulating a poor man's stacktrace.
