@@ -19,6 +19,7 @@
 #include <platform/log.hpp>
 #include <platform/new.hpp>
 #include <platform/reg_accessor.hpp>
+#include <platform/time.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
@@ -732,4 +733,28 @@ Msr::Bus::setup_aarch64_physical_timer(Model::AA64Timer &ptimer) {
 
     Msr::CntpctEl0 *cntpct = new (nothrow) Msr::CntpctEl0();
     return register_system_reg(cntpct);
+}
+
+Msr::Err
+Msr::CntpctEl0::access(Vbus::Access access, const VcpuCtx *vctx, uint64 &value) {
+    if (access != Vbus::READ)
+        return Err::ACCESS_ERR;
+
+    value = static_cast<uint64>(clock()) - vctx->regs->tmr_cntvoff();
+    return Err::OK;
+}
+
+Msr::Err
+Msr::CntpTval::access(Vbus::Access access, const VcpuCtx *vctx, uint64 &value) {
+    if (access == Vbus::READ) {
+        uint64 cval = _ptimer->get_cval(), curr = static_cast<uint64>(clock()) - vctx->regs->tmr_cntvoff();
+        value = (cval - curr) & CNTP_TVAL_MASK;
+        return Err::OK;
+    } else if (access == Vbus::WRITE) {
+        int32 v = static_cast<int32>(value);
+        _ptimer->set_cval(static_cast<uint64>(clock()) + static_cast<uint64>(v));
+        return Err::OK;
+    } else {
+        return Err::ACCESS_ERR;
+    }
 }

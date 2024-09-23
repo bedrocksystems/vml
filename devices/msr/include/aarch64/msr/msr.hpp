@@ -12,8 +12,6 @@
 #include <msr/msr_base.hpp>
 #include <msr/msr_id.hpp>
 #include <platform/log.hpp>
-#include <platform/reg_accessor.hpp>
-#include <platform/time.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
 
@@ -544,14 +542,7 @@ class Msr::CntpctEl0 : public RegisterBase {
 public:
     explicit CntpctEl0() : RegisterBase("CNTPCT_EL0", CNTPCT_EL0) {}
 
-    Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override {
-        if (access != Vbus::READ)
-            return Err::ACCESS_ERR;
-
-        value = static_cast<uint64>(clock()) - vctx->regs->tmr_cntvoff();
-        return Err::OK;
-    }
-
+    Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override;
     void reset(const VcpuCtx*) override {}
 };
 
@@ -564,19 +555,7 @@ public:
     CntpTval(const char* name, Msr::RegisterId id, Model::AA64Timer& t)
         : Register(name, id, true, 0, CNTP_TVAL_MASK), _ptimer(&t) {}
 
-    Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override {
-        if (access == Vbus::READ) {
-            uint64 cval = _ptimer->get_cval(), curr = static_cast<uint64>(clock()) - vctx->regs->tmr_cntvoff();
-            value = (cval - curr) & CNTP_TVAL_MASK;
-            return Err::OK;
-        } else if (access == Vbus::WRITE) {
-            int32 v = static_cast<int32>(value);
-            _ptimer->set_cval(static_cast<uint64>(clock()) + static_cast<uint64>(v));
-            return Err::OK;
-        } else {
-            return Err::ACCESS_ERR;
-        }
-    }
+    Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override;
 };
 
 /*
