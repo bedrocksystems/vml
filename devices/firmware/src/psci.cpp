@@ -174,12 +174,30 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         res = static_cast<uint64>(SUCCESS);
         return OK;
     case SYSTEM_OFF:
+        if (not Lifecycle::can_shutdown_system()) {
+            /* PSCI Spec - Section 5.10: SYSTEM_OFF
+             *
+             * There is no standard error handling defined in the PSCI Spec.
+             * It states: `If the Trusted OS requires it, provide an
+             * IMPLEMENTATION-DEFINED mechanism to inform the Trusted OS
+             * of the impending shutdown`
+             * The SM client EC will call stop_system() anyway, so return `OK`.
+             */
+            INFO("A system power cycle is currently in progress, initiated from the SM");
+            return OK;
+        }
+
         Lifecycle::notify_system_off(vctx);
         Lifecycle::stop_system(vctx);
 
         INFO("System was halted by the guest.");
         return OK;
     case SYSTEM_RESET:
+        if (not Lifecycle::can_shutdown_system()) {
+            INFO("A system power cycle is currently in progress, initiated from the SM");
+            return OK;
+        }
+
         INFO("System reset requested by the guest.");
         Lifecycle::stop_system(vctx);
         vbus.reset(vctx);
