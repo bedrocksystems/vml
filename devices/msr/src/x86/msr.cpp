@@ -334,8 +334,9 @@ Msr::Bus::setup_arch_msr(bool x2apic_msrs, bool mtrr, uint8 pa_width, bool sgx) 
     if (not register_system_reg(reg))
         return false;
 
-    // Ignore write
-    reg = new (nothrow) Msr::Register("UNCORE_PERF_GLOBAL_CTL", UNCORE_PERF_GLOBAL_CTL, false, 0x0ULL);
+    // This MSR is unconditionally present on some CPUs
+    // The guest can write without taking a GP, but, we effectively ignore all writes
+    reg = new (nothrow) Msr::Register("UNCORE_PERF_GLOBAL_CTL", UNCORE_PERF_GLOBAL_CTL, true, 0x0ULL, 0x0ULL);
     if (not register_system_reg(reg))
         return false;
 
