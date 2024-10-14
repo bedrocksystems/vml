@@ -147,6 +147,7 @@ protected:
     CpuFlag _execution_paused;
     CpuFlag _icache_invalidate;
     CpuFeature _dump_regs;
+    CpuFeature _pf; /* Used to track extra regs requested by BRASS */
 
     static Model::Cpu *get(Vcpu_id cpu_id);
 
@@ -196,6 +197,7 @@ public:
     static void ctrl_feature_icache_invalidate(Model::Cpu *vcpu, bool enable, Request::Requestor requestor, Reg_selection regs);
     static void ctrl_feature_hypercall(Model::Cpu *vcpu, bool enable, Request::Requestor requestor, Reg_selection regs);
     static void ctrl_feature_regs_dump(Model::Cpu *mcpu, bool enable, Request::Requestor requestor, Reg_selection regs);
+    static void ctrl_feature_pf(Model::Cpu *vcpu, bool enable, Request::Requestor requestor, Reg_selection regs);
 
     // this is just like the above but it requires threading an extra argument
     typedef void (*ctrl_feature_ex_cb)(Model::Cpu *, bool, Request::Requestor, uint64, Reg_selection);

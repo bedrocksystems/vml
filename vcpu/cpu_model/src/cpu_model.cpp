@@ -164,6 +164,13 @@ Model::Cpu::ctrl_feature_tvm(Model::Cpu* vcpu, bool enable, Request::Requestor r
 }
 
 void
+Model::Cpu::ctrl_feature_pf(Model::Cpu* vcpu, bool enable, Request::Requestor requestor, Reg_selection regs) {
+    ASSERT(vcpu != nullptr);
+    ASSERT(enable); // Always enabled for now
+    vcpu->_pf.request(true, requestor, regs);
+}
+
+void
 Model::Cpu::ctrl_feature_single_step(Model::Cpu* vcpu, bool enable, Request::Requestor requestor, Reg_selection) {
     ASSERT(vcpu != nullptr);
     vcpu->_single_step.request(enable, requestor);
