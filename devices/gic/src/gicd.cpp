@@ -676,7 +676,7 @@ Model::GicD::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
 
     if (__UNLIKELY__(Debug::current_level == Debug::FULL && irq->id() < MAX_SGI)) {
         if (is_affinity_routing_enabled())
-            INFO("Injecting SGI %u on VCPU " FMTu64, irq->id(), cpu_id)
+            INFO("Injecting SGI %u on VCPU " FMTu64, irq->id(), cpu_id);
         else
             INFO("Injecting SGI %u from %u on VCPU " FMTu64, irq->id(), sender_id, cpu_id);
     }

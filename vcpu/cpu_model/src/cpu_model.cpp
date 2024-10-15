@@ -251,7 +251,7 @@ Model::Cpu::start_cpu(Vcpu_id vcpu_id, Vbus::Bus& vbus, uint64 boot_addr, uint64
     if (target_ram == nullptr
         || (target_ram->type() != Vbus::Device::GUEST_PHYSICAL_STATIC_MEMORY
             && target_ram->type() != Vbus::Device::GUEST_PHYSICAL_DYNAMIC_MEMORY)) {
-        WARN(FMTx64 " is not a valid boot address", boot_addr)
+        WARN(FMTx64 " is not a valid boot address", boot_addr);
         return INVALID_ADDRESS;
     }
 
