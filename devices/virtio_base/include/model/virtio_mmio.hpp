@@ -132,7 +132,9 @@ public:
         return false;
     }
 
-    static bool write(uint64 const offset, uint8 const bytes, uint64 const value, Virtio::DeviceState &state) {
+    static bool
+    // NOLINTNEXTLINE(readability-function-cognitive-complexity)
+    write(uint64 const offset, uint8 const bytes, uint64 const value, Virtio::DeviceState &state) {
         if (bytes > 4)
             return false;
 
@@ -141,6 +143,9 @@ public:
             return Virtio::write_register(offset, RW_DEVICE_FEATURE_SEL, RW_DEVICE_FEATURE_SEL_END, bytes, value,
                                           state.drv_device_sel);
         case WO_DRIVER_FEATURE ... WO_DRIVER_FEATURE_END:
+            if (state.is_driver_ok_state())
+                return true;
+
             if (state.drv_feature_sel == 0)
                 return Virtio::write_register(offset, WO_DRIVER_FEATURE, WO_DRIVER_FEATURE_END, bytes, value,
                                               state.drv_feature_lower);
@@ -155,6 +160,8 @@ public:
                 return true; /* ignore out of bound */
             return Virtio::write_register(offset, WO_QUEUE_SEL, WO_QUEUE_SEL_END, bytes, value, state.sel_queue);
         case WO_QUEUE_NUM ... WO_QUEUE_NUM_END:
+            if (state.is_driver_ok_state())
+                return true;
             if (value > state.queue_num_max)
                 return true; /* ignore out of bound */
             return Virtio::write_register(offset, WO_QUEUE_NUM, WO_QUEUE_NUM_END, bytes, value, state.selected_queue_data().num);
@@ -176,21 +183,33 @@ public:
             state.notify_val = static_cast<uint32>(value);
             return true;
         case WO_QUEUE_DESCR_LOW ... WO_QUEUE_DESCR_LOW_END:
+            if (state.is_driver_ok_state())
+                return true;
             return Virtio::write_register(offset, WO_QUEUE_DESCR_LOW, WO_QUEUE_DESCR_LOW_END, bytes, value,
                                           state.selected_queue_data().descr_low);
         case WO_QUEUE_DESCR_HIGH ... WO_QUEUE_DESCR_HIGH_END:
+            if (state.is_driver_ok_state())
+                return true;
             return Virtio::write_register(offset, WO_QUEUE_DESCR_HIGH, WO_QUEUE_DESCR_HIGH_END, bytes, value,
                                           state.selected_queue_data().descr_high);
         case WO_QUEUE_DRIVER_LOW ... WO_QUEUE_DRIVER_LOW_END:
+            if (state.is_driver_ok_state())
+                return true;
             return Virtio::write_register(offset, WO_QUEUE_DRIVER_LOW, WO_QUEUE_DRIVER_LOW_END, bytes, value,
                                           state.selected_queue_data().driver_low);
         case WO_QUEUE_DRIVER_HIGH ... WO_QUEUE_DRIVER_HIGH_END:
+            if (state.is_driver_ok_state())
+                return true;
             return Virtio::write_register(offset, WO_QUEUE_DRIVER_HIGH, WO_QUEUE_DRIVER_HIGH_END, bytes, value,
                                           state.selected_queue_data().driver_high);
         case WO_QUEUE_DEVICE_LOW ... WO_QUEUE_DEVICE_LOW_END:
+            if (state.is_driver_ok_state())
+                return true;
             return Virtio::write_register(offset, WO_QUEUE_DEVICE_LOW, WO_QUEUE_DEVICE_LOW_END, bytes, value,
                                           state.selected_queue_data().device_low);
         case WO_QUEUE_DEVICE_HIGH ... WO_QUEUE_DEVICE_HIGH_END:
+            if (state.is_driver_ok_state())
+                return true;
             return Virtio::write_register(offset, WO_QUEUE_DEVICE_HIGH, WO_QUEUE_DEVICE_HIGH_END, bytes, value,
                                           state.selected_queue_data().device_high);
         // Config space access can be byte aligned.

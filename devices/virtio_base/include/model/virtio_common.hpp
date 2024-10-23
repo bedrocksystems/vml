@@ -110,6 +110,7 @@ struct Virtio::QueueData {
 
 class Virtio::QueueState {
 private:
+    uint16 _queue_sz_num_descs{0};
     QueueData *_data{nullptr};
     Virtio::DeviceQueue _device_queue{Virtio::DeviceQueue()};
     bool _constructed{false};
@@ -130,60 +131,59 @@ private:
 public:
     void construct(QueueData &queue_data, Vbus::Bus const &bus, bool use_io_translation,
                    Model::IOMMUManagedDevice &io_translations) {
+        if (not Virtio::Queue::is_size_valid(static_cast<uint16>(queue_data.num)))
+            return;
+
         _data = &queue_data;
+        _queue_sz_num_descs = static_cast<uint16>(_data->num);
 
-        if (not Virtio::Queue::is_size_valid(static_cast<uint16>(_data->num)))
-            return destruct();
-
-        GPA data = convert(io_translations, queue_data.descr(),
-                           Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)), use_io_translation);
-        GPA driver = convert(io_translations, queue_data.driver(),
-                             Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)), use_io_translation);
-        GPA device = convert(io_translations, queue_data.device(),
-                             Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)), use_io_translation);
+        GPA data = convert(io_translations, queue_data.descr(), Virtio::Descriptor::region_size_bytes(_queue_sz_num_descs),
+                           use_io_translation);
+        GPA driver = convert(io_translations, queue_data.driver(), Virtio::Available::region_size_bytes(_queue_sz_num_descs),
+                             use_io_translation);
+        GPA device = convert(io_translations, queue_data.device(), Virtio::Used::region_size_bytes(_queue_sz_num_descs),
+                             use_io_translation);
 
         if (data.invalid() or driver.invalid() or device.invalid()) {
             return destruct();
         }
 
-        _desc_addr = Model::SimpleAS::map_guest_mem(bus, data,
-                                                    Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)), true);
+        _desc_addr = Model::SimpleAS::map_guest_mem(bus, data, Virtio::Descriptor::region_size_bytes(_queue_sz_num_descs), true);
         if (_desc_addr == nullptr)
             return destruct();
 
-        _avail_addr = Model::SimpleAS::map_guest_mem(bus, driver,
-                                                     Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)), true);
+        _avail_addr
+            = Model::SimpleAS::map_guest_mem(bus, driver, Virtio::Available::region_size_bytes(_queue_sz_num_descs), true);
 
         if (_avail_addr == nullptr)
             return destruct();
 
-        _used_addr
-            = Model::SimpleAS::map_guest_mem(bus, device, Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)), true);
+        _used_addr = Model::SimpleAS::map_guest_mem(bus, device, Virtio::Used::region_size_bytes(_queue_sz_num_descs), true);
         if (_used_addr == nullptr)
             return destruct();
 
-        _device_queue = cxx::move(Virtio::DeviceQueue(_desc_addr, _avail_addr, _used_addr, static_cast<uint16>(_data->num)));
+        _device_queue = cxx::move(Virtio::DeviceQueue(_desc_addr, _avail_addr, _used_addr, _queue_sz_num_descs));
 
         _constructed = true;
     }
 
     void destruct() {
-
         _device_queue = cxx::move(Virtio::DeviceQueue());
 
         if (_desc_addr != nullptr) {
-            Model::SimpleAS::unmap_guest_mem(_desc_addr, Virtio::Descriptor::region_size_bytes(static_cast<uint16>(_data->num)));
+            Model::SimpleAS::unmap_guest_mem(_desc_addr, Virtio::Descriptor::region_size_bytes(_queue_sz_num_descs));
             _desc_addr = nullptr;
         }
         if (_avail_addr != nullptr) {
-            Model::SimpleAS::unmap_guest_mem(_avail_addr, Virtio::Available::region_size_bytes(static_cast<uint16>(_data->num)));
+            Model::SimpleAS::unmap_guest_mem(_avail_addr, Virtio::Available::region_size_bytes(_queue_sz_num_descs));
             _avail_addr = nullptr;
         }
         if (_used_addr != nullptr) {
-            Model::SimpleAS::unmap_guest_mem(_used_addr, Virtio::Used::region_size_bytes(static_cast<uint16>(_data->num)));
+            Model::SimpleAS::unmap_guest_mem(_used_addr, Virtio::Used::region_size_bytes(_queue_sz_num_descs));
             _used_addr = nullptr;
         }
 
+        _queue_sz_num_descs = 0;
         _data = nullptr;
         _constructed = false;
     }
@@ -235,6 +235,8 @@ struct Virtio::DeviceState {
         memset(tbl_data, 0, sizeof(tbl_data));
         memset(pba_data, 0, sizeof(pba_data));
     }
+
+    bool is_driver_ok_state() const { return status == static_cast<uint32>(Virtio::DeviceStatus::DRIVER_OK); }
 
     uint32 get_config_gen() const { return __atomic_load_n(&config_generation, __ATOMIC_SEQ_CST); }
     void update_config_gen() { __atomic_fetch_add(&config_generation, 1, __ATOMIC_SEQ_CST); }
