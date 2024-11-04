@@ -134,7 +134,7 @@ int
 main() {
     Platform_ctx ctx;
     Vbus::Bus vbus;
-    Model::GicD gicd(Model::GIC_V2, 1);
+    Model::GicD gicd(Model::GIC_V2, 1, nullptr);
 
     bool ok = gicd.init();
     ASSERT(ok);
