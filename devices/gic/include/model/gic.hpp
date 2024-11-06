@@ -18,12 +18,15 @@
 #include <platform/log.hpp>
 #include <platform/new.hpp>
 #include <platform/types.hpp>
+#include <platform/utility.hpp>
+#include <platform/vector.hpp>
 #include <vbus/vbus.hpp>
 
 namespace Model {
     class CpuIrqInterface;
     class GicD;
     class GicR;
+    class Gits;
 
     enum { ACCESS_SIZE_32 = 4 };
 
@@ -36,6 +39,7 @@ namespace Model {
 
 class Model::GicD : public Model::IrqController {
     friend GicR;
+    friend Gits;
 
 private:
     struct Banked;
@@ -397,6 +401,13 @@ private:
     Banked *_local{nullptr};
     Irq *_spi{nullptr};
 
+    // LPI support
+    Irq *_lpi{nullptr};
+    uint64 _prop_baser{0};
+    uint64 _pend_baser{0};
+    Vbus::Bus *_mem_bus{nullptr}; // for LPI configuration table reading
+    Vector<cxx::Pair<uint64, Gits *>> _registered_gits;
+
     // simple way to round-robin IRQs when GICv3 is enabled
     atomic<uint16> _vcpu_global_hint{0};
 
@@ -406,16 +417,16 @@ private:
         if (id < MAX_SGI + MAX_PPI)
             return cpu.ppi[id - MAX_SGI];
         else
-            return _spi[id - MAX_SGI - MAX_PPI];
+            return id < LPI_BASE ? _spi[id - MAX_SGI - MAX_PPI] : _lpi[id - LPI_BASE];
     }
 
-    Irq const &irq_object(Banked const &cpu, uint64 const id) const {
+    const Irq &irq_object(Banked const &cpu, uint64 const id) const {
         if (id < MAX_SGI)
             return cpu.sgi[id];
         if (id < MAX_SGI + MAX_PPI)
             return cpu.ppi[id - MAX_SGI];
         else
-            return _spi[id - MAX_SGI - MAX_PPI];
+            return id < LPI_BASE ? _spi[id - MAX_SGI - MAX_PPI] : _lpi[id - LPI_BASE];
     }
 
     enum AccessType {
@@ -536,6 +547,9 @@ private:
         }
         return true;
     }
+
+    void write_its_prop_base(uint64 value) { _prop_baser = value; }
+    void write_its_pend_base(uint64 value) { _pend_baser = value; }
 
     bool change_target(Banked &cpu, const IrqMmioAccess &acc, uint64 const value) {
         if (!acc.is_valid())
@@ -671,24 +685,40 @@ private:
     void reset_status_bitfields_on_vcpu(uint16 vcpu_idx);
     uint64 get_typer() const {
         uint64 itl = configured_irqs() == MAX_IRQ ? 31ull : (configured_irqs() / 32) - 1;
+
+        if (lpi_supported())
+            itl |= (1ULL << 17);                                /* LPI supported */
+
         return itl | (static_cast<uint64>(_num_vcpus - 1) << 5) /* CPU count */
                | (9ULL << 19)                                   /* id bits */
                | (1ULL << 24);                                  /* Aff3 supported */
     }
 
+    bool lpi_supported() const { return _version == IRQCtlrVersion::GIC_V3 && !_registered_gits.is_empty(); }
+
+    bool get_next_pending_irq(Vcpu_id cpu_id, size_t &next);
+
     void update_inj_status_inactive(Vcpu_id cpu_id, uint32 irq_id);
     void update_inj_status_active_or_pending(Vcpu_id cpu_id, IrqState state, uint32 irq_id, bool in_injection);
 
-    static uint16 compute_irq_lines(uint16 desired) { return static_cast<uint16>(min<uint64>(MAX_IRQ, align_up(desired, 32))); }
+    static uint16 compute_irq_lines(uint16 desired) {
+        return static_cast<uint16>(min<uint64>(MAX_IRQ_NO_LPI, align_up(desired, 32)));
+    }
+
+    void assert_lpi(uint32, uint64);
 
 public:
-    GicD(IRQCtlrVersion const version, uint16 num_vcpus, uint16 conf_irqs = MAX_IRQ)
-        : IrqController("GICD"), _version(version), _num_vcpus(num_vcpus), _configured_irqs(compute_irq_lines(conf_irqs)) {}
+    GicD(IRQCtlrVersion const version, uint16 num_vcpus, Vbus::Bus *mem, uint16 conf_irqs = MAX_IRQ_NO_LPI)
+        : IrqController("GICD"), _version(version), _num_vcpus(num_vcpus), _configured_irqs(compute_irq_lines(conf_irqs)),
+          _mem_bus(mem) {}
 
     ~GicD() override {
         delete[] _local;
         delete[] _spi;
+        delete[] _lpi;
     }
+
+    void add_its(uint64 addr, Gits *ptr) { _registered_gits.push_back({addr, ptr}); }
 
     uint16 configured_irqs() const { return _configured_irqs; }
     uint16 configured_spis() const { return static_cast<uint16>(_configured_irqs - MAX_PPI - MAX_SGI); }
@@ -708,8 +738,26 @@ public:
         _spi = new (nothrow) Irq[configured_spis()];
         if (_local == nullptr or _spi == nullptr)
             return false;
+
         for (uint16 i = 0; i < configured_spis(); i++)
             _spi[i].set_id(static_cast<uint16>(MAX_PPI + MAX_SGI + i));
+
+        if (_version == GIC_V3 && _mem_bus != nullptr) {
+            _lpi = new (nothrow) Irq[MAX_IRQ - LPI_BASE];
+            if (_lpi == nullptr) {
+                delete[] _local;
+                delete[] _spi;
+                return false;
+            }
+
+            for (uint16 i = 0; i < (MAX_IRQ - LPI_BASE); ++i) {
+                _lpi[i].enable();
+                _lpi[i].set_id(i + LPI_BASE);
+                _lpi[i].set_group1(true);
+                _lpi[i].prio(PRIORITY_ANY);
+                _lpi[i].configure_hw(false /*non HW*/, 0 /*pINTID doesn't matter*/, true /*edge*/);
+            }
+        }
 
         reset(nullptr); // vctx not used for now
 
@@ -727,7 +775,7 @@ public:
     void deassert_global_line(uint32) override;
     void enable_cpu(CpuIrqInterface *, Vcpu_id) override;
     void disable_cpu(Vcpu_id) override;
-    void assert_msi(uint64, uint32, uint32, IrqAssertionRecord *) override { ABORT_WITH("GICD: no support for MSI yet"); }
+    void assert_msi(uint64, uint32, uint32, IrqAssertionRecord *) override;
 
     bool signal_eoi(uint8) override { return false; }
     bool wait_for_eoi(uint8) override { return false; }
@@ -781,7 +829,7 @@ public:
     bool is_irq_in_injection(Vcpu_id id, uint16 irq_id) const {
         if (id >= _num_vcpus)
             return false;
-        if (irq_id >= configured_irqs())
+        if (irq_id >= configured_irqs() && irq_id < LPI_BASE)
             return false;
 
         const Banked &cpu = _local[id];
@@ -791,7 +839,7 @@ public:
     bool is_irq_in_pending(Vcpu_id id, uint16 irq_id) const {
         if (id >= _num_vcpus)
             return false;
-        if (irq_id >= configured_irqs())
+        if (irq_id >= configured_irqs() && irq_id < LPI_BASE)
             return false;
 
         const Banked &cpu = _local[id];
@@ -805,6 +853,10 @@ private:
     Vcpu_id const _vcpu_id;
     CpuAffinity const _aff;
     bool const _last;
+    static constexpr uint32 GICR_CES = 1u << 1;
+    static constexpr uint32 GICR_ENABLE_LPI = 1u << 0;
+    /* Implementing GICR_CTLR.EnableLPIs as programmable and not reporting GICR_CLTR.CES == 1 is deprecated. */
+    uint32 _ctlr{GICR_CES};
 
     struct Waker {
         static constexpr uint32 SLEEP_BIT = 1u << 1;
@@ -824,7 +876,7 @@ public:
 
     Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
 
-    void reset(const VcpuCtx *) override {}
+    void reset(const VcpuCtx *) override { _ctlr = GICR_CES; }
 
     bool can_receive_irq() const override;
 
@@ -836,4 +888,55 @@ public:
     bool nmi_pending() override {
         return false; // no NMI on ARM
     }
+};
+
+class Model::Gits : public Vbus::Device {
+    uint32 _ctlr{0x80000000};
+
+    uint64 _baser[8]{0};
+
+    uint64 _cbaser{0};
+    uint64 _cwriter{0};
+    uint64 _creadr{0};
+
+    Vbus::Bus *_mem_bus{nullptr}; // reading ITS commands from a guest memory
+    GicD *_distr;
+
+    bool enabled() const { return (_ctlr & 1u) != 0u; }
+
+    void fetch_commands();
+
+    void handle_command(uint64 q0, uint64 q1, uint64 q2, uint64 q3);
+
+    uint64 read_device_table(uint32 dev_id);                         // returns 0 if not found
+    void write_device_table(uint32 dev_id, uint64 itt_addr);
+    uint64 read_translation_table(uint64 itt_base, uint32 event_id); // returns 0 if not found
+    void write_translation_table(uint64 itt_base, uint32 event_id, uint64 value);
+    uint64 read_collection_table(uint16 icid);
+    void write_collection_table(uint16 icid, uint64 rd_base);
+
+    void handle_movi(uint32 dev_id, uint32 event_id, uint16 icid);
+    void handle_mapd(bool valid, uint32 dev_id, uint64 itt_addr, uint8 itt_size);
+    void handle_mapc(bool valid, uint32 rd_base, uint16 icid);
+    void handle_mapti(uint32 dev_id, uint32 event_id, uint32 pintid, uint16 icid);
+
+    bool write_ctlr(uint64 offset, uint8 bytes, uint64 value);
+
+    uint64 read_baser(uint8 index) const;
+    bool write_baser(uint8 index, uint64 value);
+    bool write_cbaser(uint64 value);
+
+    bool mmio_write(uint64 offset, uint8 bytes, uint64 value);
+    bool mmio_read(uint64 offset, uint8 bytes, uint64 &value) const;
+
+public:
+    Gits(Vbus::Bus *mem, GicD *distr);
+    Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
+    void reset(const VcpuCtx *) override {
+        _ctlr = 0x80000000u;
+        _cbaser = 0;
+        _cwriter = 0;
+        _creadr = 0;
+    }
+    void handle_msi(uint32 event_id, uint32 dev_id);
 };

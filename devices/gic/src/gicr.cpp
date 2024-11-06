@@ -32,9 +32,9 @@ enum {
     GICR_STATUSR_END = 0x13,
     GICR_WAKER = 0x14,
     GICR_WAKER_END = 0x17,
-    GICR_PROPBASER = 0x70, // LPIs are not supported
+    GICR_PROPBASER = 0x70,
     GICR_PROPBASER_END = 0x77,
-    GICR_PENDBASER = 0x78, // LPIs are not supported
+    GICR_PENDBASER = 0x78,
     GICR_PENDBASER_END = 0x7f,
     GICR_PIDR2 = 0xffe8,
     GICR_PIDR2_END = 0xffeb,
@@ -65,6 +65,7 @@ enum {
 };
 
 constexpr uint16 GICR_IIDR_IMPLEMENTER = 0x43b;
+constexpr uint64 GICR_TYPER_PLPIS = 1ull;
 
 enum { GICR_SIZE = 0x20000 };
 
@@ -91,8 +92,6 @@ bool
 Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const value) {
     if (offset >= GICR_SIZE)
         return false;
-    if (bytes > ACCESS_SIZE_32)
-        return false;
 
     GicD &gic = *_gic_d;
     ASSERT(_vcpu_id < gic._num_vcpus);
@@ -109,8 +108,16 @@ Model::GicR::mmio_write(uint64 const offset, uint8 const bytes, uint64 const val
 
     switch (offset) {
     case GICR_CTLR ... GICR_CTLR_END:
+        _ctlr = gic.lpi_supported() ? (GICR_CES | (value & GICR_ENABLE_LPI)) : 0;
+        return true;
     case GICR_PROPBASER ... GICR_PROPBASER_END:
+        if ((_ctlr & GICR_ENABLE_LPI) == 0u)
+            gic.write_its_prop_base(value);
+        return true;
     case GICR_PENDBASER ... GICR_PENDBASER_END:
+        if ((_ctlr & GICR_ENABLE_LPI) == 0u)
+            gic.write_its_pend_base(value);
+        return true;
     case GICR_IGRPMODR0 ... GICR_IGRPMODR0_END:
     case GICR_NSACR ... GICR_NSACR_END:
         /* RAZ/WI */
@@ -189,15 +196,14 @@ Model::GicR::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) co
                      | static_cast<uint64>(_aff.aff1()) << 40 | static_cast<uint64>(_aff.aff0()) << 32;
         ret |= static_cast<uint64>(_aff.aff1()) << 16 | static_cast<uint64>(_aff.aff0()) << 8; /* processor id */
         ret |= (_last ? 1ull : 0ull) << 4;                                                     /* last re-distributor */
+        if (gic.lpi_supported())
+            ret |= GICR_TYPER_PLPIS;                                                           /* supports physical LPIs */
         return Model::GicD::read_register(offset, GICR_TYPER, GICR_TYPER_END, bytes, ret, value);
     }
     case GICR_WAKER ... GICR_WAKER_END: {
         return Model::GicD::read_register(offset, GICR_WAKER, GICR_WAKER_END, bytes, _waker.value, value);
     }
     }
-
-    if (bytes > ACCESS_SIZE_32)
-        return false;
 
     GicD::IrqMmioAccess acc{.base_abs = 0, // Filled by the logic below
                             .irq_base = 0,
@@ -210,13 +216,17 @@ Model::GicR::mmio_read(uint64 const offset, uint8 const bytes, uint64 &value) co
 
     switch (offset) {
     case GICR_CTLR ... GICR_CTLR_END:
-        return Model::GicD::read_register(offset, GICR_CTLR, GICR_CTLR_END, bytes, 0ull, value);
+        return Model::GicD::read_register(offset, GICR_CTLR, GICR_CTLR_END, bytes, gic.lpi_supported() ? _ctlr : 0ull, value);
     case GICR_IIDR ... GICR_IIDR_END:
         return Model::GicD::read_register(offset, GICR_IIDR, GICR_IIDR_END, bytes, GICR_IIDR_IMPLEMENTER, value);
     case GICR_PIDR2 ... GICR_PIDR2_END:
         return Model::GicD::read_register(offset, GICR_PIDR2, GICR_PIDR2_END, bytes, 3ull << 4, value);
     case GICR_PROPBASER ... GICR_PROPBASER_END:
+        value = gic._prop_baser;
+        return true;
     case GICR_PENDBASER ... GICR_PENDBASER_END:
+        value = gic._pend_baser;
+        return true;
     case GICR_IGRPMODR0 ... GICR_IGRPMODR0_END:
     case GICR_NSACR ... GICR_NSACR_END:
         /* RAZ/WI */

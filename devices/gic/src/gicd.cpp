@@ -10,11 +10,13 @@
 #include <model/cpu_affinity.hpp>
 #include <model/gic.hpp>
 #include <model/irq_controller.hpp>
+#include <model/simple_as.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/atomic.hpp>
 #include <platform/bits.hpp>
 #include <platform/bitset.hpp>
 #include <platform/compiler.hpp>
+#include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/types.hpp>
 #include <vbus/vbus.hpp>
@@ -510,8 +512,10 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
 
 bool
 Model::GicD::config_irq(Vcpu_id const cpu_id, uint32 const irq_id, bool const hw, uint16 const pintid, bool edge) {
-    if (irq_id >= configured_irqs())
+    if (irq_id >= configured_irqs()) {
+        WARN("irq %u more than configured %u", irq_id, configured_irqs());
         return false;
+    }
     if (cpu_id >= _num_vcpus)
         return false;
 
@@ -570,11 +574,27 @@ Model::GicD::deassert_global_line(uint32 const irq_id) {
 }
 
 bool
-Model::GicD::has_irq_in_injection(Vcpu_id const cpu_id) {
+Model::GicD::has_irq_in_injection(Vcpu_id cpu_id) {
     Banked &cpu = _local[cpu_id];
-    size_t irq_id = cpu.in_injection_irqs.first_set(0, configured_irqs() - 1);
 
-    return irq_id != AtomicBitset<MAX_IRQ>::NOT_FOUND;
+    return cpu.in_injection_irqs.first_set(0, configured_irqs() - 1) != AtomicBitset<MAX_IRQ>::NOT_FOUND
+           || cpu.in_injection_irqs.first_set(LPI_BASE, MAX_IRQ - 1) != AtomicBitset<MAX_IRQ>::NOT_FOUND;
+}
+
+bool
+Model::GicD::get_next_pending_irq(Vcpu_id cpu_id, size_t &next) {
+    Banked &cpu = _local[cpu_id];
+    const size_t irq_id = next < LPI_BASE ? cpu.pending_irqs.first_set(next, configured_irqs() - 1) :
+                                            cpu.pending_irqs.first_set(next, MAX_IRQ - 1);
+    if (irq_id == AtomicBitset<MAX_IRQ>::NOT_FOUND) {
+        if (next < LPI_BASE) {
+            next = LPI_BASE;
+            return get_next_pending_irq(cpu_id, next);
+        }
+        return false;
+    }
+    next = irq_id;
+    return true;
 }
 
 Model::GicD::Irq *
@@ -585,11 +605,11 @@ Model::GicD::highest_irq(Vcpu_id const cpu_id, bool redirect_irq) {
     const LocalIrqController *gic_r = _local[cpu_id].notify->local_irq_ctlr();
 
     do {
-        irq_id = cpu.pending_irqs.first_set(irq_id, configured_irqs() - 1);
-        if (irq_id == AtomicBitset<MAX_IRQ>::NOT_FOUND)
+        if (!get_next_pending_irq(cpu_id, irq_id))
             break;
 
         Irq &irq = irq_object(cpu, irq_id);
+
         IrqInjectionInfoUpdate cur = irq.injection_info.read();
 
         if (((irq.group0() && _ctlr.group0_enabled()) || (irq.group1() && _ctlr.group1_enabled())) && cur.is_targeting_cpu(cpu_id)
@@ -634,7 +654,6 @@ Model::GicD::pending_irq(Vcpu_id const cpu_id, Lr &lr, uint8 min_priority) {
     Irq *irq = highest_irq(cpu_id, true);
     if ((irq == nullptr) || (min_priority < irq->prio()))
         return false;
-    ASSERT(irq->id() < configured_irqs());
 
     IrqInjectionInfoUpdate desired, cur;
     uint8 sender_id;
@@ -754,10 +773,9 @@ Model::GicD::update_inj_status_active_or_pending(Vcpu_id const cpu_id, IrqState 
 void
 Model::GicD::update_inj_status(Vcpu_id const cpu_id, uint32 irq_id, IrqState state, bool in_injection) {
     ASSERT(cpu_id < _num_vcpus);
-    ASSERT(irq_id < configured_irqs());
+    ASSERT(irq_id < configured_irqs() || irq_id >= LPI_BASE);
     Banked &cpu = _local[cpu_id];
     Irq &irq = irq_object(cpu, irq_id);
-
     if (!in_injection) {
         ASSERT(state == PENDING or state == INACTIVE);
         cpu.in_injection_irqs.clr(irq.id());
@@ -1165,4 +1183,49 @@ Model::GicD::reset(const VcpuCtx *) {
         _spi[spi].reset(1);
     }
     _ctlr.value = 0;
+}
+
+void
+Model::GicD::assert_msi(uint64 msi_addr, uint32 msi_data, uint32 rid, IrqAssertionRecord *) {
+    _registered_gits.forall([&](size_t, const auto &p) {
+        if (p.first == msi_addr)
+            p.second->handle_msi(msi_data, rid);
+    });
+}
+
+void
+Model::GicD::assert_lpi(uint32 pintid, uint64 target_cpu) {
+    ASSERT(pintid < MAX_IRQ);
+    ASSERT(pintid >= LPI_BASE);
+
+    const uint32 lpi_id = pintid - LPI_BASE;
+
+    Irq &irq = _lpi[lpi_id];
+    if (irq.pending())
+        return;
+
+    ASSERT(_prop_baser != 0u);
+    const uint64 conf_tbl_base = _prop_baser & 0xFFFFFFFFF000ull;
+
+    uint8 lpi_prop = 0;
+    if (Errno::NONE
+        == Model::SimpleAS::read_bus(*_mem_bus, conf_tbl_base + lpi_id, reinterpret_cast<char *>(&lpi_prop), sizeof(lpi_prop))) {
+        if ((lpi_prop & 1) == 0u) {
+            INFO("LPI is disabled");
+            return;
+        }
+
+        irq.prio(lpi_prop & 0xFCu);
+    } else {
+        WARN("%s: fail to read LPI configuration table entry 0x%llx", __func__, conf_tbl_base);
+        return;
+    }
+    auto target = IrqTarget(IrqTarget::CPU_ID, target_cpu);
+
+    IrqInjectionInfoUpdate update(0);
+
+    update.set_target_cpu(target);
+    update.set_pending();
+    irq.injection_info.set(update);
+    notify_target(irq, target);
 }

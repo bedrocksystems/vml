@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2020 BlueRock Security, Inc.
+ * Copyright (C) 2020-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -25,7 +25,9 @@ namespace Model {
         MAX_PPI = 16,
         SPI_BASE = PPI_BASE + MAX_PPI,
         MAX_SPI = 992,
-        MAX_IRQ = 1024 - 4,
+        MAX_IRQ_NO_LPI = 1024 - 4,
+        LPI_BASE = 8192,
+        MAX_IRQ = LPI_BASE + 1024,
     };
 
     struct IrqInfo {
