@@ -1211,7 +1211,7 @@ Model::GicD::assert_lpi(uint32 pintid, uint64 target_cpu) {
     if (Errno::NONE
         == Model::SimpleAS::read_bus(*_mem_bus, conf_tbl_base + lpi_id, reinterpret_cast<char *>(&lpi_prop), sizeof(lpi_prop))) {
         if ((lpi_prop & 1) == 0u) {
-            INFO("LPI is disabled");
+            DEBUG("LPI is disabled");
             return;
         }
 

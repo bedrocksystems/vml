@@ -222,7 +222,7 @@ Model::Gits::handle_command(uint64 q0, uint64 q1, uint64 q2, uint64) {
         handle_movi(dev_id, event_id, icid);
         break;
     case INT:
-        ASSERT(0);
+        handle_msi(event_id, dev_id);
         break;
     case CLEAR:
         ASSERT(0);
