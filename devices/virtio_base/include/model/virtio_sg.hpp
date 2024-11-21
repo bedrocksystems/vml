@@ -465,8 +465,8 @@ public:
         Virtio::Sg::LinearizedDesc *_cur_desc;
         Virtio::Sg::DescMetadata *_cur_desc_metadata;
     };
-    Iterator begin() const { return Iterator{&_desc_chain[0], &_desc_chain_metadata[0]}; }
-    Iterator end() const { return Iterator{&_desc_chain[_active_chain_length], &_desc_chain_metadata[_active_chain_length]}; }
+    Iterator begin() const { return Iterator{_desc_chain, _desc_chain_metadata}; }
+    Iterator end() const { return Iterator{_desc_chain + _active_chain_length, _desc_chain_metadata + _active_chain_length}; }
 
     /** VIRTIO Driver Utilities */
     // This should only be used once the contents of the [_desc_chain] and [_desc_chain_metadata]
