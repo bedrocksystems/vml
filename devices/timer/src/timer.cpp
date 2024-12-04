@@ -13,7 +13,8 @@
 #include <platform/signal.hpp>
 
 void
-Model::Timer::timer_loop(const Platform_ctx*, Model::Timer* timer) {
+Model::Timer::timer_loop(const Platform_ctx*, void* arg) {
+    Model::Timer* timer = static_cast<Model::Timer*>(arg);
     ASSERT(timer != nullptr);
 
     timer->set_ready();

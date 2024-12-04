@@ -89,9 +89,9 @@ public:
      *  \post Fractional ownership of an initialized timer object (part of the ownership is
      *  kept by the thread).
      *  \param ctx Platform specific data
-     *  \param timer The timer object that will be partially owned by the timer loop thread
+     *  \param arg The timer object that will be partially owned by the timer loop thread
      */
-    static void timer_loop(const Platform_ctx *ctx, Model::Timer *timer);
+    static void timer_loop(const Platform_ctx *ctx, void *arg);
 
     void terminate();
 
