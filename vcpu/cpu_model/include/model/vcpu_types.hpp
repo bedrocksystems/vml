@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2020 BlueRock Security, Inc.
+ * Copyright (C) 2020-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <platform/context.hpp>
 #include <platform/types.hpp>
 
 typedef uint64 Vcpu_id;
@@ -26,12 +25,11 @@ enum class CtxInfo {
 };
 
 struct VcpuCtx {
-    const Platform_ctx* ctx;
     RegAccessor* const regs;
     const Vcpu_id vcpu_id;
     CtxInfo info{CtxInfo::VMEXIT};
 
-    VcpuCtx(const Platform_ctx* ctxv, RegAccessor* regsv, Vcpu_id vcpu_idv) : ctx(ctxv), regs(regsv), vcpu_id(vcpu_idv) {}
+    VcpuCtx(RegAccessor* regsv, Vcpu_id vcpu_idv) : regs(regsv), vcpu_id(vcpu_idv) {}
 
     VcpuCtx(VcpuCtx&&) = delete;
     VcpuCtx(const VcpuCtx&) = delete;

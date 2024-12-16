@@ -96,7 +96,7 @@ main() {
     ASSERT(ok == true);
 
     RegAccessor regs(ctx, 0);
-    VcpuCtx vctx{nullptr, &regs, 0};
+    VcpuCtx vctx{&regs, 0};
     uint64 val;
 
     INFO("Accessing the GIC model");
