@@ -1161,7 +1161,7 @@ Model::GicD::reset_status_bitfields_on_vcpu(uint16 vcpu_idx) {
 }
 
 void
-Model::GicD::reset(const VcpuCtx *) {
+Model::GicD::reset() {
     for (uint16 cpu = 0; cpu < _num_vcpus; cpu++) {
         for (uint8 i = 0; i < MAX_SGI; i++) {
             _local[cpu].sgi[i].reset(static_cast<uint8>(1u << cpu));

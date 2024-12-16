@@ -10,7 +10,6 @@
 
 #include <model/iommu_interface.hpp>
 #include <model/irq_controller.hpp>
-#include <model/vcpu_types.hpp>
 #include <model/virtio.hpp>
 #include <model/virtio_common.hpp>
 #include <platform/errno.hpp>
@@ -31,7 +30,7 @@ struct Model::VirtioSockConfig {
 
 class Model::VirtioSockCallback {
 public:
-    virtual void device_reset(const VcpuCtx *ctx) = 0;
+    virtual void device_reset() = 0;
     virtual void shutdown() = 0;
 
     // IOMMU callbacks
@@ -80,7 +79,7 @@ public:
 
     void signal();
 
-    void reset(const VcpuCtx *) override;
+    void reset() override;
     void shutdown() override;
 
     // Override [Model::IOMMUManagedDevice] interfaces

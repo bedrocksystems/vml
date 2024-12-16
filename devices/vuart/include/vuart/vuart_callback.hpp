@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 BlueRock Security, Inc.
+ * Copyright (C) 2020-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -33,6 +33,6 @@ public:
  */
 class Vuart::LifeCycleCallbacks {
 public:
-    virtual void device_reset(const VcpuCtx *) = 0;
+    virtual void device_reset() = 0;
     virtual void shutdown() = 0;
 };

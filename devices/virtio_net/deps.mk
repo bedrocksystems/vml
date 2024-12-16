@@ -1,3 +1,3 @@
-LIBS = vbus virtio_base irq_controller cpu_model $(PLATFORM)
+LIBS = vbus virtio_base irq_controller $(PLATFORM)
 
 $(eval $(call dep_hook,virtio_net,$(LIBS)))

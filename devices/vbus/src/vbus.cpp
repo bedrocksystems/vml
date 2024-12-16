@@ -139,34 +139,34 @@ Vbus::Bus::register_device(Device* d, mword addr, mword bytes) {
 }
 
 void
-Vbus::Bus::reset_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg) {
+Vbus::Bus::reset_device_cb(Vbus::Bus::DeviceEntry* entry, void*) {
     if (entry->device->type() != Device::IRQ_CONTROLLER)
-        entry->device->reset(arg);
+        entry->device->reset();
 }
 
 void
-Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg) {
+Vbus::Bus::reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, void*) {
     if (entry->device->type() == Device::IRQ_CONTROLLER)
-        entry->device->reset(arg);
+        entry->device->reset();
 }
 
 void
-Vbus::Bus::reset(const VcpuCtx& vcpu_ctx) const {
+Vbus::Bus::reset() const {
     _vbus_lock.renter();
-    iter_devices_unlocked(Vbus::Bus::reset_device_cb, &vcpu_ctx);
-    iter_devices_unlocked(Vbus::Bus::reset_irq_ctlr_cb, &vcpu_ctx);
+    iter_devices_unlocked(Vbus::Bus::reset_device_cb, static_cast<void*>(nullptr));
+    iter_devices_unlocked(Vbus::Bus::reset_irq_ctlr_cb, static_cast<void*>(nullptr));
     _vbus_lock.rexit();
 }
 
 void
-Vbus::Bus::shutdown_device_cb(Vbus::Bus::DeviceEntry* entry, const void*) {
+Vbus::Bus::shutdown_device_cb(Vbus::Bus::DeviceEntry* entry, void*) {
     entry->device->shutdown();
 }
 
 void
 Vbus::Bus::shutdown() const {
     VERBOSE("Vbus::Bus::shutdown %p", this);
-    iter_devices(Vbus::Bus::shutdown_device_cb, static_cast<const void*>(nullptr));
+    iter_devices(Vbus::Bus::shutdown_device_cb, static_cast<void*>(nullptr));
 }
 
 void

@@ -262,7 +262,7 @@ public:
             return false;
         if (!_state_lock.init(ctx))
             return false;
-        reset(nullptr);
+        reset();
         return true;
     }
 
@@ -281,7 +281,7 @@ public:
 
     /*! \brief Reset the PL011 to its initial state
      */
-    void reset(const VcpuCtx *vctx) override {
+    void reset() override {
         Platform::MutexGuard guard(_state_lock);
 
         _ilpr = 0;
@@ -313,7 +313,7 @@ public:
         _sig_notify_empty_space.sig();
 
         if (_lifecycle_callbacks != nullptr) {
-            _lifecycle_callbacks->device_reset(vctx);
+            _lifecycle_callbacks->device_reset();
         }
     }
 

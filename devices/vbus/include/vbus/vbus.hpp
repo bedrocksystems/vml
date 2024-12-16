@@ -100,7 +100,7 @@ public:
      *  \post The ownership of the object is returned to the caller. The device is in its initial
      *        state.
      */
-    virtual void reset(const VcpuCtx* vcpu_ctx) = 0;
+    virtual void reset() = 0;
 
     /*! \brief Called during a shutdown event
      *  \pre The caller has full ownership of a valid Device object which can be in any state.
@@ -212,7 +212,7 @@ public:
      *  \post Ownership of the vbus is unchanged. All devices must have transitioned from some
      *        state to their initial state.
      */
-    void reset(const VcpuCtx& vcpu_ctx) const;
+    void reset() const;
 
     /*! \brief Notify all devices on the bus of a shutdown event
      *  \pre Fractional ownership of a valid virtual bus.
@@ -256,15 +256,15 @@ private:
      * \prepost [_vbus_lock] is read-locked (via [RWLock::renter()]).
      */
     template<typename T>
-    void iter_devices_unlocked(void (*f)(Vbus::Bus::DeviceEntry* de, T*), T* arg) const {
+    void iter_devices_unlocked(void (*f)(Vbus::Bus::DeviceEntry* de, T), T arg) const {
         _devices.iter(f, arg);
     }
 
-    static void reset_device_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
+    static void reset_device_cb(Vbus::Bus::DeviceEntry* entry, void*);
 
-    static void reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, const VcpuCtx* arg);
+    static void reset_irq_ctlr_cb(Vbus::Bus::DeviceEntry* entry, void*);
 
-    static void shutdown_device_cb(Vbus::Bus::DeviceEntry* entry, const void*);
+    static void shutdown_device_cb(Vbus::Bus::DeviceEntry* entry, void*);
 
     static void rm_device_cb(RangeNode<mword>* entry);
 

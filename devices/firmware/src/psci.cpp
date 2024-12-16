@@ -200,7 +200,7 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
 
         INFO("System reset requested by the guest.");
         Lifecycle::stop_system(vctx);
-        vbus.reset(vctx);
+        vbus.reset();
 
         Lifecycle::notify_system_reset(vctx);
 

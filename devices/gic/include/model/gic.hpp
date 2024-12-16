@@ -759,13 +759,13 @@ public:
             }
         }
 
-        reset(nullptr); // vctx not used for now
+        reset();
 
         return true;
     }
 
     Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
-    void reset(const VcpuCtx *) override;
+    void reset() override;
 
     bool config_irq(Vcpu_id, uint32 irq_id, bool hw, uint16 pintid, bool edge) override;
     bool config_spi(uint32 vintid, bool hw, uint16 pintid, bool edge) override;
@@ -876,7 +876,7 @@ public:
 
     Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
 
-    void reset(const VcpuCtx *) override { _ctlr = GICR_CES; }
+    void reset() override { _ctlr = GICR_CES; }
 
     bool can_receive_irq() const override;
 
@@ -932,7 +932,7 @@ class Model::Gits : public Vbus::Device {
 public:
     Gits(Vbus::Bus *mem, GicD *distr);
     Vbus::Err access(Vbus::Access, const VcpuCtx *, Vbus::Space, mword, uint8, uint64 &) override;
-    void reset(const VcpuCtx *) override {
+    void reset() override {
         _ctlr = 0x80000000u;
         _cbaser = 0;
         _cwriter = 0;

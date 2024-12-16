@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 BlueRock Security, Inc.
+ * Copyright (C) 2020-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -522,7 +522,7 @@ public:
      *  \pre Partial ownership of this device
      *  \post Ownership unchanged
      */
-    void reset(const VcpuCtx *) override {}
+    void reset() override {}
 
     /*! \brief Converts a GPA to an address valid for the VMM
      *  \pre Partial ownership of this device

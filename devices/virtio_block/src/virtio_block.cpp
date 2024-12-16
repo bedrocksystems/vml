@@ -7,7 +7,6 @@
  */
 
 #include <model/iommu_interface.hpp>
-#include <model/vcpu_types.hpp>
 #include <model/virtio_block.hpp>
 #include <model/virtio_common.hpp>
 #include <platform/errno.hpp>
@@ -34,9 +33,9 @@ Model::VirtioBlock::signal() {
 }
 
 void
-Model::VirtioBlock::reset(const VcpuCtx *ctx) {
+Model::VirtioBlock::reset() {
     if (_virtio_block_callback != nullptr)
-        _virtio_block_callback->device_reset(ctx);
+        _virtio_block_callback->device_reset();
 
     reset_virtio();
 }

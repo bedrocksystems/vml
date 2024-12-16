@@ -11,7 +11,6 @@
 #include <model/iommu_interface.hpp>
 #include <model/irq_controller.hpp>
 #include <model/simple_as.hpp>
-#include <model/vcpu_types.hpp>
 #include <model/virtio.hpp>
 #include <model/virtio_common.hpp>
 #include <model/virtio_sg.hpp>
@@ -39,7 +38,7 @@ struct Model::VirtioConsoleConfig {
 
 class Model::VirtioConsoleCallback {
 public:
-    virtual void device_reset(const VcpuCtx *ctx) = 0;
+    virtual void device_reset() = 0;
     virtual void shutdown() = 0;
 };
 
@@ -88,14 +87,14 @@ public:
     bool to_guest(const char *buff, size_t size_bytes);
     virtual size_t from_guest(char *out_buf, size_t size_bytes);
     void wait_for_available_buffer() { _sig_notify_empty_space.wait(); }
-    void reset(const VcpuCtx *ctx) override {
+    void reset() override {
         _rx_buff.conclude_chain_use(device_queue(RX));
         _tx_buff.conclude_chain_use(device_queue(TX));
         _sig_notify_empty_space.sig();
         reset_virtio();
 
         if (_console_callback != nullptr) {
-            _console_callback->device_reset(ctx);
+            _console_callback->device_reset();
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 BlueRock Security, Inc.
+ * Copyright (C) 2020-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -67,7 +67,7 @@ public:
         return Vbus::OK;
     }
 
-    void reset(const VcpuCtx *) override {}
+    void reset() override {}
 
 private:
     const uint64 _write_off;
