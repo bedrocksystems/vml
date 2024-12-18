@@ -45,7 +45,7 @@ public:
      *  \post The ownership of the object is returned to the caller. The device is in its initial
      *        state.
      */
-    virtual void reset(const VcpuCtx* vcpu_ctx) = 0;
+    virtual void reset() = 0;
 
     /*! \brief Query the name of the device
      *  \pre The caller has partial ownership of a valid Device object
@@ -126,7 +126,7 @@ public:
         return Err::OK;
     }
 
-    void reset(const VcpuCtx*) override { _value = _reset_value; }
+    void reset() override { _value = _reset_value; }
 };
 
 class Msr::BusStats {
@@ -189,7 +189,7 @@ public:
      *  \post Ownership of the bus is unchanged. All registers must have transitioned from some
      *        state to their initial state.
      */
-    void reset(const VcpuCtx& vcpu_ctx);
+    void reset();
 
     /*! \brief Debug only: control the trace of the access to the bus
      *  \param enabled Should accesses be traced?
