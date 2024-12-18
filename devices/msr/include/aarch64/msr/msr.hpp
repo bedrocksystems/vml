@@ -445,7 +445,7 @@ public:
         return Err::OK;
     }
 
-    void reset(const VcpuCtx*) override {}
+    void reset() override {}
 };
 
 class Msr::IccSgi1rEl1 : public RegisterBase {
@@ -457,7 +457,7 @@ public:
 
     Err access(Vbus::Access, const VcpuCtx*, uint64&) override;
 
-    void reset(const VcpuCtx*) override {}
+    void reset() override {}
 };
 
 class Msr::CntpCtl : public Register {
@@ -507,7 +507,7 @@ public:
         return Err::UPDATE_REGISTER;           // Tell the VCPU to update the relevant physical
                                                // register
     }
-    void reset(const VcpuCtx*) override {}
+    void reset() override {}
 };
 
 class Msr::SctlrEl1 : public Msr::RegisterBase {
@@ -515,7 +515,7 @@ public:
     SctlrEl1(const char* name, Msr::Id reg_id) : Msr::RegisterBase(name, reg_id) {}
 
     Err access(Vbus::Access access, const VcpuCtx* vcpu, uint64& res) override;
-    void reset(const VcpuCtx*) override {}
+    void reset() override {}
 };
 
 class Msr::MdscrEl1 : public Msr::Register {
@@ -543,7 +543,7 @@ public:
     explicit CntpctEl0() : RegisterBase("CNTPCT_EL0", CNTPCT_EL0) {}
 
     Err access(Vbus::Access access, const VcpuCtx* vctx, uint64& value) override;
-    void reset(const VcpuCtx*) override {}
+    void reset() override {}
 };
 
 class Msr::CntpTval : public Register {

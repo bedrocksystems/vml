@@ -29,9 +29,9 @@ Msr::BaseBus::register_device(RegisterBase *r, mword id) {
 }
 
 void
-Msr::BaseBus::reset(const VcpuCtx &vcpu_ctx) {
+Msr::BaseBus::reset() {
     for (auto it = _devices.begin(); it != _devices.end(); ++it) {
-        it->reset(&vcpu_ctx);
+        it->reset();
     }
 }
 
