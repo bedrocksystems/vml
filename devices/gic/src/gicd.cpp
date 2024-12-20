@@ -1164,7 +1164,9 @@ void
 Model::GicD::reset() {
     for (uint16 cpu = 0; cpu < _num_vcpus; cpu++) {
         for (uint8 i = 0; i < MAX_SGI; i++) {
-            _local[cpu].sgi[i].reset(static_cast<uint8>(1u << cpu));
+            _local[cpu].sgi[i].reset((_version >= IRQCtlrVersion::GIC_V3) || (cpu >= static_cast<uint16>(Model::GICV2_MAX_CPUS)) ?
+                                         static_cast<uint8>(0u) :
+                                         static_cast<uint8>(1u << cpu));
             /*
              * The spec says: Whether SGIs are permanently enabled, or can be enabled and disabled
              * by writes to the GICD_ISENABLERn and GICD_ICENABLERn, is IMPLEMENTATION DEFINED.
@@ -1173,8 +1175,11 @@ Model::GicD::reset() {
              */
             _local[cpu].sgi[i].enable();
         }
+
         for (uint8 i = 0; i < MAX_PPI; i++)
-            _local[cpu].ppi[i].reset(static_cast<uint8>(1u << cpu));
+            _local[cpu].ppi[i].reset((_version >= IRQCtlrVersion::GIC_V3) || (cpu >= static_cast<uint16>(Model::GICV2_MAX_CPUS)) ?
+                                         static_cast<uint8>(0u) :
+                                         static_cast<uint8>(1u << cpu));
 
         reset_status_bitfields_on_vcpu(cpu);
     }
