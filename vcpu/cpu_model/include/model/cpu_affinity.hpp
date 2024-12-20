@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2021 BlueRock Security, Inc.
+ * Copyright (C) 2021-2024 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -35,8 +35,8 @@ public:
             e = INVALID_VCPU_ID;
     }
 
-    // Limit to 16 CPUs at the moment. Could change in the future.
-    static constexpr uint8 MAX_VCPU_PER_CLUSTER = 16;
+    // TODO: Make it more dynamic
+    static constexpr uint8 MAX_VCPU_PER_CLUSTER = 255;
 
     Vcpu_id vcpu_id(uint8 id_in_cluster) const {
         if (id_in_cluster >= MAX_VCPU_PER_CLUSTER)
