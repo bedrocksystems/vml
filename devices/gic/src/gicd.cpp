@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2024 BlueRock Security, Inc.
+ * Copyright (C) 2019-2025 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -77,7 +77,9 @@ enum {
     GICD_IROUTER = 0x6100,
     GICD_IROUTER_END = 0x7fdf,
     GICD_RESERVED_20 = 0x7fe0,
-    GICD_RESERVED_20_END = 0xbfff,
+    GICD_RESERVED_20_END = 0x7fff,
+    GICD_IROUTER_EXT = 0x8000,
+    GICD_IROUTER_EXT_END = 0x9FFF,
     GICD_IMPLDEF_0 = 0xc000,
     GICD_IMPLDEF_0_END = 0xffcf,
     GICD_PIDR4 = 0xffd0,
@@ -337,6 +339,11 @@ Model::GicD::mmio_write(Vcpu_id const cpu_id, uint64 const offset, uint8 const b
     switch (offset) {
     case GICD_IROUTER ... GICD_IROUTER_END:
         return write_irouter(cpu, offset, bytes, value);
+    case GICD_IROUTER_EXT ... GICD_IROUTER_EXT_END:
+        // Guest may try to access these registers even if the ESPI bit is not set in type register.
+        // Also as per specs [12.9.23] the registers are RES0 so access should be successful.
+        // Since the accesses are 64-bit, not handling here will return access error which will result in an abort.
+        return true;
     }
 
     if (bytes > ACCESS_SIZE_32)
@@ -493,6 +500,13 @@ Model::GicD::mmio_read(Vcpu_id const cpu_id, uint64 const offset, uint8 const by
 
         return true;
     }
+
+    case GICD_IROUTER_EXT ... GICD_IROUTER_EXT_END:
+        // Guest may try to access these registers even if the ESPI bit is not set in type register.
+        // Also as per specs [12.9.23] the registers are RES0 so access should be successful.
+        // Since the accesses are 64-bit, not handling here will return access error which will result in an abort.
+        value = 0;
+        return true;
     }
 
     if (bytes > ACCESS_SIZE_32)
