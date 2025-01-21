@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2020-2024 BlueRock Security, Inc.
+ * Copyright (C) 2020-2025 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -54,11 +54,6 @@ enum PsciResult : int32 {
     INVALID_ADDRESS = -9
 };
 
-static constexpr uint32
-decode_cpu_id(uint64 arg) {
-    return static_cast<uint32>(arg | ((arg >> 8) & 0xffull << 24));
-}
-
 static uint64
 start_cpu(RegAccessor &arch, Vbus::Bus &vbus) {
     enum Model::Cpu::StartErr err;
@@ -78,10 +73,10 @@ start_cpu(RegAccessor &arch, Vbus::Bus &vbus) {
         mode = Model::Cpu::BITS_64;
     }
 
-    uint32 cpu_id = decode_cpu_id(arch.gpr(1));
-    Vcpu_id vid = cpu_affinity_to_id(CpuAffinity(cpu_id));
+    // This parameter contains a copy of the affinity fields of the MPIDR register
+    Vcpu_id vid = cpu_affinity_to_id(CpuAffinity(arch.gpr(1)));
     if (vid == INVALID_VCPU_ID) {
-        WARN("Guest is trying to start VCPU#%u that is not configured by the VMM", cpu_id);
+        WARN("Guest is trying to start VCPU#%llu that is not configured by the VMM", arch.gpr(1));
         return static_cast<uint64>(INVALID_PARAMETERS);
     }
 
@@ -152,7 +147,7 @@ Firmware::Psci::smc_call_service(const VcpuCtx &vctx, RegAccessor &arch, Vbus::B
         return WFI;
     case AFFINITY_INFO_32:
     case AFFINITY_INFO_64: {
-        Vcpu_id vcpu_id = cpu_affinity_to_id(CpuAffinity(decode_cpu_id(arch.gpr(1))));
+        Vcpu_id vcpu_id = cpu_affinity_to_id(CpuAffinity(arch.gpr(1)));
         uint64 aff_level = arch.gpr(2);
 
         if (aff_level != 0) {
