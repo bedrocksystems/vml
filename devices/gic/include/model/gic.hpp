@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2024 BlueRock Security, Inc.
+ * Copyright (C) 2019-2025 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -687,11 +687,13 @@ private:
         uint64 itl = configured_irqs() == MAX_IRQ ? 31ull : (configured_irqs() / 32) - 1;
 
         if (lpi_supported())
-            itl |= (1ULL << 17);                                /* LPI supported */
+            itl |= (1ULL << 17); /* LPI supported */
 
-        return itl | (static_cast<uint64>(_num_vcpus - 1) << 5) /* CPU count */
-               | (9ULL << 19)                                   /* id bits */
-               | (1ULL << 24);                                  /* Aff3 supported */
+        return itl
+               | (static_cast<uint64>(min(_num_vcpus, static_cast<uint16>(8)) - 1)
+                  << 5)        /* No of PEs that can be used without affinity routing. It is a 3bit field. */
+               | (9ULL << 19)  /* id bits */
+               | (1ULL << 24); /* Aff3 supported */
     }
 
     bool lpi_supported() const { return _version == IRQCtlrVersion::GIC_V3 && !_registered_gits.is_empty(); }
