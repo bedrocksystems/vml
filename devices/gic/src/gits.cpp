@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2024 BlueRock Security, Inc.
+ * Copyright (C) 2024-2025 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -262,8 +262,14 @@ void
 Model::Gits::fetch_commands() {
     if ((_cbaser >> 63) == 0u)
         return;
-    while (_cwriter != _creadr) {
-        static constexpr uint64 COMMAND_SIZE = 32;
+
+    static constexpr uint64 COMMAND_SIZE = 32;
+    // GITS_CBASER: Size bits [7:0] The number of 4KB pages of physical memory allocated to the command queue, minus one
+    const uint64 cbaser_size = ((_cbaser & 0xFFFull) + 1) * PAGE_SIZE;
+    // To make sure that we do not loop infinitely over command queue ring-buffer due to some error.
+    uint64 max_iterations = cbaser_size / COMMAND_SIZE;
+
+    while ((_cwriter != _creadr) and (0u != max_iterations--)) {
         const uint64 its_command_addr = (_cbaser & 0xFFFFFFFFFF000ull) + _creadr;
         uint64 its_command[4] = {0, 0, 0, 0};
         if (Errno::NONE
@@ -276,7 +282,6 @@ Model::Gits::fetch_commands() {
         }
 
         _creadr += COMMAND_SIZE;
-        const uint64 cbaser_size = ((_cwriter & 0xFFFull) + 1) * PAGE_SIZE;
         if (_creadr >= cbaser_size)
             _creadr = 0;
     }
