@@ -372,6 +372,6 @@ Model::Gits::handle_msi(uint32 event_id, uint32 dev_id) {
         WARN("%s: invalid rd base", __func__);
         return;
     }
-    ASSERT(ic_entry < 16);
+
     _distr->assert_lpi(pintid, static_cast<uint8>(ic_entry));
 }
