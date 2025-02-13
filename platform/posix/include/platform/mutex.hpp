@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 BlueRock Security, Inc.
+ * Copyright (C) 2021-2025 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -8,6 +8,7 @@
 #pragma once
 
 #include <mutex>
+#include <platform/compiler.hpp>
 #include <platform/context.hpp>
 #include <platform/errno.hpp>
 
@@ -20,7 +21,7 @@ namespace Platform {
     class MutexGuard;
 }
 
-class Platform::Mutex : public std::mutex {
+class CAPABILITY("mutex") Platform::Mutex : public std::mutex {
 public:
     bool init([[maybe_unused]] const Platform_ctx* ctx = nullptr) { return true; }
 
@@ -28,17 +29,17 @@ public:
 
     Errno destroy(const Platform_ctx*) { return Errno::NONE; }
 
-    bool enter() {
+    bool enter() ACQUIRE() {
         lock();
         return true;
     }
-    bool exit() {
+    bool exit() RELEASE() {
         unlock();
         return true;
     }
 };
 
-class Platform::MutexGuard {
+class SCOPED_CAPABILITY Platform::MutexGuard {
 public:
     explicit MutexGuard(Platform::Mutex& m) : _m(m) { _m.enter(); }
     MutexGuard(const MutexGuard&) = delete;

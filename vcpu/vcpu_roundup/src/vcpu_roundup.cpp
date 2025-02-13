@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 BlueRock Security, Inc.
+ * Copyright (C) 2020-2025 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -9,6 +9,7 @@
 #include <model/cpu.hpp>
 #include <model/vcpu_types.hpp>
 #include <platform/atomic.hpp>
+#include <platform/compiler.hpp>
 #include <platform/context.hpp>
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
@@ -58,8 +59,12 @@ public:
      * as 'done progressing' because they are now waiting (if called from a VCPU).
      *
      * \param from_vcpu is this called from the context of a VCPU thread?
+     *
+     * Note: we disable thread safety analysis for now because enabling it would require
+     * annotating the roundup/resume functions and would leak private details to the caller.
+     * We can refactor that code later if needed.
      */
-    void begin_roundup(bool from_vcpu) {
+    void begin_roundup(bool from_vcpu) NO_THREAD_SAFETY_ANALYSIS {
         if (from_vcpu)
             yield();
         bool ok = _waiter_mutex.enter();
@@ -77,7 +82,7 @@ public:
         end_roundup_core();
     }
 
-    void signal_next_waiter() {
+    void signal_next_waiter() NO_THREAD_SAFETY_ANALYSIS {
         bool ok = _waiter_mutex.exit();
         ASSERT(ok);
     }
