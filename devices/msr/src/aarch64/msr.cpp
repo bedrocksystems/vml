@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2024 BlueRock Security, Inc.
+ * Copyright (C) 2019-2025 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -25,6 +25,15 @@
 
 static constexpr uint64 AA64DFR0_DEBUG_V8 = 0x6ull;
 Vbus::Bus *Msr::SetWayFlushReg::vbus = nullptr;
+
+// Using "BHV." as aarch64 hypervisor signature
+static constexpr union {
+    uint64 as_u64;
+    struct {
+        char as_u8[4];
+        uint32 reserved;
+    };
+} BHV_SIG{.as_u8{'B', 'H', 'V', '.'}, .reserved = 0};
 
 bool
 Msr::Bus::setup_aarch64_debug(uint64 id_aa64dfr0_el1, uint64 id_aa64dfr1_el1) {
@@ -167,7 +176,7 @@ Msr::Bus::setup_aarch64_features(uint64 id_aa64pfr0_el1, uint64 id_aa64pfr1_el1,
     if (!register_system_reg(reg))
         return false;
 
-    reg = new (nothrow) Msr::Register("ID_AA64AFR0_EL1", ID_AA64AFR0_EL1, false, 0x0ULL);
+    reg = new (nothrow) Msr::Register("ID_AA64AFR0_EL1", ID_AA64AFR0_EL1, false, BHV_SIG.as_u64);
     if (!register_system_reg(reg))
         return false;
     reg = new (nothrow) Msr::Register("ID_AA64AFR1_EL1", ID_AA64AFR1_EL1, false, 0x0ULL);
