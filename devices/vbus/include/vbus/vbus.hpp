@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 BlueRock Security, Inc.
+ * Copyright (C) 2019-2025 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -8,6 +8,7 @@
 #pragma once
 
 #include <platform/atomic.hpp>
+#include <platform/compiler.hpp>
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/rangemap.hpp>
@@ -256,7 +257,7 @@ private:
      * \prepost [_vbus_lock] is read-locked (via [RWLock::renter()]).
      */
     template<typename T>
-    void iter_devices_unlocked(void (*f)(Vbus::Bus::DeviceEntry* de, T), T arg) const {
+    void iter_devices_unlocked(void (*f)(Vbus::Bus::DeviceEntry* de, T), T arg) const REQUIRES_SHARED(_vbus_lock) {
         _devices.iter(f, arg);
     }
 
@@ -271,10 +272,10 @@ private:
     void log_trace_info(const Vbus::Bus::DeviceEntry* cur_entry, const Vbus::Bus::DeviceEntry* last_entry, Vbus::Access access,
                         mword addr, uint8 bytes, uint64 val);
 
-    const DeviceEntry* lookup(mword addr, uint64 bytes) const;
+    const DeviceEntry* lookup(mword addr, uint64 bytes) const REQUIRES_SHARED(_vbus_lock);
     Err access_with_dev(Device* dev, Vbus::Access access, const VcpuCtx& vcpu_ctx, mword off, uint8 bytes, uint64& val);
 
-    RangeMap<mword> _devices;
+    RangeMap<mword> _devices GUARDED_BY(_vbus_lock);
     Space _space;
     bool _trace{false};
     bool _fold{true};
