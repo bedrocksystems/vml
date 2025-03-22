@@ -28,7 +28,7 @@ var zap_domain = "bluerock.io"
 var zap_user = "info"
 var zap_recipient = zap_user + "@" + zap_domain
 var zap_url = "mailto:" + zap_recipient +"?subject=Feedback&body=My feedback concerns the page at: " + " " + escape(top.parent.location.href)
-document.write('<a href="' + zap_url + '" target=>Contact: BlueRock Security Inc.</a>')
+document.write('<a href="' + zap_url + '" target=>Contact: BlueRock Security, Inc.</a>')
 //-->
 </script>
 <br/><br/>
