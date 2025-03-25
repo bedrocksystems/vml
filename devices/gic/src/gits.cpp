@@ -8,7 +8,6 @@
 
 #include <model/gic.hpp>
 #include <model/simple_as.hpp>
-#include <model/vcpu_types.hpp>
 #include <platform/errno.hpp>
 #include <platform/log.hpp>
 #include <platform/memory.hpp>

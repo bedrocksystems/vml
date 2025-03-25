@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2024 BlueRock Security, Inc.
+ * Copyright (C) 2019-2025 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -10,7 +10,6 @@
 
 #include <model/iommu_interface.hpp>
 #include <model/irq_controller.hpp>
-#include <model/vcpu_types.hpp>
 #include <model/virtio_common.hpp>
 #include <model/virtqueue.hpp>
 #include <platform/bits.hpp>
