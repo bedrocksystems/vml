@@ -1,3 +1,3 @@
-LIBS = vbus irq_controller vuart cpu_model $(PLATFORM)
+LIBS = vbus irq_controller vuart $(PLATFORM)
 
 $(eval $(call dep_hook,vpl011,$(LIBS)))

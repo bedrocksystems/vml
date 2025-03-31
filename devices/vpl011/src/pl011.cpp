@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2019-2024 BlueRock Security, Inc.
+ * Copyright (C) 2019-2025 BlueRock Security, Inc.
  * All rights reserved.
  *
  * This software is distributed under the terms of the BlueRock Open-Source License.
@@ -7,7 +7,6 @@
  */
 
 #include <model/irq_controller.hpp>
-#include <model/vcpu_types.hpp>
 #include <pl011/pl011.hpp>
 #include <platform/log.hpp>
 #include <platform/mutex.hpp>
